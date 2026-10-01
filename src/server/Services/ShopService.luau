@@ -46,7 +46,10 @@ local function processReceipt(info: any): Enum.ProductPurchaseDecision
 	end
 	local receipt = tostring(info.PurchaseId)
 	if DataService.HasPurchase(d, receipt) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted
+		-- already granted in this session; only confirm once it is really saved
+		return if DataService.SaveNow(player)
+			then Enum.ProductPurchaseDecision.PurchaseGranted
+			else Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local p = productById(info.ProductId)
 	if not p then
@@ -68,6 +71,9 @@ local function checkPasses(player: Player)
 			local ok, owned = pcall(function()
 				return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.PassId :: number)
 			end)
+			if not player.Parent then
+				return -- left while we were asking Roblox
+			end
 			PlayerInfo.SetPass(player, pass.Key, ok and owned == true)
 		end
 	end
@@ -99,6 +105,14 @@ function ShopService.Init()
 			if p.Key == key then
 				if not p.ProductId then
 					return Remotes.Fail("Coming soon!")
+				end
+				if p.Kind == "Boost" and p.Boost and p.Seconds then
+					-- boosts stack up to a cap; don't sell time that would be thrown away
+					local d = DataService.Get(player)
+					local left = if d then (d.Boosts[p.Boost] or 0) - os.time() else 0
+					if left + p.Seconds > Config.Boosts.MaxStackSeconds then
+						return Remotes.Fail("That boost is already stacked to the max!")
+					end
 				end
 				MarketplaceService:PromptProductPurchase(player, p.ProductId)
 				return { ok = true }

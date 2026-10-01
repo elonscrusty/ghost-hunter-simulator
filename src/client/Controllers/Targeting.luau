@@ -12,6 +12,7 @@ local UserInputService = game:GetService("UserInputService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
+local Signal = require(GH.Signal)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
 local State = require(Client.State)
@@ -31,8 +32,8 @@ local blocked = false
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Include
 
-local selectedSignal = Instance.new("BindableEvent")
-Targeting.Selected = selectedSignal.Event -- (uid) fired on a local selection
+local selectedSignal = Signal.new()
+Targeting.Selected = selectedSignal -- (uid) fired on a local selection
 
 function Targeting.SetBlocked(on: boolean)
 	blocked = on
@@ -42,6 +43,12 @@ function Targeting.Current(): number
 	return (player:GetAttribute("Target") :: number?) or 0
 end
 
+-- The target your crew should be heading for right now: your fresh tap (before the server
+-- confirms it) or the server's choice. Lets your hunters react the instant you tap.
+function Targeting.LocalTarget(): number
+	return pending or Targeting.Current()
+end
+
 local function showHighlight(uid: number)
 	local e = if uid ~= 0 then Ghosts.Get(uid) else nil
 	if e then
@@ -49,9 +56,11 @@ local function showHighlight(uid: number)
 		selectHL.OutlineColor = e.Def.Glow
 		selectHL.FillColor = e.Def.Glow
 		selectHL.Enabled = true
+		Ghosts.SetSelected(uid)
 	else
 		selectHL.Adornee = nil
 		selectHL.Enabled = false
+		Ghosts.SetSelected(0)
 	end
 end
 
@@ -105,9 +114,16 @@ local function ghostAtScreen(pos: Vector2, viewport: boolean?): Ghosts.Entry?
 	if hit then
 		return Ghosts.FromInstance(hit.Instance)
 	end
-	-- forgiving fallback for small/fast ghosts: nearest ghost centre within 60 px of the tap
-	local best, bestD = nil, 60
+	-- Forgiving fallback (no surgical taps needed): the ghost whose centre is nearest the tap,
+	-- within ~8% of the screen. When ghosts overlap, the one nearer the camera wins ties.
+	local vp = cam.ViewportSize
+	local radius = math.clamp(math.min(vp.X, vp.Y) * 0.08, 40, 72)
+	local camPos = cam.CFrame.Position
+	local best, bestScore = nil, math.huge
 	for _, e in Ghosts.All() do
+		if e.Dying then
+			continue
+		end
 		local sp, onScreen
 		if viewport then
 			sp, onScreen = cam:WorldToViewportPoint(e.Pos)
@@ -115,9 +131,14 @@ local function ghostAtScreen(pos: Vector2, viewport: boolean?): Ghosts.Entry?
 			sp, onScreen = cam:WorldToScreenPoint(e.Pos)
 		end
 		if onScreen then
+			-- bigger ghosts are bigger targets on screen
+			local reach = radius + 12 * e.Def.Scale
 			local dist = (Vector2.new(sp.X, sp.Y) - pos).Magnitude
-			if dist < bestD then
-				best, bestD = e, dist
+			if dist <= reach then
+				local score = dist + 0.15 * (e.Pos - camPos).Magnitude
+				if score < bestScore then
+					best, bestScore = e, score
+				end
 			end
 		end
 	end

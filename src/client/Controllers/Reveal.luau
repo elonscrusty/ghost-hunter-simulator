@@ -15,6 +15,7 @@ local TweenService = game:GetService("TweenService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Signal = require(GH.Signal)
 local HunterRig = require(GH.Rigs.HunterRig)
 local CrateRig = require(GH.Rigs.CrateRig)
 local Client = script.Parent.Parent
@@ -49,10 +50,10 @@ local poseConn: RBXScriptConnection? = nil
 local hunterRig: HunterRig.Rig? = nil
 local hunterState = "Idle"
 local againFn: (() -> ())? = nil
-local finishedSignal = Instance.new("BindableEvent")
-Reveal.Finished = finishedSignal.Event -- (result)
-local startedSignal = Instance.new("BindableEvent")
-Reveal.Started = startedSignal.Event
+local finishedSignal = Signal.new()
+Reveal.Finished = finishedSignal -- (result)
+local startedSignal = Signal.new()
+Reveal.Started = startedSignal
 
 function Reveal.IsPlaying(): boolean
 	return playing
@@ -221,8 +222,8 @@ local function buildGui(): (ScreenGui, TextButton)
 	local skip = Kit.Button(g, {
 		Text = "SKIP ⏩",
 		Color = "Gray",
-		Size = UDim2.fromOffset(150, 56),
-		Position = UDim2.new(1, -20, 1, -20),
+		Size = UDim2.fromOffset(110, 40),
+		Position = UDim2.new(1, -16, 1, -16),
 		AnchorPoint = Vector2.new(1, 1),
 		ZIndex = 5,
 		OnClick = function()
@@ -262,49 +263,49 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	local def = Config.Hunters[res.Hunter]
 	local d = State.Data
 	local card: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(560, 250),
-		Position = UDim2.new(0.5, 0, 1, -24),
+		Size = UDim2.fromOffset(470, 196),
+		Position = UDim2.new(0.5, 0, 1, -16),
 		AnchorPoint = Vector2.new(0.5, 1),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		ZIndex = 10,
 		Parent = g,
 	})
-	Kit.Corner(card, UDim.new(0, 24))
-	Kit.Stroke(card, 5, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Corner(card, UDim.new(0, 18))
+	Kit.Stroke(card, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(card, Theme.Panel2, Theme.Bg, 90)
 	local sc = Kit.new("UIScale", { Scale = 0.3, Parent = card })
 	Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
 	-- rarity ribbon
 	local ribbon: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(300, 46),
-		Position = UDim2.new(0.5, 0, 0, -22),
+		Size = UDim2.fromOffset(200, 32),
+		Position = UDim2.new(0.5, 0, 0, -16),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		ZIndex = 12,
 		Parent = card,
 	})
-	Kit.Corner(ribbon, UDim.new(0, 14))
-	Kit.Stroke(ribbon, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Corner(ribbon, UDim.new(0, 10))
+	Kit.Stroke(ribbon, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(ribbon, rarity.Color, rarity.Color2, 0)
-	Kit.Label(ribbon, rarity.Name, { Size = UDim2.fromScale(0.9, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 13, Stroke = 3 })
-	Kit.Label(card, string.upper(def.Name), { Size = UDim2.new(1, -40, 0, 54), Position = UDim2.fromOffset(20, 30), ZIndex = 11, Stroke = 4 })
-	Kit.Label(card, "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER", { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 86), Color = Theme.Gold, ZIndex = 11 })
-	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -60, 0, 28), Position = UDim2.fromOffset(30, 122), Color = Theme.Muted, Font = Theme.Body, ZIndex = 11, Stroke = 0 })
+	Kit.Label(ribbon, rarity.Name, { Style = "Heading", ZIndex = 13 })
+	Kit.Label(card, string.upper(def.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
+	Kit.Label(card, "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", ZIndex = 11 })
+	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 76), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
-		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(120, 50), Position = UDim2.new(1, 10, 0, 6), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, ZIndex = 14, Stroke = 4 })
+		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, 4), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
 		stamp.Rotation = 14
 		local ssc = Kit.new("UIScale", { Scale = 3, Parent = stamp })
 		Kit.Tween(ssc, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
 	end
 	-- buttons
 	local row: Frame = Kit.new("Frame", {
-		Size = UDim2.new(1, -40, 0, 64),
-		Position = UDim2.new(0, 20, 1, -78),
+		Size = UDim2.new(1, -30, 0, 46),
+		Position = UDim2.new(0, 15, 1, -58),
 		BackgroundTransparency = 1,
 		ZIndex = 11,
 		Parent = card,
 	})
-	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 12), Parent = row })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 10), Parent = row })
 	local equipped = d and table.find(d.Equipped, res.Uid) ~= nil
 	local slots = if d then d.Slots or Config.Inventory.BaseSlots else Config.Inventory.BaseSlots
 	if d and not equipped then
@@ -322,7 +323,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 			b = Kit.Button(row, {
 				Text = if free then "EQUIP" else "EQUIP BEST",
 				Color = "Green",
-				Size = UDim2.fromOffset(160, 60),
+				Size = UDim2.fromOffset(140, 44),
 				ZIndex = 12,
 				OnClick = function()
 					local r = if free then State.Request("Equip", res.Uid) else State.Request("EquipBest")
@@ -344,7 +345,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 		Kit.Button(row, {
 			Text = "AGAIN 💚" .. Format.Short(crate.Price),
 			Color = "Purple",
-			Size = UDim2.fromOffset(170, 60),
+			Size = UDim2.fromOffset(150, 44),
 			ZIndex = 12,
 			OnClick = function()
 				fnAgain()
@@ -354,7 +355,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Button(row, {
 		Text = "OK",
 		Color = "Blue",
-		Size = UDim2.fromOffset(120, 60),
+		Size = UDim2.fromOffset(100, 44),
 		ZIndex = 12,
 		OnClick = function()
 			Reveal.Close()
@@ -587,7 +588,7 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 	end
 	-- 6) legendary title slam
 	if rarity.Order >= 5 and not skipping then
-		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(700, 110), Position = UDim2.fromScale(0.5, 0.22), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, ZIndex = 8, Stroke = 5 })
+		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", TextSize = 54, ZIndex = 8, Stroke = 4 })
 		Kit.new("UIGradient", { Color = ColorSequence.new(rarity.Color, rarity.Color2), Rotation = 90, Parent = title })
 		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
 		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)

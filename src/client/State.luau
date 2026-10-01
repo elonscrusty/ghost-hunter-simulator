@@ -3,15 +3,16 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Net = require(GH.Net)
+local Signal = require(GH.Signal)
 
 local State = {}
 
 State.Data = nil :: any -- latest snapshot (see DataService.snapshot on the server)
 State.Ecto = 0
-local changed = Instance.new("BindableEvent")
-local ectoChanged = Instance.new("BindableEvent")
-State.Changed = changed.Event -- (data)
-State.EctoChanged = ectoChanged.Event -- (new, old)
+local changed = Signal.new()
+local ectoChanged = Signal.new()
+State.Changed = changed -- (data)
+State.EctoChanged = ectoChanged -- (new, old)
 
 -- os.time() on the server minus the client's, so countdowns use server time.
 State.ClockOffset = 0
@@ -62,7 +63,7 @@ end
 
 function State.WaitForData(): any
 	while not State.Data do
-		changed.Event:Wait()
+		changed:Wait()
 	end
 	return State.Data
 end

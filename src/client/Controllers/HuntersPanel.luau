@@ -34,8 +34,11 @@ local storageLabel: TextLabel
 local sortButton: TextButton
 local releaseButton: TextButton
 local equipBestButton: TextButton
+local top: Frame
+local actionsRow: Frame
+local side: Frame
 -- inspect pane
-local inspect: Frame
+local inspect: ScrollingFrame
 local viewHolder: Frame
 local nameLabel: TextLabel
 local rarityLabel: TextLabel
@@ -144,7 +147,7 @@ local function setInspect(uid: string?)
 	equipButton:SetAttribute("Color", if isEq then "Red" else "Green")
 	Kit.SetButtonText(lockButton, if h.Locked then "🔓 UNLOCK" else "🔒 LOCK")
 	relOneButton.Visible = not isEq and not h.Locked
-	Kit.SetButtonText(relOneButton, "RELEASE (+" .. Format.Short(crateRefund(h.Id)) .. ")")
+	Kit.SetButtonText(relOneButton, "RELEASE +" .. Format.Short(crateRefund(h.Id)))
 end
 
 local function updateReleaseBar()
@@ -197,7 +200,7 @@ local function makeCard(uid: string, hunterId: string): Card
 		end)
 	end
 	local pic: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(92, 92),
+		Size = UDim2.fromOffset(70, 70),
 		Position = UDim2.new(0.5, 0, 0, 6),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.fromRGB(30, 18, 55),
@@ -207,24 +210,24 @@ local function makeCard(uid: string, hunterId: string): Card
 	})
 	Kit.Corner(pic, UDim.new(1, 0))
 	Portrait.Face(pic, hunterId, false)
-	Kit.Label(f, string.upper(def.Name), { Size = UDim2.new(1, -8, 0, 22), Position = UDim2.fromOffset(4, 100), ZIndex = 66 })
-	Kit.Label(f, "⚡" .. Format.Short(def.Power), { Size = UDim2.new(1, -8, 0, 22), Position = UDim2.fromOffset(4, 124), ZIndex = 66, Color = Theme.Gold })
+	Kit.Label(f, string.upper(def.Name), { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), ZIndex = 66, Style = "Small", Fit = true })
+	Kit.Label(f, "⚡" .. Format.Short(def.Power), { Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 98), ZIndex = 66, Color = Theme.Gold, Style = "Body", Fit = true })
 	local eqBadge: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(34, 34),
-		Position = UDim2.fromOffset(-6, -6),
+		Size = UDim2.fromOffset(24, 24),
+		Position = UDim2.fromOffset(-5, -5),
 		BackgroundColor3 = Theme.Good,
 		Visible = false,
 		ZIndex = 68,
 		Parent = f,
 	})
 	Kit.Corner(eqBadge, UDim.new(1, 0))
-	Kit.Stroke(eqBadge, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	Kit.Label(eqBadge, "✓", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 69 })
-	local lock = Kit.Label(f, "🔒", { Size = UDim2.fromOffset(28, 28), Position = UDim2.new(1, 2, 0, -4), AnchorPoint = Vector2.new(1, 0), ZIndex = 68, Stroke = 0 })
+	Kit.Stroke(eqBadge, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Label(eqBadge, "✓", { Style = "Body", ZIndex = 69 })
+	local lock = Kit.Label(f, "🔒", { Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, 2, 0, -3), AnchorPoint = Vector2.new(1, 0), ZIndex = 68, Stroke = 0, Style = "Small" })
 	lock.Visible = false
 	local sel: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Bad, BackgroundTransparency = 0.45, Visible = false, ZIndex = 70, Parent = f })
-	Kit.Corner(sel, UDim.new(0, 16))
-	Kit.Label(sel, "✖", { Size = UDim2.fromScale(0.5, 0.4), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 71 })
+	Kit.Corner(sel, UDim.new(0, 12))
+	Kit.Label(sel, "✖", { Style = "Title", ZIndex = 71 })
 	f.Activated:Connect(function()
 		Kit.Play("Click")
 		if releaseMode then
@@ -310,19 +313,21 @@ local function act(action: string, ...: any)
 end
 
 function HuntersPanel.Init()
-	panel = Kit.Panel("Hunters", "GHOST HUNTERS", Vector2.new(920, 560), "Orange")
+	panel = Kit.Panel("Hunters", "GHOST HUNTERS", Vector2.new(860, 500), "Orange")
 	local body = panel.Body
-	-- top bar
-	local top: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 56), Position = UDim2.fromOffset(0, 12), BackgroundTransparency = 1, ZIndex = 61, Parent = body })
-	equippedLabel = Kit.Label(top, "EQUIPPED 0/4", { Size = UDim2.fromOffset(190, 34), Position = UDim2.fromOffset(0, 2), Align = Enum.TextXAlignment.Left, ZIndex = 62 })
-	powerLabel = Kit.Label(top, "⚡ 0", { Size = UDim2.fromOffset(140, 30), Position = UDim2.fromOffset(196, 4), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, ZIndex = 62 })
-	storageLabel = Kit.Label(top, "STORAGE 0/150", { Size = UDim2.fromOffset(190, 20), Position = UDim2.fromOffset(0, 36), Align = Enum.TextXAlignment.Left, Color = Theme.Muted, Font = Theme.Body, ZIndex = 62, Stroke = 0 })
-	local buttons: Frame = Kit.new("Frame", { Size = UDim2.new(0, 520, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 61, Parent = top })
-	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 10), Parent = buttons })
+	-- top bar: counts on the left, actions on the right (actions drop to a 2nd row when narrow)
+	top = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 10), BackgroundTransparency = 1, ZIndex = 61, Parent = body })
+	equippedLabel = Kit.Label(top, "EQUIPPED 0/4", { Size = UDim2.fromOffset(150, 22), Position = UDim2.fromOffset(0, 0), Align = Enum.TextXAlignment.Left, Style = "Heading", Fit = true, ZIndex = 62 })
+	powerLabel = Kit.Label(top, "⚡ 0", { Size = UDim2.fromOffset(120, 22), Position = UDim2.fromOffset(152, 0), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 62 })
+	storageLabel = Kit.Label(top, "STORAGE 0/150", { Size = UDim2.fromOffset(200, 16), Position = UDim2.fromOffset(0, 25), Align = Enum.TextXAlignment.Left, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
+	actionsRow = Kit.new("Frame", { Size = UDim2.new(0, 400, 0, 40), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 61, Parent = top })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), Parent = actionsRow })
+	local buttons = actionsRow
 	sortButton = Kit.Button(buttons, {
 		Text = "SORT: POWER",
 		Color = "Blue",
-		Size = UDim2.fromOffset(160, 52),
+		Size = UDim2.fromOffset(124, 38),
+		TextStyle = "Small",
 		ZIndex = 62,
 		OnClick = function()
 			sortMode = if sortMode == "Power" then "Rarity" else "Power"
@@ -333,7 +338,8 @@ function HuntersPanel.Init()
 	releaseButton = Kit.Button(buttons, {
 		Text = "RELEASE",
 		Color = "Red",
-		Size = UDim2.fromOffset(140, 52),
+		Size = UDim2.fromOffset(100, 38),
+		TextStyle = "Small",
 		ZIndex = 62,
 		OnClick = function()
 			setReleaseMode(not releaseMode)
@@ -342,7 +348,7 @@ function HuntersPanel.Init()
 	equipBestButton = Kit.Button(buttons, {
 		Text = "EQUIP BEST",
 		Color = "Green",
-		Size = UDim2.fromOffset(190, 52),
+		Size = UDim2.fromOffset(140, 38),
 		ZIndex = 62,
 		OnClick = function()
 			local res = act("EquipBest")
@@ -354,11 +360,9 @@ function HuntersPanel.Init()
 	equipBestButton.Name = "EquipBest"
 	-- grid
 	grid = Kit.new("ScrollingFrame", {
-		Size = UDim2.new(1, -300, 1, -84),
-		Position = UDim2.fromOffset(0, 78),
 		BackgroundColor3 = Theme.Bg,
 		BackgroundTransparency = 0.5,
-		ScrollBarThickness = 10,
+		ScrollBarThickness = 6,
 		ScrollBarImageColor3 = Theme.Panel3,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(),
@@ -367,33 +371,51 @@ function HuntersPanel.Init()
 		ZIndex = 62,
 		Parent = body,
 	})
-	Kit.Corner(grid, UDim.new(0, 16))
-	Kit.Padding(grid, 12)
+	Kit.Corner(grid, UDim.new(0, 12))
+	Kit.Padding(grid, 8)
 	Kit.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(118, 150),
-		CellPadding = UDim2.fromOffset(12, 12),
+		CellSize = UDim2.fromOffset(100, 122),
+		CellPadding = UDim2.fromOffset(8, 8),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = grid,
 	})
-	-- inspect pane
-	local side: Frame = Kit.new("Frame", { Size = UDim2.new(0, 284, 1, -84), Position = UDim2.new(1, 0, 0, 78), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.5, ZIndex = 62, Parent = body })
-	Kit.Corner(side, UDim.new(0, 16))
-	emptyHint = Kit.Label(side, "Tap a hunter to inspect it.\n\nEQUIP BEST picks your strongest crew!", { Size = UDim2.new(1, -30, 0.6, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = Theme.Muted, Font = Theme.Body, ZIndex = 63, Stroke = 0 })
-	inspect = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 63, Parent = side })
-	viewHolder = Kit.new("Frame", { Size = UDim2.fromOffset(170, 160), Position = UDim2.new(0.5, 0, 0, 4), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 63, Parent = inspect })
-	nameLabel = Kit.Label(inspect, "", { Size = UDim2.new(1, -16, 0, 30), Position = UDim2.fromOffset(8, 166), ZIndex = 64 })
-	rarityRibbon = Kit.new("Frame", { Size = UDim2.fromOffset(170, 26), Position = UDim2.new(0.5, 0, 0, 198), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 64, Parent = inspect })
+	-- inspect pane (scrolls, so it fits short phone screens)
+	side = Kit.new("Frame", { AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.5, ZIndex = 62, Parent = body })
+	Kit.Corner(side, UDim.new(0, 12))
+	emptyHint = Kit.Label(side, "Tap a hunter to inspect it.\n\nEQUIP BEST picks your strongest crew!", { Size = UDim2.new(1, -24, 0.6, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 63, Stroke = 0 })
+	inspect = Kit.new("ScrollingFrame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 5,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		Visible = false,
+		ZIndex = 63,
+		Parent = side,
+	})
+	Kit.new("UIListLayout", { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = inspect })
+	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = inspect })
+	viewHolder = Kit.new("Frame", { Size = UDim2.fromOffset(150, 132), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 63, Parent = inspect })
+	nameLabel = Kit.Label(inspect, "", { Size = UDim2.new(1, 0, 0, 22), Style = "Heading", Fit = true, ZIndex = 64 })
+	nameLabel.LayoutOrder = 2
+	rarityRibbon = Kit.new("Frame", { Size = UDim2.fromOffset(150, 22), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 3, ZIndex = 64, Parent = inspect })
 	Kit.Corner(rarityRibbon, UDim.new(1, 0))
-	Kit.Stroke(rarityRibbon, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Stroke(rarityRibbon, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(rarityRibbon, Theme.Panel2, Theme.Panel, 0)
-	rarityLabel = Kit.Label(rarityRibbon, "", { Size = UDim2.fromScale(0.9, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 65 })
-	statLabel = Kit.Label(inspect, "", { Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(8, 230), Color = Theme.Gold, ZIndex = 64 })
-	blurbLabel = Kit.Label(inspect, "", { Size = UDim2.new(1, -24, 0, 40), Position = UDim2.fromOffset(12, 256), Color = Theme.Muted, Font = Theme.Body, ZIndex = 64, Stroke = 0 })
-	local actions: Frame = Kit.new("Frame", { Size = UDim2.new(1, -16, 0, 120), Position = UDim2.new(0, 8, 1, -8), AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1, ZIndex = 63, Parent = inspect })
-	Kit.new("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, 54), CellPadding = UDim2.fromOffset(10, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = actions })
+	rarityLabel = Kit.Label(rarityRibbon, "", { Style = "Small", ZIndex = 65 })
+	statLabel = Kit.Label(inspect, "", { Size = UDim2.new(1, 0, 0, 20), Color = Theme.Gold, Style = "Body", Fit = true, ZIndex = 64 })
+	statLabel.LayoutOrder = 4
+	blurbLabel = Kit.Label(inspect, "", { Size = UDim2.new(1, 0, 0, 0), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 64, Stroke = 0 })
+	blurbLabel.AutomaticSize = Enum.AutomaticSize.Y
+	blurbLabel.LayoutOrder = 5
+	local actions: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 86), BackgroundTransparency = 1, LayoutOrder = 6, ZIndex = 63, Parent = inspect })
+	Kit.new("UIGridLayout", { CellSize = UDim2.new(0.5, -4, 0, 40), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = actions })
 	equipButton = Kit.Button(actions, {
 		Text = "EQUIP",
 		Color = "Green",
+		TextStyle = "Small",
 		ZIndex = 64,
 		OnClick = function()
 			local d = State.Data
@@ -412,6 +434,7 @@ function HuntersPanel.Init()
 	lockButton = Kit.Button(actions, {
 		Text = "🔒 LOCK",
 		Color = "Blue",
+		TextStyle = "Small",
 		ZIndex = 64,
 		OnClick = function()
 			local d = State.Data
@@ -426,6 +449,7 @@ function HuntersPanel.Init()
 	relOneButton = Kit.Button(actions, {
 		Text = "RELEASE",
 		Color = "Red",
+		TextStyle = "Small",
 		ZIndex = 64,
 		OnClick = function()
 			local uid = inspectUid
@@ -437,12 +461,12 @@ function HuntersPanel.Init()
 	relOneButton.LayoutOrder = 3
 	-- release bar (replaces the inspect pane in release mode)
 	releaseBar = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 63, Parent = side })
-	Kit.Label(releaseBar, "Tap hunters to select them.\nReleased hunters give back a little Ectoplasm.", { Size = UDim2.new(1, -24, 0, 90), Position = UDim2.fromOffset(12, 14), Color = Theme.Muted, Font = Theme.Body, ZIndex = 64, Stroke = 0 })
+	Kit.Label(releaseBar, "Tap hunters to select them. Released hunters give back a little Ectoplasm.", { Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 8), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 64, Stroke = 0 })
 	Kit.Button(releaseBar, {
 		Text = "SELECT WEAK",
 		Color = "Orange",
-		Size = UDim2.new(1, -24, 0, 54),
-		Position = UDim2.fromOffset(12, 120),
+		Size = UDim2.new(1, -20, 0, 40),
+		Position = UDim2.fromOffset(10, 74),
 		ZIndex = 64,
 		OnClick = function()
 			-- every unequipped, unlocked hunter weaker than your weakest equipped one
@@ -469,8 +493,8 @@ function HuntersPanel.Init()
 	releaseConfirm = Kit.Button(releaseBar, {
 		Text = "RELEASE 0",
 		Color = "Gray",
-		Size = UDim2.new(1, -24, 0, 60),
-		Position = UDim2.new(0, 12, 1, -12),
+		Size = UDim2.new(1, -20, 0, 44),
+		Position = UDim2.new(0, 10, 1, -10),
 		AnchorPoint = Vector2.new(0, 1),
 		ZIndex = 64,
 		OnClick = function()
@@ -493,9 +517,49 @@ function HuntersPanel.Init()
 	end)
 end
 
+-- Responsive layout from the panel's actual (logical) width: the inspect pane takes ~30%,
+-- and the action buttons move under the counters when the panel is narrow.
+local function layout()
+	local w = panel.Root.Size.X.Offset - 28
+	local narrow = w < 700
+	local topH = if narrow then 88 else 44
+	top.Size = UDim2.new(1, 0, 0, topH)
+	if narrow then
+		actionsRow.AnchorPoint = Vector2.zero
+		actionsRow.Position = UDim2.fromOffset(0, 46)
+		actionsRow.Size = UDim2.new(1, 0, 0, 40)
+		local list = actionsRow:FindFirstChildOfClass("UIListLayout")
+		if list then
+			list.HorizontalAlignment = Enum.HorizontalAlignment.Left
+		end
+	else
+		actionsRow.AnchorPoint = Vector2.new(1, 0)
+		actionsRow.Position = UDim2.fromScale(1, 0)
+		actionsRow.Size = UDim2.new(0, 400, 0, 40)
+		local list = actionsRow:FindFirstChildOfClass("UIListLayout")
+		if list then
+			list.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		end
+	end
+	local sideW = math.clamp(math.floor(w * 0.3), 200, 260)
+	local y = topH + 16
+	grid.Position = UDim2.fromOffset(0, y)
+	grid.Size = UDim2.new(1, -(sideW + 8), 1, -y)
+	side.Position = UDim2.new(1, 0, 0, y)
+	side.Size = UDim2.new(0, sideW, 1, -y)
+end
+
 function HuntersPanel.Start()
-	panel.OnOpen.Event:Connect(rebuild)
-	panel.OnClose.Event:Connect(function()
+	panel.OnOpen:Connect(function()
+		layout()
+		rebuild()
+	end)
+	Kit.ScaleChanged:Connect(function()
+		if panel.IsOpen then
+			layout()
+		end
+	end)
+	panel.OnClose:Connect(function()
 		if releaseMode then
 			setReleaseMode(false)
 		end

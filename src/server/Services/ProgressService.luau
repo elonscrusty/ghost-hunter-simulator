@@ -183,24 +183,31 @@ local function zoneGuardTick()
 end
 
 function ProgressService.Start()
+	local function setup(player: Player, char: Model)
+		local hum = char:WaitForChild("Humanoid", 10)
+		if hum then
+			applyWalkSpeed(player)
+			-- players pass through each other: characters go in their own collision group
+			for _, part in char:GetDescendants() do
+				if part:IsA("BasePart") then
+					part.CollisionGroup = "Players"
+				end
+			end
+			char.DescendantAdded:Connect(function(part)
+				if part:IsA("BasePart") then
+					part.CollisionGroup = "Players"
+				end
+			end)
+		end
+	end
 	local function hook(player: Player)
 		player.CharacterAdded:Connect(function(char)
-			local hum = char:WaitForChild("Humanoid", 10)
-			if hum then
-				applyWalkSpeed(player)
-				-- hunters never collide with players: characters go in their own group
-				for _, part in char:GetDescendants() do
-					if part:IsA("BasePart") then
-						part.CollisionGroup = "Players"
-					end
-				end
-				char.DescendantAdded:Connect(function(part)
-					if part:IsA("BasePart") then
-						part.CollisionGroup = "Players"
-					end
-				end)
-			end
+			setup(player, char)
 		end)
+		-- a character that spawned while the world was still building
+		if player.Character then
+			task.spawn(setup, player, player.Character)
+		end
 	end
 	Players.PlayerAdded:Connect(hook)
 	for _, pl in Players:GetPlayers() do
@@ -212,7 +219,12 @@ function ProgressService.Start()
 	task.spawn(function()
 		while true do
 			task.wait(1)
-			zoneGuardTick()
+			local ok, err = pcall(function()
+				zoneGuardTick()
+			end)
+			if not ok then
+				warn("[Zones] guard error: " .. tostring(err))
+			end
 		end
 	end)
 end

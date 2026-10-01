@@ -230,7 +230,12 @@ function HunterService.Init()
 		return { ok = true, Released = released, Refund = refund }
 	end)
 
-	DataService.Loaded:Connect(function(player: Player, d: DataService.Data)
+	DataService.Loaded:Connect(function(player: Player)
+		-- always work on the live profile (never a copy)
+		local d = DataService.Get(player)
+		if not d then
+			return
+		end
 		if next(d.Hunters) == nil then
 			HunterService.Add(player, Config.StarterHunter)
 		end

@@ -17,6 +17,7 @@ Press **Play** and go through [STUDIO_TESTS.md](STUDIO_TESTS.md). Studio-only ch
 - `/ecto 5000` gives you Ectoplasm
 - `/event` starts the Giant Poltergeist now
 - `/reset-daily` makes the daily reward claimable again
+- `/autoattack` gives you the Auto Attack pass for that test (Studio only, never live)
 
 ## 4. Game settings (Home → Game Settings)
 - **Basic Info**: description, genre *Adventure* (or *Simulator*), icon and thumbnails.
@@ -29,8 +30,10 @@ Press **Play** and go through [STUDIO_TESTS.md](STUDIO_TESTS.md). Studio-only ch
 On the Creator Hub (create.roblox.com → your game → Monetization):
 1. **Developer Products** → create these 4 (names/prices are suggestions):
    - Sack of Ectoplasm (49 R$) · Barrel of Ectoplasm (199 R$) · 30 Min Luck Boost (49 R$) · 30 Min 2x Ectoplasm (49 R$)
-2. **Passes** → create these 2:
-   - +2 Hunter Slots (149 R$) · Permanent 2x Ectoplasm (299 R$)
+2. **Passes** → create these 3:
+   - +2 Hunter Slots (149 R$) · Permanent 2x Ectoplasm (299 R$) · Auto Attack (199 R$)
+   - Auto Attack only picks targets automatically (crew attacks the next nearby ghost). Free
+     players tap a ghost once to send their crew; damage and rewards are identical.
 3. Copy each id and put it in `src/shared/Config.luau`:
    `Config.Products` → `ProductId = 123456789` and `Config.GamePasses` → `PassId = 123456789`.
    (Or send the ids to Claude.) Then rebuild the place (Claude does this).

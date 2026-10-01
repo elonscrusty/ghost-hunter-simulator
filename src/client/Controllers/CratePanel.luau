@@ -8,6 +8,7 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Rules = require(GH.Logic.Rules)
 local Format = require(GH.Logic.Format)
+local Signal = require(GH.Signal)
 local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
@@ -19,14 +20,14 @@ local CratePanel = {}
 
 local player = Players.LocalPlayer
 local panel: Kit.Panel
-local list: Frame
+local list: ScrollingFrame
 local openButton: TextButton
 local infoLabel: TextLabel
 local luckLabel: TextLabel
 local current: string? = nil
 local busy = false
-local openedSignal = Instance.new("BindableEvent")
-CratePanel.Opened = openedSignal.Event -- (result) after a successful purchase
+local openedSignal = Signal.new()
+CratePanel.Opened = openedSignal -- (result) after a successful purchase
 
 local function rarityOrder(id: string): number
 	local h = Config.Hunters[id]
@@ -78,18 +79,17 @@ function refreshCards(crateId: string, d: any, odds: { [string]: number }, luck:
 		local rar = Config.Rarities[def.Rarity]
 		local found = d.Discovered[e.Hunter] == true
 		local card: Frame = Kit.new("Frame", {
-			Size = UDim2.fromOffset(176, 236),
 			BackgroundColor3 = Color3.new(1, 1, 1),
 			LayoutOrder = i,
 			ZIndex = 62,
 			Parent = list,
 		})
-		Kit.Corner(card, UDim.new(0, 18))
-		Kit.Stroke(card, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
+		Kit.Corner(card, UDim.new(0, 14))
+		Kit.Stroke(card, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 		Kit.Gradient(card, rar.Color, rar.Color2, 90)
 		local pic: Frame = Kit.new("Frame", {
-			Size = UDim2.fromOffset(120, 120),
-			Position = UDim2.new(0.5, 0, 0, 10),
+			Size = UDim2.fromOffset(88, 88),
+			Position = UDim2.new(0.5, 0, 0, 8),
 			AnchorPoint = Vector2.new(0.5, 0),
 			BackgroundColor3 = Color3.fromRGB(30, 18, 55),
 			BackgroundTransparency = 0.3,
@@ -98,10 +98,10 @@ function refreshCards(crateId: string, d: any, odds: { [string]: number }, luck:
 		})
 		Kit.Corner(pic, UDim.new(1, 0))
 		Portrait.Face(pic, e.Hunter, not found)
-		Kit.Label(card, if found then string.upper(def.Name) else "???", { Size = UDim2.new(1, -12, 0, 30), Position = UDim2.fromOffset(6, 134), ZIndex = 64 })
-		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -12, 0, 22), Position = UDim2.fromOffset(6, 164), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240) })
-		Kit.Label(card, "⚡ " .. Format.Commas(def.Power), { Size = UDim2.new(0.55, 0, 0, 26), Position = UDim2.fromOffset(8, 196), ZIndex = 64, Color = Theme.Gold, Align = Enum.TextXAlignment.Left })
-		local pct = Kit.Label(card, Format.Percent(odds[e.Hunter]), { Size = UDim2.new(0.42, 0, 0, 28), Position = UDim2.new(1, -8, 0, 195), AnchorPoint = Vector2.new(1, 0), ZIndex = 64, Align = Enum.TextXAlignment.Right })
+		Kit.Label(card, if found then string.upper(def.Name) else "???", { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 100), ZIndex = 64, Style = "Body", Fit = true })
+		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 121), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
+		Kit.Label(card, "⚡ " .. Format.Commas(def.Power), { Size = UDim2.new(0.55, 0, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Gold, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
+		local pct = Kit.Label(card, Format.Percent(odds[e.Hunter]), { Size = UDim2.new(0.45, 0, 0, 24), Position = UDim2.new(1, -8, 1, -29), AnchorPoint = Vector2.new(1, 0), ZIndex = 64, Align = Enum.TextXAlignment.Right, Style = "Heading", Fit = true })
 		if luck > 1 and rar.Order >= Config.LuckAffectsFromOrder then
 			pct.TextColor3 = Theme.Ecto
 		end
@@ -188,23 +188,36 @@ function CratePanel.Open(crateId: string)
 end
 
 function CratePanel.Init()
-	panel = Kit.Panel("Crate", "HUNTER CRATE", Vector2.new(820, 470), "Orange")
-	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 14), Color = Theme.Muted, Font = Theme.Body, ZIndex = 62, Stroke = 0 })
-	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST ACTIVE: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, 40), Color = Theme.Ecto, ZIndex = 62 })
+	panel = Kit.Panel("Crate", "HUNTER CRATE", Vector2.new(700, 380), "Orange")
+	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
+	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
-	list = Kit.new("Frame", {
-		Size = UDim2.new(1, 0, 0, 240),
-		Position = UDim2.fromOffset(0, 70),
+	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
+	list = Kit.new("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, -118),
+		Position = UDim2.fromOffset(0, 54),
 		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
 		ZIndex = 61,
 		Parent = panel.Body,
 	})
-	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
+	Kit.new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(148, 160),
+		CellPadding = UDim2.fromOffset(10, 10),
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = list,
+	})
+	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), Parent = list })
 	openButton = Kit.Button(panel.Body, {
 		Text = "OPEN",
 		Color = "Green",
-		Size = UDim2.fromOffset(340, 72),
-		Position = UDim2.new(0.5, 0, 1, -8),
+		Size = UDim2.fromOffset(280, 50),
+		Position = UDim2.new(0.5, 0, 1, -4),
 		AnchorPoint = Vector2.new(0.5, 1),
 		ZIndex = 63,
 		OnClick = buy,

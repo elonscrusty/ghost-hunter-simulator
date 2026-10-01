@@ -12,8 +12,10 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local HunterRig = require(GH.Rigs.HunterRig)
 local Client = script.Parent.Parent
-local Kit = require(Client.UI.Kit)
+local Theme = require(Client.UI.Theme)
+local WorldLabel = require(Client.UI.WorldLabel)
 local Ghosts = require(script.Parent.Ghosts)
+local Targeting = require(script.Parent.Targeting)
 local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 
@@ -88,29 +90,29 @@ local function makeBeam(m: Member)
 	m.Beam = beam
 end
 
+-- One small line over each hunter: "★ Name" in its rarity colour. Short range (your own crew
+-- reads it when the camera is close; it never stacks into clutter from afar).
 local function addTag(m: Member, isLocal: boolean)
 	local def = Config.Hunters[m.Id]
 	local rar = Config.Rarities[def.Rarity]
-	local gui: BillboardGui = Kit.new("BillboardGui", {
+	local gui = WorldLabel.New({
 		Name = "Tag",
-		Size = UDim2.fromOffset(150, 34),
-		StudsOffsetWorldSpace = Vector3.new(0, m.Rig.Height + 0.9, 0),
-		MaxDistance = if isLocal then 38 else 22,
-		LightInfluence = 0,
 		Adornee = m.Rig.Root,
 		Parent = m.Rig.Model,
+		Size = Theme.World.CrewTag,
+		Offset = Vector3.new(0, m.Rig.Height + 0.7, 0),
+		MaxDistance = if isLocal then Theme.World.CrewMaxDistance else Theme.World.CrewMaxDistance * 0.6,
 	})
-	Kit.Label(gui, def.Name, { Size = UDim2.fromScale(1, 0.58), Color = Color3.new(1, 1, 1), Stroke = 2 })
-	Kit.Label(gui, rar.Name, { Size = UDim2.fromScale(1, 0.42), Position = UDim2.fromScale(0, 0.58), Color = rar.Color, Stroke = 2 })
-	-- rare+ hunters stand on a soft rarity-coloured glow disc
+	WorldLabel.Text(gui, string.rep("★", math.min(rar.Order, 5)) .. " " .. def.Name, { Style = "Tiny", Color = rar.Color })
+	-- rare+ hunters stand on a soft rarity-coloured disc
 	if rar.Order >= 3 then
 		local disc = Instance.new("Part")
 		disc.Name = "RarityDisc"
 		disc.Shape = Enum.PartType.Cylinder
 		disc.Size = Vector3.new(0.12, 3.4, 3.4)
-		disc.Material = Enum.Material.Neon
+		disc.Material = Enum.Material.SmoothPlastic
 		disc.Color = rar.Color
-		disc.Transparency = 0.55
+		disc.Transparency = 0.45
 		disc.CanCollide = false
 		disc.CanQuery = false
 		disc.CanTouch = false
@@ -292,7 +294,8 @@ local function step(dt: number)
 			continue
 		end
 		local footY = root.Position.Y - 3
-		local uid = (pl:GetAttribute("Target") :: number?) or 0
+		-- your own crew reacts to your tap instantly; others follow the server's choice
+		local uid = if isLocal then Targeting.LocalTarget() else ((pl:GetAttribute("Target") :: number?) or 0)
 		local ghost = if uid ~= 0 then Ghosts.Get(uid) else nil
 		if ghost and (ghost.Pos - root.Position).Magnitude > Config.Combat.MaxRange * 1.5 then
 			ghost = nil

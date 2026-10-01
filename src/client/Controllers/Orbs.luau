@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
+local Signal = require(GH.Signal)
 local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
@@ -52,8 +53,8 @@ local ring: Part
 local ringGui: SurfaceGui
 local ringStroke: UIStroke
 local ringAlpha = 0
-local collectedSignal = Instance.new("BindableEvent")
-Orbs.Collected = collectedSignal.Event -- (amount)
+local collectedSignal = Signal.new()
+Orbs.Collected = collectedSignal -- (amount)
 
 local GREEN = Theme.Ecto
 local CYAN = Theme.Ecto2
@@ -100,8 +101,18 @@ local function radius(): number
 	return if d and d.PickupRadius then d.PickupRadius else Config.Upgrades.PickupRadius.Levels[1]
 end
 
-local function spawnDrops(origin: Vector3, list: { any })
+local function spawnDrops(origin: Vector3, list: { any }, removed: { number }?)
 	local now = os.clock()
+	-- the server retired these (too many uncollected orbs): fade them out like a timeout
+	if type(removed) == "table" then
+		for _, id in removed do
+			local old = orbs[id]
+			if old and old.Phase ~= "Magnet" and old.Phase ~= "Held" then
+				old.Phase = "Fade"
+				old.T0 = now
+			end
+		end
+	end
 	for i, item in list do
 		local id, land, value = item[1], item[2], item[3]
 		if type(id) ~= "number" or typeof(land) ~= "Vector3" or type(value) ~= "number" or orbs[id] then

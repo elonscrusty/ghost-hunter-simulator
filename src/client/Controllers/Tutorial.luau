@@ -18,6 +18,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local WorldLabel = require(Client.UI.WorldLabel)
 local Hud = require(script.Parent.Hud)
 local Ghosts = require(script.Parent.Ghosts)
 local Orbs = require(script.Parent.Orbs)
@@ -305,7 +306,7 @@ local function tick()
 				setGuide(cratePos)
 			end
 		else
-			setPrompt("COLLECT " .. price .. " ECTOPLASM", Format.Commas(d.Ecto) .. " / " .. price .. "  -  defeat more ghosts!")
+			setPrompt("COLLECT " .. price .. " ECTOPLASM", Format.Commas(d.Ecto) .. " / " .. price .. "  -  tap more ghosts!")
 			setGuide(if target == 0 then nearestGhost else nil)
 		end
 	elseif step == 4 then
@@ -341,56 +342,61 @@ end
 
 function Tutorial.Init()
 	local screen = Kit.Screen()
+	-- compact pill low in the middle of the screen (between the thumbstick and jump button)
 	promptFrame = Kit.new("Frame", {
 		Name = "TutorialPrompt",
-		Size = UDim2.fromOffset(560, 92),
-		Position = UDim2.new(0.5, 0, 1, -170),
+		Size = UDim2.fromOffset(400, 58),
+		Position = UDim2.new(0.5, 0, 1, -110),
 		AnchorPoint = Vector2.new(0.5, 1),
-		BackgroundTransparency = 1,
+		BackgroundColor3 = Theme.Bg,
+		BackgroundTransparency = 0.3,
 		Visible = false,
 		ZIndex = 40,
 		Parent = screen,
 	})
+	Kit.Corner(promptFrame, UDim.new(0, 14))
 	Kit.new("UIScale", { Parent = promptFrame })
-	promptLabel = Kit.Label(promptFrame, "", { Size = UDim2.new(1, 0, 0, 58), Color = Theme.Ecto, ZIndex = 41, Stroke = 4 })
-	promptSub = Kit.Label(promptFrame, "", { Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 60), Color = Theme.Text, ZIndex = 41, Stroke = 3 })
+	promptLabel = Kit.Label(promptFrame, "", { Size = UDim2.new(1, -70, 0, 28), Position = UDim2.fromOffset(12, 4), Color = Theme.Ecto, Style = "Heading", TextSize = 22, Fit = true, ZIndex = 41 })
+	promptSub = Kit.Label(promptFrame, "", { Size = UDim2.new(1, -70, 0, 20), Position = UDim2.fromOffset(12, 32), Color = Theme.Text, Style = "Small", Fit = true, ZIndex = 41 })
 	Kit.Button(promptFrame, {
 		Text = "SKIP",
 		Color = "Gray",
-		Size = UDim2.fromOffset(70, 34),
-		Position = UDim2.new(1, 50, 0, 12),
-		AnchorPoint = Vector2.new(1, 0),
+		Size = UDim2.fromOffset(52, 30),
+		Position = UDim2.new(1, -8, 0.5, 0),
+		AnchorPoint = Vector2.new(1, 0.5),
+		TextStyle = "Tiny",
 		ZIndex = 42,
 		OnClick = function()
 			advance(STEPS + 1)
 		end,
 	})
-	-- bounce the prompt gently
+	-- pulse the prompt gently
 	task.spawn(function()
+		local sc = promptFrame:FindFirstChildOfClass("UIScale") :: UIScale
 		while true do
 			if promptFrame.Visible then
-				Kit.Tween(promptLabel, 0.5, { Position = UDim2.fromOffset(0, -6) }, Enum.EasingStyle.Sine)
+				Kit.Tween(sc, 0.5, { Scale = 1.04 }, Enum.EasingStyle.Sine)
 				task.wait(0.5)
-				Kit.Tween(promptLabel, 0.5, { Position = UDim2.fromOffset(0, 0) }, Enum.EasingStyle.Sine)
+				Kit.Tween(sc, 0.5, { Scale = 1 }, Enum.EasingStyle.Sine)
 			end
 			task.wait(0.5)
 		end
 	end)
 	goalChip = Kit.new("Frame", {
-		Size = UDim2.fromOffset(420, 32),
-		Position = UDim2.new(0.5, 0, 0, 142),
+		Size = UDim2.fromOffset(360, 24),
+		Position = UDim2.new(0.5, 10, 0, 104),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Theme.Bg,
-		BackgroundTransparency = 0.15,
+		BackgroundTransparency = 0.2,
 		Visible = false,
 		ZIndex = 20,
 		Parent = screen,
 	})
 	Kit.Corner(goalChip, UDim.new(1, 0))
-	Kit.Stroke(goalChip, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Stroke(goalChip, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	goalFill = Kit.new("Frame", { Size = UDim2.fromScale(0.02, 1), BackgroundColor3 = Theme.Ecto, BackgroundTransparency = 0.55, ZIndex = 21, Parent = goalChip })
 	Kit.Corner(goalFill, UDim.new(1, 0))
-	goalLabel = Kit.Label(goalChip, "", { Size = UDim2.fromScale(0.94, 0.68), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 22 })
+	goalLabel = Kit.Label(goalChip, "", { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), Style = "Small", Fit = true, ZIndex = 22 })
 
 	-- breadcrumbs + marker
 	local folder = Instance.new("Folder")
@@ -420,21 +426,23 @@ function Tutorial.Init()
 	markerPart.Size = Vector3.new(1, 1, 1)
 	markerPart.CFrame = hidden
 	markerPart.Parent = folder
-	marker = Kit.new("BillboardGui", {
-		Size = UDim2.fromOffset(90, 90),
-		StudsOffsetWorldSpace = Vector3.new(0, 2.5, 0),
-		AlwaysOnTop = true,
-		LightInfluence = 0,
-		Enabled = false,
+	-- device-scaled bouncing arrow over the target (always readable, never huge)
+	marker = WorldLabel.New({
+		Name = "GuideArrow",
 		Adornee = markerPart,
 		Parent = folder,
+		Size = Vector2.new(Theme.World.Marker, Theme.World.Marker),
+		Offset = Vector3.new(0, 2.5, 0),
+		MaxDistance = 600,
+		AlwaysOnTop = true,
 	})
-	local arrow = Kit.Label(marker, "⬇", { Size = UDim2.fromScale(1, 1), Color = Theme.Ecto, Stroke = 4 })
+	marker.Enabled = false
+	local arrow = WorldLabel.Text(marker, "⬇", { Color = Theme.Ecto, Style = "Banner", Stroke = 3 })
 	task.spawn(function()
 		while true do
-			Kit.Tween(arrow, 0.45, { Position = UDim2.fromOffset(0, 14) }, Enum.EasingStyle.Sine)
+			Kit.Tween(arrow, 0.45, { Position = UDim2.fromScale(0, 0.2) }, Enum.EasingStyle.Sine)
 			task.wait(0.45)
-			Kit.Tween(arrow, 0.45, { Position = UDim2.fromOffset(0, 0) }, Enum.EasingStyle.Sine)
+			Kit.Tween(arrow, 0.45, { Position = UDim2.fromScale(0, 0) }, Enum.EasingStyle.Sine)
 			task.wait(0.45)
 		end
 	end)
@@ -446,7 +454,7 @@ function Tutorial.Start()
 	end)
 	RunService.RenderStepped:Connect(updateGuide)
 	-- "SHOW ME" on the boss bar reuses the trail for a few seconds
-	Boss.PointRequested.Event:Connect(function()
+	Boss.PointRequested:Connect(function()
 		local _, pos = Boss.State()
 		setGuide(function()
 			return pos + Vector3.new(0, 16, 0)

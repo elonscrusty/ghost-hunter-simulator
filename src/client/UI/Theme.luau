@@ -1,14 +1,16 @@
 --!strict
--- Colours, fonts and sizes for every UI element. Mobile-first: everything is designed for a
--- 620-pt-tall reference screen and scaled with one UIScale (see Kit.Screen).
+-- Central UI configuration: colours, fonts, the typography scale, screen-scaling rules and
+-- world-label (BillboardGui) sizes. All sizes are LOGICAL pixels: one UIScale per ScreenGui
+-- converts them for the device (see Kit.Screen), so desktop, tablet and phone share one layout.
 local C = Color3.fromRGB
+
 local Theme = {
 	Bg = C(28, 16, 50),
 	Panel = C(46, 28, 82),
 	Panel2 = C(64, 40, 112),
 	Panel3 = C(86, 56, 146),
 	Outline = C(18, 8, 36),
-	Text = C(255, 255, 255),
+	Text = C(255, 255, 255), -- default text colour
 	Muted = C(205, 190, 240),
 	Ecto = C(90, 255, 160),
 	Ecto2 = C(40, 220, 210),
@@ -26,6 +28,43 @@ local Theme = {
 	} :: { [string]: { Color3 } },
 	Title = Enum.Font.FredokaOne,
 	Body = Enum.Font.GothamBold,
-	ReferenceHeight = 620,
+
+	-- Typography hierarchy (logical px). LARGE = major screen titles only.
+	Type = {
+		Banner = 36, -- centre-screen moments (NEW AREA UNLOCKED!)
+		Title = 26, -- panel titles
+		Currency = 24, -- the Ectoplasm counter
+		Heading = 19, -- section headings, important values
+		Button = 16, -- button labels
+		Body = 15, -- names, prices, stats
+		Small = 13, -- secondary info, descriptions
+		Tiny = 11, -- captions under icons, badges
+		Icon = 24, -- emoji icons on menu buttons
+	} :: { [string]: number },
+
+	-- Screen scaling: UIScale = clamp(viewport height / LandscapeRef) in landscape and
+	-- clamp(viewport width / PortraitRef) in portrait. Desktop/laptop/tablet land at 1.0;
+	-- a landscape phone (375-430 pt tall) lands at ~0.72-0.83: menu buttons ~42-48 pt,
+	-- panel buttons ~32-36 pt, body text ~11-12 pt.
+	Scale = {
+		LandscapeRef = 520,
+		PortraitRef = 600,
+		Min = 0.55,
+		Max = 1,
+		CompactHeight = 650, -- logical height below which the HUD uses its compact layout
+	},
+
+	-- World labels (BillboardGui) in logical px; multiplied by the same device scale.
+	World = {
+		GhostLabel = Vector2.new(150, 34), -- name + slim Spirit bar
+		GhostLabelSelected = Vector2.new(190, 46), -- selected: bigger bar + numbers
+		GhostMaxDistance = 55, -- unselected labels vanish beyond this (studs)
+		BossMaxDistance = 90,
+		SelectedMaxDistance = 160,
+		CrewTag = Vector2.new(120, 16),
+		CrewMaxDistance = 24,
+		Marker = 56, -- tutorial arrow
+	},
 }
+
 return Theme

@@ -95,47 +95,55 @@ local function claim()
 end
 
 function DailyPanel.Init()
-	panel = Kit.Panel("Daily", "DAILY REWARDS", Vector2.new(820, 520), "Purple")
-	local grid: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 330), Position = UDim2.fromOffset(0, 18), BackgroundTransparency = 1, ZIndex = 61, Parent = panel.Body })
-	local W, H, G = 180, 156, 12
-	local startX = (784 - (4 * W + 3 * G)) / 2
+	panel = Kit.Panel("Daily", "DAILY REWARDS", Vector2.new(700, 440), "Purple")
+	-- tiles wrap to the panel width (4 per row on wide screens) and scroll if short
+	local grid: ScrollingFrame = Kit.new("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, -96),
+		Position = UDim2.fromOffset(0, 12),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		ZIndex = 61,
+		Parent = panel.Body,
+	})
+	Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(148, 124), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
+	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 6), Parent = grid })
 	for i = 1, #Config.Daily.Rewards do
 		local big = i == #Config.Daily.Rewards
-		local row = if i <= 4 then 0 else 1
-		local col = if i <= 4 then i - 1 else i - 5
 		local f: Frame = Kit.new("Frame", {
-			Size = UDim2.fromOffset(if big then 2 * W + G else W, H),
-			Position = UDim2.fromOffset(startX + col * (W + G), row * (H + G)),
 			BackgroundColor3 = Color3.new(1, 1, 1),
+			LayoutOrder = i,
 			ZIndex = 62,
 			Parent = grid,
 		})
-		Kit.Corner(f, UDim.new(0, 18))
-		Kit.Stroke(f, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
+		Kit.Corner(f, UDim.new(0, 14))
+		Kit.Stroke(f, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 		if big then
 			Kit.Gradient(f, Theme.Gold, Color3.fromRGB(255, 120, 40), 90)
 		else
 			Kit.Gradient(f, Theme.Panel3, Theme.Panel2, 90)
 		end
 		local sc = Kit.new("UIScale", { Parent = f })
-		Kit.Label(f, "DAY " .. i, { Size = UDim2.new(1, -16, 0, 30), Position = UDim2.fromOffset(8, 8), ZIndex = 63 })
+		Kit.Label(f, "DAY " .. i, { Size = UDim2.new(1, -12, 0, 22), Position = UDim2.fromOffset(6, 4), Style = "Heading", ZIndex = 63 })
 		local r = Config.Daily.Rewards[i]
 		local icon = if r.Kind == "Day7" then "🎁" elseif r.Kind == "Boost" then (if r.Boost == "Luck" then "🍀" else "⚡") else "💚"
-		Kit.Label(f, icon, { Size = UDim2.fromOffset(60, 50), Position = UDim2.new(0.5, 0, 0, 40), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 63, Stroke = 0 })
-		local reward = Kit.Label(f, r.Label, { Size = UDim2.new(1, -16, 0, 44), Position = UDim2.fromOffset(8, 98), ZIndex = 63, Color = Color3.fromRGB(255, 255, 230) })
-		local check = Kit.Label(f, "✓", { Size = UDim2.fromScale(0.6, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = Theme.Good, ZIndex = 66, Stroke = 4 })
+		Kit.Label(f, icon, { Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 28), Style = "Icon", TextSize = 28, ZIndex = 63, Stroke = 0 })
+		local reward = Kit.Label(f, r.Label, { Size = UDim2.new(1, -12, 0, 52), Position = UDim2.fromOffset(6, 66), ZIndex = 63, Color = Color3.fromRGB(255, 255, 230), Style = "Small" })
+		local check = Kit.Label(f, "✓", { Size = UDim2.fromScale(1, 1), Color = Theme.Good, ZIndex = 66, Style = "Banner", Stroke = 3 })
 		check.Visible = false
-		local today = Kit.Label(f, "TODAY!", { Size = UDim2.fromOffset(100, 28), Position = UDim2.new(1, 6, 0, -12), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, ZIndex = 67, Stroke = 3 })
+		local today = Kit.Label(f, "TODAY!", { Size = UDim2.fromOffset(70, 20), Position = UDim2.new(1, 4, 0, -8), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Body", ZIndex = 67, Stroke = 2 })
 		today.Rotation = 8
 		today.Visible = false
 		table.insert(tiles, { Frame = f, Check = check, Today = today, Reward = reward, Scale = sc })
 	end
-	statusLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -40, 0, 26), Position = UDim2.new(0, 20, 1, -96), Color = Theme.Muted, Font = Theme.Body, ZIndex = 62, Stroke = 0 })
+	statusLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -24, 0, 30), Position = UDim2.new(0, 12, 1, -82), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 62, Stroke = 0 })
 	claimButton = Kit.Button(panel.Body, {
 		Text = "CLAIM",
 		Color = "Green",
-		Size = UDim2.fromOffset(340, 64),
-		Position = UDim2.new(0.5, 0, 1, -8),
+		Size = UDim2.fromOffset(280, 48),
+		Position = UDim2.new(0.5, 0, 1, -4),
 		AnchorPoint = Vector2.new(0.5, 1),
 		ZIndex = 63,
 		OnClick = claim,
@@ -146,7 +154,7 @@ function DailyPanel.Init()
 end
 
 function DailyPanel.Start()
-	panel.OnOpen.Event:Connect(refresh)
+	panel.OnOpen:Connect(refresh)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
 			refresh()

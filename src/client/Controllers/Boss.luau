@@ -11,6 +11,7 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
 local Format = require(GH.Logic.Format)
+local Signal = require(GH.Signal)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
@@ -151,33 +152,34 @@ function Boss.Init()
 	local screen = Kit.Screen()
 	frame = Kit.new("Frame", {
 		Name = "BossBar",
-		Size = UDim2.fromOffset(560, 92),
-		Position = UDim2.new(0.5, 0, 0, 142),
+		Size = UDim2.fromOffset(420, 62),
+		Position = UDim2.new(0.5, 10, 0, 104),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
 		ZIndex = 30,
 		Parent = screen,
 	})
-	Kit.Corner(frame, UDim.new(0, 18))
-	Kit.Stroke(frame, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Corner(frame, UDim.new(0, 14))
+	Kit.Stroke(frame, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(frame, Color3.fromRGB(110, 40, 120), Color3.fromRGB(50, 20, 70), 90)
 	Kit.new("UIScale", { Parent = frame })
-	titleLabel = Kit.Label(frame, "👑 GIANT POLTERGEIST", { Size = UDim2.new(0.7, 0, 0, 30), Position = UDim2.fromOffset(14, 6), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, ZIndex = 31 })
-	timerLabel = Kit.Label(frame, "", { Size = UDim2.new(0.28, 0, 0, 28), Position = UDim2.new(1, -14, 0, 7), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, ZIndex = 31 })
-	local bar: Frame = Kit.new("Frame", { Size = UDim2.new(1, -28, 0, 36), Position = UDim2.fromOffset(14, 44), BackgroundColor3 = Color3.fromRGB(30, 12, 45), ZIndex = 31, Parent = frame })
+	titleLabel = Kit.Label(frame, "👑 GIANT POLTERGEIST", { Size = UDim2.new(0.68, 0, 0, 22), Position = UDim2.fromOffset(10, 4), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 31 })
+	timerLabel = Kit.Label(frame, "", { Size = UDim2.new(0.3, 0, 0, 22), Position = UDim2.new(1, -10, 0, 4), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Style = "Body", Fit = true, ZIndex = 31 })
+	local bar: Frame = Kit.new("Frame", { Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 31), BackgroundColor3 = Color3.fromRGB(30, 12, 45), ZIndex = 31, Parent = frame })
 	Kit.Corner(bar, UDim.new(1, 0))
-	Kit.Stroke(bar, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Stroke(bar, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	fill = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 32, Parent = bar })
 	Kit.Corner(fill, UDim.new(1, 0))
 	Kit.Gradient(fill, Color3.fromRGB(255, 120, 230), Color3.fromRGB(255, 220, 80), 0)
-	spiritLabel = Kit.Label(bar, "", { Size = UDim2.fromScale(0.94, 0.75), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 33 })
+	spiritLabel = Kit.Label(bar, "", { Style = "Small", ZIndex = 33 })
 	-- "take me there" helper: walks you nowhere, just points the way (see Tutorial arrow)
 	goButton = Kit.Button(frame, {
 		Text = "📍 SHOW ME",
 		Color = "Pink",
-		Size = UDim2.fromOffset(150, 44),
-		Position = UDim2.new(0.5, 0, 1, 10),
+		Size = UDim2.fromOffset(120, 32),
+		TextStyle = "Small",
+		Position = UDim2.new(0.5, 0, 1, 6),
 		AnchorPoint = Vector2.new(0.5, 0),
 		ZIndex = 31,
 		OnClick = function()
@@ -187,7 +189,7 @@ function Boss.Init()
 	goButton.Visible = false
 end
 
-Boss.PointRequested = Instance.new("BindableEvent")
+Boss.PointRequested = Signal.new()
 
 function Boss.State(): (string, Vector3)
 	return state, arenaPos

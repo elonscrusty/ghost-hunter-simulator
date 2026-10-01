@@ -54,28 +54,28 @@ function GatePanel.Open(zoneId: string)
 end
 
 function GatePanel.Init()
-	panel = Kit.Panel("Gate", "UNLOCK?", Vector2.new(640, 430), "Green")
+	panel = Kit.Panel("Gate", "UNLOCK?", Vector2.new(520, 330), "Green")
 	local body = panel.Body
-	costLabel = Kit.Label(body, "", { Size = UDim2.new(1, 0, 0, 46), Position = UDim2.fromOffset(0, 20), Color = Theme.Ecto, ZIndex = 62, Stroke = 3 })
-	local bar: Frame = Kit.new("Frame", { Size = UDim2.new(0.8, 0, 0, 34), Position = UDim2.new(0.1, 0, 0, 78), BackgroundColor3 = Theme.Bg, ZIndex = 62, Parent = body })
+	costLabel = Kit.Label(body, "", { Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 14), Color = Theme.Ecto, Style = "Heading", ZIndex = 62 })
+	local bar: Frame = Kit.new("Frame", { Size = UDim2.new(0.8, 0, 0, 24), Position = UDim2.new(0.1, 0, 0, 48), BackgroundColor3 = Theme.Bg, ZIndex = 62, Parent = body })
 	Kit.Corner(bar, UDim.new(1, 0))
-	Kit.Stroke(bar, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Stroke(bar, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	fill = Kit.new("Frame", { Size = UDim2.fromScale(0.03, 1), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 63, Parent = bar })
 	Kit.Corner(fill, UDim.new(1, 0))
 	Kit.Gradient(fill, Theme.Ecto, Theme.Ecto2, 0)
-	progressLabel = Kit.Label(bar, "", { Size = UDim2.fromScale(0.9, 0.72), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 64 })
-	local perks: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 120), Position = UDim2.fromOffset(0, 128), BackgroundTransparency = 1, ZIndex = 61, Parent = body })
-	Kit.new("UIGridLayout", { CellSize = UDim2.new(0.5, -8, 0, 52), CellPadding = UDim2.fromOffset(12, 10), Parent = perks })
+	progressLabel = Kit.Label(bar, "", { Style = "Small", ZIndex = 64 })
+	local perks: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 86), Position = UDim2.fromOffset(0, 84), BackgroundTransparency = 1, ZIndex = 61, Parent = body })
+	Kit.new("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, 38), CellPadding = UDim2.fromOffset(10, 8), Parent = perks })
 	for _, p in { "👻 NEW GHOSTS", "📦 NEW CRATE", "🔦 BETTER HUNTERS", "💚 HIGHER REWARDS" } do
 		local f: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Panel3, ZIndex = 62, Parent = perks })
-		Kit.Corner(f, UDim.new(0, 14))
-		Kit.Label(f, p, { Size = UDim2.fromScale(0.9, 0.62), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 63 })
+		Kit.Corner(f, UDim.new(0, 10))
+		Kit.Label(f, p, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Style = "Body", Fit = true, ZIndex = 63 })
 	end
 	unlockButton = Kit.Button(body, {
 		Text = "UNLOCK!",
 		Color = "Green",
-		Size = UDim2.fromOffset(320, 70),
-		Position = UDim2.new(0.5, 0, 1, -8),
+		Size = UDim2.fromOffset(260, 50),
+		Position = UDim2.new(0.5, 0, 1, -4),
 		AnchorPoint = Vector2.new(0.5, 1),
 		ZIndex = 63,
 		OnClick = function()

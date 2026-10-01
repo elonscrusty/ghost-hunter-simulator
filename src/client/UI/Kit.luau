@@ -1,12 +1,16 @@
 --!strict
--- Tiny UI toolkit: creation helpers, chunky animated buttons, modal panels (one open at a
--- time, dimmed background, X button) and toasts.
+-- Tiny UI toolkit: creation helpers, typography styles, chunky animated buttons, responsive
+-- modal panels (one open at a time, dimmed background, X button) and toasts.
+--
+-- Responsive rules (see Theme.Scale): every ScreenGui has one UIScale; layouts are written in
+-- logical pixels; panels shrink to fit the logical screen and their content scrolls/wraps.
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 
 local Theme = require(script.Parent.Theme)
+local Signal = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Signal)
 
 local Kit = {}
 
@@ -54,12 +58,12 @@ function Kit.Tween(obj: Instance, t: number, props: { [string]: any }, style: En
 end
 
 function Kit.Corner(parent: Instance, radius: UDim?): UICorner
-	return Kit.new("UICorner", { CornerRadius = radius or UDim.new(0, 14), Parent = parent })
+	return Kit.new("UICorner", { CornerRadius = radius or UDim.new(0, 12), Parent = parent })
 end
 
 function Kit.Stroke(parent: Instance, thickness: number?, color: Color3?, mode: Enum.ApplyStrokeMode?): UIStroke
 	return Kit.new("UIStroke", {
-		Thickness = thickness or 3,
+		Thickness = thickness or 2,
 		Color = color or Theme.Outline,
 		ApplyStrokeMode = mode or Enum.ApplyStrokeMode.Contextual,
 		LineJoinMode = Enum.LineJoinMode.Round,
@@ -81,6 +85,9 @@ function Kit.Padding(parent: Instance, px: number)
 	})
 end
 
+--------------------------------------------------------------------------------
+-- Text
+--------------------------------------------------------------------------------
 export type LabelProps = {
 	Size: UDim2?,
 	Position: UDim2?,
@@ -88,14 +95,34 @@ export type LabelProps = {
 	Color: Color3?,
 	Font: Enum.Font?,
 	Align: Enum.TextXAlignment?,
-	Stroke: number?,
-	TextSize: number?,
+	AlignY: Enum.TextYAlignment?,
+	Stroke: number?, -- outline thickness; 0 = none; default depends on Style
+	Style: string?, -- key in Theme.Type (default "Body")
+	TextSize: number?, -- explicit size (overrides Style)
+	Fit: boolean?, -- single line; cut with "…" if the box is too narrow (never grows)
 	ZIndex: number?,
 	Wrap: boolean?,
 }
 
+local STROKE_BY_STYLE: { [string]: number } = {
+	Banner = 3,
+	Title = 2.5,
+	Currency = 2.5,
+	Heading = 2,
+	Button = 2,
+	Icon = 0,
+	Body = 1.5,
+	Small = 1,
+	Tiny = 1,
+}
+
+-- Text with a fixed size from the typography scale. No TextScaled anywhere: the screen's
+-- UIScale does the device scaling, so the hierarchy is identical on desktop, tablet and phone.
 function Kit.Label(parent: Instance?, text: string, p: LabelProps?): TextLabel
 	local o: LabelProps = p or {}
+	local style = o.Style or "Body"
+	local size = o.TextSize or Theme.Type[style] or Theme.Type.Body
+	local singleLine = o.Fit == true or o.Wrap == false
 	local l: TextLabel = Kit.new("TextLabel", {
 		BackgroundTransparency = 1,
 		Size = o.Size or UDim2.fromScale(1, 1),
@@ -104,22 +131,25 @@ function Kit.Label(parent: Instance?, text: string, p: LabelProps?): TextLabel
 		Text = text,
 		TextColor3 = o.Color or Theme.Text,
 		Font = o.Font or Theme.Title,
-		TextScaled = o.TextSize == nil,
-		TextSize = o.TextSize or 14,
-		TextWrapped = o.Wrap ~= false,
+		TextSize = size,
+		TextScaled = false,
+		TextWrapped = not singleLine,
+		TextTruncate = if singleLine then Enum.TextTruncate.AtEnd else Enum.TextTruncate.None,
 		TextXAlignment = o.Align or Enum.TextXAlignment.Center,
+		TextYAlignment = o.AlignY or Enum.TextYAlignment.Center,
 		ZIndex = o.ZIndex or 1,
 		Parent = parent,
 	})
-	if o.TextSize == nil then
-		Kit.new("UITextSizeConstraint", { MaxTextSize = 64, MinTextSize = 8, Parent = l })
-	end
-	if (o.Stroke or 2) > 0 then
-		Kit.new("UIStroke", { Thickness = o.Stroke or 2, Color = Theme.Outline, Parent = l })
+	local stroke = if o.Stroke ~= nil then o.Stroke else (STROKE_BY_STYLE[style] or 1.5)
+	if stroke > 0 then
+		Kit.new("UIStroke", { Thickness = stroke, Color = Theme.Outline, Parent = l })
 	end
 	return l
 end
 
+--------------------------------------------------------------------------------
+-- Buttons
+--------------------------------------------------------------------------------
 export type ButtonProps = {
 	Text: string?,
 	Icon: string?,
@@ -129,14 +159,14 @@ export type ButtonProps = {
 	AnchorPoint: Vector2?,
 	OnClick: (() -> ())?,
 	ZIndex: number?,
-	TextScale: number?,
+	TextStyle: string?, -- typography key, default "Button"
 }
 
 -- Chunky gradient button with press/hover animation and click sound.
 function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	local colors = Theme.Buttons[p.Color or "Green"] or Theme.Buttons.Green
 	local b: TextButton = Kit.new("TextButton", {
-		Size = p.Size or UDim2.fromOffset(160, 56),
+		Size = p.Size or UDim2.fromOffset(140, 44),
 		Position = p.Position or UDim2.new(),
 		AnchorPoint = p.AnchorPoint or Vector2.zero,
 		BackgroundColor3 = Color3.new(1, 1, 1),
@@ -145,38 +175,40 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 		ZIndex = p.ZIndex or 1,
 		Parent = parent,
 	})
-	Kit.Corner(b, UDim.new(0, 14))
-	Kit.Stroke(b, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Corner(b, UDim.new(0, 10))
+	Kit.Stroke(b, 2.5, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	local grad = Kit.Gradient(b, colors[1], colors[2], 90)
 	b:SetAttribute("Color", p.Color or "Green")
 	-- glossy top highlight
 	local gloss = Kit.new("Frame", {
-		Size = UDim2.new(1, -10, 0.38, 0),
-		Position = UDim2.fromOffset(5, 4),
+		Size = UDim2.new(1, -8, 0.36, 0),
+		Position = UDim2.fromOffset(4, 3),
 		BackgroundColor3 = Color3.new(1, 1, 1),
-		BackgroundTransparency = 0.78,
+		BackgroundTransparency = 0.8,
 		ZIndex = b.ZIndex,
 		Parent = b,
 	})
-	Kit.Corner(gloss, UDim.new(0, 10))
+	Kit.Corner(gloss, UDim.new(0, 8))
 	local text = (if p.Icon then p.Icon .. " " else "") .. (p.Text or "")
 	local label = Kit.Label(b, text, {
-		Size = UDim2.fromScale(0.9, p.TextScale or 0.62),
+		Size = UDim2.new(1, -10, 1, 0),
 		Position = UDim2.fromScale(0.5, 0.5),
 		AnchorPoint = Vector2.new(0.5, 0.5),
+		Style = p.TextStyle or "Button",
+		Fit = true,
 		ZIndex = b.ZIndex + 1,
 	})
 	label.Name = "Label"
 	local scale = Kit.new("UIScale", { Parent = b })
 	b.MouseEnter:Connect(function()
-		Kit.Tween(scale, 0.12, { Scale = 1.06 })
+		Kit.Tween(scale, 0.12, { Scale = 1.05 })
 		play("Hover")
 	end)
 	b.MouseLeave:Connect(function()
 		Kit.Tween(scale, 0.12, { Scale = 1 })
 	end)
 	b.MouseButton1Down:Connect(function()
-		Kit.Tween(scale, 0.06, { Scale = 0.92 })
+		Kit.Tween(scale, 0.06, { Scale = 0.93 })
 	end)
 	b.MouseButton1Up:Connect(function()
 		Kit.Tween(scale, 0.15, { Scale = 1 }, Enum.EasingStyle.Back)
@@ -202,25 +234,35 @@ function Kit.SetButtonText(b: TextButton, text: string)
 end
 
 --------------------------------------------------------------------------------
--- Screen + panels
+-- Screen scaling
 --------------------------------------------------------------------------------
 local screen: ScreenGui? = nil
 local overlay: ScreenGui? = nil
-local uiScale: UIScale? = nil
+local currentScale = 1
+local scaleChanged = Signal.new()
+Kit.ScaleChanged = scaleChanged -- (scale)
 
-local function updateScale()
+local function computeScale(): number
 	local cam = workspace.CurrentCamera
-	if not cam or not uiScale then
-		return
+	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
+	local s
+	if vp.X >= vp.Y then
+		s = vp.Y / Theme.Scale.LandscapeRef
+	else
+		s = vp.X / Theme.Scale.PortraitRef
 	end
-	local vp = cam.ViewportSize
-	local s = math.clamp(math.min(vp.Y / Theme.ReferenceHeight, vp.X / 1000), 0.55, 1.35)
+	return math.clamp(s, Theme.Scale.Min, Theme.Scale.Max)
+end
+
+local function applyScale()
+	currentScale = computeScale()
 	for _, gui in { screen, overlay } do
 		local sc = gui and gui:FindFirstChildOfClass("UIScale")
 		if sc then
-			sc.Scale = s
+			sc.Scale = currentScale
 		end
 	end
+	scaleChanged:Fire(currentScale)
 end
 
 local function makeScreen(name: string, order: number): ScreenGui
@@ -233,23 +275,22 @@ local function makeScreen(name: string, order: number): ScreenGui
 		ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
-	Kit.new("UIScale", { Parent = g })
+	Kit.new("UIScale", { Scale = currentScale, Parent = g })
 	return g
 end
 
--- Main HUD screen (UIScale'd). Children should use offsets designed for the reference size,
--- or scale anchored to edges.
+-- Main HUD screen (UIScale'd).
 function Kit.Screen(): ScreenGui
 	if not screen then
+		currentScale = computeScale()
 		local s = makeScreen("GHHud", 10)
 		screen = s
 		overlay = makeScreen("GHOverlay", 20)
-		uiScale = s:FindFirstChildOfClass("UIScale")
 		local cam = workspace.CurrentCamera
 		if cam then
-			cam:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+			cam:GetPropertyChangedSignal("ViewportSize"):Connect(applyScale)
 		end
-		updateScale()
+		applyScale()
 	end
 	return screen :: ScreenGui
 end
@@ -259,38 +300,54 @@ function Kit.Overlay(): ScreenGui
 	return overlay :: ScreenGui
 end
 
+-- Device scale shared by ScreenGuis and world labels.
 function Kit.UIScale(): number
-	return if uiScale then uiScale.Scale else 1
+	return currentScale
 end
 
--- Logical (pre-UIScale) screen size, for laying out UIScale'd content.
+-- Logical (pre-UIScale) screen size: what layouts are written against.
 function Kit.LogicalSize(): Vector2
-	local cam = workspace.CurrentCamera
-	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
-	return vp / Kit.UIScale()
+	local g = Kit.Screen()
+	local abs = g.AbsoluteSize
+	if abs.X <= 0 then
+		local cam = workspace.CurrentCamera
+		abs = if cam then cam.ViewportSize else Vector2.new(1280, 720)
+	end
+	return abs / currentScale
 end
 
+-- Short screens (landscape phones) use the compact HUD layout.
+function Kit.IsCompact(): boolean
+	return Kit.LogicalSize().Y < Theme.Scale.CompactHeight
+end
+
+--------------------------------------------------------------------------------
+-- Panels
+--------------------------------------------------------------------------------
 export type Panel = {
 	Name: string,
 	Root: Frame,
 	Body: Frame,
 	Title: TextLabel,
+	Design: Vector2,
 	IsOpen: boolean,
 	Open: (Panel) -> (),
 	Close: (Panel) -> (),
 	Toggle: (Panel) -> (),
-	OnOpen: BindableEvent,
-	OnClose: BindableEvent,
+	Fit: (Panel) -> (),
+	OnOpen: Signal.Signal,
+	OnClose: Signal.Signal,
 }
 
 local current: Panel? = nil
-local dim: Frame? = nil
-local panelOpenedSignal = Instance.new("BindableEvent")
-Kit.PanelOpened = panelOpenedSignal.Event -- (name or nil)
+local dim: TextButton? = nil
+local panels: { Panel } = {}
+local panelOpenedSignal = Signal.new()
+Kit.PanelOpened = panelOpenedSignal -- (name or nil)
 
-local function getDim(): Frame
+local function getDim(): TextButton
 	if not dim then
-		local d: Frame = Kit.new("TextButton", {
+		local d: TextButton = Kit.new("TextButton", {
 			Name = "Dim",
 			Text = "",
 			AutoButtonColor = false,
@@ -302,54 +359,55 @@ local function getDim(): Frame
 			ZIndex = 50,
 			Parent = Kit.Screen(),
 		})
-		;(d :: any).Activated:Connect(function()
+		d.Activated:Connect(function()
 			if current then
 				(current :: Panel):Close()
 			end
 		end)
 		dim = d
 	end
-	return dim :: Frame
+	return dim :: TextButton
 end
 
 function Kit.CurrentPanel(): string?
 	return if current then (current :: Panel).Name else nil
 end
 
--- Modal panel centred on screen.
+-- Modal panel centred on screen. `size` is the design size; on small screens the panel
+-- shrinks to fit (keep content in scrolling/wrapping containers).
 function Kit.Panel(name: string, title: string, size: Vector2, color: string?): Panel
 	local root: Frame = Kit.new("Frame", {
 		Name = name,
 		Size = UDim2.fromOffset(size.X, size.Y),
-		Position = UDim2.fromScale(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 12),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
 		ZIndex = 60,
 		Parent = Kit.Screen(),
 	})
-	Kit.Corner(root, UDim.new(0, 24))
-	Kit.Stroke(root, 5, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Corner(root, UDim.new(0, 18))
+	Kit.Stroke(root, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(root, Theme.Panel2, Theme.Panel, 90)
 	local scale = Kit.new("UIScale", { Parent = root })
 	-- title banner
 	local banner: Frame = Kit.new("Frame", {
-		Size = UDim2.new(0.5, 0, 0, 58),
-		Position = UDim2.new(0.5, 0, 0, -24),
+		Size = UDim2.new(0, math.clamp(#title * 15 + 60, 200, 420), 0, 44),
+		Position = UDim2.new(0.5, 0, 0, -20),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		ZIndex = 62,
 		Parent = root,
 	})
-	Kit.Corner(banner, UDim.new(0, 18))
-	Kit.Stroke(banner, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Corner(banner, UDim.new(0, 14))
+	Kit.Stroke(banner, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	local bc = Theme.Buttons[color or "Purple"] or Theme.Buttons.Purple
 	Kit.Gradient(banner, bc[1], bc[2], 90)
-	local titleLabel = Kit.Label(banner, title, { Size = UDim2.fromScale(0.9, 0.75), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 63, Stroke = 3 })
+	local titleLabel = Kit.Label(banner, title, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 63, Style = "Title", Fit = true })
 	local body: Frame = Kit.new("Frame", {
 		Name = "Body",
-		Size = UDim2.new(1, -36, 1, -60),
-		Position = UDim2.fromOffset(18, 44),
+		Size = UDim2.new(1, -28, 1, -50),
+		Position = UDim2.fromOffset(14, 36),
 		BackgroundTransparency = 1,
 		ZIndex = 61,
 		Parent = root,
@@ -360,9 +418,16 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 		Root = root,
 		Body = body,
 		Title = titleLabel,
+		Design = size,
 		IsOpen = false,
-		OnOpen = Instance.new("BindableEvent"),
-		OnClose = Instance.new("BindableEvent"),
+		OnOpen = Signal.new(),
+		OnClose = Signal.new(),
+		Fit = function(self: Panel)
+			local logical = Kit.LogicalSize()
+			local w = math.min(self.Design.X, logical.X - 32)
+			local h = math.min(self.Design.Y, logical.Y - 64)
+			root.Size = UDim2.fromOffset(math.max(w, 240), math.max(h, 200))
+		end,
 		Open = function(self: Panel)
 			if current and current ~= self then
 				(current :: Panel):Close()
@@ -370,14 +435,15 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			if self.IsOpen then
 				return
 			end
+			self:Fit()
 			current = self
 			self.IsOpen = true
 			local d = getDim()
 			d.Visible = true
-			Kit.Tween(d, 0.2, { BackgroundTransparency = 0.45 })
+			Kit.Tween(d, 0.2, { BackgroundTransparency = 0.5 })
 			root.Visible = true
-			scale.Scale = 0.6
-			Kit.Tween(scale, 0.28, { Scale = 1 }, Enum.EasingStyle.Back)
+			scale.Scale = 0.7
+			Kit.Tween(scale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
 			play("PanelOpen")
 			self.OnOpen:Fire()
 			panelOpenedSignal:Fire(self.Name)
@@ -397,7 +463,7 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 					end
 				end)
 			end
-			Kit.Tween(scale, 0.12, { Scale = 0.7 })
+			Kit.Tween(scale, 0.12, { Scale = 0.75 })
 			task.delay(0.12, function()
 				if not self.IsOpen then
 					root.Visible = false
@@ -414,22 +480,32 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			end
 		end,
 	}
-	-- big obvious X
+	-- obvious X (44 logical px ≈ a comfortable finger target even on phones)
 	Kit.Button(root, {
 		Text = "X",
 		Color = "Red",
-		Size = UDim2.fromOffset(58, 58),
-		Position = UDim2.new(1, 14, 0, -18),
+		Size = UDim2.fromOffset(44, 44),
+		Position = UDim2.new(1, 12, 0, -14),
 		AnchorPoint = Vector2.new(1, 0),
 		ZIndex = 64,
+		TextStyle = "Heading",
 		OnClick = function()
 			panel:Close()
 		end,
 	})
+	table.insert(panels, panel)
 	return panel
 end
 
--- Close any open panel (Escape / B button).
+scaleChanged:Connect(function()
+	for _, p in panels do
+		if p.IsOpen then
+			p:Fit()
+		end
+	end
+end)
+
+-- Close any open panel (gamepad B / Backspace / Roblox menu).
 UserInputService.InputBegan:Connect(function(input, processed)
 	if input.KeyCode == Enum.KeyCode.ButtonB or (input.KeyCode == Enum.KeyCode.Backspace and not processed) then
 		if current then
@@ -452,15 +528,15 @@ function Kit.Toast(text: string, color: string?)
 	if not toastHolder then
 		local h: Frame = Kit.new("Frame", {
 			Name = "Toasts",
-			Size = UDim2.fromOffset(520, 300),
-			Position = UDim2.new(0.5, 0, 0, 120),
+			Size = UDim2.fromOffset(420, 200),
+			Position = UDim2.new(0.5, 0, 0, 96),
 			AnchorPoint = Vector2.new(0.5, 0),
 			BackgroundTransparency = 1,
 			ZIndex = 90,
 			Parent = Kit.Overlay(),
 		})
 		Kit.new("UIListLayout", {
-			Padding = UDim.new(0, 6),
+			Padding = UDim.new(0, 4),
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Parent = h,
@@ -470,18 +546,18 @@ function Kit.Toast(text: string, color: string?)
 	local holder = toastHolder :: Frame
 	local col = if color == "Bad" then Theme.Bad elseif color == "Good" then Theme.Good elseif color == "Gold" then Theme.Gold else Theme.Panel3
 	local f: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(480, 44),
+		Size = UDim2.fromOffset(400, 32),
 		BackgroundColor3 = col,
-		BackgroundTransparency = 0.05,
+		BackgroundTransparency = 0.08,
 		LayoutOrder = math.floor(os.clock() * 100),
 		ZIndex = 90,
 		Parent = holder,
 	})
-	Kit.Corner(f, UDim.new(0, 14))
-	Kit.Stroke(f, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	local l = Kit.Label(f, text, { Size = UDim2.new(1, -20, 0.7, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 91 })
-	local sc = Kit.new("UIScale", { Scale = 0.5, Parent = f })
-	Kit.Tween(sc, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+	Kit.Corner(f, UDim.new(0, 10))
+	Kit.Stroke(f, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	local l = Kit.Label(f, text, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 91, Style = "Body", Fit = true })
+	local sc = Kit.new("UIScale", { Scale = 0.6, Parent = f })
+	Kit.Tween(sc, 0.22, { Scale = 1 }, Enum.EasingStyle.Back)
 	if color == "Bad" then
 		play("Error")
 	end
@@ -492,16 +568,20 @@ function Kit.Toast(text: string, color: string?)
 			table.insert(kids, c)
 		end
 	end
-	if #kids > 4 then
+	if #kids > 3 then
 		table.sort(kids, function(a: any, b: any)
 			return a.LayoutOrder < b.LayoutOrder
 		end)
 		kids[1]:Destroy()
 	end
-	task.delay(2.6, function()
+	task.delay(2.4, function()
 		if f.Parent then
 			Kit.Tween(f, 0.3, { BackgroundTransparency = 1 })
 			Kit.Tween(l, 0.3, { TextTransparency = 1 })
+			local st = l:FindFirstChildOfClass("UIStroke")
+			if st then
+				Kit.Tween(st, 0.3, { Transparency = 1 })
+			end
 			task.wait(0.3)
 			f:Destroy()
 		end

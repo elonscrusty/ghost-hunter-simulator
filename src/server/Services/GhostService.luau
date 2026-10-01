@@ -11,7 +11,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
-local GhostRig = require(GH.Rigs.GhostRig)
+local Rules = require(GH.Logic.Rules)
+local Signal = require(GH.Signal)
 local DataService = require(script.Parent.DataService)
 local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
@@ -41,17 +42,27 @@ export type Ghost = {
 	DirtySpirit: boolean,
 }
 
+local buildHitbox: (Config.GhostDef, Vector3) -> Model
 local ghosts: { [number]: Ghost } = {}
 local nextUid = 1
 local folder: Folder
 local rng = Random.new()
 
 -- Ready = os.clock() when damage may start (hunters need time to run over).
-type Target = { Uid: number, Ready: number }
+-- Auto = picked by the Auto Attack pass (manual picks are never replaced automatically).
+type Target = { Uid: number, Ready: number, Auto: boolean }
 local targets: { [Player]: Target } = {}
 
-local killedSignal = Instance.new("BindableEvent")
-GhostService.Killed = killedSignal.Event -- (ghost: Ghost, killer: Player?)
+-- Auto Attack toggle (session only, default OFF). Only honoured while the player owns the pass.
+local autoOn: { [Player]: boolean } = {}
+
+local zoneRanges: { { number } } = {}
+for _, z in Config.Zones do
+	table.insert(zoneRanges, { z.MinZ, z.MaxZ })
+end
+
+local killedSignal = Signal.new()
+GhostService.Killed = killedSignal -- (ghost: Ghost, killer: Player?) by reference
 
 local function now(): number
 	return workspace:GetServerTimeNow()
@@ -95,6 +106,35 @@ local function setSegment(g: Ghost, to: Vector3)
 	m:SetAttribute("Dur", g.Dur)
 end
 
+-- The server's ghost is only an invisible, generously sized tap target (Core) with the
+-- attachments beams and labels use. Every client builds the visual rig (GhostRig) locally,
+-- so a kill/respawn replicates one part instead of a whole model.
+function buildHitbox(def: Config.GhostDef, pos: Vector3): Model
+	local s = def.Scale
+	local model = Instance.new("Model")
+	local core = Instance.new("Part")
+	core.Name = "Core"
+	core.Shape = Enum.PartType.Ball
+	core.Size = Vector3.new(1, 1, 1) * (Config.Combat.HitboxDiameter * s)
+	core.Transparency = 1
+	core.Anchored = true
+	core.CanCollide = false
+	core.CanTouch = false
+	core.CanQuery = true
+	core.CastShadow = false
+	core.CFrame = CFrame.new(pos)
+	core.Parent = model
+	local attachments: { [string]: number } = { Center = 0, Top = 2.4 * s, Bottom = -2.1 * s }
+	for name, y in attachments do
+		local a = Instance.new("Attachment")
+		a.Name = name
+		a.Position = Vector3.new(0, y, 0)
+		a.Parent = core
+	end
+	model.PrimaryPart = core
+	return model
+end
+
 -- Creates a ghost. `spirit` overrides the config value (event ghost scaling).
 export type SpawnOpts = { Spirit: number?, Event: boolean?, Area: number? }
 
@@ -104,9 +144,8 @@ function GhostService.Spawn(def: Config.GhostDef, center: Vector3, radius: numbe
 	nextUid += 1
 	local spirit = math.floor(o.Spirit or def.Spirit)
 	local pos = randomPoint(center, radius, def.Hover)
-	local model = GhostRig.Build(def.Id)
+	local model = buildHitbox(def, pos)
 	model.Name = "Ghost_" .. uid
-	model:PivotTo(CFrame.new(pos))
 	model:SetAttribute("Uid", uid)
 	model:SetAttribute("GhostId", def.Id)
 	model:SetAttribute("Spirit", spirit)
@@ -144,13 +183,13 @@ local function rootPos(player: Player): Vector3?
 	return if root then root.Position else nil
 end
 
-local function setTarget(player: Player, uid: number?)
+local function setTarget(player: Player, uid: number?, auto: boolean?)
 	local g = uid and ghosts[uid]
 	if uid and g then
 		-- damage starts once the crew could plausibly have run to the ghost
 		local p = rootPos(player)
 		local run = if p then (GhostService.Position(g) - p).Magnitude / Config.Combat.HunterRunSpeed else 0
-		targets[player] = { Uid = uid, Ready = os.clock() + Config.Combat.EngageDelay + math.min(run, 2) }
+		targets[player] = { Uid = uid, Ready = os.clock() + Config.Combat.EngageDelay + math.min(run, 2), Auto = auto == true }
 		player:SetAttribute("Target", uid)
 	else
 		targets[player] = nil
@@ -158,17 +197,24 @@ local function setTarget(player: Player, uid: number?)
 	end
 end
 
--- Nearest living, non-event ghost in an unlocked zone within `range` of the player.
-local function nearestFor(player: Player, range: number): Ghost?
+function GhostService.AutoActive(player: Player): boolean
+	return autoOn[player] == true and PlayerInfo.HasPass(player, Config.AutoAttack.Pass)
+end
+
+-- Auto Attack pick: nearest living ghost the player may fight, in the zone the player is
+-- standing in (so hunters never run through zone walls), within Config.AutoAttack.Range.
+local function autoCandidate(player: Player): Ghost?
 	local d = DataService.Get(player)
 	local p = rootPos(player)
 	if not d or not p then
 		return nil
 	end
-	local best, bestDist = nil, range
+	local here = Rules.ZoneIndexAt(p.Z, zoneRanges)
+	local best, bestDist = nil, Config.AutoAttack.Range
 	local t = now()
 	for _, g in ghosts do
-		if g.Alive and not g.Event and d.Zones[g.Def.Zone] then
+		local zone = Config.ZoneById[g.Def.Zone]
+		if g.Alive and zone and zone.Order == here and d.Zones[zone.Id] then
 			local dist = (GhostService.Position(g, t) - p).Magnitude
 			if dist < bestDist then
 				best, bestDist = g, dist
@@ -201,7 +247,14 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 	end)
 
 	if reward and not g.Event then
-		local minShare = g.Max * Config.Combat.ContributorShare
+		-- helpers get their own drops; the bar to count as a helper drops when many crews pile on
+		local helpers = 0
+		for player in g.Damage do
+			if player.Parent then
+				helpers += 1
+			end
+		end
+		local minShare = g.Max * math.min(Config.Combat.ContributorShare, 0.5 / math.max(helpers, 1))
 		for player, dmg in g.Damage do
 			if player.Parent and (player == killer or dmg >= minShare) then
 				local d = DataService.Get(player)
@@ -218,12 +271,12 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 		killedSignal:Fire(g, killer)
 	end
 
-	-- Hunters on this ghost move on: auto-target the next nearest ghost, or come home.
+	-- Hunters on this ghost come home. Only Auto Attack owners with the toggle ON get a new
+	-- ghost picked for them; everyone else chooses their next ghost by clicking/tapping it.
 	for player, tg in targets do
 		if tg.Uid == g.Uid then
-			local d = DataService.Get(player)
-			local nextG = if d and d.Settings.AutoTarget and not g.Event then nearestFor(player, 55) else nil
-			setTarget(player, if nextG then nextG.Uid else nil)
+			local nextG = if GhostService.AutoActive(player) then autoCandidate(player) else nil
+			setTarget(player, if nextG then nextG.Uid else nil, true)
 		end
 	end
 
@@ -262,9 +315,22 @@ local function onSelect(player: Player, uid: any)
 	end
 	local cur = targets[player]
 	if cur and cur.Uid == uid then
+		cur.Auto = false -- the player chose it: Auto Attack OFF won't drop it
 		return
 	end
-	setTarget(player, uid)
+	setTarget(player, uid, false)
+end
+
+-- Gives Auto Attack players a ghost whenever their crew is idle.
+local function autoTick()
+	for player, on in autoOn do
+		if on and not targets[player] and player.Parent and GhostService.AutoActive(player) then
+			local g = autoCandidate(player)
+			if g then
+				setTarget(player, g.Uid, true)
+			end
+		end
+	end
 end
 
 local function damageTick(dt: number)
@@ -325,6 +391,31 @@ function GhostService.Init()
 	folder.Name = "Ghosts"
 	folder.Parent = workspace
 	Net.Event("SelectTarget").OnServerEvent:Connect(onSelect)
+
+	-- AUTO ATTACK toggle. Ownership is checked on the server (game pass); the toggle only
+	-- automates picking targets: damage, rewards and pickups are exactly the same.
+	Remotes.Register("AutoAttack", "Default", function(player, on)
+		if type(on) ~= "boolean" then
+			return Remotes.Fail("Bad value")
+		end
+		if on and not PlayerInfo.HasPass(player, Config.AutoAttack.Pass) then
+			return Remotes.Fail("Auto Attack is a game pass - see the SHOP!")
+		end
+		if on then
+			autoOn[player] = true
+		else
+			autoOn[player] = nil
+		end
+		player:SetAttribute("AutoAttack", on)
+		if not on then
+			-- back to manual: a ghost Auto Attack picked is dropped, one you chose is kept
+			local tg = targets[player]
+			if tg and tg.Auto then
+				setTarget(player, nil)
+			end
+		end
+		return { ok = true, On = on }
+	end)
 end
 
 function GhostService.Start()
@@ -336,6 +427,7 @@ function GhostService.Start()
 	end
 	Players.PlayerRemoving:Connect(function(player)
 		targets[player] = nil
+		autoOn[player] = nil
 		for _, g in ghosts do
 			g.Damage[player] = nil
 		end
@@ -343,18 +435,26 @@ function GhostService.Start()
 	task.spawn(function()
 		local tick = Config.Combat.TickSeconds
 		local last = os.clock()
+		local nextAuto = 0
 		while true do
 			task.wait(tick)
 			local c = os.clock()
 			-- cap dt so a server hitch can't produce a burst of damage
-			damageTick(math.min(c - last, tick * 2))
+			local dt = math.min(c - last, tick * 2)
 			last = c
-			moveTick()
+			local ok, err = pcall(function()
+				damageTick(dt)
+				moveTick()
+				if c >= nextAuto then
+					nextAuto = c + Config.AutoAttack.ScanSeconds
+					autoTick()
+				end
+			end)
+			if not ok then
+				warn("[Ghosts] tick error: " .. tostring(err))
+			end
 		end
 	end)
 end
-
--- Tutorial / UI helper: closest ghost the player can fight.
-GhostService.NearestFor = nearestFor
 
 return GhostService

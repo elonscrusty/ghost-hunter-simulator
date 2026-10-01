@@ -23,7 +23,9 @@ local panel: Kit.Panel
 local scroll: ScrollingFrame
 local totalLabel: TextLabel
 local totalFill: Frame
-local detail: Frame
+local bar: Frame
+local side: Frame
+local detail: ScrollingFrame
 local detailView: Frame
 local detailName: TextLabel
 local detailInfo: TextLabel
@@ -113,45 +115,48 @@ local function rebuild()
 		total += #list
 		found += zf
 		local section: Frame = Kit.new("Frame", {
-			Size = UDim2.new(1, -8, 0, 214),
+			Size = UDim2.new(1, -6, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundColor3 = Theme.Bg,
 			BackgroundTransparency = 0.45,
 			LayoutOrder = zi,
 			ZIndex = 62,
 			Parent = scroll,
 		})
-		Kit.Corner(section, UDim.new(0, 16))
+		Kit.Corner(section, UDim.new(0, 12))
+		Kit.new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = section })
+		Kit.new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = section })
 		local unlocked = d.Zones[z.Id] == true
-		Kit.Label(section, (if unlocked then "" else "🔒 ") .. z.Name, { Size = UDim2.new(0.6, 0, 0, 30), Position = UDim2.fromOffset(14, 8), Align = Enum.TextXAlignment.Left, Color = z.Accent, ZIndex = 63 })
 		local complete = zf == #list
-		Kit.Label(section, (if complete then "★ COMPLETE " else "") .. zf .. "/" .. #list .. " DISCOVERED", { Size = UDim2.new(0.38, 0, 0, 26), Position = UDim2.new(1, -14, 0, 10), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, ZIndex = 63 })
-		local row: Frame = Kit.new("Frame", { Size = UDim2.new(1, -20, 0, 160), Position = UDim2.fromOffset(10, 46), BackgroundTransparency = 1, ZIndex = 62, Parent = section })
-		Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 12), Parent = row })
+		local header: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 62, Parent = section })
+		Kit.Label(header, (if unlocked then "" else "🔒 ") .. z.Name, { Size = UDim2.new(0.6, 0, 1, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
+		Kit.Label(header, (if complete then "★ " else "") .. zf .. "/" .. #list .. " DISCOVERED", { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
+		local row: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 62, Parent = section })
+		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(100, 124), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for _, h in list do
 			local rar = Config.Rarities[h.Rarity]
 			local known = d.Discovered[h.Id] == true
 			local card: TextButton = Kit.new("TextButton", {
-				Size = UDim2.fromOffset(118, 156),
 				Text = "",
 				AutoButtonColor = false,
 				BackgroundColor3 = Color3.new(1, 1, 1),
 				ZIndex = 63,
 				Parent = row,
 			})
-			Kit.Corner(card, UDim.new(0, 16))
-			Kit.Stroke(card, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+			Kit.Corner(card, UDim.new(0, 12))
+			Kit.Stroke(card, 2.5, Theme.Outline, Enum.ApplyStrokeMode.Border)
 			if known then
 				Kit.Gradient(card, rar.Color, rar.Color2, 90)
 			else
 				Kit.Gradient(card, Color3.fromRGB(70, 60, 100), Color3.fromRGB(40, 32, 66), 90)
 			end
-			local pic: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(90, 90), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.fromRGB(30, 18, 55), BackgroundTransparency = 0.35, ZIndex = 64, Parent = card })
+			local pic: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(70, 70), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.fromRGB(30, 18, 55), BackgroundTransparency = 0.35, ZIndex = 64, Parent = card })
 			Kit.Corner(pic, UDim.new(1, 0))
 			Portrait.Face(pic, h.Id, not known)
-			Kit.Label(card, if known then string.upper(h.Name) else "???", { Size = UDim2.new(1, -8, 0, 22), Position = UDim2.fromOffset(4, 102), ZIndex = 66 })
-			Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 126), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color })
+			Kit.Label(card, if known then string.upper(h.Name) else "???", { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), ZIndex = 66, Style = "Small", Fit = true })
+			Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 100), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color, Style = "Tiny", Fit = true })
 			if newIds[h.Id] then
-				local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(64, 26), Position = UDim2.new(1, 8, 0, -8), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, ZIndex = 70, Stroke = 3 })
+				local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(46, 18), Position = UDim2.new(1, 6, 0, -6), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Body", ZIndex = 70, Stroke = 2 })
 				stamp.Rotation = 12
 			end
 			card.Activated:Connect(function()
@@ -170,20 +175,19 @@ local function rebuild()
 end
 
 function IndexPanel.Init()
-	panel = Kit.Panel("Index", "HUNTER INDEX", Vector2.new(920, 560), "Blue")
+	panel = Kit.Panel("Index", "HUNTER INDEX", Vector2.new(860, 500), "Blue")
 	local body = panel.Body
-	local bar: Frame = Kit.new("Frame", { Size = UDim2.new(1, -310, 0, 40), Position = UDim2.fromOffset(0, 16), BackgroundColor3 = Theme.Bg, ZIndex = 62, Parent = body })
+	bar = Kit.new("Frame", { Size = UDim2.new(1, -270, 0, 28), Position = UDim2.fromOffset(0, 12), BackgroundColor3 = Theme.Bg, ZIndex = 62, Parent = body })
 	Kit.Corner(bar, UDim.new(1, 0))
-	Kit.Stroke(bar, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Stroke(bar, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	totalFill = Kit.new("Frame", { Size = UDim2.fromScale(0.02, 1), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 63, Parent = bar })
 	Kit.Corner(totalFill, UDim.new(1, 0))
 	Kit.Gradient(totalFill, Theme.Ecto, Theme.Ecto2, 0)
-	totalLabel = Kit.Label(bar, "COLLECTION", { Size = UDim2.fromScale(0.9, 0.72), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 64 })
+	totalLabel = Kit.Label(bar, "COLLECTION", { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), Style = "Body", Fit = true, ZIndex = 64 })
 	scroll = Kit.new("ScrollingFrame", {
-		Size = UDim2.new(1, -300, 1, -76),
-		Position = UDim2.fromOffset(0, 70),
+		Position = UDim2.fromOffset(0, 50),
 		BackgroundTransparency = 1,
-		ScrollBarThickness = 10,
+		ScrollBarThickness = 6,
 		ScrollBarImageColor3 = Theme.Panel3,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(),
@@ -191,20 +195,38 @@ function IndexPanel.Init()
 		ZIndex = 62,
 		Parent = body,
 	})
-	Kit.new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = scroll })
-	local side: Frame = Kit.new("Frame", { Size = UDim2.new(0, 284, 1, -30), Position = UDim2.new(1, 0, 0, 16), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.5, ZIndex = 62, Parent = body })
-	Kit.Corner(side, UDim.new(0, 16))
-	Kit.Label(side, "Tap a card to take a closer look!", { Size = UDim2.new(1, -30, 0, 60), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = Theme.Muted, Font = Theme.Body, ZIndex = 63, Stroke = 0 })
-	detail = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Panel, BackgroundTransparency = 0, Visible = false, ZIndex = 64, Parent = side })
-	Kit.Corner(detail, UDim.new(0, 16))
-	detailView = Kit.new("Frame", { Size = UDim2.fromOffset(220, 230), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 65, Parent = detail })
-	detailName = Kit.Label(detail, "", { Size = UDim2.new(1, -16, 0, 34), Position = UDim2.fromOffset(8, 240), ZIndex = 66 })
-	detailInfo = Kit.Label(detail, "", { Size = UDim2.new(1, -16, 0, 50), Position = UDim2.fromOffset(8, 278), ZIndex = 66, Color = Theme.Text, Font = Theme.Body, Stroke = 0 })
-	detailBlurb = Kit.Label(detail, "", { Size = UDim2.new(1, -24, 0, 60), Position = UDim2.fromOffset(12, 336), ZIndex = 66, Color = Theme.Muted, Font = Theme.Body, Stroke = 0 })
+	Kit.new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = scroll })
+	side = Kit.new("Frame", { Position = UDim2.new(1, 0, 0, 12), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.5, ZIndex = 62, Parent = body })
+	Kit.Corner(side, UDim.new(0, 12))
+	Kit.Label(side, "Tap a card to take a closer look!", { Size = UDim2.new(1, -24, 0, 60), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 63, Stroke = 0 })
+	detail = Kit.new("ScrollingFrame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = 0,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 5,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		Visible = false,
+		ZIndex = 64,
+		Parent = side,
+	})
+	Kit.Corner(detail, UDim.new(0, 12))
+	Kit.new("UIListLayout", { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = detail })
+	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = detail })
+	detailView = Kit.new("Frame", { Size = UDim2.fromOffset(160, 160), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 65, Parent = detail })
+	detailName = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 22), Style = "Heading", Fit = true, ZIndex = 66 })
+	detailName.LayoutOrder = 2
+	detailInfo = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 0), ZIndex = 66, Color = Theme.Text, Font = Theme.Body, Style = "Small", Stroke = 0 })
+	detailInfo.AutomaticSize = Enum.AutomaticSize.Y
+	detailInfo.LayoutOrder = 3
+	detailBlurb = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 0), ZIndex = 66, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0 })
+	detailBlurb.AutomaticSize = Enum.AutomaticSize.Y
+	detailBlurb.LayoutOrder = 4
 	-- NEW badge on the INDEX menu button
 	menuBadge = Kit.new("Frame", {
-		Size = UDim2.fromOffset(48, 24),
-		Position = UDim2.new(1, 8, 0, -8),
+		Size = UDim2.fromOffset(36, 18),
+		Position = UDim2.new(1, 6, 0, -6),
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundColor3 = Theme.Ecto,
 		Visible = false,
@@ -212,20 +234,35 @@ function IndexPanel.Init()
 		Parent = Hud.Buttons.Index,
 	})
 	Kit.Corner(menuBadge, UDim.new(1, 0))
-	Kit.Stroke(menuBadge, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	Kit.Label(menuBadge, "NEW", { Size = UDim2.fromScale(0.85, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 11 })
+	Kit.Stroke(menuBadge, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Label(menuBadge, "NEW", { Style = "Tiny", ZIndex = 11 })
 	Hud.RegisterPanel("Index", function()
 		panel:Toggle()
 	end)
 end
 
+-- Side pane takes ~30% of the panel's actual width; sections wrap their cards.
+local function layout()
+	local w = panel.Root.Size.X.Offset - 28
+	local sideW = math.clamp(math.floor(w * 0.3), 190, 250)
+	bar.Size = UDim2.new(1, -(sideW + 10), 0, 28)
+	scroll.Size = UDim2.new(1, -(sideW + 10), 1, -50)
+	side.Size = UDim2.new(0, sideW, 1, -12)
+end
+
 function IndexPanel.Start()
-	panel.OnOpen.Event:Connect(function()
+	panel.OnOpen:Connect(function()
+		layout()
 		lastKey = ""
 		detail.Visible = false
 		rebuild()
 	end)
-	panel.OnClose.Event:Connect(function()
+	Kit.ScaleChanged:Connect(function()
+		if panel.IsOpen then
+			layout()
+		end
+	end)
+	panel.OnClose:Connect(function()
 		if spinConn then
 			spinConn:Disconnect()
 			spinConn = nil

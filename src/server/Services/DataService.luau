@@ -1,7 +1,14 @@
 --!strict
--- Player profiles: load/save with retries, a session lock (prevents duplication when a player
--- hops servers quickly), autosave, BindToClose and schema migration. Every other service reads
--- and writes data ONLY through DataService.Get(player) on the server.
+-- Player profiles: load/save with retries, a per-session lock (prevents duplication when a
+-- player hops or rejoins quickly), autosave, BindToClose and schema migration. Every other
+-- service reads and writes data ONLY through DataService.Get(player) on the server.
+--
+-- Safety rules:
+--  * a save only writes while OUR session holds the lock; otherwise it reports failure
+--  * the save snapshot is a deep copy taken at save time (consistent even if the write retries)
+--  * once a player is leaving, only the final releasing save runs
+--  * a join waits for this server's in-flight leave-save of the same user
+--  * the no-saving fallback exists only in Studio; live servers kick instead of using a blank profile
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -11,6 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
+local Signal = require(GH.Signal)
 
 local DataService = {}
 
@@ -28,11 +36,15 @@ export type Data = {
 	Daily: { Last: number, Streak: number },
 	Boosts: { [string]: number }, -- boost id -> os.time expiry
 	FreeCrates: { [string]: number },
-	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean, AutoTarget: boolean },
+	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean },
 	Tutorial: number,
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
+	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
+	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
 }
+
+local IS_STUDIO = RunService:IsStudio()
 
 local function defaults(): Data
 	local d: Data = {
@@ -48,10 +60,12 @@ local function defaults(): Data
 		Daily = { Last = 0, Streak = 0 },
 		Boosts = {},
 		FreeCrates = {},
-		Settings = { Music = true, Sfx = true, FastReveal = false, AutoTarget = true },
+		Settings = { Music = true, Sfx = true, FastReveal = false },
 		Tutorial = 1,
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
+		Orphans = {},
+		Extra = {},
 	}
 	for id in Config.Upgrades do
 		d.Upgrades[id] = 1
@@ -59,22 +73,55 @@ local function defaults(): Data
 	return d
 end
 
--- Fills missing fields (new features) and upgrades old schemas. Never drops player progress.
+local function deepCopy(v: any): any
+	if type(v) ~= "table" then
+		return v
+	end
+	local out = {}
+	for k, x in v do
+		out[k] = deepCopy(x)
+	end
+	return out
+end
+
+-- Fills missing fields (new features) and upgrades old schemas. Never deletes player data:
+-- unknown keys go to Extra, hunters that no longer exist go to Orphans.
 local function migrate(raw: any): Data
 	local d = defaults()
 	if type(raw) ~= "table" then
 		return d
 	end
 	for k, v in raw do
-		if (d :: any)[k] ~= nil and type(v) == type((d :: any)[k]) then
-			(d :: any)[k] = v
+		if k == "_lock" then
+			continue
+		end
+		local cur = (d :: any)[k]
+		if cur ~= nil then
+			if type(v) == type(cur) and k ~= "Extra" then
+				(d :: any)[k] = v
+			end
+		elseif type(k) == "string" then
+			d.Extra[k] = v
+		end
+	end
+	if type(raw.Extra) == "table" then
+		for k, v in raw.Extra do
+			if d.Extra[k] == nil and (d :: any)[k] == nil then
+				d.Extra[k] = v
+			end
 		end
 	end
 	-- nested defaults
 	local base = defaults()
-	for k, v in base.Settings do
-		if type((d.Settings :: any)[k]) ~= type(v) then
-			(d.Settings :: any)[k] = v
+	local settings = d.Settings :: any
+	for k, v in base.Settings :: any do
+		if type(settings[k]) ~= type(v) then
+			settings[k] = v
+		end
+	end
+	for k in settings do
+		if (base.Settings :: any)[k] == nil then
+			settings[k] = nil -- retired setting (e.g. the old free auto-target)
 		end
 	end
 	for k, v in base.Stats do
@@ -89,12 +136,22 @@ local function migrate(raw: any): Data
 	end
 	for id in Config.Upgrades do
 		local lv = d.Upgrades[id]
-		d.Upgrades[id] = if type(lv) == "number" then math.clamp(math.floor(lv), 1, #Config.Upgrades[id].Levels) else 1
+		d.Upgrades[id] = if type(lv) == "number" and lv == lv then math.clamp(math.floor(lv), 1, #Config.Upgrades[id].Levels) else 1
+	end
+	if type(d.Ecto) ~= "number" or d.Ecto ~= d.Ecto then
+		d.Ecto = 0
 	end
 	d.Zones[Config.Zones[1].Id] = true
-	-- drop hunters whose definition was removed, and equipped uids that no longer exist
+	-- hunters whose definition was removed are parked in Orphans (restored if the id returns)
+	for uid, h in d.Orphans do
+		if type(h) == "table" and Config.Hunters[h.Id] and d.Hunters[uid] == nil then
+			d.Hunters[uid] = h
+			d.Orphans[uid] = nil
+		end
+	end
 	for uid, h in d.Hunters do
 		if type(h) ~= "table" or not Config.Hunters[h.Id] then
+			d.Orphans[uid] = h
 			d.Hunters[uid] = nil
 		end
 	end
@@ -107,6 +164,17 @@ local function migrate(raw: any): Data
 		end
 	end
 	d.Equipped = eq
+	-- uids must never be reused: NextUid stays above every existing numeric uid
+	local maxUid = 0
+	for _, list in { d.Hunters :: any, d.Orphans } do
+		for uid in list do
+			local n = tonumber(uid)
+			if n and n > maxUid then
+				maxUid = n
+			end
+		end
+	end
+	d.NextUid = math.max(math.floor(tonumber(d.NextUid) or 1), maxUid + 1)
 	-- (future) if d.Version < 2 then ... end
 	d.Version = Config.DataSchemaVersion
 	return d
@@ -115,18 +183,21 @@ end
 type Profile = {
 	Data: Data,
 	Key: string,
+	Session: string,
 	Loaded: boolean,
-	Dirty: boolean,
+	Leaving: boolean,
 	Saving: boolean,
 	SyncQueued: boolean,
 	JoinedAt: number,
 }
 
 local profiles: { [Player]: Profile } = {}
+local leavingSaves: { [number]: boolean } = {} -- userId -> final save in flight on this server
+local inflight = 0
 local store: DataStore? = nil
 local storeOk = false
-local loadedSignal = Instance.new("BindableEvent")
-DataService.Loaded = loadedSignal.Event -- (player, data)
+local loadedSignal = Signal.new()
+DataService.Loaded = loadedSignal -- (player, data) by reference
 
 local syncRemote: RemoteEvent
 local ectoRemote: RemoteEvent
@@ -153,25 +224,31 @@ local function keyFor(player: Player): string
 	return "u_" .. player.UserId
 end
 
+local function jobId(): string
+	return if game.JobId ~= "" then game.JobId else "studio"
+end
+
+local function lockFresh(lock: any, session: string): boolean
+	return type(lock) == "table" and lock.session ~= session and os.time() - (tonumber(lock.t) or 0) < Config.Data.SessionLockSeconds
+end
+
 -- Loads with a session lock. Returns data, or nil if the player should be kicked.
-local function loadProfile(player: Player): Data?
+local function loadProfile(player: Player, p: Profile): Data?
 	if not storeOk or not store then
-		return migrate(nil)
+		return if IS_STUDIO then migrate(nil) else nil
 	end
 	local ds = store :: DataStore
-	local key = keyFor(player)
-	local jobId = if game.JobId ~= "" then game.JobId else "studio"
+	local key = p.Key
 	for attempt = 1, 6 do
 		local locked = false
 		local ok, result = retry("load " .. key, function()
 			return ds:UpdateAsync(key, function(old: any)
 				old = if type(old) == "table" then old else {}
-				local lock = old._lock
-				if type(lock) == "table" and lock.job ~= jobId and os.time() - (lock.t or 0) < Config.Data.SessionLockSeconds then
+				if lockFresh(old._lock, p.Session) then
 					locked = true
 					return nil -- don't write
 				end
-				old._lock = { job = jobId, t = os.time() }
+				old._lock = { job = jobId(), session = p.Session, t = os.time() }
 				return old
 			end)
 		end)
@@ -181,7 +258,7 @@ local function loadProfile(player: Player): Data?
 		if not locked then
 			return migrate(result)
 		end
-		-- Another server still holds the lock (player just hopped). Wait for it to save.
+		-- Another session still holds the lock (player just hopped). Wait for it to save.
 		task.wait(math.min(2 + attempt * 2, 8))
 		if not player.Parent then
 			return nil
@@ -191,51 +268,64 @@ local function loadProfile(player: Player): Data?
 	local ok, result = retry("steal " .. key, function()
 		return ds:UpdateAsync(key, function(old: any)
 			old = if type(old) == "table" then old else {}
-			old._lock = { job = jobId, t = os.time() }
+			old._lock = { job = jobId(), session = p.Session, t = os.time() }
 			return old
 		end)
 	end)
 	return if ok then migrate(result) else nil
 end
 
+-- Writes the profile. Returns true only if the data really reached the DataStore.
 local function saveProfile(player: Player, release: boolean): boolean
 	local p = profiles[player]
-	if not p or not p.Loaded or not storeOk or not store then
-		return true
+	if not p or not p.Loaded then
+		return false
+	end
+	if not storeOk or not store then
+		return IS_STUDIO -- Studio without API access: nothing to save
+	end
+	if p.Leaving and not release then
+		return false -- only the final, releasing save runs for a leaving player
 	end
 	if p.Saving then
-		-- wait for the in-flight save, then save again so the latest state is written
 		local t0 = os.clock()
 		while p.Saving and os.clock() - t0 < 20 do
 			task.wait(0.2)
 		end
+		if p.Saving then
+			return false -- never run two writes for the same profile in parallel
+		end
 	end
 	p.Saving = true
+	inflight += 1
 	local ds = store :: DataStore
-	local jobId = if game.JobId ~= "" then game.JobId else "studio"
 	p.Data.Stats.Seconds += math.floor(os.clock() - p.JoinedAt)
 	p.JoinedAt = os.clock()
-	local snapshot = table.clone(p.Data) :: any
+	local snapshot = deepCopy(p.Data)
+	local aborted = false
 	local ok = retry("save " .. p.Key, function()
+		aborted = false
 		return ds:UpdateAsync(p.Key, function(old: any)
-			if type(old) == "table" and type(old._lock) == "table" and old._lock.job ~= jobId then
-				-- another server took the session over: never overwrite its newer data
+			if type(old) == "table" and lockFresh(old._lock, p.Session) then
+				-- another session owns this profile now: never overwrite its newer data
+				aborted = true
 				return nil
 			end
-			snapshot._lock = if release then nil else { job = jobId, t = os.time() }
+			snapshot._lock = if release then nil else { job = jobId(), session = p.Session, t = os.time() }
 			return snapshot
 		end)
 	end)
 	p.Saving = false
-	if ok then
-		p.Dirty = false
+	inflight -= 1
+	if ok and aborted then
+		warn("[Data] save skipped for " .. p.Key .. ": another session owns the profile")
 	end
-	return ok
+	return ok and not aborted
 end
 
 function DataService.Get(player: Player): Data?
 	local p = profiles[player]
-	return if p and p.Loaded then p.Data else nil
+	return if p and p.Loaded and not p.Leaving then p.Data else nil
 end
 
 -- Waits (up to timeout) for the player's data.
@@ -272,25 +362,26 @@ local function snapshot(player: Player, d: Data): any
 		ServerTime = os.time(),
 	}
 	for _, fn in decorators do
-		fn(player, s)
+		local ok, err = pcall(function()
+			fn(player, s)
+		end)
+		if not ok then
+			warn("[Data] snapshot decorator failed: " .. tostring(err))
+		end
 	end
 	return s
 end
 
--- Marks data changed and sends the client a fresh snapshot (batched per frame).
+-- Sends the client a fresh snapshot (batched: many changes in one frame = one message).
 function DataService.Changed(player: Player)
 	local p = profiles[player]
-	if not p or not p.Loaded then
-		return
-	end
-	p.Dirty = true
-	if p.SyncQueued then
+	if not p or not p.Loaded or p.SyncQueued then
 		return
 	end
 	p.SyncQueued = true
 	task.defer(function()
 		p.SyncQueued = false
-		if player.Parent and profiles[player] == p then
+		if player.Parent and profiles[player] == p and not p.Leaving then
 			syncRemote:FireClient(player, snapshot(player, p.Data))
 		end
 	end)
@@ -299,7 +390,7 @@ end
 -- Currency changes are frequent: send only the number.
 function DataService.AddEcto(player: Player, amount: number)
 	local p = profiles[player]
-	if not p or not p.Loaded or amount ~= amount then
+	if not p or not p.Loaded or p.Leaving or amount ~= amount or math.abs(amount) == math.huge then
 		return
 	end
 	amount = math.floor(amount)
@@ -307,29 +398,38 @@ function DataService.AddEcto(player: Player, amount: number)
 	if amount > 0 then
 		p.Data.TotalEcto += amount
 	end
-	p.Dirty = true
 	ectoRemote:FireClient(player, p.Data.Ecto)
 	player:SetAttribute("Ecto", p.Data.Ecto)
 end
 
--- Atomically spends Ectoplasm. Returns false if the player can't afford it.
+-- Spends Ectoplasm. Returns false if the player can't afford it.
 function DataService.Spend(player: Player, amount: number): boolean
 	local d = DataService.Get(player)
-	if not d or amount < 0 or d.Ecto < amount then
+	if not d or amount ~= amount or amount < 0 or d.Ecto < amount then
 		return false
 	end
 	DataService.AddEcto(player, -amount)
 	return true
 end
 
+-- Next unique hunter id (never reuses an id that is already owned).
 function DataService.NewUid(d: Data): string
 	local uid = tostring(d.NextUid)
+	while d.Hunters[uid] ~= nil or d.Orphans[uid] ~= nil do
+		d.NextUid += 1
+		uid = tostring(d.NextUid)
+	end
 	d.NextUid += 1
 	return uid
 end
 
 function DataService.Save(player: Player)
 	task.spawn(saveProfile, player, false)
+end
+
+-- Saves now and waits; used by ProcessReceipt. True only if the write really happened.
+function DataService.SaveNow(player: Player): boolean
+	return saveProfile(player, false)
 end
 
 function DataService.Init()
@@ -340,14 +440,19 @@ function DataService.Init()
 	end)
 	if ok and result then
 		store = result
-		-- In Studio without "Enable Studio Access to API Services" this read errors.
-		local probe = pcall(function()
-			(result :: DataStore):GetAsync("__probe")
-		end)
-		storeOk = probe
+		if IS_STUDIO then
+			-- Studio without "Enable Studio Access to API Services" errors on any request
+			storeOk = pcall(function()
+				(result :: DataStore):GetAsync("__probe")
+			end)
+		else
+			storeOk = true -- live: per-player loads retry and kick on failure
+		end
 	end
 	if not storeOk then
-		warn("[Data] DataStores unavailable (Studio without API access?). Progress will NOT be saved this session.")
+		warn(if IS_STUDIO
+			then "[Data] DataStores unavailable in Studio (turn on API access). Progress will NOT be saved this test."
+			else "[Data] DataStore unavailable: players will be asked to rejoin.")
 	end
 end
 
@@ -355,28 +460,37 @@ local function onPlayerAdded(player: Player)
 	local p: Profile = {
 		Data = defaults(),
 		Key = keyFor(player),
+		Session = HttpService:GenerateGUID(false),
 		Loaded = false,
-		Dirty = false,
+		Leaving = false,
 		Saving = false,
 		SyncQueued = false,
 		JoinedAt = os.clock(),
 	}
 	profiles[player] = p
-	local data = loadProfile(player)
-	if not player.Parent then
-		-- left while loading: release our lock without overwriting data
+	-- rejoined this same server while the previous session was still saving: wait for it
+	local t0 = os.clock()
+	while leavingSaves[player.UserId] and os.clock() - t0 < 30 do
+		task.wait(0.2)
+	end
+	local data = loadProfile(player, p)
+	if not player.Parent or profiles[player] ~= p then
+		-- left while loading: release OUR lock (only if it is still ours) without writing data
 		if data and storeOk and store then
 			local ds = store :: DataStore
 			pcall(function()
 				ds:UpdateAsync(p.Key, function(old: any)
-					if type(old) == "table" then
+					if type(old) == "table" and type(old._lock) == "table" and old._lock.session == p.Session then
 						old._lock = nil
+						return old
 					end
-					return old
+					return nil
 				end)
 			end)
 		end
-		profiles[player] = nil
+		if profiles[player] == p then
+			profiles[player] = nil
+		end
 		return
 	end
 	if not data then
@@ -396,10 +510,15 @@ local function onPlayerRemoving(player: Player)
 	if not p then
 		return
 	end
+	p.Leaving = true
 	if p.Loaded then
+		leavingSaves[player.UserId] = true
 		saveProfile(player, true)
+		leavingSaves[player.UserId] = nil
 	end
-	profiles[player] = nil
+	if profiles[player] == p then
+		profiles[player] = nil
+	end
 end
 
 function DataService.Start()
@@ -412,28 +531,25 @@ function DataService.Start()
 		while true do
 			task.wait(Config.Data.AutosaveSeconds)
 			for player, p in profiles do
-				if p.Loaded then
+				if p.Loaded and not p.Leaving then
 					task.spawn(saveProfile, player, false)
 				end
 			end
 		end
 	end)
 	game:BindToClose(function()
-		if RunService:IsStudio() and not storeOk then
+		if not storeOk then
 			return
 		end
-		local pending = 0
 		for player, p in profiles do
-			if p.Loaded then
-				pending += 1
-				task.spawn(function()
-					saveProfile(player, true)
-					pending -= 1
-				end)
+			if p.Loaded and not p.Leaving then
+				p.Leaving = true
+				task.spawn(saveProfile, player, true)
 			end
 		end
+		task.wait() -- let the saves start
 		local t0 = os.clock()
-		while pending > 0 and os.clock() - t0 < 25 do
+		while inflight > 0 and os.clock() - t0 < 25 do
 			task.wait(0.1)
 		end
 	end)
@@ -449,15 +565,6 @@ function DataService.AddPurchase(d: Data, receipt: string)
 	while #d.Purchases > 100 do
 		table.remove(d.Purchases, 1)
 	end
-end
-
--- Saves now and waits; used by ProcessReceipt.
-function DataService.SaveNow(player: Player): boolean
-	return saveProfile(player, false)
-end
-
-DataService._GenerateId = function(): string
-	return HttpService:GenerateGUID(false)
 end
 
 return DataService

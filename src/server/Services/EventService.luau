@@ -79,23 +79,37 @@ local function runEvent()
 	g.Model:SetAttribute("EndsAt", endsAt)
 	Fx.All("Boss", { State = "Active", Uid = g.Uid, EndsAt = endsAt, Pos = arena.Center })
 	while g.Alive and serverNow() < endsAt do
-		task.wait(0.5)
+		task.wait(0.2)
 	end
+	-- `g` is our own reference, so this works no matter how the ghost was removed
 	if g.Alive then
 		GhostService.Remove(g, nil, false)
 		Fx.All("Boss", { State = "Escaped" })
+	else
+		Fx.All("Boss", { State = "Defeated", Pos = GhostService.Position(g) })
+		reward(g)
 	end
 	current = nil
 	state = "Idle"
 end
 
-function EventService.Init()
-	GhostService.Killed:Connect(function(g: GhostService.Ghost, _killer: Player?)
-		if g.Event and current == g then
-			Fx.All("Boss", { State = "Defeated", Pos = GhostService.Position(g) })
-			reward(g)
-		end
+-- Runs one event safely: an error can never leave the event system stuck.
+local function runSafely()
+	local ok, err = pcall(function()
+		runEvent()
 	end)
+	if not ok then
+		warn("[Event] " .. tostring(err))
+		if current and current.Alive then
+			pcall(GhostService.Remove, current, nil, false)
+		end
+		Fx.All("Boss", { State = "Escaped" })
+		state = "Idle"
+		current = nil
+	end
+end
+
+function EventService.Init()
 	-- late joiners see the current boss
 	DataService.Loaded:Connect(function(player)
 		if state == "Active" and current then
@@ -108,14 +122,7 @@ function EventService.Start()
 	task.spawn(function()
 		task.wait(Config.Event.FirstDelay)
 		while true do
-			local ok, err = pcall(function()
-				runEvent()
-			end)
-			if not ok then
-				warn("[Event] " .. tostring(err))
-				state = "Idle"
-				current = nil
-			end
+			runSafely()
 			task.wait(Config.Event.Interval + rng:NextNumber(-30, 30))
 		end
 	end)
@@ -123,7 +130,7 @@ end
 
 -- Studio/testing helper: start an event now (used by the admin command in Main).
 function EventService.TriggerNow()
-	task.spawn(runEvent)
+	task.spawn(runSafely)
 end
 
 return EventService

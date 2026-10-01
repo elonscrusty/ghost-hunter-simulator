@@ -1,7 +1,9 @@
 --!strict
--- Client-side ghost presentation: smooth movement along the server's wander segments,
--- bobbing, facing, Spirit billboards, hit wobble and the POOF. One RenderStepped loop
--- for all ghosts.
+-- Client-side ghost presentation. The server sends each ghost as a single invisible hitbox
+-- (`Core`, the tap target) plus attributes; this module builds the visual rig locally
+-- (GhostRig), moves both along the server's wander segments, and handles bobbing, facing,
+-- Spirit labels, the selected-ghost state (active label + ground ring), hit wobble, spawn-in
+-- and the POOF. One RenderStepped loop for all ghosts.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,10 +12,13 @@ local TweenService = game:GetService("TweenService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
+local Signal = require(GH.Signal)
 local Format = require(GH.Logic.Format)
+local GhostRig = require(GH.Rigs.GhostRig)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local WorldLabel = require(Client.UI.WorldLabel)
 local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 
@@ -21,8 +26,10 @@ local Ghosts = {}
 
 export type Entry = {
 	Uid: number,
-	Model: Model,
-	Core: BasePart,
+	Model: Model, -- server model (hitbox)
+	Core: BasePart, -- server hitbox (tap target, beam attachments)
+	Vis: Model, -- local visual rig
+	VisCore: BasePart,
 	Def: Config.GhostDef,
 	From: Vector3,
 	To: Vector3,
@@ -31,21 +38,28 @@ export type Entry = {
 	Phase: number,
 	Max: number,
 	Spirit: number,
+	Gui: BillboardGui,
+	NameLabel: TextLabel,
+	Bar: Frame,
 	Fill: Frame,
 	SpiritText: TextLabel,
 	HitT: number,
 	Yaw: number,
 	Dying: boolean,
-	Pos: Vector3,
-	Gui: BillboardGui,
+	Pos: Vector3, -- visual centre this frame
+	Base: Vector3, -- centre without bob (for the ground ring)
+	Selected: boolean,
 }
 
 local entries: { [number]: Entry } = {}
 local player = Players.LocalPlayer
-local diedSignal = Instance.new("BindableEvent")
-Ghosts.Died = diedSignal.Event -- (uid, pos)
-local addedSignal = Instance.new("BindableEvent")
-Ghosts.Added = addedSignal.Event -- (entry)
+local diedSignal = Signal.new()
+Ghosts.Died = diedSignal -- (uid, pos)
+local addedSignal = Signal.new()
+Ghosts.Added = addedSignal -- (entry)
+local selectedUid = 0
+local ring: Part
+local ringStroke: UIStroke
 
 function Ghosts.Get(uid: number): Entry?
 	return entries[uid]
@@ -74,20 +88,43 @@ local function smooth(a: number): number
 	return a * a * (3 - 2 * a)
 end
 
-local function buildBillboard(e: Entry)
+local function labelSize(e: Entry): Vector2
+	return if e.Selected then Theme.World.GhostLabelSelected else Theme.World.GhostLabel
+end
+
+local function maxDistance(e: Entry): number
+	if e.Selected then
+		return Theme.World.SelectedMaxDistance
+	end
+	return if e.Def.Kind == "Normal" then Theme.World.GhostMaxDistance else Theme.World.BossMaxDistance
+end
+
+-- Unselected: name + slim bar. Selected: bigger bar with numbers, brighter, visible further,
+-- drawn on top so you never lose your target.
+local function styleLabel(e: Entry)
+	WorldLabel.Resize(e.Gui, labelSize(e))
+	e.Gui.MaxDistance = maxDistance(e)
+	e.Gui.AlwaysOnTop = e.Selected
+	e.SpiritText.Visible = e.Selected
+	e.Bar.Size = UDim2.fromScale(0.9, if e.Selected then 0.5 else 0.3)
+	local st = e.Bar:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Color = if e.Selected then Color3.new(1, 1, 1) else Theme.Outline
+		st.Thickness = if e.Selected then 2 else 1.5
+	end
+	e.NameLabel.TextColor3 = if e.Selected then Theme.Gold elseif e.Def.Kind ~= "Normal" then Color3.fromRGB(255, 230, 150) else Theme.Text
+end
+
+local function buildLabel(e: Entry)
 	local def = e.Def
-	local big = def.Kind ~= "Normal"
-	local scale = if def.Kind == "Event" then 2.2 elseif big then 1.35 else 1
-	local gui: BillboardGui = Kit.new("BillboardGui", {
+	-- above the head: hitbox top + a little, scaled with the ghost
+	local gui = WorldLabel.New({
 		Name = "SpiritGui",
-		Size = UDim2.fromOffset(220 * scale, 70 * scale),
-		StudsOffsetWorldSpace = Vector3.new(0, 2.2 * def.Scale + 1.5, 0),
-		AlwaysOnTop = false,
-		MaxDistance = if def.Kind == "Event" then 400 else 110,
-		LightInfluence = 0,
-		ResetOnSpawn = false,
 		Adornee = e.Core,
 		Parent = e.Model,
+		Size = Theme.World.GhostLabel,
+		Offset = Vector3.new(0, 2.6 * def.Scale + 0.8, 0),
+		MaxDistance = Theme.World.GhostMaxDistance,
 	})
 	local nameText = def.Name
 	if def.Kind == "MiniBoss" then
@@ -95,23 +132,23 @@ local function buildBillboard(e: Entry)
 	elseif def.Kind == "Boss" or def.Kind == "Event" then
 		nameText = "👑 " .. nameText
 	end
-	Kit.Label(gui, nameText, { Size = UDim2.fromScale(1, 0.38), Color = if big then Theme.Gold else Theme.Text, Stroke = 2 })
+	e.NameLabel = WorldLabel.Text(gui, nameText, { Size = UDim2.fromScale(1, 0.48), Style = "Small" })
 	local bar: Frame = Kit.new("Frame", {
-		Size = UDim2.fromScale(0.86, 0.3),
-		Position = UDim2.fromScale(0.5, 0.42),
+		Size = UDim2.fromScale(0.9, 0.3),
+		Position = UDim2.fromScale(0.5, 0.56),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.fromRGB(30, 15, 50),
 		Parent = gui,
 	})
 	Kit.Corner(bar, UDim.new(1, 0))
-	Kit.Stroke(bar, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Stroke(bar, 1.5, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	local fill: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = bar })
 	Kit.Corner(fill, UDim.new(1, 0))
 	Kit.Gradient(fill, def.Glow, Color3.fromRGB(180, 120, 255), 0)
-	local txt = Kit.Label(bar, "", { Size = UDim2.fromScale(0.95, 0.85), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3 })
-	Kit.Label(gui, "SPIRIT", { Size = UDim2.fromScale(0.4, 0.22), Position = UDim2.fromScale(0.5, 0.75), AnchorPoint = Vector2.new(0.5, 0), Color = Theme.Muted, ZIndex = 2 })
+	e.SpiritText = WorldLabel.Text(bar, "", { Style = "Tiny", ZIndex = 3 })
+	e.SpiritText.Visible = false
+	e.Bar = bar
 	e.Fill = fill
-	e.SpiritText = txt
 	e.Gui = gui
 end
 
@@ -120,7 +157,7 @@ local function updateSpirit(e: Entry, spirit: number)
 	e.Spirit = spirit
 	local frac = if e.Max > 0 then math.clamp(spirit / e.Max, 0, 1) else 0
 	TweenService:Create(e.Fill, TweenInfo.new(0.2), { Size = UDim2.fromScale(frac, 1) }):Play()
-	e.SpiritText.Text = Format.Short(spirit) .. " / " .. Format.Short(e.Max)
+	e.SpiritText.Text = Format.Short(spirit) .. " / " .. Format.Short(e.Max) .. " SPIRIT"
 	if spirit < old then
 		e.HitT = os.clock()
 	end
@@ -136,6 +173,29 @@ local function readSegment(e: Entry)
 	e.Dur = (m:GetAttribute("Dur") :: number?) or 0
 end
 
+-- Selected ghost: active label + soft ground ring (set by Targeting).
+function Ghosts.SetSelected(uid: number)
+	if uid == selectedUid then
+		return
+	end
+	local old = entries[selectedUid]
+	if old then
+		old.Selected = false
+		styleLabel(old)
+	end
+	selectedUid = uid
+	local e = entries[uid]
+	if e then
+		e.Selected = true
+		styleLabel(e)
+		local d = math.max(4, 2.8 * e.Def.Scale + 1.5)
+		ring.Size = Vector3.new(d, 0.1, d)
+		ringStroke.Color = e.Def.Glow
+	else
+		ring.CFrame = CFrame.new(0, -500, 0)
+	end
+end
+
 local function add(model: Instance)
 	if not model:IsA("Model") then
 		return
@@ -147,13 +207,21 @@ local function add(model: Instance)
 	end
 	local def = Config.Ghosts[ghostId]
 	local core = model.PrimaryPart or model:WaitForChild("Core", 5)
-	if not def or not core or not core:IsA("BasePart") then
+	if not def or not core or not core:IsA("BasePart") or model:GetAttribute("Dead") then
 		return
 	end
+	local vis = GhostRig.Build(ghostId)
+	vis.Name = "Visual"
+	local visCore = vis.PrimaryPart :: BasePart
+	visCore.CanQuery = false -- the server hitbox is the tap target
+	vis:PivotTo(core.CFrame)
+	vis.Parent = model
 	local e: Entry = {
 		Uid = uid,
 		Model = model,
 		Core = core,
+		Vis = vis,
+		VisCore = visCore,
 		Def = def,
 		From = core.Position,
 		To = core.Position,
@@ -162,18 +230,26 @@ local function add(model: Instance)
 		Phase = math.random() * math.pi * 2,
 		Max = (model:GetAttribute("MaxSpirit") :: number?) or def.Spirit,
 		Spirit = (model:GetAttribute("Spirit") :: number?) or def.Spirit,
+		Gui = nil :: any,
+		NameLabel = nil :: any,
+		Bar = nil :: any,
 		Fill = nil :: any,
 		SpiritText = nil :: any,
 		HitT = 0,
 		Yaw = math.random() * math.pi * 2,
 		Dying = false,
 		Pos = core.Position,
-		Gui = nil :: any,
+		Base = core.Position,
+		Selected = false,
 	}
 	readSegment(e)
-	buildBillboard(e)
+	buildLabel(e)
 	updateSpirit(e, e.Spirit)
 	entries[uid] = e
+	if uid == selectedUid then
+		selectedUid = 0
+		Ghosts.SetSelected(uid)
+	end
 	model:GetAttributeChangedSignal("T0"):Connect(function()
 		readSegment(e)
 	end)
@@ -181,22 +257,22 @@ local function add(model: Instance)
 		updateSpirit(e, (model:GetAttribute("Spirit") :: number?) or 0)
 	end)
 	model.AncestryChanged:Connect(function()
-		if not model:IsDescendantOf(workspace) then
+		if not model:IsDescendantOf(workspace) and entries[uid] == e then
 			entries[uid] = nil
 		end
 	end)
-	-- spawn-in: grow from nothing (the event boss has its own dramatic entrance)
-	if e.Def.Kind ~= "Event" then
+	-- spawn-in: grow from nothing (the event boss gets its own dramatic entrance)
+	if def.Kind ~= "Event" then
 		local s = Instance.new("NumberValue")
 		s.Value = 0.2
-		e.Model:ScaleTo(e.Def.Scale * 0.2)
+		vis:ScaleTo(def.Scale * 0.2)
 		local conn
 		conn = s.Changed:Connect(function(v)
-			if e.Dying or not e.Model.Parent then
+			if e.Dying or not vis.Parent then
 				conn:Disconnect()
 				return
 			end
-			e.Model:ScaleTo(e.Def.Scale * v)
+			vis:ScaleTo(def.Scale * v)
 		end)
 		local tw = TweenService:Create(s, TweenInfo.new(0.45, Enum.EasingStyle.Back), { Value = 1 })
 		tw:Play()
@@ -219,15 +295,19 @@ local function poof(data: any)
 		e.Dying = true
 		pos = e.Pos
 		entries[data.Uid] = nil
+		if selectedUid == data.Uid then
+			selectedUid = 0
+			ring.CFrame = CFrame.new(0, -500, 0)
+		end
 		diedSignal:Fire(data.Uid, pos)
 		e.Gui.Enabled = false
 		-- squash-and-stretch pop: inflate, then vanish
-		local model = e.Model
+		local vis = e.Vis
 		local v = Instance.new("NumberValue")
 		v.Value = 1
 		v.Changed:Connect(function(x)
-			if model.Parent then
-				model:ScaleTo(math.max(0.05, e.Def.Scale * x))
+			if vis.Parent then
+				vis:ScaleTo(math.max(0.05, e.Def.Scale * x))
 			end
 		end)
 		local up = TweenService:Create(v, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Value = 1.35 })
@@ -236,7 +316,7 @@ local function poof(data: any)
 			if near then
 				Effects.Poof(pos, color, scale, data.Big == true)
 			end
-			for _, p in model:GetDescendants() do
+			for _, p in vis:GetDescendants() do
 				if p:IsA("BasePart") then
 					p.Transparency = 1
 				elseif p:IsA("ParticleEmitter") then
@@ -251,21 +331,20 @@ local function poof(data: any)
 		Effects.Poof(pos, color, scale, data.Big == true)
 	end
 	if near then
-		if data.Escaped then
-			Sound.Play("Poof")
-		else
-			Sound.Play(if data.Big then "BigPoof" else "Poof", 0.08)
-		end
+		Sound.Play(if data.Big then "BigPoof" else "Poof", 0.08)
 	end
 end
+
+local parts: { BasePart } = {}
+local cframes: { CFrame } = {}
 
 local function step()
 	local t = workspace:GetServerTimeNow()
 	local clock = os.clock()
 	local cam = workspace.CurrentCamera
 	local camPos = if cam then cam.CFrame.Position else Vector3.zero
-	local parts: { BasePart } = {}
-	local cframes: { CFrame } = {}
+	table.clear(parts)
+	table.clear(cframes)
 	for _, e in entries do
 		if e.Dying then
 			continue
@@ -292,15 +371,54 @@ local function step()
 		local moving = a < 1 and (e.To - e.From).Magnitude > 0.5
 		local lean = if moving then 0.12 else 0
 		e.Pos = pos
+		e.Base = base
+		local cf = CFrame.new(pos) * CFrame.Angles(0, e.Yaw, 0) * CFrame.Angles(-lean, 0, sway)
 		table.insert(parts, e.Core)
-		table.insert(cframes, CFrame.new(pos) * CFrame.Angles(0, e.Yaw, 0) * CFrame.Angles(-lean, 0, sway))
+		table.insert(cframes, CFrame.new(pos))
+		table.insert(parts, e.VisCore)
+		table.insert(cframes, cf)
+	end
+	-- ground ring under the selected ghost
+	local sel = entries[selectedUid]
+	if sel and not sel.Dying then
+		local groundY = sel.Base.Y - sel.Def.Hover + 0.15
+		table.insert(parts, ring)
+		table.insert(cframes, CFrame.new(sel.Base.X, groundY, sel.Base.Z) * CFrame.Angles(0, clock * 0.8, 0))
+		ringStroke.Transparency = 0.25 + 0.2 * math.sin(clock * 4)
 	end
 	if #parts > 0 then
 		workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 	end
 end
 
-function Ghosts.Init() end
+function Ghosts.Init()
+	ring = Instance.new("Part")
+	ring.Name = "TargetRing"
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.CanTouch = false
+	ring.CastShadow = false
+	ring.Transparency = 1
+	ring.Size = Vector3.new(6, 0.1, 6)
+	ring.CFrame = CFrame.new(0, -500, 0)
+	ring.Parent = workspace
+	local sg: SurfaceGui = Kit.new("SurfaceGui", {
+		Face = Enum.NormalId.Top,
+		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
+		PixelsPerStud = 24,
+		LightInfluence = 0,
+		Brightness = 1.5,
+		Parent = ring,
+	})
+	local circle: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = sg })
+	Kit.Corner(circle, UDim.new(1, 0))
+	ringStroke = Kit.new("UIStroke", { Thickness = 7, Color = Theme.Ecto, Transparency = 0.3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = circle })
+	-- dashed look: a second, inner faint circle
+	local inner: Frame = Kit.new("Frame", { Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Parent = circle })
+	Kit.Corner(inner, UDim.new(1, 0))
+	Kit.new("UIStroke", { Thickness = 3, Color = Color3.new(1, 1, 1), Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = inner })
+end
 
 function Ghosts.Start()
 	local folder = workspace:WaitForChild("Ghosts")
@@ -308,7 +426,7 @@ function Ghosts.Start()
 		task.defer(add, m)
 	end)
 	for _, m in folder:GetChildren() do
-		add(m)
+		task.spawn(add, m)
 	end
 	Net.Event("Fx").OnClientEvent:Connect(function(kind: string, data: any)
 		if kind == "Poof" then

@@ -57,35 +57,49 @@ local function refresh()
 end
 
 function UpgradesPanel.Init()
-	panel = Kit.Panel("Upgrades", "UPGRADES", Vector2.new(780, 470), "Green")
-	local list: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 1, -20), Position = UDim2.fromOffset(0, 18), BackgroundTransparency = 1, ZIndex = 61, Parent = panel.Body })
-	Kit.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
+	panel = Kit.Panel("Upgrades", "UPGRADES", Vector2.new(640, 380), "Green")
+	-- rows are full-width with the text area stretching (Scale) and the button pinned right,
+	-- so they work from a phone to a wide monitor; the list scrolls if the panel is short
+	local list: ScrollingFrame = Kit.new("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, -12),
+		Position = UDim2.fromOffset(0, 12),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		ZIndex = 61,
+		Parent = panel.Body,
+	})
+	Kit.new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
 	for i, id in Config.UpgradeOrder do
 		local up = Config.Upgrades[id]
-		local r: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 118), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.4, LayoutOrder = i, ZIndex = 62, Parent = list })
-		Kit.Corner(r, UDim.new(0, 18))
-		local icon: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(88, 88), Position = UDim2.new(0, 14, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 63, Parent = r })
-		Kit.Corner(icon, UDim.new(0, 18))
-		Kit.Stroke(icon, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+		local r: Frame = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 88), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.4, LayoutOrder = i, ZIndex = 62, Parent = list })
+		Kit.Corner(r, UDim.new(0, 14))
+		local icon: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0, 10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 63, Parent = r })
+		Kit.Corner(icon, UDim.new(0, 14))
+		Kit.Stroke(icon, 2.5, Theme.Outline, Enum.ApplyStrokeMode.Border)
 		Kit.Gradient(icon, Theme.Panel3, Theme.Panel, 90)
-		Kit.Label(icon, up.Icon, { Size = UDim2.fromScale(0.75, 0.75), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 64, Stroke = 0 })
-		Kit.Label(r, up.Name, { Size = UDim2.fromOffset(330, 32), Position = UDim2.fromOffset(118, 10), Align = Enum.TextXAlignment.Left, ZIndex = 63 })
-		Kit.Label(r, up.Description, { Size = UDim2.fromOffset(340, 22), Position = UDim2.fromOffset(118, 44), Align = Enum.TextXAlignment.Left, Color = Theme.Muted, Font = Theme.Body, ZIndex = 63, Stroke = 0 })
-		local value = Kit.Label(r, "", { Size = UDim2.fromOffset(300, 26), Position = UDim2.fromOffset(118, 74), Align = Enum.TextXAlignment.Left, Color = Theme.Ecto, ZIndex = 63 })
-		local pipRow: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(150, 20), Position = UDim2.new(1, -220, 0, 16), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 63, Parent = r })
-		Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = pipRow })
+		Kit.Label(icon, up.Icon, { Style = "Icon", TextSize = 30, ZIndex = 64, Stroke = 0 })
+		-- text column: everything between the icon and the buy button
+		local text: Frame = Kit.new("Frame", { Size = UDim2.new(1, -(84 + 160), 1, -12), Position = UDim2.fromOffset(84, 6), BackgroundTransparency = 1, ZIndex = 62, Parent = r })
+		Kit.Label(text, up.Name, { Size = UDim2.new(1, 0, 0, 22), Align = Enum.TextXAlignment.Left, Style = "Heading", Fit = true, ZIndex = 63 })
+		Kit.Label(text, up.Description, { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 24), Align = Enum.TextXAlignment.Left, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 63, Stroke = 0 })
+		local value = Kit.Label(text, "", { Size = UDim2.new(1, -96, 0, 20), Position = UDim2.new(0, 0, 1, -20), Align = Enum.TextXAlignment.Left, Color = Theme.Ecto, Style = "Body", Fit = true, ZIndex = 63 })
+		local pipRow: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(92, 12), Position = UDim2.new(1, 0, 1, -16), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 63, Parent = text })
+		Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = pipRow })
 		local pips = {}
 		for _ = 1, #up.Levels do
-			local pip: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(24, 18), BackgroundColor3 = Theme.Bg, ZIndex = 64, Parent = pipRow })
-			Kit.Corner(pip, UDim.new(0, 6))
-			Kit.Stroke(pip, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+			local pip: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(15, 12), BackgroundColor3 = Theme.Bg, ZIndex = 64, Parent = pipRow })
+			Kit.Corner(pip, UDim.new(0, 4))
+			Kit.Stroke(pip, 1.5, Theme.Outline, Enum.ApplyStrokeMode.Border)
 			table.insert(pips, pip)
 		end
 		local buy = Kit.Button(r, {
 			Text = "",
 			Color = "Green",
-			Size = UDim2.fromOffset(190, 66),
-			Position = UDim2.new(1, -14, 0.5, 0),
+			Size = UDim2.fromOffset(140, 48),
+			Position = UDim2.new(1, -10, 0.5, 0),
 			AnchorPoint = Vector2.new(1, 0.5),
 			ZIndex = 64,
 			OnClick = function()
@@ -112,7 +126,7 @@ function UpgradesPanel.Init()
 end
 
 function UpgradesPanel.Start()
-	panel.OnOpen.Event:Connect(refresh)
+	panel.OnOpen:Connect(refresh)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
 			refresh()

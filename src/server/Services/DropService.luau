@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
+local Signal = require(GH.Signal)
 local Rules = require(GH.Logic.Rules)
 local DataService = require(script.Parent.DataService)
 local PlayerInfo = require(script.Parent.PlayerInfo)
@@ -27,10 +28,11 @@ local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 rayParams.IgnoreWater = true
 
-local collectedSignal = Instance.new("BindableEvent")
-DropService.Collected = collectedSignal.Event -- (player, amount)
+local collectedSignal = Signal.new()
+DropService.Collected = collectedSignal -- (player, amount)
 
-local function groundAt(x: number, y: number, z: number): number
+-- Ground raycasts ignore ghosts and characters (filter built once per Spawn call).
+local function refreshFilter()
 	local filter: { Instance } = {}
 	local ghosts = workspace:FindFirstChild("Ghosts")
 	if ghosts then
@@ -42,6 +44,9 @@ local function groundAt(x: number, y: number, z: number): number
 		end
 	end
 	rayParams.FilterDescendantsInstances = filter
+end
+
+local function groundAt(x: number, y: number, z: number): number
 	local hit = workspace:Raycast(Vector3.new(x, y + 4, z), Vector3.new(0, -80, 0), rayParams)
 	return if hit then hit.Position.Y else 0
 end
@@ -58,12 +63,21 @@ function DropService.Spawn(player: Player, origin: Vector3, total: number, count
 	local sMax = if scatter then scatter[2] else Config.Drops.ScatterMax
 	local expires = os.clock() + Config.Drops.Lifetime
 	local out: { { any } } = {}
+	local removed: { number } = {}
+	refreshFilter()
 	for _, v in values do
-		-- over the cap: fold value into an existing orb instead of creating a new one
+		-- over the cap (nobody is collecting): the oldest orb fades away to make room,
+		-- exactly as if it had timed out
 		if #bag.List >= Config.Drops.MaxPerPlayer then
-			local d = bag.List[#bag.List]
-			d.Value += v
-			continue
+			local oldest = 1
+			for i, d in bag.List do
+				if d.Expires < bag.List[oldest].Expires then
+					oldest = i
+				end
+			end
+			table.insert(removed, bag.List[oldest].Id)
+			bag.List[oldest] = bag.List[#bag.List]
+			bag.List[#bag.List] = nil
 		end
 		local a = rng:NextNumber() * math.pi * 2
 		local r = rng:NextNumber(sMin, sMax)
@@ -78,7 +92,7 @@ function DropService.Spawn(player: Player, origin: Vector3, total: number, count
 		table.insert(out, { drop.Id, drop.Pos, drop.Value } :: { any })
 	end
 	if #out > 0 then
-		dropsRemote:FireClient(player, origin, out)
+		dropsRemote:FireClient(player, origin, out, removed)
 	end
 end
 
@@ -141,7 +155,12 @@ function DropService.Start()
 	task.spawn(function()
 		while true do
 			task.wait(Config.Drops.PickupTick)
-			pickupTick()
+			local ok, err = pcall(function()
+				pickupTick()
+			end)
+			if not ok then
+				warn("[Drops] tick error: " .. tostring(err))
+			end
 		end
 	end)
 end

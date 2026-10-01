@@ -32,6 +32,11 @@ Rojo + Luau project. Everything in this repository belongs to Ghost Hunter Simul
   (discovery per zone, silhouettes, NEW! badges), **Upgrades** (pickup radius, Ectoplasm
   bonus, movement speed), **Daily rewards** (7 days, server clock), **Shop** (Robux products
   and game passes, disabled until you add their ids), **Settings**.
+- **Click/tap a ghost once** and your crew takes it down, then comes home. The optional
+  **Auto Attack** game pass lets the crew pick the next nearby ghost by itself (same damage and
+  rewards; you still walk to the Ectoplasm).
+- **Mobile-first UI**: compact HUD, one responsive layout for desktop/tablet/phone, distance-
+  limited world labels, forgiving tap targeting.
 - **Giant Poltergeist event** every ~10 minutes: warning, beacon, boss bar, timer, rewards by
   participation, Ectoplasm shower.
 - **Tutorial**: TAP A GHOST → COLLECT ECTOPLASM → OPEN A HUNTER CRATE → EQUIP YOUR NEW HUNTER →

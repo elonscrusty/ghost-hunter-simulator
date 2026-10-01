@@ -43,6 +43,12 @@
     },
     "SoundService": {
       "$className": "SoundService"
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$properties": {
+        "ScreenOrientation": "LandscapeSensor"
+      }
     }
   }
 }

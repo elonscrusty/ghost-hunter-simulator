@@ -377,6 +377,7 @@ Config.Combat = {
 	MaxRange = 90, -- player must be within this many studs of the target
 	ContributorShare = 0.1, -- min share of max Spirit to receive personal drops (killer always does)
 	HunterRunSpeed = 26, -- client visual
+	HitboxDiameter = 5.4, -- invisible tap target per ghost (x ghost Scale); the body is ~3.5
 }
 
 --==================================================================
@@ -480,7 +481,7 @@ Config.Event = {
 -- SHOP (Robux). Fill in the IDs after creating products on the Creator Hub.
 --==================================================================
 export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string, Amount: number?, Boost: string?, Seconds: number?, ProductId: number?, PriceLabel: string }
-export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number? }
+export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Blurb: string? }
 
 Config.Products = {
 	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = nil, PriceLabel = "R$ 49" },
@@ -492,7 +493,20 @@ Config.Products = {
 Config.GamePasses = {
 	{ Key = "ExtraSlots", Name = "+2 HUNTER SLOTS", Icon = "🎒", PassId = nil, PriceLabel = "R$ 149", Slots = 2 },
 	{ Key = "DoubleEcto", Name = "PERMANENT 2x ECTOPLASM", Icon = "💎", PassId = nil, PriceLabel = "R$ 299", Multiplier = 2 },
+	{ Key = "AutoAttack", Name = "AUTO ATTACK", Icon = "🤖", PassId = nil, PriceLabel = "R$ 199", Blurb = "Your crew picks the next ghost for you" },
 } :: { PassDef }
+
+--==================================================================
+-- AUTO ATTACK (game pass convenience: only automates choosing targets).
+-- Free players click/tap a ghost once to send their crew; after the poof the crew comes home.
+-- With the pass + toggle ON, the server picks the nearest ghost in the zone you stand in.
+-- No extra damage, rewards, drops or pickup range.
+--==================================================================
+Config.AutoAttack = {
+	Pass = "AutoAttack", -- key in Config.GamePasses
+	Range = 45, -- studs from the player
+	ScanSeconds = 0.5, -- how often idle crews look for a ghost
+}
 
 --==================================================================
 -- RATE LIMITS (requests per window, per player, per action)
