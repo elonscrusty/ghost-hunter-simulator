@@ -1,0 +1,472 @@
+--!strict
+-- First-time guidance without walls of text:
+--   1 TAP A GHOST!  →  2 COLLECT ECTOPLASM!  →  3 OPEN A HUNTER CRATE!  →
+--   4 EQUIP YOUR NEW HUNTER!  →  5 UNLOCK THE CEMETERY!  →  done
+-- A glowing breadcrumb trail on the ground + a bouncing arrow over the target show where to
+-- go; menu buttons pulse when they're the next step. After the tutorial a small NEXT GOAL
+-- chip keeps the next zone in view. Progress is saved (server only accepts forward steps).
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local GH = ReplicatedStorage:WaitForChild("GH")
+local Config = require(GH.Config)
+local Format = require(GH.Logic.Format)
+local Client = script.Parent.Parent
+local State = require(Client.State)
+local Kit = require(Client.UI.Kit)
+local Theme = require(Client.UI.Theme)
+local Hud = require(script.Parent.Hud)
+local Ghosts = require(script.Parent.Ghosts)
+local Orbs = require(script.Parent.Orbs)
+local Reveal = require(script.Parent.Reveal)
+local CratePanel = require(script.Parent.CratePanel)
+local HuntersPanel = require(script.Parent.HuntersPanel)
+local Boss = require(script.Parent.Boss)
+local Sound = require(script.Parent.Sound)
+
+local Tutorial = {}
+
+local player = Players.LocalPlayer
+local STEPS = #Config.Tutorial.Steps
+local step = 0 -- 0 = not loaded yet
+local promptFrame: Frame
+local promptLabel: TextLabel
+local promptSub: TextLabel
+local goalChip: Frame
+local goalLabel: TextLabel
+local goalFill: Frame
+local dots: { BasePart } = {}
+local marker: BillboardGui
+local markerPart: Part
+local guideTarget: (() -> Vector3?)? = nil
+local guideUntil = math.huge
+local framed = false
+local equipRing: Frame? = nil
+
+local DOTS = 12
+local SPACING = 3.6
+
+--------------------------------------------------------------------------------
+-- guide (breadcrumbs + marker)
+--------------------------------------------------------------------------------
+local function setGuide(fn: (() -> Vector3?)?, seconds: number?)
+	guideTarget = fn
+	guideUntil = if seconds then os.clock() + seconds else math.huge
+end
+Tutorial.SetGuide = setGuide
+
+local function rootPart(): BasePart?
+	local char = player.Character
+	local r = char and char:FindFirstChild("HumanoidRootPart")
+	return if r and r:IsA("BasePart") then r else nil
+end
+
+local hidden = CFrame.new(0, -400, 0)
+local function updateGuide()
+	local root = rootPart()
+	local target = if guideTarget and os.clock() < guideUntil then guideTarget() else nil
+	if not root or not target or Reveal.IsPlaying() then
+		for _, d in dots do
+			d.CFrame = hidden
+		end
+		marker.Enabled = false
+		return
+	end
+	markerPart.CFrame = CFrame.new(target)
+	marker.Enabled = true
+	local from = root.Position - Vector3.new(0, 2.7, 0)
+	local flat = Vector3.new(target.X - from.X, 0, target.Z - from.Z)
+	local dist = flat.Magnitude
+	if dist < 6 then
+		for _, d in dots do
+			d.CFrame = hidden
+		end
+		return
+	end
+	local dir = flat.Unit
+	local t = os.clock()
+	local offset = (t * 6) % SPACING -- dots flow toward the target
+	local groundEnd = math.min(target.Y, from.Y + 2)
+	local parts: { BasePart } = {}
+	local cfs: { CFrame } = {}
+	for i, d in dots do
+		local along = 2.5 + (i - 1) * SPACING + offset
+		if along > dist - 2 then
+			table.insert(parts, d)
+			table.insert(cfs, hidden)
+		else
+			local k = along / dist
+			local y = from.Y + (groundEnd - from.Y) * k + 0.35
+			local pulse = 0.75 + 0.25 * math.sin(t * 6 - i * 0.6)
+			d.Size = Vector3.new(pulse, pulse, pulse)
+			table.insert(parts, d)
+			table.insert(cfs, CFrame.new(from.X + dir.X * along, y, from.Z + dir.Z * along))
+		end
+	end
+	workspace:BulkMoveTo(parts, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+end
+
+--------------------------------------------------------------------------------
+-- prompts
+--------------------------------------------------------------------------------
+local shownText = ""
+local function setPrompt(text: string?, sub: string?)
+	if not text then
+		if promptFrame.Visible then
+			promptFrame.Visible = false
+			shownText = ""
+		end
+		return
+	end
+	promptSub.Text = sub or ""
+	promptSub.Visible = sub ~= nil
+	if text ~= shownText then
+		shownText = text
+		promptLabel.Text = text
+		promptFrame.Visible = true
+		local sc = promptFrame:FindFirstChildOfClass("UIScale") :: UIScale
+		sc.Scale = 0.5
+		Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+		Sound.Play("Select")
+	end
+end
+
+local function tapWord(): string
+	local last = UserInputService:GetLastInputType()
+	if last == Enum.UserInputType.Gamepad1 then
+		return "PRESS Ⓧ TO TARGET A GHOST!"
+	elseif UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
+		return "TAP A GHOST!"
+	end
+	return "CLICK A GHOST!"
+end
+
+local function nearestGhost(): Vector3?
+	local root = rootPart()
+	if not root then
+		return nil
+	end
+	local d = State.Data
+	local best, bestD = nil, math.huge
+	for _, e in Ghosts.All() do
+		if e.Def.Kind ~= "Event" and (not d or d.Zones[e.Def.Zone]) then
+			local dist = (e.Pos - root.Position).Magnitude
+			if dist < bestD then
+				best, bestD = e, dist
+			end
+		end
+	end
+	return if best then best.Pos + Vector3.new(0, 2.5 * best.Def.Scale + 1, 0) else nil
+end
+
+local function cratePos(): Vector3?
+	local p = Config.Layout.CrateStations.Beginner
+	return p + Vector3.new(0, 8, 0)
+end
+
+local function gatePos(): Vector3?
+	local g = Config.Layout.Gates.Cemetery
+	return if g then Vector3.new(0, 10, g.Z - 4) else nil
+end
+
+local function advance(to: number)
+	if to <= step then
+		return
+	end
+	step = to
+	task.spawn(State.Request, "Tutorial", to)
+	if to > STEPS then
+		setPrompt(nil)
+		setGuide(nil)
+		Hud.Pulse("Hunters", false)
+		Hud.Banner("TUTORIAL COMPLETE!", "Keep hunting, collecting and unlocking!", Theme.Gold)
+	end
+end
+
+local function setEquipRing(on: boolean)
+	if on and not equipRing then
+		local b = HuntersPanel.EquipBestButton()
+		local ring: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 80, Parent = b })
+		Kit.Corner(ring, UDim.new(0, 16))
+		local st = Kit.Stroke(ring, 5, Theme.Ecto, Enum.ApplyStrokeMode.Border)
+		equipRing = ring
+		task.spawn(function()
+			while ring.Parent do
+				ring.Size = UDim2.fromScale(1, 1)
+				st.Transparency = 0
+				Kit.Tween(ring, 0.8, { Size = UDim2.new(1, 24, 1, 24) })
+				Kit.Tween(st, 0.8, { Transparency = 1 })
+				task.wait(0.9)
+			end
+		end)
+	elseif not on and equipRing then
+		equipRing:Destroy()
+		equipRing = nil
+	end
+end
+
+-- One-time camera framing of the nearest ghost for brand-new players.
+local function frameGhost()
+	if framed then
+		return
+	end
+	framed = true
+	local root = rootPart()
+	local target = nearestGhost()
+	local cam = workspace.CurrentCamera
+	if not root or not target or not cam then
+		return
+	end
+	local start = cam.CFrame
+	local eye = root.Position + Vector3.new(0, 5, 0) - (target - root.Position).Unit * 10
+	local look = CFrame.lookAt(eye, target)
+	cam.CameraType = Enum.CameraType.Scriptable
+	local tw = TweenService:Create(cam, TweenInfo.new(0.9, Enum.EasingStyle.Sine), { CFrame = look })
+	tw:Play()
+	tw.Completed:Wait()
+	task.wait(0.8)
+	local back = TweenService:Create(cam, TweenInfo.new(0.6, Enum.EasingStyle.Sine), { CFrame = start })
+	back:Play()
+	back.Completed:Wait()
+	if not Reveal.IsPlaying() then
+		cam.CameraType = Enum.CameraType.Custom
+	end
+end
+
+local collectedOnce = false
+
+local function tick()
+	local d = State.Data
+	if not d or step == 0 then
+		return
+	end
+	local panel = Kit.CurrentPanel()
+	if step > STEPS then
+		-- NEXT GOAL chip
+		local nextZone: Config.ZoneDef? = nil
+		for _, z in Config.Zones do
+			if not d.Zones[z.Id] then
+				nextZone = z
+				break
+			end
+		end
+		local bossState = Boss.State()
+		if nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
+			goalChip.Visible = true
+			goalLabel.Text = "NEXT: UNLOCK " .. nextZone.Name .. "  " .. Format.Short(math.min(d.Ecto, nextZone.Cost)) .. " / " .. Format.Short(nextZone.Cost)
+			goalFill.Size = UDim2.fromScale(math.clamp(d.Ecto / nextZone.Cost, 0.02, 1), 1)
+		else
+			goalChip.Visible = false
+		end
+		return
+	end
+	goalChip.Visible = false
+	if Reveal.IsPlaying() then
+		setPrompt(nil)
+		return
+	end
+	local target = (player:GetAttribute("Target") :: number?) or 0
+	if step == 1 then
+		setPrompt(tapWord())
+		setGuide(nearestGhost)
+		if target ~= 0 then
+			advance(2)
+		end
+	elseif step == 2 then
+		if Orbs.Count() > 0 then
+			setPrompt("COLLECT ECTOPLASM!", "Walk close - it flies to you!")
+			setGuide(function()
+				local root = rootPart()
+				return if root then Orbs.Nearest(root.Position) else nil
+			end)
+		elseif target ~= 0 then
+			setPrompt("YOUR HUNTER IS ON IT!", "Ghosts POOF into Ectoplasm")
+			setGuide(nil)
+		else
+			setPrompt(tapWord())
+			setGuide(nearestGhost)
+		end
+		if collectedOnce then
+			advance(3)
+		end
+	elseif step == 3 then
+		local price = Config.Crates.Beginner.Price
+		if (d.Stats.Crates or 0) >= 1 then
+			advance(4)
+		elseif d.Ecto >= price or (d.FreeCrates.Beginner or 0) > 0 then
+			if CratePanel.IsOpen() then
+				setPrompt("TAP OPEN!")
+				setGuide(nil)
+			else
+				setPrompt("OPEN A HUNTER CRATE!", "Follow the trail to the crate")
+				setGuide(cratePos)
+			end
+		else
+			setPrompt("COLLECT " .. price .. " ECTOPLASM", Format.Commas(d.Ecto) .. " / " .. price .. "  -  defeat more ghosts!")
+			setGuide(if target == 0 then nearestGhost else nil)
+		end
+	elseif step == 4 then
+		if #d.Equipped >= 2 then
+			Hud.Pulse("Hunters", false)
+			setEquipRing(false)
+			advance(5)
+		elseif panel == "Hunters" then
+			setPrompt("TAP EQUIP BEST!")
+			Hud.Pulse("Hunters", false)
+			setEquipRing(true)
+		else
+			setPrompt("EQUIP YOUR NEW HUNTER!", "Open HUNTERS")
+			Hud.Pulse("Hunters", true)
+			setEquipRing(false)
+		end
+		setGuide(nil)
+	elseif step == 5 then
+		local zone = Config.ZoneById.Cemetery
+		if d.Zones.Cemetery then
+			advance(6)
+		elseif panel then
+			setPrompt(nil)
+		elseif d.Ecto >= zone.Cost then
+			setPrompt("UNLOCK THE CEMETERY!", "Follow the trail to the gate")
+			setGuide(gatePos)
+		else
+			setPrompt("UNLOCK THE CEMETERY!", Format.Commas(d.Ecto) .. " / " .. Format.Commas(zone.Cost) .. " Ectoplasm  -  open crates, equip the best!")
+			setGuide(nil)
+		end
+	end
+end
+
+function Tutorial.Init()
+	local screen = Kit.Screen()
+	promptFrame = Kit.new("Frame", {
+		Name = "TutorialPrompt",
+		Size = UDim2.fromOffset(560, 92),
+		Position = UDim2.new(0.5, 0, 1, -170),
+		AnchorPoint = Vector2.new(0.5, 1),
+		BackgroundTransparency = 1,
+		Visible = false,
+		ZIndex = 40,
+		Parent = screen,
+	})
+	Kit.new("UIScale", { Parent = promptFrame })
+	promptLabel = Kit.Label(promptFrame, "", { Size = UDim2.new(1, 0, 0, 58), Color = Theme.Ecto, ZIndex = 41, Stroke = 4 })
+	promptSub = Kit.Label(promptFrame, "", { Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 60), Color = Theme.Text, ZIndex = 41, Stroke = 3 })
+	Kit.Button(promptFrame, {
+		Text = "SKIP",
+		Color = "Gray",
+		Size = UDim2.fromOffset(70, 34),
+		Position = UDim2.new(1, 50, 0, 12),
+		AnchorPoint = Vector2.new(1, 0),
+		ZIndex = 42,
+		OnClick = function()
+			advance(STEPS + 1)
+		end,
+	})
+	-- bounce the prompt gently
+	task.spawn(function()
+		while true do
+			if promptFrame.Visible then
+				Kit.Tween(promptLabel, 0.5, { Position = UDim2.fromOffset(0, -6) }, Enum.EasingStyle.Sine)
+				task.wait(0.5)
+				Kit.Tween(promptLabel, 0.5, { Position = UDim2.fromOffset(0, 0) }, Enum.EasingStyle.Sine)
+			end
+			task.wait(0.5)
+		end
+	end)
+	goalChip = Kit.new("Frame", {
+		Size = UDim2.fromOffset(420, 32),
+		Position = UDim2.new(0.5, 0, 0, 142),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundColor3 = Theme.Bg,
+		BackgroundTransparency = 0.15,
+		Visible = false,
+		ZIndex = 20,
+		Parent = screen,
+	})
+	Kit.Corner(goalChip, UDim.new(1, 0))
+	Kit.Stroke(goalChip, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	goalFill = Kit.new("Frame", { Size = UDim2.fromScale(0.02, 1), BackgroundColor3 = Theme.Ecto, BackgroundTransparency = 0.55, ZIndex = 21, Parent = goalChip })
+	Kit.Corner(goalFill, UDim.new(1, 0))
+	goalLabel = Kit.Label(goalChip, "", { Size = UDim2.fromScale(0.94, 0.68), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 22 })
+
+	-- breadcrumbs + marker
+	local folder = Instance.new("Folder")
+	folder.Name = "GHGuide"
+	folder.Parent = workspace
+	for _ = 1, DOTS do
+		local p = Instance.new("Part")
+		p.Shape = Enum.PartType.Ball
+		p.Size = Vector3.new(0.9, 0.9, 0.9)
+		p.Material = Enum.Material.Neon
+		p.Color = Theme.Ecto
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.CFrame = hidden
+		p.Parent = folder
+		table.insert(dots, p)
+	end
+	markerPart = Instance.new("Part")
+	markerPart.Anchored = true
+	markerPart.CanCollide = false
+	markerPart.CanQuery = false
+	markerPart.CanTouch = false
+	markerPart.Transparency = 1
+	markerPart.Size = Vector3.new(1, 1, 1)
+	markerPart.CFrame = hidden
+	markerPart.Parent = folder
+	marker = Kit.new("BillboardGui", {
+		Size = UDim2.fromOffset(90, 90),
+		StudsOffsetWorldSpace = Vector3.new(0, 2.5, 0),
+		AlwaysOnTop = true,
+		LightInfluence = 0,
+		Enabled = false,
+		Adornee = markerPart,
+		Parent = folder,
+	})
+	local arrow = Kit.Label(marker, "⬇", { Size = UDim2.fromScale(1, 1), Color = Theme.Ecto, Stroke = 4 })
+	task.spawn(function()
+		while true do
+			Kit.Tween(arrow, 0.45, { Position = UDim2.fromOffset(0, 14) }, Enum.EasingStyle.Sine)
+			task.wait(0.45)
+			Kit.Tween(arrow, 0.45, { Position = UDim2.fromOffset(0, 0) }, Enum.EasingStyle.Sine)
+			task.wait(0.45)
+		end
+	end)
+end
+
+function Tutorial.Start()
+	Orbs.Collected:Connect(function()
+		collectedOnce = true
+	end)
+	RunService.RenderStepped:Connect(updateGuide)
+	-- "SHOW ME" on the boss bar reuses the trail for a few seconds
+	Boss.PointRequested.Event:Connect(function()
+		local _, pos = Boss.State()
+		setGuide(function()
+			return pos + Vector3.new(0, 16, 0)
+		end, 10)
+	end)
+	task.spawn(function()
+		local d = State.WaitForData()
+		step = math.clamp(d.Tutorial or 1, 1, STEPS + 1)
+		if step == 1 then
+			-- let the world settle, then frame the first ghost
+			task.wait(2)
+			if (player:GetAttribute("Target") or 0) == 0 then
+				frameGhost()
+			end
+		end
+		while true do
+			tick()
+			task.wait(0.25)
+		end
+	end)
+end
+
+return Tutorial
