@@ -10,7 +10,6 @@ local Boundary = {}
 
 local C = Color3.fromRGB
 local V = Vector3.new
-local NEON = Enum.Material.Neon
 local INVIS_TOP = 80
 local HW = Config.Layout.HalfWidth -- 140
 
@@ -43,13 +42,14 @@ local function stoneRun(f: Instance, a: Vector3, b: Vector3, wall: Color3, cap: 
 	local alongX = (hi.X - lo.X) > (hi.Z - lo.Z)
 	local len = if alongX then hi.X - lo.X else hi.Z - lo.Z
 	local n = math.floor(len / spacing)
+	local ball = Kit.Vivid(topBall)
 	for i = 0, n do
 		local t = i / math.max(n, 1)
 		local cx = if alongX then lo.X + (hi.X - lo.X) * t else (lo.X + hi.X) / 2
 		local cz = if alongX then (lo.Z + hi.Z) / 2 else lo.Z + (hi.Z - lo.Z) * t
 		local half = if alongX then V(2.5, 0, (hi.Z - lo.Z) / 2 + 1) else V((hi.X - lo.X) / 2 + 1, 0, 2.5)
 		Kit.Box(f, V(cx, 0, cz) - half, V(cx, hi.Y + 3, cz) + half, cap, { Mat = Enum.Material.Slate, Solid = true })
-		Kit.Ball(f, 2.6, V(cx, hi.Y + 4.3, cz), topBall, { Mat = NEON })
+		Kit.Ball(f, 2.6, V(cx, hi.Y + 4.3, cz), ball) -- candy-coloured cap ball (solid, not glowing)
 	end
 end
 
@@ -70,7 +70,7 @@ function Boundary.Build(map: Instance)
 	hedgeRun(f, V(-W, 0, -66), V(-HW, 14, 260))
 	hedgeRun(f, V(HW, 0, -66), V(W, 14, 260))
 	hedgeRun(f, V(-W, 0, -66), V(W, 14, -60))
-	-- Cemetery: mossy stone with green lantern tops
+	-- Cemetery: mossy stone with mint cap balls
 	stoneRun(f, V(-W, 0, 263), V(-HW, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
 	stoneRun(f, V(HW, 0, 263), V(W, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
 	-- School: brick with purple tops (sides + far end)
@@ -92,10 +92,11 @@ function Boundary.Build(map: Instance)
 				stoneRun(f, V(s * (half + 8), 0, z - 3), V(s * W, h, z + 3), C(215, 110, 95), C(250, 230, 210), C(200, 130, 255), 24)
 			end
 		end
-		-- glowing band along the wall faces
+		-- painted band along the wall faces
+		local band = Kit.Vivid(if id == "Cemetery" then C(150, 255, 120) else C(200, 120, 255))
 		for _, s in { -1, 1 } do
 			for _, fz in { -1, 1 } do
-				Kit.Box(f, V(s * (half + 6), 3, z + fz * 3.05), V(s * (W - 1), 3.6, z + fz * 3.25), if id == "Cemetery" then C(150, 255, 120) else C(200, 120, 255), { Mat = NEON })
+				Kit.Box(f, V(s * (half + 6), 3, z + fz * 3.05), V(s * (W - 1), 3.6, z + fz * 3.25), band)
 			end
 			invisible(f, V(s * half, 0, z - 3), V(s * W, INVIS_TOP, z + 3))
 		end

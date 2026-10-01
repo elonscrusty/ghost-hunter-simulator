@@ -1,5 +1,7 @@
 --!strict
--- Night-but-bright lighting: purple haze, big moon, bloom on the neon, punchy colours.
+-- Night-but-bright lighting: purple haze, big moon, punchy colours. Bloom is soft and only
+-- catches the brightest pixels, so the few neon accents (windows, lamps, jack-o'-lantern
+-- faces) glow without blowing out; the solid candy colours carry the scene.
 
 local LightingService = game:GetService("Lighting")
 
@@ -25,7 +27,7 @@ function LightingSetup.Apply()
 	L.EnvironmentSpecularScale = 0.4
 	L.GlobalShadows = true
 	L.ShadowSoftness = 0.4
-	L.ExposureCompensation = 0.15
+	L.ExposureCompensation = 0.25 -- a touch brighter now that fewer surfaces glow
 	L.FogEnd = 100000
 
 	for _, child in L:GetChildren() do
@@ -55,15 +57,15 @@ function LightingSetup.Apply()
 	clear("GHBloom")
 	local bloom = Instance.new("BloomEffect")
 	bloom.Name = "GHBloom"
-	bloom.Intensity = 0.6
-	bloom.Size = 26
-	bloom.Threshold = 1.4
+	bloom.Intensity = 0.3
+	bloom.Size = 20
+	bloom.Threshold = 2
 	bloom.Parent = L
 
 	clear("GHColor")
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Name = "GHColor"
-	cc.Saturation = 0.25
+	cc.Saturation = 0.3
 	cc.Contrast = 0.1
 	cc.Brightness = 0.02
 	cc.TintColor = Color3.fromRGB(255, 245, 255)

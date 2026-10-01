@@ -31,19 +31,23 @@ function Props.Beam(parent: Instance, a: Vector3, b: Vector3, w: number, h: numb
 	return Kit.Part(parent, Vector3.new(w, h, len), cf, color, opts)
 end
 
--- Pumpkin / jack-o-lantern with a glowing face toward (fx, fz). `y` is the bottom of the pumpkin.
-function Props.Pumpkin(parent: Instance, pos: Vector3, d: number, fx: number, fz: number, lit: boolean?): Part
+-- Pumpkin / jack-o-lantern with a carved face toward (fx, fz). `pos` is the bottom of the pumpkin.
+-- glow = true gives a Neon jack-o'-lantern face: use it only at landmarks (gate pillars, crate
+-- stations, the arena rim, the school path). Every other pumpkin gets a warm solid-yellow
+-- face, so the ~100 pumpkins on the map don't turn into glowing confetti.
+local FACE_GLOW = C(255, 235, 90)
+local FACE_SOLID = C(255, 205, 55)
+
+function Props.Pumpkin(parent: Instance, pos: Vector3, d: number, fx: number, fz: number, glow: boolean?): Part
 	local center = pos + Vector3.new(0, d * 0.45, 0)
 	local body = Kit.Ball(parent, d, center, Kit.Pick(Props.Colors.PumpkinBody), { Shadow = false })
 	local base = CFrame.new(center) * CFrame.Angles(0, Kit.FaceYaw(fx, fz), 0)
 	Kit.Part(parent, Vector3.new(d * 0.12, d * 0.3, d * 0.12), base * CFrame.new(0, d * 0.55, 0) * CFrame.Angles(0, 0, 0.25), C(90, 160, 60))
-	local face = C(255, 235, 90)
-	Kit.Part(parent, Vector3.new(d * 0.18, d * 0.16, d * 0.1), base * CFrame.new(-d * 0.2, d * 0.12, -d * 0.46), face, { Mat = NEON })
-	Kit.Part(parent, Vector3.new(d * 0.18, d * 0.16, d * 0.1), base * CFrame.new(d * 0.2, d * 0.12, -d * 0.46), face, { Mat = NEON })
-	Kit.Part(parent, Vector3.new(d * 0.42, d * 0.1, d * 0.1), base * CFrame.new(0, -d * 0.12, -d * 0.45), face, { Mat = NEON })
-	if lit then
-		Kit.Light(body, C(255, 170, 60), 12, 1.5)
-	end
+	local face = if glow then FACE_GLOW else FACE_SOLID
+	local faceOpts: Kit.Opts = if glow then { Mat = NEON } else {}
+	Kit.Part(parent, Vector3.new(d * 0.18, d * 0.16, d * 0.1), base * CFrame.new(-d * 0.2, d * 0.12, -d * 0.46), face, faceOpts)
+	Kit.Part(parent, Vector3.new(d * 0.18, d * 0.16, d * 0.1), base * CFrame.new(d * 0.2, d * 0.12, -d * 0.46), face, faceOpts)
+	Kit.Part(parent, Vector3.new(d * 0.42, d * 0.1, d * 0.1), base * CFrame.new(0, -d * 0.12, -d * 0.45), face, faceOpts)
 	return body
 end
 
@@ -60,7 +64,7 @@ function Props.Tree(parent: Instance, pos: Vector3, height: number, canopy: Colo
 	Kit.AddCircle(pos.X, pos.Z, 3)
 end
 
--- Twisted spooky tree made of crooked segments, bare branches and a few glowing leaf puffs.
+-- Twisted spooky tree made of crooked segments, bare branches and a few candy-coloured leaf puffs.
 function Props.TwistedTree(parent: Instance, pos: Vector3, height: number)
 	local rng = Kit.Rng
 	local trunk = C(95, 70, 110)
@@ -82,7 +86,7 @@ function Props.TwistedTree(parent: Instance, pos: Vector3, height: number)
 		local len = height * rng:NextNumber(0.22, 0.32)
 		local tip = from + Vector3.new(math.cos(ang) * len, len * 0.6, math.sin(ang) * len)
 		Props.Beam(parent, from, tip, 0.9, 0.9, trunk)
-		Kit.Ball(parent, rng:NextNumber(3.5, 5.5), tip, Kit.Pick(leaf), { Mat = if b == 1 then NEON else Enum.Material.SmoothPlastic, Transp = 0.1 })
+		Kit.Ball(parent, rng:NextNumber(3.5, 5.5), tip, Kit.Vivid(Kit.Pick(leaf)), { Transp = 0.1 })
 	end
 	Kit.AddCircle(pos.X, pos.Z, 3)
 end
@@ -112,7 +116,7 @@ function Props.Lantern(parent: Instance, pos: Vector3, color: Color3, withLight:
 	end
 end
 
--- Mushroom cluster with glowing caps.
+-- Mushroom cluster with bright candy caps.
 function Props.Mushrooms(parent: Instance, pos: Vector3)
 	local rng = Kit.Rng
 	local caps = { C(120, 255, 200), C(200, 120, 255), C(255, 150, 220), C(120, 220, 255) }
@@ -120,11 +124,11 @@ function Props.Mushrooms(parent: Instance, pos: Vector3)
 		local p = pos + Vector3.new(rng:NextNumber(-1.6, 1.6), 0, rng:NextNumber(-1.6, 1.6))
 		local h = rng:NextNumber(0.8, 2)
 		Kit.Cyl(parent, h, 0.5, CFrame.new(p + Vector3.new(0, h / 2, 0)), C(245, 240, 225))
-		Kit.Ball(parent, rng:NextNumber(1.3, 2), p + Vector3.new(0, h, 0), Kit.Pick(caps), { Mat = NEON })
+		Kit.Ball(parent, rng:NextNumber(1.3, 2), p + Vector3.new(0, h, 0), Kit.Vivid(Kit.Pick(caps)))
 	end
 end
 
--- Fence run from a to b (ground points). style: "picket" (crooked white) or "iron" (dark with neon tips).
+-- Fence run from a to b (ground points). style: "picket" (crooked white) or "iron" (dark with mint tips).
 function Props.Fence(parent: Instance, a: Vector3, b: Vector3, style: string)
 	local rng = Kit.Rng
 	local d = b - a
@@ -150,14 +154,15 @@ function Props.Fence(parent: Instance, a: Vector3, b: Vector3, style: string)
 		local cf = CFrame.new(p) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(tilt * 0.3, 0, tilt)
 		Kit.Part(parent, Vector3.new(if iron then 0.35 else 0.25, h, if iron then 0.35 else 0.9), cf, col)
 		if iron and i % 3 == 0 then
-			Kit.Ball(parent, 0.7, p + Vector3.new(0, h / 2 + 0.3, 0), C(120, 255, 170), { Mat = NEON })
+			Kit.Ball(parent, 0.7, p + Vector3.new(0, h / 2 + 0.3, 0), Kit.Vivid(C(120, 255, 170)))
 		end
 	end
 end
 
--- Low translucent neon wisp on the ground; optional slow particle fog.
+-- Low translucent spectral puddle on the ground (solid colour, the fog particles do the
+-- glowing); optional slow particle fog.
 function Props.Wisp(parent: Instance, pos: Vector3, color: Color3, d: number, emit: boolean)
-	local p = Kit.Disc(parent, pos.X, pos.Z, 0.3, d, 0.12, color, { Mat = NEON, Transp = 0.8 })
+	local p = Kit.Disc(parent, pos.X, pos.Z, 0.3, d, 0.12, Kit.Vivid(color), { Transp = 0.6 })
 	if emit then
 		local src = Kit.Part(parent, Vector3.new(d * 0.6, 0.2, d * 0.6), CFrame.new(pos + Vector3.new(0, 1, 0)), color, { Transp = 1, Name = "FogSource" })
 		Kit.Emitter(src, color, 1.5, 7, 0.4)
@@ -172,9 +177,9 @@ function Props.Car(parent: Instance, pos: Vector3, fx: number, fz: number, color
 	-- body (length along local Z)
 	Kit.Part(m, Vector3.new(7.5, 3, 14), base * CFrame.new(0, 2.6, 0), color, { Solid = true, Shadow = true })
 	Kit.Part(m, Vector3.new(6.6, 2.8, 7), base * CFrame.new(0, 5.4, 0.8), color:Lerp(Color3.new(1, 1, 1), 0.25), { Solid = true })
-	local glass = C(170, 230, 255)
-	Kit.Part(m, Vector3.new(5.8, 2, 0.3), base * CFrame.new(0, 5.5, -2.75), glass, { Mat = NEON, Transp = 0.35 })
-	Kit.Part(m, Vector3.new(6.7, 1.8, 5.4), base * CFrame.new(0, 5.5, 0.8), glass, { Mat = NEON, Transp = 0.55 })
+	local glass = Kit.Vivid(C(170, 230, 255))
+	Kit.Part(m, Vector3.new(5.8, 2, 0.3), base * CFrame.new(0, 5.5, -2.75), glass, { Transp = 0.2, Refl = 0.25 })
+	Kit.Part(m, Vector3.new(6.7, 1.8, 5.4), base * CFrame.new(0, 5.5, 0.8), glass, { Transp = 0.3, Refl = 0.25 })
 	local axle = if math.abs(fx) > math.abs(fz) then "Z" else "X"
 	for _, sx in { -1, 1 } do
 		for _, sz in { -1, 1 } do
@@ -221,7 +226,7 @@ function Props.SignBoard(parent: Instance, center: Vector3, w: number, h: number
 	local cf = CFrame.new(center) * CFrame.Angles(0, Kit.FaceYaw(fx, fz), 0)
 	local board = Kit.Part(parent, Vector3.new(w, h, 0.6), cf, bg, { Name = "SignBoard" })
 	if frame then
-		Kit.Part(parent, Vector3.new(w + 1, h + 1, 0.4), cf * CFrame.new(0, 0, 0.35), frame, { Mat = NEON })
+		Kit.Part(parent, Vector3.new(w + 1, h + 1, 0.4), cf * CFrame.new(0, 0, 0.35), Kit.Vivid(frame))
 	end
 	Kit.Sign(board, Enum.NormalId.Front, text, fg)
 	return board

@@ -2,6 +2,8 @@
 -- ZONE 1: Haunted Neighborhood (Z -60..260). Spawn plaza + Ghost Hunter HQ at the south end,
 -- a main road along X = 0 to the Cemetery gate, a cross street at Z 110..124 leading east to
 -- the event arena, and candy-coloured houses placed on a grid wherever the keep-out map allows.
+-- Glow is reserved for windows, street lamps, car lights and the HQ antenna; plaza rings,
+-- chevrons, bands, doors and tanks are solid candy colours.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Kit = require(script.Parent.Kit)
@@ -59,7 +61,8 @@ local function house(parent: Instance, cx: number, cz: number, fx: number, fz: n
 	Kit.Part(m, V(2.4, RH + 2.5, 2.4), base * CFrame.new(chX, H + (RH + 2.5) / 2 + 0.6, D * 0.22), C(190, 110, 100), { Shadow = true })
 	Kit.Part(m, V(3, 0.6, 3), base * CFrame.new(chX, H + RH + 3.4, D * 0.22), C(90, 70, 110))
 	if rng:NextNumber() < 0.25 then
-		Kit.Ball(m, 2.2, (base * CFrame.new(chX, H + RH + 5, D * 0.22)).Position, C(150, 255, 160), { Mat = NEON, Transp = 0.5 })
+		-- a puff of ectoplasm smoke
+		Kit.Ball(m, 2.2, (base * CFrame.new(chX, H + RH + 5, D * 0.22)).Position, Kit.Vivid(C(150, 255, 160)), { Transp = 0.4 })
 	end
 	-- front windows
 	local rows: { number } = if twoStory then { H * 0.3, H * 0.72 } else { H * 0.5 }
@@ -78,7 +81,7 @@ local function house(parent: Instance, cx: number, cz: number, fx: number, fz: n
 	-- door
 	Kit.Part(m, V(5, 8, 0.3), base * CFrame.new(0, 4.6, -D / 2 - 0.1), TRIM)
 	Kit.Part(m, V(4, 7, 0.4), base * CFrame.new(0, 4.4, -D / 2 - 0.2), Kit.Pick(DOORS))
-	Kit.Ball(m, 0.6, (base * CFrame.new(1.3, 4.2, -D / 2 - 0.5)).Position, C(255, 215, 80), { Mat = NEON })
+	Kit.Ball(m, 0.6, (base * CFrame.new(1.3, 4.2, -D / 2 - 0.5)).Position, C(255, 215, 80), { Refl = 0.3 }) -- brass knob
 	-- porch with a little roof
 	local pw = W * 0.6
 	Kit.Part(m, V(pw, 0.8, 5), base * CFrame.new(0, 0.4, -D / 2 - 2.5), C(170, 120, 85), { Mat = Enum.Material.WoodPlanks, Solid = true })
@@ -124,10 +127,11 @@ end
 --==================================================================
 local function chevron(parent: Instance, tip: Vector3, dir: Vector3, color: Color3)
 	local perp = V(-dir.Z, 0, dir.X)
+	local paint = Kit.Vivid(color)
 	for _, s in { -1, 1 } do
 		local arm = (-dir + perp * s).Unit
 		local center = tip + arm * 2
-		Kit.Part(parent, V(1, 0.15, 4.6), CFrame.lookAt(center, center + arm), color, { Mat = NEON })
+		Kit.Part(parent, V(1, 0.15, 4.6), CFrame.lookAt(center, center + arm), paint)
 	end
 end
 
@@ -135,9 +139,9 @@ local function plaza(f: Instance)
 	local spawnPos = Config.Layout.Spawn
 	local sx, sz = spawnPos.X, spawnPos.Z
 	Kit.Disc(f, sx, sz, 0.25, 52, 0.6, C(175, 150, 220), { Mat = Enum.Material.Cobblestone, Solid = true })
-	Kit.Disc(f, sx, sz, 0.35, 44, 0.2, C(150, 255, 140), { Mat = NEON })
+	Kit.Disc(f, sx, sz, 0.35, 44, 0.2, Kit.Vivid(C(150, 255, 140)))
 	Kit.Disc(f, sx, sz, 0.42, 42, 0.3, C(120, 95, 180), { Mat = Enum.Material.Slate, Solid = true })
-	Kit.Disc(f, sx, sz, 0.5, 20, 0.2, C(210, 120, 255), { Mat = NEON, Transp = 0.3 })
+	Kit.Disc(f, sx, sz, 0.5, 20, 0.2, Kit.Vivid(C(210, 120, 255)))
 
 	local spawn: SpawnLocation = Instance.new("SpawnLocation")
 	spawn.Name = "SpawnLocation"
@@ -158,9 +162,10 @@ local function plaza(f: Instance)
 	Kit.Stats.Parts += 1
 	local g = Kit.Gui(spawn, Enum.NormalId.Top, 20)
 	Kit.Label(g, "👻", C(255, 255, 255), { Pos = UDim2.fromScale(0.15, 0.15), Size = UDim2.fromScale(0.7, 0.7) })
+	local border = Kit.Vivid(C(150, 255, 140))
 	for _, s in { -1, 1 } do
-		Kit.Box(f, V(sx - 7.4, 0.4, sz + s * 7) - V(0, 0, 0.4), V(sx + 7.4, 1.3, sz + s * 7) + V(0, 0, 0.4), C(150, 255, 140), { Mat = NEON })
-		Kit.Box(f, V(sx + s * 7, 0.4, sz - 7) - V(0.4, 0, 0), V(sx + s * 7, 1.3, sz + 7) + V(0.4, 0, 0), C(150, 255, 140), { Mat = NEON })
+		Kit.Box(f, V(sx - 7.4, 0.4, sz + s * 7) - V(0, 0, 0.4), V(sx + 7.4, 1.3, sz + s * 7) + V(0, 0, 0.4), border)
+		Kit.Box(f, V(sx + s * 7, 0.4, sz - 7) - V(0.4, 0, 0), V(sx + s * 7, 1.3, sz + 7) + V(0.4, 0, 0), border)
 	end
 
 	-- plaza lamps on the rim
@@ -197,11 +202,11 @@ local function hq(f: Instance)
 	Kit.Box(f, V(-24, 0, -58), V(24, 16, -40), purple, { Solid = true, Name = "HQ" })
 	Kit.Box(f, V(-26, 16, -60), V(26, 17.5, -38), dark, { Solid = true })
 	Kit.Ball(f, 18, V(0, 17.5, -50), C(190, 160, 255), { Shadow = true })
-	Kit.Box(f, V(-24.3, 5.6, -39.9), V(24.3, 6.4, -39.6), C(150, 255, 140), { Mat = NEON })
-	Kit.Box(f, V(-24.3, 15, -39.9), V(24.3, 15.6, -39.6), C(255, 150, 60), { Mat = NEON })
-	-- big glowing door
+	Kit.Box(f, V(-24.3, 5.6, -39.9), V(24.3, 6.4, -39.6), Kit.Vivid(C(150, 255, 140)))
+	Kit.Box(f, V(-24.3, 15, -39.9), V(24.3, 15.6, -39.6), Kit.Vivid(C(255, 150, 60)))
+	-- big mint door
 	Kit.Box(f, V(-7, 0, -39.85), V(7, 12, -39.6), TRIM)
-	Kit.Box(f, V(-6, 0, -39.7), V(6, 11, -39.35), C(150, 255, 160), { Mat = NEON, Transp = 0.15 })
+	Kit.Box(f, V(-6, 0, -39.7), V(6, 11, -39.35), Kit.Vivid(C(150, 255, 160)), { Refl = 0.1 })
 	-- windows
 	for _, x in { -17, -11, 11, 17 } do
 		Kit.Box(f, V(x - 2, 8, -39.8), V(x + 2, 12.5, -39.4), C(255, 235, 120), { Mat = NEON })
@@ -209,7 +214,7 @@ local function hq(f: Instance)
 	-- sign facing +Z (toward spawn)
 	local signCF = CFrame.new(0, 21.5, -39) * CFrame.Angles(0, Kit.FaceYaw(0, 1), 0)
 	local sign = Kit.Part(f, V(32, 6, 1), signCF, C(45, 25, 80))
-	Kit.Part(f, V(33.5, 7.5, 0.5), signCF * CFrame.new(0, 0, 0.6), C(150, 255, 140), { Mat = NEON })
+	Kit.Part(f, V(33.5, 7.5, 0.5), signCF * CFrame.new(0, 0, 0.6), Kit.Vivid(C(150, 255, 140)))
 	Kit.Sign(sign, Enum.NormalId.Front, "GHOST HUNTER HQ", C(255, 230, 90))
 	-- antenna + dish
 	Kit.Cyl(f, 18, 0.8, CFrame.new(16, 26.5, -50), C(200, 200, 220))
@@ -221,7 +226,7 @@ local function hq(f: Instance)
 	for _, s in { -1, 1 } do
 		local x = s * 30
 		Kit.Cyl(f, 1, 9, CFrame.new(x, 0.5, -46), dark, { Solid = true })
-		local tank = Kit.Cyl(f, 12, 8, CFrame.new(x, 7, -46), C(130, 255, 170), { Mat = NEON, Transp = 0.6 })
+		local tank = Kit.Cyl(f, 12, 8, CFrame.new(x, 7, -46), Kit.Vivid(C(130, 255, 170)), { Transp = 0.55, Refl = 0.2 })
 		Kit.Cyl(f, 1, 9, CFrame.new(x, 13.5, -46), dark)
 		Kit.Ball(f, 3.6, V(x, 7.5, -46), C(240, 245, 255))
 		Kit.Emitter(tank, C(150, 255, 180), 2, 2, 0.5)

@@ -139,6 +139,15 @@ function RigUtil.Mix(a: Color3, b: Color3, t: number): Color3
 	return Color3.new(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t)
 end
 
+-- Slightly more saturated, brighter colour for accents that are solid instead of Neon
+-- (Neon is kept for tool emitters, eyes, flames and one small light per rig).
+-- Near-greys/whites keep their saturation.
+function RigUtil.Vivid(c: Color3): Color3
+	local h, s, v = c:ToHSV()
+	local s2 = if s < 0.1 then s else math.min(1, s * 1.15 + 0.05)
+	return Color3.fromHSV(h, s2, math.min(1, v * 1.06 + 0.03))
+end
+
 -- Highest world Y reached by a part's box (exact for blocks, conservative for balls/cylinders).
 function RigUtil.TopY(p: BasePart): number
 	local _, y, _, _, _, _, r10, r11, r12 = p.CFrame:GetComponents()

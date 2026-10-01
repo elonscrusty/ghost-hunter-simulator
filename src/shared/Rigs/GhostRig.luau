@@ -9,6 +9,9 @@
 -- attachments "Center", "Top" (above the head/hat, for billboards) and "Bottom" (tail tip).
 -- Built at scale 1 (body diameter 3.5) and then scaled with Model:ScaleTo(def.Scale).
 -- The ghost faces -Z (its LookVector).
+-- The spooky glow comes from the body colour, the small Neon inner core, glowing eyes/flames
+-- where a style has them and the "Aura" ParticleEmitter; horns, stripes, tassels and crown
+-- spikes are solid (vivid glow colour) so big ghosts don't turn into neon blobs.
 
 local Config = require(script.Parent.Parent.Config)
 local U = require(script.Parent.RigUtil)
@@ -40,6 +43,7 @@ function GhostRig.Build(ghostId: string): Model
 	local style = def.Style
 	local color = def.Color
 	local glow = def.Glow
+	local accent = U.Vivid(glow) -- solid accessories in the glow colour
 
 	local model = Instance.new("Model")
 	model.Name = ghostId
@@ -131,12 +135,12 @@ function GhostRig.Build(ghostId: string): Model
 	------------------------------------------------------------------ styles
 	if style == "Mischief" then
 		for _, s in { -1, 1 } do
-			wedge(Vector3.new(0.3, 0.85, 0.5), at(0.8 * s, 1.6, -0.1) * CFrame.Angles(0, 0, -0.35 * s), glow, NEON) -- devil horns
+			wedge(Vector3.new(0.3, 0.85, 0.5), at(0.8 * s, 1.6, -0.1) * CFrame.Angles(0, 0, -0.35 * s), accent) -- devil horns
 			brow(s, 0.98, false, U.Shade(color, 0.45), 0.6)
 		end
 		local tongue = mouthPos + Vector3.new(0.12, -0.3, -0.05)
 		ball(0.42, CFrame.new(tongue), Color3.fromRGB(255, 90, 130))
-		wedge(Vector3.new(0.15, 0.5, 0.45), at(0.25, -2.95, 2.25) * CFrame.Angles(-0.6, 0, 0), glow, NEON) -- spade tail tip
+		wedge(Vector3.new(0.15, 0.5, 0.45), at(0.25, -2.95, 2.25) * CFrame.Angles(-0.6, 0, 0), accent) -- spade tail tip
 	elseif style == "Poltergeist" then
 		-- crown of green flames
 		for i = 0, 3 do
@@ -195,7 +199,7 @@ function GhostRig.Build(ghostId: string): Model
 		local passPos = surf(Vector3.new(0, -1.2, -1.3), 0.04)
 		local f = U.Facing(passPos, passPos)
 		block(Vector3.new(0.75, 0.95, 0.08), f, Color3.fromRGB(250, 250, 240))
-		block(Vector3.new(0.75, 0.28, 0.1), f * at(0, 0.3, 0), glow, NEON)
+		block(Vector3.new(0.75, 0.28, 0.1), f * at(0, 0.3, 0), accent)
 	elseif style == "Student" then
 		local capColor = Color3.fromRGB(60, 90, 200)
 		ball(2.5, at(0, 1.15, 0.2), capColor)
@@ -210,7 +214,7 @@ function GhostRig.Build(ghostId: string): Model
 		local dark = Color3.fromRGB(35, 30, 50)
 		cyl(0.5, 2.2, at(0, 1.65, 0.1) * U.AxisY, dark)
 		block(Vector3.new(2.9, 0.15, 2.9), at(0, 1.95, 0.1) * CFrame.Angles(0, math.pi / 4, 0), dark)
-		block(Vector3.new(0.12, 0.8, 0.12), at(1.98, 1.55, 0.1), glow, NEON) -- tassel
+		block(Vector3.new(0.12, 0.8, 0.12), at(1.98, 1.55, 0.1), accent) -- tassel
 		-- monocle on the right eye + its chain
 		local eye = Vector3.new(0.6, 0.35, -1.38)
 		cyl(0.08, 1.2, U.DiscFacing(surf(eye, 0.08), eye), GOLD, { Material = Enum.Material.Metal })
@@ -230,7 +234,7 @@ function GhostRig.Build(ghostId: string): Model
 		-- crown
 		cyl(0.6, 1.9, at(0, 1.75, 0.05) * U.AxisY, GOLD, { Material = Enum.Material.Metal })
 		for i = 0, 2 do
-			wedge(Vector3.new(0.3, 0.75, 0.45), CFrame.Angles(0, i * math.pi * 2 / 3, 0) * at(0, 2.4, -0.78), glow, NEON)
+			wedge(Vector3.new(0.3, 0.75, 0.45), CFrame.Angles(0, i * math.pi * 2 / 3, 0) * at(0, 2.4, -0.78), accent)
 		end
 		for _, s in { -1, 1 } do
 			brow(s, 1.0, true, Color3.fromRGB(60, 20, 60), 0.85)

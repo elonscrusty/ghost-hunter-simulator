@@ -13,6 +13,8 @@
 --                pops them off.
 -- `Glow` is a neon slab inside the crate (Transparency 1 by default; fade it in on open).
 -- `Burst` is an Attachment on Base at the interior top, for particle bursts.
+-- Trim bands are solid (SmoothPlastic, vivid trim colour); the only visible Neon is the thin
+-- lip under the lid, like magic light leaking from the seam.
 
 local Config = require(script.Parent.Parent.Config)
 local U = require(script.Parent.RigUtil)
@@ -45,6 +47,8 @@ function CrateRig.Build(crateId: string): CrateRig
 	assert(def, "CrateRig: unknown crate " .. tostring(crateId))
 	local color = def.Color
 	local trim = def.Trim
+	local band = U.Vivid(trim) -- solid trim bands
+	local bandOpts: U.Opts = { Shadow = false }
 
 	local model = Instance.new("Model")
 	model.Name = crateId
@@ -64,7 +68,7 @@ function CrateRig.Build(crateId: string): CrateRig
 
 	onBase(U.Block(Vector3.new(W + 0.25, 0.35, D + 0.25), CFrame.new(0, 0.175, 0), U.Shade(color, 0.6), model)) -- plinth
 	for _, s in { -1, 1 } do
-		onBase(U.Block(Vector3.new(0.5, 2.0, D + 0.12), CFrame.new(BAND_X * s, 1.35, 0), trim, model, NEON))
+		onBase(U.Block(Vector3.new(0.5, 2.0, D + 0.12), CFrame.new(BAND_X * s, 1.35, 0), band, model, bandOpts))
 	end
 
 	-- cute ghost emblem on the front
@@ -97,10 +101,10 @@ function CrateRig.Build(crateId: string): CrateRig
 	onLid(U.Wedge(bevel, CFrame.new(0, topY, -(topDepth + bevel.Z) / 2), color, model)) -- front bevel
 	onLid(U.Wedge(bevel, CFrame.new(0, topY, (topDepth + bevel.Z) / 2) * CFrame.Angles(0, math.pi, 0), color, model)) -- back bevel
 	for _, s in { -1, 1 } do
-		onLid(U.Block(Vector3.new(0.5, LID_H + 0.04, D + 0.16), CFrame.new(BAND_X * s, lidY, 0), trim, model, NEON))
-		onLid(U.Block(Vector3.new(0.5, LID_TOP_H + 0.04, topDepth + 0.04), CFrame.new(BAND_X * s, topY, 0), trim, model, NEON))
+		onLid(U.Block(Vector3.new(0.5, LID_H + 0.04, D + 0.16), CFrame.new(BAND_X * s, lidY, 0), band, model, bandOpts))
+		onLid(U.Block(Vector3.new(0.5, LID_TOP_H + 0.04, topDepth + 0.04), CFrame.new(BAND_X * s, topY, 0), band, model, bandOpts))
 	end
-	onLid(U.Block(Vector3.new(W + 0.15, 0.18, 0.16), CFrame.new(0, BODY_H + 0.09, -(D + 0.1) / 2 - 0.04), trim, model, NEON)) -- front lip
+	onLid(U.Block(Vector3.new(W + 0.15, 0.18, 0.16), CFrame.new(0, BODY_H + 0.09, -(D + 0.1) / 2 - 0.04), trim, model, NEON)) -- front lip (glowing seam)
 
 	------------------------------------------------------------------ padlocks
 	local lockMotors: { [number]: Motor6D } = {}

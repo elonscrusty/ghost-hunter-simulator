@@ -1,8 +1,9 @@
 --!strict
 -- ZONE 2: Cemetery (Z 260..540). Cobblestone path along X = 0 from gate to gate, a giant
--- mausoleum in the north-west corner (tall dome + glowing spire, visible from spawn),
+-- mausoleum in the north-west corner (tall dome + glowing spire orb, visible from spawn),
 -- small crypts, rows of oversized pastel gravestones, twisted trees, lanterns, neon cracks,
--- glowing mushrooms, iron fences and slow purple fog.
+-- candy mushrooms, iron fences and slow purple fog. Glow is kept to the lanterns, candles,
+-- crypt doorways, the spire orb and the small ectoplasm cracks.
 
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
@@ -27,6 +28,7 @@ local function mausoleum(f: Instance)
 	local m = Kit.Model(f, "Mausoleum")
 	local stone, light, roof = C(215, 205, 240), C(240, 235, 255), C(110, 80, 180)
 	local glow = C(120, 255, 170)
+	local mint = Kit.Vivid(glow) -- solid trims in the glow colour
 	-- stepped platform
 	Kit.Box(m, V(-122, 0, 477), V(-78, 1.2, 513), C(150, 140, 180), { Mat = Enum.Material.Slate, Solid = true })
 	Kit.Box(m, V(-120, 1.2, 479), V(-82, 2.4, 511), C(170, 160, 200), { Mat = Enum.Material.Slate, Solid = true })
@@ -40,12 +42,12 @@ local function mausoleum(f: Instance)
 	end
 	-- entablature + cornice
 	Kit.Box(m, V(-119, 24.4, 480), V(-83, 27, 510), light, { Solid = true })
-	Kit.Box(m, V(-83.3, 25, 483), V(-82.9, 26.4, 507), glow, { Mat = NEON })
+	Kit.Box(m, V(-83.3, 25, 483), V(-82.9, 26.4, 507), mint)
 	-- pediment roof (triangle face toward +X)
 	gable(m, CFrame.new(-101, 27, 495), 37, 31, 9, roof)
-	-- glowing doorway
+	-- ectoplasm-filled doorway (solid mint, lit by its own green light)
 	Kit.Box(m, V(-90.3, 2.4, 487.5), V(-89.9, 17.5, 502.5), light)
-	local door = Kit.Box(m, V(-90.1, 2.4, 489), V(-89.6, 16, 501), glow, { Mat = NEON, Transp = 0.1 })
+	local door = Kit.Box(m, V(-90.1, 2.4, 489), V(-89.6, 16, 501), mint, { Refl = 0.1 })
 	Kit.Light(door, glow, 30, 2)
 	-- name plate on the entablature, facing +X
 	local plateCF = CFrame.new(-82.7, 25.7, 495) * CFrame.Angles(0, Kit.FaceYaw(1, 0), 0)
@@ -53,7 +55,7 @@ local function mausoleum(f: Instance)
 	Kit.Sign(plate, Enum.NormalId.Front, "REST IN PURPLE", C(150, 255, 170))
 	-- drum + dome + spire (tall: visible from spawn)
 	Kit.Cyl(m, 12, 15, CFrame.new(-104, 36, 495), light, { Solid = true, Shadow = true })
-	Kit.Cyl(m, 1, 16.5, CFrame.new(-104, 42.2, 495), glow, { Mat = NEON })
+	Kit.Cyl(m, 1, 16.5, CFrame.new(-104, 42.2, 495), mint)
 	Kit.Ball(m, 15, V(-104, 42.5, 495), C(150, 110, 230), { Shadow = true })
 	Kit.Cyl(m, 14, 1.4, CFrame.new(-104, 56, 495), C(240, 220, 120))
 	local orb = Kit.Ball(m, 4.5, V(-104, 64, 495), glow, { Mat = NEON })
@@ -65,7 +67,7 @@ local function mausoleum(f: Instance)
 			Kit.Box(m, V(x - 1.2, 0, z - 1.2), V(x + 1.2, 12, z + 1.2), light, { Solid = true })
 			Kit.Wedge(m, V(2.4, 2, 1.2), CFrame.new(x, 13, z - 0.6), light)
 			Kit.Wedge(m, V(2.4, 2, 1.2), CFrame.new(x, 13, z + 0.6) * CFrame.Angles(0, math.pi, 0), light)
-			Kit.Ball(m, 1.6, V(x, 14.6, z), glow, { Mat = NEON })
+			Kit.Ball(m, 1.6, V(x, 14.6, z), mint)
 		end
 	end
 	-- floating candles by the door
@@ -114,7 +116,7 @@ local function gravestone(f: Instance, x: number, z: number)
 		if kind <= 2 then
 			Kit.Sign(slab, Enum.NormalId.Front, Kit.Pick(EPITAPHS), C(110, 70, 170), { Stroke = C(255, 255, 255), Font = Enum.Font.GothamBlack })
 		elseif kind == 3 then
-			Kit.Part(f, V(w * 0.5, 0.3, 0.2), base * CFrame.new(0, h * 0.55, -0.65), C(120, 255, 170), { Mat = NEON })
+			Kit.Part(f, V(w * 0.5, 0.3, 0.2), base * CFrame.new(0, h * 0.55, -0.65), Kit.Vivid(C(120, 255, 170)))
 		end
 	end
 	-- little dirt mound in front
@@ -129,9 +131,10 @@ function Cemetery.Build(map: Instance)
 	-- main path + branch to the mausoleum
 	Kit.Box(f, V(-8, -0.4, 260), V(8, 0.1, 540), C(165, 150, 190), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "Path" })
 	Kit.Box(f, V(-80, -0.4, 490), V(-8, 0.08, 500), C(165, 150, 190), { Mat = Enum.Material.Cobblestone, Solid = true })
+	local edging = Kit.Vivid(C(120, 255, 170))
 	for z = 270, 530, 20 do
 		for _, s in { -1, 1 } do
-			Kit.Box(f, V(s * 8, 0.1, z), V(s * 8.6, 0.25, z + 10), C(120, 255, 170), { Mat = NEON })
+			Kit.Box(f, V(s * 8, 0.1, z), V(s * 8.6, 0.25, z + 10), edging)
 		end
 	end
 	Kit.AddRect(-9, 260, 9, 540, true)

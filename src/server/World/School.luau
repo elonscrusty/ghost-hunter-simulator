@@ -10,6 +10,8 @@
 --     Gym       X -99..99,  Z 763..859 (Headmaster area at Z 805), bleachers along the back wall.
 --   Doorways: hallway→library/cafeteria 14 wide, hallway→classes 20 wide, library/cafeteria→class
 --   14 wide, classes→gym 16 wide, hallway→gym 32 wide.
+--   Glow is kept to windows, sconces, desk lamps, the bell, slime puddles, bus headlights and
+--   the jack-o'-lanterns along the path; bands, rings, lines, frames and trims are painted.
 
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
@@ -142,18 +144,19 @@ local function shell(f: Instance)
 	Kit.Wedge(f, V(208, 3, 4), faced(V(0, H + 0.5, 864), 0, 1), eave, { Shadow = true })
 	Kit.Wedge(f, V(268, 3, 4), faced(V(-104, H + 0.5, 730), -1, 0), eave, { Shadow = true })
 	Kit.Wedge(f, V(268, 3, 4), faced(V(104, H + 0.5, 730), 1, 0), eave, { Shadow = true })
-	-- neon band around the outside
-	Kit.Box(f, V(-101.2, 14, 598.7), V(101.2, 14.6, 598.9), C(150, 255, 140), { Mat = NEON })
+	-- painted band along the front
+	Kit.Box(f, V(-101.2, 14, 598.7), V(101.2, 14.6, 598.9), Kit.Vivid(C(150, 255, 140)))
 
 	-- corner turrets
+	local turretRing, turretTop = Kit.Vivid(C(200, 130, 255)), Kit.Vivid(C(150, 255, 140))
 	for _, x in { -100, 100 } do
 		for _, z in { 600, 860 } do
 			Kit.Cyl(f, 24, 10, CFrame.new(x, 12, z), C(240, 170, 120), SOLID)
-			Kit.Cyl(f, 1, 10.6, CFrame.new(x, 14.3, z), C(200, 130, 255), { Mat = NEON })
+			Kit.Cyl(f, 1, 10.6, CFrame.new(x, 14.3, z), turretRing)
 			Kit.Cyl(f, 2, 11.5, CFrame.new(x, 25, z), TRIMC)
 			Kit.Cyl(f, 3, 8, CFrame.new(x, 27.5, z), TRIMC)
 			Kit.Cyl(f, 3, 4.5, CFrame.new(x, 30.5, z), TRIMC)
-			Kit.Ball(f, 2.6, V(x, 33, z), C(150, 255, 140), { Mat = NEON })
+			Kit.Ball(f, 2.6, V(x, 33, z), turretTop)
 		end
 	end
 
@@ -177,26 +180,27 @@ end
 --==================================================================
 local function clockTower(f: Instance)
 	local body = C(165, 115, 235)
+	local mint, orange = Kit.Vivid(C(150, 255, 140)), Kit.Vivid(C(255, 160, 60))
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(s * 10, 0, 594), V(s * 14, 22, 606), body, SOLID)
-		Kit.Box(f, V(s * 9.8, 0, 593.8), V(s * 10.3, 22, 594.3), C(150, 255, 140), { Mat = NEON })
+		Kit.Box(f, V(s * 9.8, 0, 593.8), V(s * 10.3, 22, 594.3), mint)
 	end
 	Kit.Box(f, V(-14, 22, 594), V(14, 62, 606), body, { Solid = true, Shadow = true, Name = "ClockTower" })
-	Kit.Box(f, V(-14.3, 22, 593.7), V(14.3, 23, 606.3), C(150, 255, 140), { Mat = NEON })
-	Kit.Box(f, V(-14.3, 61, 593.7), V(14.3, 62, 606.3), C(255, 160, 60), { Mat = NEON })
+	Kit.Box(f, V(-14.3, 22, 593.7), V(14.3, 23, 606.3), mint)
+	Kit.Box(f, V(-14.3, 61, 593.7), V(14.3, 62, 606.3), orange)
 	-- SPOOKY HIGH sign
 	local sign = Kit.Part(f, V(26, 6, 0.6), CFrame.new(0, 26.5, 593.6), C(45, 25, 80))
-	Kit.Part(f, V(27.5, 7.5, 0.3), CFrame.new(0, 26.5, 593.85), C(255, 160, 60), { Mat = NEON })
+	Kit.Part(f, V(27.5, 7.5, 0.3), CFrame.new(0, 26.5, 593.85), orange)
 	Kit.Sign(sign, Enum.NormalId.Front, "SPOOKY HIGH", C(255, 200, 80))
 	-- clock (11:55, almost midnight)
-	Kit.CylFlat(f, 0.5, 17.5, V(0, 44, 593.75), "Z", C(200, 120, 255), { Mat = NEON })
+	Kit.CylFlat(f, 0.5, 17.5, V(0, 44, 593.75), "Z", Kit.Vivid(C(200, 120, 255)))
 	Kit.CylFlat(f, 0.6, 16, V(0, 44, 593.4), "Z", C(255, 245, 225))
 	local function hand(len: number, w: number, angle: number, z: number, color: Color3)
 		Kit.Part(f, V(w, len, 0.25), CFrame.new(0, 44, z) * CFrame.Angles(0, 0, angle) * CFrame.new(0, len / 2, 0), color)
 	end
 	hand(5, 1, -0.05, 593.0, C(60, 30, 90))
 	hand(7, 0.7, -0.52, 592.9, C(130, 60, 200))
-	Kit.Ball(f, 1.2, V(0, 44, 592.9), C(255, 160, 60), { Mat = NEON })
+	Kit.Ball(f, 1.2, V(0, 44, 592.9), orange)
 	for i = 0, 3 do
 		local a = i * math.pi / 2
 		Kit.Part(f, V(0.8, 1.6, 0.3), CFrame.new(math.sin(a) * 6.5, 44 + math.cos(a) * 6.5, 593.0) * CFrame.Angles(0, 0, -a), C(130, 60, 200))
@@ -213,7 +217,7 @@ local function clockTower(f: Instance)
 	Kit.Box(f, V(-15.5, 74, 592.5), V(15.5, 76, 607.5), TRIMC, SOLID)
 	gable(f, CFrame.new(0, 76, 600), 31, 15, 14, C(110, 60, 180))
 	Kit.Cyl(f, 12, 1.2, CFrame.new(0, 96, 600), C(240, 220, 120))
-	Kit.Ball(f, 3.2, V(0, 103, 600), C(200, 120, 255), { Mat = NEON })
+	Kit.Ball(f, 3.2, V(0, 103, 600), Kit.Vivid(C(200, 120, 255)))
 end
 
 --==================================================================
@@ -222,6 +226,7 @@ end
 local function hallway(f: Instance)
 	local lockerCols = { C(255, 120, 170), C(90, 210, 230), C(255, 210, 90), C(170, 120, 255) }
 	local runs = { { 606, 616 }, { 632, 679 }, { 701, 760 } }
+	local slimed = Kit.Vivid(C(140, 255, 150))
 	local n = 0
 	for _, s in { -1, 1 } do
 		for _, r in runs do
@@ -230,16 +235,17 @@ local function hallway(f: Instance)
 				n += 1
 				Kit.Box(f, V(s * 16, 0.15, z0), V(s * 14.5, 8.5, z0 + 3), lockerCols[(n % #lockerCols) + 1], { Solid = true })
 				if n % 7 == 0 then
-					Kit.Box(f, V(s * 14.5, 1, z0 + 0.4), V(s * 14.35, 8, z0 + 2.6), C(140, 255, 150), { Mat = NEON })
+					Kit.Box(f, V(s * 14.5, 1, z0 + 0.4), V(s * 14.35, 8, z0 + 2.6), slimed) -- slimed locker door
 				end
 				z0 += 3.2
 			end
 			Kit.Box(f, V(s * 16, 8.5, r[1]), V(s * 14.3, 9, r[2]), C(120, 70, 190))
 		end
 	end
-	-- glowing guide lines on the floor (flat)
+	-- painted guide lines on the floor (flat)
+	local guide = Kit.Vivid(C(200, 130, 255))
 	for _, s in { -1, 1 } do
-		Kit.Box(f, V(s * 7 - 0.25, 0.15, 603), V(s * 7 + 0.25, 0.2, 760), C(200, 130, 255), { Mat = NEON })
+		Kit.Box(f, V(s * 7 - 0.25, 0.15, 603), V(s * 7 + 0.25, 0.2, 760), guide)
 	end
 	-- thin beams overhead (Y 16..17.5), clear of the ghost areas' height
 	for _, z in { 615, 670, 732, 758 } do
@@ -317,12 +323,12 @@ local function cafeteria(f: Instance)
 	Kit.Box(f, V(90, 0.15, 607), V(96, 4, 643), C(205, 205, 225), { Solid = true })
 	local pans = { C(130, 255, 140), C(255, 160, 60), C(200, 120, 255), C(255, 110, 140) }
 	for i = 0, 3 do
-		Kit.Box(f, V(91, 4, 609 + i * 8.5), V(95, 4.5, 615 + i * 8.5), pans[i + 1], { Mat = NEON })
+		Kit.Box(f, V(91, 4, 609 + i * 8.5), V(95, 4.5, 615 + i * 8.5), Kit.Vivid(pans[i + 1]))
 	end
 	Kit.Box(f, V(89.8, 4, 607), V(90.2, 7, 643), C(200, 240, 255), { Transp = 0.6 })
 	local menuCF = faced(V(98.7, 11, 625), -1, 0)
 	local menu = Kit.Part(f, V(26, 6, 0.4), menuCF, C(40, 30, 60))
-	Kit.Part(f, V(27, 7, 0.2), menuCF * CFrame.new(0, 0, 0.3), C(255, 160, 60), { Mat = NEON })
+	Kit.Part(f, V(27, 7, 0.2), menuCF * CFrame.new(0, 0, 0.3), Kit.Vivid(C(255, 160, 60)))
 	Kit.Sign(menu, Enum.NormalId.Front, "TODAY: ECTO-LOAF\n& SCREAM PIE", C(150, 255, 140))
 	-- long tables with benches and trays
 	local trays = { C(255, 120, 170), C(90, 210, 230), C(255, 210, 90), C(170, 120, 255) }
@@ -336,7 +342,7 @@ local function cafeteria(f: Instance)
 			local s = if i % 2 == 0 then -1 else 1
 			local tz = 614 + i * 7
 			Kit.Box(f, V(x + s * 0.3, 3.6, tz - 0.8), V(x + s * 2.2, 3.85, tz + 0.8), trays[i + 1])
-			Kit.Ball(f, 0.9, V(x + s * 1.25, 4.2, tz), Kit.Pick(pans), { Mat = NEON })
+			Kit.Ball(f, 0.9, V(x + s * 1.25, 4.2, tz), Kit.Vivid(Kit.Pick(pans)))
 		end
 	end
 	Props.Graffiti(f, V(35, 11, 647.9), 16, 5, 0, -1, "FOOD FIGHT\nAT MIDNIGHT", C(255, 170, 220), 4)
@@ -391,25 +397,28 @@ end
 -- GYM
 --==================================================================
 local function gym(f: Instance)
+	-- court lines (white paint) and the purple centre circle
 	local line = C(255, 250, 240)
-	Kit.Box(f, V(-0.3, 0.15, 765), V(0.3, 0.2, 857), line, { Mat = NEON })
+	Kit.Box(f, V(-0.3, 0.15, 765), V(0.3, 0.2, 857), line)
 	for _, x in { -92, 92 } do
-		Kit.Box(f, V(x - 0.3, 0.15, 768), V(x + 0.3, 0.2, 840), line, { Mat = NEON })
+		Kit.Box(f, V(x - 0.3, 0.15, 768), V(x + 0.3, 0.2, 840), line)
 	end
 	for _, z in { 768, 840 } do
-		Kit.Box(f, V(-92, 0.15, z - 0.3), V(92, 0.2, z + 0.3), line, { Mat = NEON })
+		Kit.Box(f, V(-92, 0.15, z - 0.3), V(92, 0.2, z + 0.3), line)
 	end
+	local circle = Kit.Vivid(C(200, 130, 255))
 	for i = 0, 15 do
 		local a = (i + 0.5) / 16 * math.pi * 2
 		local p = V(math.cos(a) * 10, 0.17, 805 + math.sin(a) * 10)
-		Kit.Part(f, V(0.6, 0.06, 4.4), CFrame.lookAt(p, p + V(-math.sin(a), 0, math.cos(a))), C(200, 130, 255), { Mat = NEON })
+		Kit.Part(f, V(0.6, 0.06, 4.4), CFrame.lookAt(p, p + V(-math.sin(a), 0, math.cos(a))), circle)
 	end
 	-- hoops on the side walls
+	local hoop = Kit.Vivid(C(255, 120, 60))
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(s * 97.4, 9.5, 800.5), V(s * 97.9, 14.5, 809.5), WHITE)
-		Kit.Box(f, V(s * 97.3, 10.6, 803.5), V(s * 97.4, 13, 806.5), C(255, 120, 60), { Mat = NEON })
+		Kit.Box(f, V(s * 97.3, 10.6, 803.5), V(s * 97.4, 13, 806.5), hoop)
 		Kit.Box(f, V(s * 97.9, 11.4, 804.6), V(s * 99, 12.2, 805.4), C(80, 80, 100))
-		Kit.Disc(f, s * 95.4, 805, 10.3, 3.6, 0.3, C(255, 130, 50), { Mat = NEON })
+		Kit.Disc(f, s * 95.4, 805, 10.3, 3.6, 0.3, hoop)
 		Kit.Cyl(f, 2, 3.2, CFrame.new(s * 95.4, 9.1, 805), WHITE, { Transp = 0.5 })
 	end
 	-- bleachers along the back wall
@@ -424,7 +433,7 @@ local function gym(f: Instance)
 	-- scoreboard
 	local sbCF = CFrame.new(0, 12.5, 858.5)
 	local sb = Kit.Part(f, V(26, 6, 0.6), sbCF, C(30, 20, 50))
-	Kit.Part(f, V(27.4, 7.4, 0.3), sbCF * CFrame.new(0, 0, 0.35), C(150, 255, 140), { Mat = NEON })
+	Kit.Part(f, V(27.4, 7.4, 0.3), sbCF * CFrame.new(0, 0, 0.35), Kit.Vivid(C(150, 255, 140)))
 	Kit.Sign(sb, Enum.NormalId.Front, "HOME 0  •  GHOSTS 999", C(255, 210, 80), { Font = Enum.Font.GothamBlack })
 	-- banners
 	Props.SignBoard(f, V(-98.6, 10, 780), 14, 5, 1, 0, "GO GHOULS!", C(130, 70, 220), C(255, 220, 90))
@@ -450,10 +459,11 @@ local function courtyard(f: Instance)
 	Kit.Box(f, V(55, 1.5, 566), V(85, 10.5, 578), yellow, SOLID)
 	Kit.Box(f, V(55.5, 10.5, 566.5), V(84.5, 11.3, 577.5), C(255, 225, 120))
 	Kit.Box(f, V(54.9, 5.5, 565.9), V(85.1, 6.1, 578.1), C(40, 30, 50))
+	-- windows: warm pale yellow sides, glassy windshield (solid; too long to glow nicely)
 	for _, z in { 565.8, 578.0 } do
-		Kit.Box(f, V(58, 6.8, z), V(82, 9.6, z + 0.2), C(255, 245, 170), { Mat = NEON, Transp = 0.2 })
+		Kit.Box(f, V(58, 6.8, z), V(82, 9.6, z + 0.2), C(255, 240, 160), { Refl = 0.15 })
 	end
-	Kit.Box(f, V(54.8, 6.5, 567), V(55, 9.8, 577), C(170, 230, 255), { Mat = NEON, Transp = 0.3 })
+	Kit.Box(f, V(54.8, 6.5, 567), V(55, 9.8, 577), Kit.Vivid(C(170, 230, 255)), { Transp = 0.2, Refl = 0.25 })
 	for _, x in { 60, 80 } do
 		for _, z in { 565.6, 578.4 } do
 			Kit.CylFlat(f, 1.4, 4, V(x, 2, z), "Z", C(40, 35, 55))
@@ -467,14 +477,14 @@ local function courtyard(f: Instance)
 	Kit.AddCircle(70, 572, 17)
 	-- flagpole
 	Kit.Cyl(f, 26, 0.6, CFrame.new(28, 13, 590), C(220, 220, 235))
-	Kit.Ball(f, 1.2, V(28, 26.4, 590), C(255, 210, 80), { Mat = NEON })
+	Kit.Ball(f, 1.2, V(28, 26.4, 590), C(255, 210, 80), { Refl = 0.3 })
 	local flag = Kit.Box(f, V(28.3, 20, 589.9), V(37, 25, 590.1), C(150, 80, 230))
 	Kit.Sign(flag, Enum.NormalId.Front, "👻", WHITE)
 	Kit.AddCircle(28, 590, 2)
-	-- pumpkins lining the path
+	-- jack-o'-lanterns lining the path
 	for z = 548, 590, 14 do
 		for _, s in { -1, 1 } do
-			Props.Pumpkin(f, V(s * 12.5, 0, z), 2.8, -s, 0)
+			Props.Pumpkin(f, V(s * 12.5, 0, z), 2.8, -s, 0, true)
 		end
 	end
 	-- trees (courtyard and the strips around the building)

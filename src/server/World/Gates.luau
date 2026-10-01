@@ -1,6 +1,10 @@
 --!strict
 -- Zone gates: workspace.Map.Gates.Gate_<ZoneId> with Barrier, Arch, PromptAnchor and Sign
 -- (TextLabel "CostLabel" on the sign's Front face, which faces the approaching player at -Z).
+-- The Barrier is a ForceField-material wall (shimmering, no neon blow-out); the client
+-- (Ambience) toggles its collision, tweens its Color/Size/CFrame/Transparency on unlock.
+-- Trims are painted (solid); only the hanging lanterns, pillar jack-o'-lanterns and the
+-- skull's eyes glow.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Kit = require(script.Parent.Kit)
@@ -15,8 +19,8 @@ local NEON = Enum.Material.Neon
 type Theme = { Stone: Color3, Trim: Color3, Barrier: Color3, Lamp: Color3 }
 
 local THEMES: { [string]: Theme } = {
-	Cemetery = { Stone = C(150, 125, 200), Trim = C(140, 255, 120), Barrier = C(170, 90, 255), Lamp = C(140, 255, 160) },
-	School = { Stone = C(225, 120, 100), Trim = C(210, 120, 255), Barrier = C(110, 255, 170), Lamp = C(220, 150, 255) },
+	Cemetery = { Stone = C(150, 125, 200), Trim = C(140, 255, 120), Barrier = C(180, 110, 255), Lamp = C(140, 255, 160) },
+	School = { Stone = C(225, 120, 100), Trim = C(210, 120, 255), Barrier = C(100, 255, 190), Lamp = C(220, 150, 255) },
 }
 
 local function buildGate(folder: Instance, id: string, z: number, width: number)
@@ -24,11 +28,12 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 	local theme = THEMES[id] or THEMES.Cemetery
 	local half = width / 2
 	local m = Kit.Model(folder, "Gate_" .. id)
+	local trim = Kit.Vivid(theme.Trim)
 
 	-- Barrier: fills the opening. Other code toggles collision locally and tweens it.
 	local barrier = Kit.Part(m, V(width, 30, 2), CFrame.new(0, 15, z), theme.Barrier, {
 		Name = "Barrier",
-		Mat = NEON,
+		Mat = Enum.Material.ForceField,
 		Transp = 0.4,
 		Solid = true,
 		Shadow = false,
@@ -43,15 +48,15 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 		local x1, x2 = s * half, s * (half + pw)
 		Kit.Box(arch, V(x1, 0, z - 5), V(x2, 32, z + 5), theme.Stone, { Mat = Enum.Material.Slate, Solid = true })
 		Kit.Box(arch, V(s * (half + 0.01), 0, z - 6), V(s * (half + pw + 1), 3, z + 6), theme.Stone:Lerp(Color3.new(0, 0, 0), 0.2), { Mat = Enum.Material.Slate, Solid = true })
-		-- glowing trims on the pillar fronts (both sides)
+		-- painted trims on the pillar fronts (both sides)
 		for _, fz in { -1, 1 } do
 			for _, ex in { 0.6, pw - 0.6 } do
 				local x = s * (half + ex)
-				Kit.Box(arch, V(x - 0.3, 3, z + fz * 5), V(x + 0.3, 30, z + fz * 5.3), theme.Trim, { Mat = NEON })
+				Kit.Box(arch, V(x - 0.3, 3, z + fz * 5), V(x + 0.3, 30, z + fz * 5.3), trim)
 			end
 		end
-		-- pumpkin on top of each pillar
-		Props.Pumpkin(arch, V(s * (half + pw / 2), 36, z), 6.5, 0, -1)
+		-- glowing jack-o'-lantern on top of each pillar
+		Props.Pumpkin(arch, V(s * (half + pw / 2), 36, z), 6.5, 0, -1, true)
 		-- hanging lantern on the approach side
 		local lx = s * (half + pw / 2)
 		Kit.Box(arch, V(lx - 0.3, 24, z - 5.8), V(lx + 0.3, 26, z - 5), C(50, 40, 70))
@@ -61,7 +66,7 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 	-- top beam (Y 30..36) spanning the opening above the barrier
 	Kit.Box(arch, V(-(half + pw + 1), 30, z - 4), V(half + pw + 1, 36, z + 4), theme.Stone, { Mat = Enum.Material.Slate, Solid = true })
 	for _, fz in { -1, 1 } do
-		Kit.Box(arch, V(-(half + pw + 1), 30, z + fz * 4), V(half + pw + 1, 30.6, z + fz * 4.3), theme.Trim, { Mat = NEON })
+		Kit.Box(arch, V(-(half + pw + 1), 30, z + fz * 4), V(half + pw + 1, 30.6, z + fz * 4.3), trim)
 	end
 	-- crenellations
 	for i = -2, 2 do
@@ -76,7 +81,7 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 
 	-- Sign above the arch, Front face (-Z) toward players coming from the previous zone.
 	local sign = Kit.Part(m, V(40, 10, 1), CFrame.new(0, 43, z - 3), C(45, 25, 80), { Name = "Sign" })
-	Kit.Part(arch, V(42, 12, 0.6), CFrame.new(0, 43, z - 2.3), theme.Trim, { Mat = NEON })
+	Kit.Part(arch, V(42, 12, 0.6), CFrame.new(0, 43, z - 2.3), trim) -- frame
 	local gui = Kit.Gui(sign, Enum.NormalId.Front, 30)
 	Kit.Label(gui, zone.Name, zone.Accent, {
 		Name = "ZoneLabel",

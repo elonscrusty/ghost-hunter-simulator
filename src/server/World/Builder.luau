@@ -73,7 +73,7 @@ function Builder.Build()
 
 	map.Parent = Workspace
 	local s = Kit.Stats
-	print(string.format("[GH World] built %d parts, %d lights, %d emitters, %d floating, %d flicker", s.Parts, s.Lights, s.Emitters, s.Floating, s.Flicker))
+	print(string.format("[GH World] built %d parts (%d neon), %d lights, %d emitters, %d floating, %d flicker", s.Parts, s.Neon, s.Lights, s.Emitters, s.Floating, s.Flicker))
 end
 
 return Builder

@@ -4,6 +4,11 @@
 -- unless `Solid = true` is passed for floors, walls and buildings.
 -- Also holds the seeded RNG, budgets (lights, emitters, tagged props) and a keep-out
 -- registry so scattered props never land inside ghost areas, roads or stations.
+--
+-- Neon is an accent, not a surface: keep it for small things whose glow means something
+-- (windows, lamp globes, lanterns, jack-o'-lantern faces at landmarks, eyes, small ectoplasm
+-- cracks/puddles). Trims, bands, rings, frames and pads use a solid material with a
+-- Kit.Vivid colour instead. Kit.Stats.Neon counts the Neon parts so the build log shows it.
 
 local CollectionService = game:GetService("CollectionService")
 
@@ -21,7 +26,7 @@ export type Opts = {
 
 Kit.Rng = Random.new(42)
 
-Kit.Stats = { Parts = 0, Lights = 0, Emitters = 0, Floating = 0, Flicker = 0 }
+Kit.Stats = { Parts = 0, Neon = 0, Lights = 0, Emitters = 0, Floating = 0, Flicker = 0 }
 local MAX_LIGHTS = 40
 local MAX_EMITTERS = 20
 local MAX_FLOATING = 40
@@ -53,6 +58,18 @@ local function apply(p: BasePart, size: Vector3, cf: CFrame, color: Color3, opts
 		p.Name = o.Name
 	end
 	Kit.Stats.Parts += 1
+	if p.Material == Enum.Material.Neon then
+		Kit.Stats.Neon += 1
+	end
+end
+
+-- A slightly more saturated, brighter version of a colour. Solid materials are lit by the
+-- scene instead of glowing, so former neon trims get this to stay candy-bright.
+-- Near-greys/whites keep their saturation (no accidental tint).
+function Kit.Vivid(c: Color3): Color3
+	local h, s, v = c:ToHSV()
+	local s2 = if s < 0.1 then s else math.min(1, s * 1.15 + 0.05)
+	return Color3.fromHSV(h, s2, math.min(1, v * 1.06 + 0.03))
 end
 
 -- Block (or Ball/Cylinder via opts.Shape) at an arbitrary CFrame.
@@ -282,6 +299,7 @@ end
 function Kit.Reset()
 	Kit.Rng = Random.new(42)
 	Kit.Stats.Parts = 0
+	Kit.Stats.Neon = 0
 	Kit.Stats.Lights = 0
 	Kit.Stats.Emitters = 0
 	Kit.Stats.Floating = 0

@@ -9,6 +9,9 @@
 -- head (1.9 ball) centred at Y=2.77. Total height ~3.8-4.4 depending on hair/hat.
 -- Joints sit at the waist (Root->Torso), neck, shoulders and hips, so Motor6D.Transform
 -- rotates each bone around its joint.
+-- Neon is limited to the tool emitter (the part holding the Tip attachment) plus at most one
+-- small light (helmet lamp, antenna bulb or a small halo); visors, goggles, badges, tanks,
+-- wings and screens are solid vivid colours.
 
 local Config = require(script.Parent.Parent.Config)
 local U = require(script.Parent.RigUtil)
@@ -190,15 +193,15 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 	elseif hat == "Mortarboard" then
 		cyl(head, 0.45, 1.5, CFrame.new(0, hairTop - 0.1, 0.1) * U.AxisY, hatColor)
 		block(head, Vector3.new(2.1, 0.12, 2.1), CFrame.new(0, hairTop + 0.17, 0.1) * CFrame.Angles(0, math.pi / 4, 0), hatColor)
-		block(head, Vector3.new(0.12, 0.6, 0.12), CFrame.new(1.38, hairTop - 0.1, 0.1), Color3.fromRGB(255, 205, 60), NEON)
+		block(head, Vector3.new(0.12, 0.6, 0.12), CFrame.new(1.38, hairTop - 0.1, 0.1), Color3.fromRGB(255, 205, 60)) -- tassel
 	elseif hat == "Visor" then
 		cyl(head, 0.2, 2.02, CFrame.new(0, 0.5, 0.05) * U.AxisY, U.Shade(hatColor, 0.6))
-		block(head, Vector3.new(1.5, 0.08, 0.75), CFrame.new(0, 0.6, -1.05) * CFrame.Angles(-0.2, 0, 0), hatColor, { Material = Enum.Material.Neon, Transparency = 0.35 })
+		block(head, Vector3.new(1.5, 0.08, 0.75), CFrame.new(0, 0.6, -1.05) * CFrame.Angles(-0.2, 0, 0), U.Vivid(hatColor), { Transparency = 0.35, Reflectance = 0.2, Shadow = false })
 	elseif hat == "Goggles" then
 		cyl(head, 0.16, 2.06, CFrame.new(0, 0.52, 0.05) * U.AxisY, U.Shade(hatColor, 0.45))
 		for _, s in { -1, 1 } do
 			local pos = Vector3.new(0.366 * s, 0.554, -0.817)
-			cyl(head, 0.22, 0.5, U.DiscFacing(pos, pos), hatColor, { Material = Enum.Material.Neon, Transparency = 0.15 })
+			cyl(head, 0.22, 0.5, U.DiscFacing(pos, pos), U.Vivid(hatColor), { Transparency = 0.15, Reflectance = 0.25 }) -- glassy lenses
 		end
 	elseif hat == "Halo" then
 		cyl(head, 0.1, 1.3, CFrame.new(0, hairTop + 0.4, 0.1) * CFrame.Angles(0.15, 0, 0) * U.AxisY, hatColor, { Material = Enum.Material.Neon, Transparency = 0.2 })
@@ -207,7 +210,7 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 	------------------------------------------------------------------ body accent / aura
 	local badgeCf = CFrame.new(-0.3, 0.2, -0.44) * U.AxisZ
 	if look.Aura then
-		cyl(torso, 0.08, 0.42, badgeCf, rarityColor, NEON)
+		cyl(torso, 0.08, 0.42, badgeCf, U.Vivid(rarityColor), { Reflectance = 0.2 })
 		local pe = Instance.new("ParticleEmitter")
 		pe.Name = "Aura"
 		pe.Color = ColorSequence.new(rarityColor)
@@ -241,7 +244,7 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		block(torso, Vector3.new(0.7, 0.4, 0.18), CFrame.new(0, -0.2, 0.95), U.Shade(backColor, 0.75))
 	elseif back == "Tank" then
 		cyl(torso, 1.2, 0.78, CFrame.new(0, 0.1, 0.75) * U.AxisY, backColor, { Transparency = 0.45 })
-		cyl(torso, 1.0, 0.5, CFrame.new(0, 0.1, 0.75) * U.AxisY, backColor, NEON)
+		cyl(torso, 1.0, 0.5, CFrame.new(0, 0.1, 0.75) * U.AxisY, U.Vivid(backColor)) -- ectoplasm inside the tank
 		cyl(torso, 0.18, 0.84, CFrame.new(0, 0.75, 0.75) * U.AxisY, METAL, { Material = Enum.Material.Metal })
 	elseif back == "Cape" then
 		block(torso, Vector3.new(1.35, 1.55, 0.12), CFrame.new(0, -0.3, 0.52) * CFrame.Angles(-0.15, 0, 0), backColor)
@@ -250,8 +253,8 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		for _, s in { -1, 1 } do
 			-- big wing: tall outer edge, tapering into the spine
 			wedge(torso, Vector3.new(0.12, 1.4, 1.2), CFrame.new(0.8 * s, 0.35, 0.58) * CFrame.Angles(0, 0, 0.35 * s) * CFrame.Angles(0, math.pi / 2 * s, 0), backColor, { Transparency = 0.1 })
-			-- glowing inner feather layer
-			wedge(torso, Vector3.new(0.1, 1.0, 0.9), CFrame.new(0.7 * s, 0.0, 0.64) * CFrame.Angles(0, 0, 0.05 * s) * CFrame.Angles(0, math.pi / 2 * s, 0), backColor, { Material = Enum.Material.Neon, Transparency = 0.3 })
+			-- brighter inner feather layer
+			wedge(torso, Vector3.new(0.1, 1.0, 0.9), CFrame.new(0.7 * s, 0.0, 0.64) * CFrame.Angles(0, 0, 0.05 * s) * CFrame.Angles(0, math.pi / 2 * s, 0), U.Vivid(backColor), { Transparency = 0.3 })
 		end
 	elseif back == "Antenna" then
 		block(torso, Vector3.new(0.7, 0.8, 0.4), CFrame.new(0, 0, 0.62), backColor)
@@ -296,7 +299,7 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		hose.Parent = body
 	elseif tool == "Scanner" then
 		tpart(U.Block(Vector3.new(0.8, 0.45, 1.2), T(0, 0.1, -0.35), U.Shade(tc, 0.45), model))
-		tpart(U.Block(Vector3.new(0.6, 0.06, 0.7), T(0, 0.35, -0.35), tc, model, NEON))
+		tpart(U.Block(Vector3.new(0.6, 0.06, 0.7), T(0, 0.35, -0.35), U.Vivid(tc), model, { Reflectance = 0.2 })) -- screen
 		muzzle = tpart(U.Ball(0.32, T(0, 0.15, -1.0), tc, model, NEON))
 		tipWorld = T(0, 0.15, -1.05)
 	elseif tool == "Blaster" then
@@ -308,7 +311,7 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 	elseif tool == "Cannon" then
 		tpart(U.Cyl(2.2, 0.95, T(0.15, 0.45, -0.55) * U.AxisZ, tc, model))
 		tpart(U.Ball(1.1, T(0.15, 0.45, 0.45), U.Shade(tc, 0.6), model))
-		tpart(U.Cyl(0.18, 1.02, T(0.15, 0.45, -0.4) * U.AxisZ, beam, model, NEON))
+		tpart(U.Cyl(0.18, 1.02, T(0.15, 0.45, -0.4) * U.AxisZ, U.Vivid(beam), model)) -- ring
 		muzzle = tpart(U.Cyl(0.3, 1.18, T(0.15, 0.45, -1.65) * U.AxisZ, beam, model, NEON))
 		tipWorld = T(0.15, 0.45, -1.85)
 	elseif tool == "Lantern" then
