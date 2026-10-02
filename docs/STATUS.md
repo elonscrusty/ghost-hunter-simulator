@@ -49,7 +49,7 @@
 ## Owner to do
 1. Playtest: done by the owner (phone, event, leaderboard work).
 2. Shop ids are in (4 products + 3 passes). On launch day: make the game public and put the 3 passes on sale (149 / 299 / 199).
-3. Music: not wanted (owner decision); the game ships without background music.
+3. Music: main track set (rbxassetid://1837467198); boss music optional.
 4. Optional: make icons with ChatGPT ([icon-prompts/](../icon-prompts/)), upload them and send Claude the ids.
 5. Game icon, thumbnails, description; then publish.
 

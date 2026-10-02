@@ -33,7 +33,7 @@ local Sounds: { [string]: SoundDef } = {
 	-- Event
 	BossAppear = { Id = "rbxasset://sounds/swoosh.wav", Volume = 1.0, Pitch = 0.35, Placeholder = true },
 	-- Music: pick a bright spooky track from the Creator Store (Audio, licensed for use) and paste its id.
-	Music = { Id = nil, Volume = 0.35, Looped = true },
+	Music = { Id = "rbxassetid://1837467198", Volume = 0.3, Looped = true },
 	BossMusic = { Id = nil, Volume = 0.45, Looped = true },
 }
 
