@@ -762,7 +762,9 @@ Config.Event = {
 	MinShare = 0.35,
 	MaxShare = 2.5,
 	RewardDrops = 18,
-	MinContribution = 0.01, -- share of Spirit you must deal to count as a participant
+	MinContribution = 0.01, -- share of Spirit you must deal to count as a participant...
+	MinSeconds = 8, -- ...or this many seconds of your own crew's power
+	JoinRadius = 260, -- crews within this distance of the arena when it spawns set its Spirit
 }
 
 --==================================================================

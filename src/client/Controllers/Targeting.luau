@@ -111,8 +111,10 @@ local function ghostAtScreen(pos: Vector2, viewport: boolean?): Ghosts.Entry?
 	rayParams.FilterDescendantsInstances = { folder }
 	local ray = if viewport then cam:ViewportPointToRay(pos.X, pos.Y) else cam:ScreenPointToRay(pos.X, pos.Y)
 	local hit = workspace:Raycast(ray.Origin, ray.Direction * 600, rayParams)
-	if hit then
-		return Ghosts.FromInstance(hit.Instance)
+	-- (a culled ghost's hitbox isn't moved while parked, so a hit on it is a stale position)
+	local hitEntry = if hit then Ghosts.FromInstance(hit.Instance) else nil
+	if hitEntry and not hitEntry.Culled then
+		return hitEntry
 	end
 	-- Forgiving fallback (no surgical taps needed): the ghost whose centre is nearest the tap,
 	-- within ~8% of the screen. When ghosts overlap, the one nearer the camera wins ties.
@@ -121,7 +123,7 @@ local function ghostAtScreen(pos: Vector2, viewport: boolean?): Ghosts.Entry?
 	local camPos = cam.CFrame.Position
 	local best, bestScore = nil, math.huge
 	for _, e in Ghosts.All() do
-		if e.Dying then
+		if e.Dying or e.Culled then
 			continue
 		end
 		local sp, onScreen

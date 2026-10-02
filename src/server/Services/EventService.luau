@@ -28,9 +28,16 @@ local function serverNow(): number
 end
 
 local function spiritFor(): number
+	-- only crews near the arena count (late-game players elsewhere on the map must not make
+	-- the boss unbeatable for the players who are actually there)
 	local sum = 0
+	local arena = Config.Layout.EventArena.Center
 	for _, pl in Players:GetPlayers() do
-		sum += math.min(HunterService.CrewPower(pl), Config.Event.PowerCap)
+		local char = pl.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if root and (root.Position - arena).Magnitude <= Config.Event.JoinRadius then
+			sum += math.min(HunterService.CrewPower(pl), Config.Event.PowerCap)
+		end
 	end
 	return Config.Event.SpiritBase + Config.Event.SpiritPerPower * sum
 end
@@ -39,7 +46,10 @@ local function reward(g: GhostService.Ghost)
 	local total = 0
 	local participants = {}
 	for player, dmg in g.Damage do
-		if player.Parent and dmg >= g.Max * Config.Event.MinContribution then
+		-- counts if they dealt 1% of the boss, or ~MinSeconds of their own crew's damage (so a
+		-- small crew fighting next to a huge one still participates)
+		local ownShare = HunterService.CrewPower(player) * Config.Event.MinSeconds
+		if player.Parent and dmg > 0 and (dmg >= g.Max * Config.Event.MinContribution or dmg >= ownShare) then
 			table.insert(participants, player)
 			total += dmg
 		end

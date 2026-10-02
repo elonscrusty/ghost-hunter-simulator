@@ -104,9 +104,17 @@ local function maxDistance(e: Entry): number
 	return if e.Def.Kind == "Normal" then Theme.World.GhostMaxDistance else Theme.World.BossMaxDistance
 end
 
+-- Spirit value on the bar: "x / max" when selected (and on bosses), just "x" otherwise.
+local function spiritText(e: Entry)
+	e.SpiritText.Text = if e.Selected or e.Def.Kind ~= "Normal"
+		then Format.Short(e.Spirit) .. " / " .. Format.Short(e.Max)
+		else Format.Short(e.Spirit)
+end
+
 -- Unselected: name + slim bar. Selected: bigger bar with numbers, brighter, visible further,
 -- drawn on top so you never lose your target.
 local function styleLabel(e: Entry)
+	spiritText(e)
 	WorldLabel.Resize(e.Gui, labelSize(e))
 	e.Gui.MaxDistance = maxDistance(e)
 	e.Gui.AlwaysOnTop = e.Selected
@@ -161,9 +169,7 @@ local function updateSpirit(e: Entry, spirit: number)
 	e.Spirit = spirit
 	local frac = if e.Max > 0 then math.clamp(spirit / e.Max, 0, 1) else 0
 	TweenService:Create(e.Fill, TweenInfo.new(0.2), { Size = UDim2.fromScale(frac, 1) }):Play()
-	e.SpiritText.Text = if e.Selected or e.Def.Kind ~= "Normal"
-		then Format.Short(spirit) .. " / " .. Format.Short(e.Max)
-		else Format.Short(spirit)
+	spiritText(e)
 	if spirit < old then
 		e.HitT = os.clock()
 	end
