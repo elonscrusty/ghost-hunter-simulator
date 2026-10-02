@@ -90,8 +90,8 @@ local function ensureEquipped(player: Player, d: DataService.Data)
 	end
 end
 
-local function crateRoll(player: Player, crate: Config.CrateDef): string
-	return Rules.Roll(crate.Pool :: any, rarityOrder, PlayerInfo.LuckMultiplier(player), Config.LuckAffectsFromOrder, rng:NextNumber())
+local function crateRoll(player: Player, crate: Config.CrateDef, extraLuck: number): string
+	return Rules.Roll(crate.Pool :: any, rarityOrder, PlayerInfo.LuckMultiplier(player) * extraLuck, Config.LuckAffectsFromOrder, rng:NextNumber())
 end
 
 -- Opens one crate. `free` = paid by a free-crate token (daily day 7) instead of Ectoplasm.
@@ -124,7 +124,15 @@ local function openCrate(player: Player, crateId: any): any
 	elseif not DataService.Spend(player, crate.Price) then
 		return Remotes.Fail("Not enough Ectoplasm!")
 	end
-	local hunterId = crateRoll(player, crate)
+	-- a bought Lucky Open for this crate is used up by this (paid or free) open
+	local lucky = (d.LuckyOpens[crateId] or 0) > 0
+	if lucky then
+		d.LuckyOpens[crateId] -= 1
+		if d.LuckyOpens[crateId] <= 0 then
+			d.LuckyOpens[crateId] = nil
+		end
+	end
+	local hunterId = crateRoll(player, crate, if lucky then Config.LuckyOpens.Multiplier else 1)
 	local uid, isNew = HunterService.Add(player, hunterId)
 	d.Stats.Crates += 1
 	local def = Config.Hunters[hunterId]
@@ -136,7 +144,7 @@ local function openCrate(player: Player, crateId: any): any
 		})
 	end
 	DataService.Changed(player)
-	return { ok = true, Uid = uid, Hunter = hunterId, IsNew = isNew, Free = usedFree, Crate = crateId }
+	return { ok = true, Uid = uid, Hunter = hunterId, IsNew = isNew, Free = usedFree, Crate = crateId, Lucky = lucky }
 end
 
 local function validUid(d: DataService.Data, uid: any): boolean
@@ -166,6 +174,33 @@ function HunterService.Init()
 		end
 		first.More = more
 		return first
+	end)
+
+	-- LUCKY OPENS: pay Ectoplasm (crate price x PriceMultiplier) for the next few opens of this
+	-- crate at higher luck. Bound to the crate, so cheap crates can't buy luck for expensive ones.
+	Remotes.Register("BuyLuckyOpens", "Default", function(player, crateId)
+		if type(crateId) ~= "string" then
+			return Remotes.Fail("Bad crate")
+		end
+		local crate = Config.Crates[crateId]
+		local d = DataService.Get(player)
+		if not crate or not d or not Config.Layout.CrateStations[crateId] then
+			return Remotes.Fail("Bad crate")
+		end
+		if not d.Zones[crate.Zone] then
+			return Remotes.Fail("Unlock this zone first!")
+		end
+		local L = Config.LuckyOpens
+		local have = d.LuckyOpens[crateId] or 0
+		if have + L.Opens > L.MaxStack then
+			return Remotes.Fail("You already have plenty of lucky opens for this crate!")
+		end
+		if not DataService.Spend(player, crate.Price * L.PriceMultiplier) then
+			return Remotes.Fail("Not enough Ectoplasm!")
+		end
+		d.LuckyOpens[crateId] = have + L.Opens
+		DataService.Changed(player)
+		return { ok = true, Left = d.LuckyOpens[crateId] }
 	end)
 
 	-- CRATE SKIP: the reveal is client-side only (the hunter is already rolled and saved), so a

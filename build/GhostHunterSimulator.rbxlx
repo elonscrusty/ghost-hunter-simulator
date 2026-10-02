@@ -1445,6 +1445,10 @@ Config.Crates = {
 -- Luck boost multiplies weights of these rarities (and above) by Boosts.Luck.Multiplier.
 Config.LuckAffectsFromOrder = 3 -- Rare and higher
 
+-- LUCKY OPENS (bought with Ectoplasm at a crate): the next `Opens` opens of THAT crate roll with
+-- x`Multiplier` luck (stacks with boosts/passes). Costs crate price x `PriceMultiplier`.
+Config.LuckyOpens = { Opens = 5, Multiplier = 2, PriceMultiplier = 3, MaxStack = 50 }
+
 --==================================================================
 -- INVENTORY
 --==================================================================
@@ -5596,6 +5600,7 @@ export type Data = {
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
 	SkipTokens: number, -- bought Single Crate Skips not used yet (added in 1.4; old saves get 0)
+	LuckyOpens: { [string]: number }, -- crate id -> lucky opens left (added in 1.5; old saves get {})
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
 }
@@ -5621,6 +5626,7 @@ local function defaults(): Data
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
 		SkipTokens = 0,
+		LuckyOpens = {},
 		Orphans = {},
 		Extra = {},
 	}
@@ -5706,6 +5712,13 @@ local function migrate(raw: any): Data
 		d.SkipTokens = 0
 	end
 	d.SkipTokens = math.floor(d.SkipTokens)
+	for id, n in d.LuckyOpens do
+		if type(id) ~= "string" or type(n) ~= "number" or n ~= n or n < 1 then
+			d.LuckyOpens[id] = nil
+		else
+			d.LuckyOpens[id] = math.min(math.floor(n), Config.LuckyOpens.MaxStack)
+		end
+	end
 	d.Zones[Config.Zones[1].Id] = true
 	-- hunters whose definition was removed are parked in Orphans (restored if the id returns)
 	for uid, h in d.Orphans do
@@ -5921,6 +5934,7 @@ local function snapshot(player: Player, d: Data): any
 		Daily = d.Daily,
 		Boosts = d.Boosts,
 		FreeCrates = d.FreeCrates,
+		LuckyOpens = d.LuckyOpens,
 		Settings = d.Settings,
 		Tutorial = d.Tutorial,
 		Stats = d.Stats,
@@ -7651,8 +7665,8 @@ local function ensureEquipped(player: Player, d: DataService.Data)
 	end
 end
 
-local function crateRoll(player: Player, crate: Config.CrateDef): string
-	return Rules.Roll(crate.Pool :: any, rarityOrder, PlayerInfo.LuckMultiplier(player), Config.LuckAffectsFromOrder, rng:NextNumber())
+local function crateRoll(player: Player, crate: Config.CrateDef, extraLuck: number): string
+	return Rules.Roll(crate.Pool :: any, rarityOrder, PlayerInfo.LuckMultiplier(player) * extraLuck, Config.LuckAffectsFromOrder, rng:NextNumber())
 end
 
 -- Opens one crate. `free` = paid by a free-crate token (daily day 7) instead of Ectoplasm.
@@ -7685,7 +7699,15 @@ local function openCrate(player: Player, crateId: any): any
 	elseif not DataService.Spend(player, crate.Price) then
 		return Remotes.Fail("Not enough Ectoplasm!")
 	end
-	local hunterId = crateRoll(player, crate)
+	-- a bought Lucky Open for this crate is used up by this (paid or free) open
+	local lucky = (d.LuckyOpens[crateId] or 0) > 0
+	if lucky then
+		d.LuckyOpens[crateId] -= 1
+		if d.LuckyOpens[crateId] <= 0 then
+			d.LuckyOpens[crateId] = nil
+		end
+	end
+	local hunterId = crateRoll(player, crate, if lucky then Config.LuckyOpens.Multiplier else 1)
 	local uid, isNew = HunterService.Add(player, hunterId)
 	d.Stats.Crates += 1
 	local def = Config.Hunters[hunterId]
@@ -7697,7 +7719,7 @@ local function openCrate(player: Player, crateId: any): any
 		})
 	end
 	DataService.Changed(player)
-	return { ok = true, Uid = uid, Hunter = hunterId, IsNew = isNew, Free = usedFree, Crate = crateId }
+	return { ok = true, Uid = uid, Hunter = hunterId, IsNew = isNew, Free = usedFree, Crate = crateId, Lucky = lucky }
 end
 
 local function validUid(d: DataService.Data, uid: any): boolean
@@ -7727,6 +7749,33 @@ function HunterService.Init()
 		end
 		first.More = more
 		return first
+	end)
+
+	-- LUCKY OPENS: pay Ectoplasm (crate price x PriceMultiplier) for the next few opens of this
+	-- crate at higher luck. Bound to the crate, so cheap crates can't buy luck for expensive ones.
+	Remotes.Register("BuyLuckyOpens", "Default", function(player, crateId)
+		if type(crateId) ~= "string" then
+			return Remotes.Fail("Bad crate")
+		end
+		local crate = Config.Crates[crateId]
+		local d = DataService.Get(player)
+		if not crate or not d or not Config.Layout.CrateStations[crateId] then
+			return Remotes.Fail("Bad crate")
+		end
+		if not d.Zones[crate.Zone] then
+			return Remotes.Fail("Unlock this zone first!")
+		end
+		local L = Config.LuckyOpens
+		local have = d.LuckyOpens[crateId] or 0
+		if have + L.Opens > L.MaxStack then
+			return Remotes.Fail("You already have plenty of lucky opens for this crate!")
+		end
+		if not DataService.Spend(player, crate.Price * L.PriceMultiplier) then
+			return Remotes.Fail("Not enough Ectoplasm!")
+		end
+		d.LuckyOpens[crateId] = have + L.Opens
+		DataService.Changed(player)
+		return { ok = true, Left = d.LuckyOpens[crateId] }
 	end)
 
 	-- CRATE SKIP: the reveal is client-side only (the hunter is already rolled and saved), so a
@@ -19216,6 +19265,7 @@ local list: ScrollingFrame
 local openButton: TextButton
 local tripleButton: TextButton
 local autoButton: TextButton
+local luckyButton: TextButton
 -- Auto Open results waiting to be shown (the server keeps opening while one plays)
 local autoQueue: { any } = {}
 local autoPlaying = false
@@ -19256,6 +19306,9 @@ local function refresh()
 	crateIcon.Visible = img ~= nil
 	-- the luck boost ends on the server clock even if no new snapshot arrives
 	local luck = if (d.Boosts.Luck or 0) > State.Now() then Config.Boosts.Luck.Multiplier else 1
+	if d.LuckyOpens and (d.LuckyOpens[crateId] or 0) > 0 then
+		luck *= Config.LuckyOpens.Multiplier
+	end
 	local odds = Rules.Odds(crate.Pool :: any, rarityOrder, luck, Config.LuckAffectsFromOrder)
 	-- cards only change with the crate, luck or discoveries; the button changes with Ectoplasm
 	local key = crateId .. "|" .. luck
@@ -19327,8 +19380,15 @@ function refreshButton(crateId: string, d: any, luck: number)
 	if not d.Zones[crate.Zone] then
 		infoLabel.Text = "Unlock " .. (Config.ZoneById[crate.Zone] :: Config.ZoneDef).Name .. " to open this crate"
 	else
-		infoLabel.Text = "Hunters jump out of crates! Better crates > stronger hunters."
+		infoLabel.Text = "Better crates > stronger hunters!"
 	end
+	local left = if d.LuckyOpens then d.LuckyOpens[crateId] or 0 else 0
+	local L = Config.LuckyOpens
+	Kit.SetButtonText(luckyButton, string.format("🍀 x%d LUCKY  💚 %s", L.Opens, Format.Short(price * L.PriceMultiplier)))
+	luckyButton:SetAttribute("Color", if d.Ecto >= price * L.PriceMultiplier then "Teal" else "Gray")
+	luckLabel.Text = if left > 0
+		then string.format("🍀 %d LUCKY OPEN%s LEFT: rare odds x%d!", left, if left == 1 then "" else "S", L.Multiplier)
+		else "🍀 LUCK BOOST: rare odds boosted!"
 	luckLabel.Visible = luck > 1
 	local autoOwned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true
 	local autoOn = player:GetAttribute("AutoOpen") ~= nil
@@ -19466,7 +19526,7 @@ function CratePanel.Init()
 		Visible = false,
 		Parent = panel.Root,
 	})
-	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -180, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
+	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -400, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
 	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
@@ -19512,6 +19572,31 @@ function CratePanel.Init()
 		OnClick = buyTriple,
 	})
 	tripleButton.Visible = false
+	-- LUCKY OPENS (Ectoplasm): next few opens of this crate at higher luck
+	luckyButton = Kit.Button(panel.Body, {
+		Text = "🍀 LUCKY",
+		Color = "Teal",
+		Size = UDim2.fromOffset(200, 34),
+		Position = UDim2.new(1, -180, 0, 8),
+		AnchorPoint = Vector2.new(1, 0),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = function()
+			local crateId = current
+			if busy or not crateId then
+				return
+			end
+			busy = true
+			local res = State.Request("BuyLuckyOpens", crateId)
+			busy = false
+			if res.ok then
+				Kit.Toast(string.format("🍀 %d lucky opens ready for this crate!", res.Left or Config.LuckyOpens.Opens), "Good")
+				refresh()
+			else
+				Kit.Toast(res.err or "Couldn't buy luck", "Bad")
+			end
+		end,
+	})
 	-- AUTO OPEN (game pass; NOT Auto Attack, which is free): locked button prompts the pass
 	autoButton = Kit.Button(panel.Body, {
 		Text = "🔒 AUTO OPEN",

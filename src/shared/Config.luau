@@ -1428,6 +1428,10 @@ Config.Crates = {
 -- Luck boost multiplies weights of these rarities (and above) by Boosts.Luck.Multiplier.
 Config.LuckAffectsFromOrder = 3 -- Rare and higher
 
+-- LUCKY OPENS (bought with Ectoplasm at a crate): the next `Opens` opens of THAT crate roll with
+-- x`Multiplier` luck (stacks with boosts/passes). Costs crate price x `PriceMultiplier`.
+Config.LuckyOpens = { Opens = 5, Multiplier = 2, PriceMultiplier = 3, MaxStack = 50 }
+
 --==================================================================
 -- INVENTORY
 --==================================================================

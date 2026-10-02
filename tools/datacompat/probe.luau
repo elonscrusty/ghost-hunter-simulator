@@ -58,6 +58,7 @@ check(d.Tutorial == 6, "tutorial progress kept")
 check(d.Stats.Ghosts == 500 and d.Stats.Crates == 40, "stats kept")
 check(#d.Purchases == 2 and d.Purchases[1] == "receipt-a", "purchase receipts kept")
 check(d.SkipTokens == 0, "new SkipTokens field added as 0")
+check(type(d.LuckyOpens) == "table" and next(d.LuckyOpens) == nil, "new LuckyOpens field added as {}")
 check(d.Extra.SomethingFromTheFuture ~= nil, "unknown keys preserved in Extra")
 check(d.Version == Config.DataSchemaVersion, "version stamped")
 

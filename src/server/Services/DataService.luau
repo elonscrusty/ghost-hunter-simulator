@@ -41,6 +41,7 @@ export type Data = {
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
 	SkipTokens: number, -- bought Single Crate Skips not used yet (added in 1.4; old saves get 0)
+	LuckyOpens: { [string]: number }, -- crate id -> lucky opens left (added in 1.5; old saves get {})
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
 }
@@ -66,6 +67,7 @@ local function defaults(): Data
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
 		SkipTokens = 0,
+		LuckyOpens = {},
 		Orphans = {},
 		Extra = {},
 	}
@@ -151,6 +153,13 @@ local function migrate(raw: any): Data
 		d.SkipTokens = 0
 	end
 	d.SkipTokens = math.floor(d.SkipTokens)
+	for id, n in d.LuckyOpens do
+		if type(id) ~= "string" or type(n) ~= "number" or n ~= n or n < 1 then
+			d.LuckyOpens[id] = nil
+		else
+			d.LuckyOpens[id] = math.min(math.floor(n), Config.LuckyOpens.MaxStack)
+		end
+	end
 	d.Zones[Config.Zones[1].Id] = true
 	-- hunters whose definition was removed are parked in Orphans (restored if the id returns)
 	for uid, h in d.Orphans do
@@ -366,6 +375,7 @@ local function snapshot(player: Player, d: Data): any
 		Daily = d.Daily,
 		Boosts = d.Boosts,
 		FreeCrates = d.FreeCrates,
+		LuckyOpens = d.LuckyOpens,
 		Settings = d.Settings,
 		Tutorial = d.Tutorial,
 		Stats = d.Stats,

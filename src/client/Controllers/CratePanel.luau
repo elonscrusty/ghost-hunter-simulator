@@ -25,6 +25,7 @@ local list: ScrollingFrame
 local openButton: TextButton
 local tripleButton: TextButton
 local autoButton: TextButton
+local luckyButton: TextButton
 -- Auto Open results waiting to be shown (the server keeps opening while one plays)
 local autoQueue: { any } = {}
 local autoPlaying = false
@@ -65,6 +66,9 @@ local function refresh()
 	crateIcon.Visible = img ~= nil
 	-- the luck boost ends on the server clock even if no new snapshot arrives
 	local luck = if (d.Boosts.Luck or 0) > State.Now() then Config.Boosts.Luck.Multiplier else 1
+	if d.LuckyOpens and (d.LuckyOpens[crateId] or 0) > 0 then
+		luck *= Config.LuckyOpens.Multiplier
+	end
 	local odds = Rules.Odds(crate.Pool :: any, rarityOrder, luck, Config.LuckAffectsFromOrder)
 	-- cards only change with the crate, luck or discoveries; the button changes with Ectoplasm
 	local key = crateId .. "|" .. luck
@@ -136,8 +140,15 @@ function refreshButton(crateId: string, d: any, luck: number)
 	if not d.Zones[crate.Zone] then
 		infoLabel.Text = "Unlock " .. (Config.ZoneById[crate.Zone] :: Config.ZoneDef).Name .. " to open this crate"
 	else
-		infoLabel.Text = "Hunters jump out of crates! Better crates > stronger hunters."
+		infoLabel.Text = "Better crates > stronger hunters!"
 	end
+	local left = if d.LuckyOpens then d.LuckyOpens[crateId] or 0 else 0
+	local L = Config.LuckyOpens
+	Kit.SetButtonText(luckyButton, string.format("🍀 x%d LUCKY  💚 %s", L.Opens, Format.Short(price * L.PriceMultiplier)))
+	luckyButton:SetAttribute("Color", if d.Ecto >= price * L.PriceMultiplier then "Teal" else "Gray")
+	luckLabel.Text = if left > 0
+		then string.format("🍀 %d LUCKY OPEN%s LEFT: rare odds x%d!", left, if left == 1 then "" else "S", L.Multiplier)
+		else "🍀 LUCK BOOST: rare odds boosted!"
 	luckLabel.Visible = luck > 1
 	local autoOwned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true
 	local autoOn = player:GetAttribute("AutoOpen") ~= nil
@@ -275,7 +286,7 @@ function CratePanel.Init()
 		Visible = false,
 		Parent = panel.Root,
 	})
-	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -180, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
+	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -400, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
 	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
@@ -321,6 +332,31 @@ function CratePanel.Init()
 		OnClick = buyTriple,
 	})
 	tripleButton.Visible = false
+	-- LUCKY OPENS (Ectoplasm): next few opens of this crate at higher luck
+	luckyButton = Kit.Button(panel.Body, {
+		Text = "🍀 LUCKY",
+		Color = "Teal",
+		Size = UDim2.fromOffset(200, 34),
+		Position = UDim2.new(1, -180, 0, 8),
+		AnchorPoint = Vector2.new(1, 0),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = function()
+			local crateId = current
+			if busy or not crateId then
+				return
+			end
+			busy = true
+			local res = State.Request("BuyLuckyOpens", crateId)
+			busy = false
+			if res.ok then
+				Kit.Toast(string.format("🍀 %d lucky opens ready for this crate!", res.Left or Config.LuckyOpens.Opens), "Good")
+				refresh()
+			else
+				Kit.Toast(res.err or "Couldn't buy luck", "Bad")
+			end
+		end,
+	})
 	-- AUTO OPEN (game pass; NOT Auto Attack, which is free): locked button prompts the pass
 	autoButton = Kit.Button(panel.Body, {
 		Text = "🔒 AUTO OPEN",
