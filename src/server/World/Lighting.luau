@@ -46,12 +46,12 @@ function LightingSetup.Apply()
 
 	local atmo = Instance.new("Atmosphere")
 	atmo.Name = "GHAtmosphere"
-	atmo.Density = 0.3
+	atmo.Density = 0.26 -- the map is ~2.7k studs long now: keep the next zone's landmarks visible
 	atmo.Offset = 0.15
 	atmo.Color = Color3.fromRGB(190, 150, 255)
 	atmo.Decay = Color3.fromRGB(110, 70, 180)
 	atmo.Glare = 0.4
-	atmo.Haze = 1.4
+	atmo.Haze = 1.0
 	atmo.Parent = L
 
 	clear("GHBloom")

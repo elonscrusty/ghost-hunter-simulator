@@ -76,4 +76,70 @@ T.crates_priced_against_zone_income = function()
 		assert(crate.Price < z.Cost or z.Cost == 0, z.Id)
 	end
 end
+T.zone_curve_is_smooth_and_rising = function()
+	local prev = nil
+	for i, z in Config.Zones do
+		local hs = zoneHunters(z.Id)
+		local crate = Config.Crates[z.Crate]
+		if prev then
+			local ph = zoneHunters(prev.Id)
+			-- a previous Legendary stays useful early on: stronger than the next zone's Common...
+			assert(ph[4].Power > hs[1].Power, z.Id .. ": previous legendary weaker than new common")
+			-- ...but the new Rare is an obvious upgrade over it
+			assert(hs[3].Power > ph[4].Power, z.Id .. ": new rare doesn't beat previous legendary")
+			assert(z.Cost > prev.Cost * 3, z.Id .. " cost curve too flat")
+			assert(crate.Price > Config.Crates[prev.Crate].Price * 3, z.Id .. " crate curve too flat")
+		end
+		assert(z.Order == i, z.Id .. " order")
+		prev = z
+	end
+end
+
+T.every_zone_has_layout_and_a_boss = function()
+	assert(#Config.Daily.ZoneMultiplier == #Config.Zones, "ZoneMultiplier per zone")
+	for i, z in Config.Zones do
+		assert(Config.Layout.ZoneSpawns[z.Id], "spawn " .. z.Id)
+		assert(Config.Layout.CrateStations[z.Crate], "station " .. z.Id)
+		if i > 1 then
+			local g = Config.Layout.Gates[z.Id]
+			assert(g and g.Z == z.MinZ, "gate " .. z.Id)
+			assert(Config.Zones[i - 1].MaxZ == z.MinZ, "zones must touch " .. z.Id)
+		end
+		local hasBoss, hasNormal = false, false
+		for _, g in Config.Ghosts do
+			if g.Zone == z.Id and (g.Kind == "Boss" or g.Kind == "MiniBoss") then hasBoss = true end
+			if g.Zone == z.Id and g.Kind == "Normal" then hasNormal = true end
+		end
+		assert(hasBoss and hasNormal, "ghosts " .. z.Id)
+	end
+end
+
+T.ghost_areas_stay_inside_their_zone = function()
+	for _, a in Config.Layout.GhostAreas do
+		local g = Config.Ghosts[a.Ghost]
+		local z = Config.ZoneById[g.Zone]
+		assert(a.Center.Z - a.Radius > z.MinZ + 20 and a.Center.Z + a.Radius < z.MaxZ - 10, a.Ghost .. " area leaves its zone")
+		assert(math.abs(a.Center.X) + a.Radius <= Config.Layout.HalfWidth - 8, a.Ghost .. " area too close to the side wall")
+	end
+end
+
+T.big_rewards_use_few_valuable_drops = function()
+	for id, g in Config.Ghosts do
+		assert(g.Drops <= 18, id .. " spawns too many orbs")
+	end
+end
+
+T.next_zone_ghosts_pay_more = function()
+	for i = 2, #Config.Zones do
+		local function weakest(zoneId)
+			local best = nil
+			for _, g in Config.Ghosts do
+				if g.Zone == zoneId and g.Kind == "Normal" and (not best or g.Spirit < best.Spirit) then best = g end
+			end
+			return best
+		end
+		local a, b = weakest(Config.Zones[i - 1].Id), weakest(Config.Zones[i].Id)
+		assert(avg(b.Reward) > avg(a.Reward) * 3, Config.Zones[i].Id .. " weakest ghost doesn't pay enough more")
+	end
+end
 return T

@@ -118,7 +118,10 @@ local function spawnDrops(origin: Vector3, list: { any }, removed: { number }?)
 		if type(id) ~= "number" or typeof(land) ~= "Vector3" or type(value) ~= "number" or orbs[id] then
 			continue
 		end
-		local size = math.clamp(0.9 + 0.22 * math.log10(math.max(1, value)), 0.9, 1.9)
+		-- size by value relative to your best area (ZoneMultiplier ~ typical income there), so
+		-- boss and big drops stand out in every zone instead of all late orbs being max size
+		local rel = value / math.max(1, (State.Data and State.Data.ZoneMultiplier) or 1)
+		local size = math.clamp(0.9 + 0.35 * math.log10(math.max(1, rel)), 0.9, 1.9)
 		local part = getPart()
 		part.Size = Vector3.new(size, size, size)
 		part.Color = GREEN:Lerp(CYAN, math.random() * 0.6)

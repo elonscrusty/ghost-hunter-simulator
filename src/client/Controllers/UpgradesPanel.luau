@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Icons = require(GH.Icons)
 local Rules = require(GH.Logic.Rules)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
@@ -80,17 +81,20 @@ function UpgradesPanel.Init()
 		Kit.Corner(icon, UDim.new(0, 14))
 		Kit.Stroke(icon, 2.5, Theme.Outline, Enum.ApplyStrokeMode.Border)
 		Kit.Gradient(icon, Theme.Panel3, Theme.Panel, 90)
-		Kit.Label(icon, up.Icon, { Style = "Icon", TextSize = 30, ZIndex = 64, Stroke = 0 })
+		Kit.Icon(icon, Icons.ForUpgrade[id], up.Icon, { Size = UDim2.fromScale(0.86, 0.86), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 30, ZIndex = 64, Stroke = 0 })
 		-- text column: everything between the icon and the buy button
 		local text: Frame = Kit.new("Frame", { Size = UDim2.new(1, -(84 + 160), 1, -12), Position = UDim2.fromOffset(84, 6), BackgroundTransparency = 1, ZIndex = 62, Parent = r })
 		Kit.Label(text, up.Name, { Size = UDim2.new(1, 0, 0, 22), Align = Enum.TextXAlignment.Left, Style = "Heading", Fit = true, ZIndex = 63 })
 		Kit.Label(text, up.Description, { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 24), Align = Enum.TextXAlignment.Left, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 63, Stroke = 0 })
-		local value = Kit.Label(text, "", { Size = UDim2.new(1, -96, 0, 20), Position = UDim2.new(0, 0, 1, -20), Align = Enum.TextXAlignment.Left, Color = Theme.Ecto, Style = "Body", Fit = true, ZIndex = 63 })
-		local pipRow: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(92, 12), Position = UDim2.new(1, 0, 1, -16), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 63, Parent = text })
-		Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = pipRow })
+		local n = #up.Levels
+		local pipW = if n > 5 then 10 else 15
+		local pipRowW = n * pipW + (n - 1) * 3
+		local value = Kit.Label(text, "", { Size = UDim2.new(1, -(pipRowW + 6), 0, 20), Position = UDim2.new(0, 0, 1, -20), Align = Enum.TextXAlignment.Left, Color = Theme.Ecto, Style = "Body", Fit = true, ZIndex = 63 })
+		local pipRow: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(pipRowW, 12), Position = UDim2.new(1, 0, 1, -16), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 63, Parent = text })
+		Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 3), HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = pipRow })
 		local pips = {}
-		for _ = 1, #up.Levels do
-			local pip: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(15, 12), BackgroundColor3 = Theme.Bg, ZIndex = 64, Parent = pipRow })
+		for _ = 1, n do
+			local pip: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(pipW, 12), BackgroundColor3 = Theme.Bg, ZIndex = 64, Parent = pipRow })
 			Kit.Corner(pip, UDim.new(0, 4))
 			Kit.Stroke(pip, 1.5, Theme.Outline, Enum.ApplyStrokeMode.Border)
 			table.insert(pips, pip)

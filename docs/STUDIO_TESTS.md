@@ -3,10 +3,11 @@
 Open `build/GhostHunterSimulator.rbxlx`, turn on API access (PUBLISHING.md step 2), press
 **Play**. Tick each box; anything that fails, note what you saw (a phone photo is fine).
 Chat commands (Studio only): `/ecto 5000`, `/event`, `/reset-daily`, `/autoattack`
-(gives you the Auto Attack pass for this test only).
+(gives you the Auto Attack pass for this test only), `/zones` (unlocks all 8 areas),
+`/hunters` (gives you one of each of the 32 hunters).
 
 ## A. First 5 minutes, FREE player (no Auto Attack)
-- [ ] Spawn on the glowing HQ plaza. HUD: Ectoplasm 0 at the top, ⚡ 5 POWER under it, menu buttons on the left. Your Rookie Hunter stands behind you and **attacks nothing**.
+- [ ] Spawn on the glowing HQ plaza. HUD: Ectoplasm 0 at the top, ⚡ 5 POWER under it, six menu buttons in ONE column on the left (HUNTERS, WORLDS, INDEX, UPGRADES, SHOP, DAILY). Your Rookie Hunter stands behind you and **attacks nothing**.
 - [ ] After ~2 s the camera swings to the nearest ghost and back. A small "CLICK A GHOST!" (or "TAP A GHOST!") pill appears low in the middle, with a bouncing arrow over a ghost and glowing dots on the ground.
 - [ ] Click/tap a ghost ONCE: soft outline + coloured ring on the ground under it, a ping, its label grows and shows "30 / 30 SPIRIT", and your hunter runs over immediately and fires a beam. No more clicking needed.
 - [ ] The ghost puffs up and POOFs (flash, smoke, ring). Green orbs splash out, bounce and hover.
@@ -29,8 +30,8 @@ Chat commands (Studio only): `/ecto 5000`, `/event`, `/reset-daily`, `/autoattac
 ## C. Hunters, index, upgrades
 - [ ] HUNTERS: compact cards with portrait, name, ⚡, rarity colour; ✓ on equipped. EQUIPPED x/4. Sort POWER/RARITY. Tap a card → 3D preview, EQUIP/UNEQUIP, LOCK, RELEASE (the pane scrolls on small screens).
 - [ ] You can't unequip your last hunter; you can't release equipped or locked hunters. RELEASE → SELECT WEAK → RELEASE gives a small refund.
-- [ ] INDEX: three zone sections "x/4 DISCOVERED", unknown hunters are dark silhouettes "???", new discoveries show NEW!.
-- [ ] UPGRADES (button or the booth right of spawn): Pickup Radius makes the ring bigger; Movement Speed makes you faster; Ectoplasm Bonus raises drop values. MAXED at level 5.
+- [ ] INDEX: eight zone sections "x/4 DISCOVERED", total "x / 32 DISCOVERED • y%" at the top, unknown hunters are dark silhouettes "???", new discoveries show NEW!.
+- [ ] UPGRADES (button or the booth right of spawn): Pickup Radius makes the ring bigger; Movement Speed makes you faster; Ectoplasm Bonus raises drop values. MAXED at level 8 (levels 6-8 are late-game prices).
 
 ## D. Zones
 - [ ] Cemetery gate: force field, sign "🔒 1,500 ECTOPLASM". You can't walk through it. Tapping a Cemetery ghost through it says "Unlock CEMETERY first!".
@@ -51,12 +52,25 @@ Chat commands (Studio only): `/ecto 5000`, `/event`, `/reset-daily`, `/autoattac
 - [ ] ⚙ Settings: music / sound effects / fast crate opening toggle and stay after rejoining.
 
 ## G. Mobile (Test → Device emulator: iPhone 14 landscape, iPhone SE landscape, iPad)
-- [ ] Text is small but readable; no giant labels. Menu buttons are a 2×3 block top-left, clear of the thumbstick.
-- [ ] Ghost labels: small name + thin bar near you; far ghosts show no label; the ghost you tapped shows a bigger bar with numbers.
+- [ ] Text is small but readable; no giant labels. Menu buttons are one column on the left (they shrink a little on short phones so all six fit).
+- [ ] Ghost labels: name + bar with the Spirit number near you. Walk backwards slowly: the label gets slightly SMALLER (never bigger), then disappears. The ghost you tapped shows a bigger bar with "x / y". Bosses (👑) have a bigger label.
 - [ ] Hunter name tags only appear when the camera is close.
 - [ ] Tapping a ghost works first time, even a small/moving one (you can tap slightly off it). Tapping a button never selects a ghost behind it.
 - [ ] Every panel fits on screen with its X visible; long lists scroll; nothing is cut off.
 - [ ] Gamepad (if you have one): X targets the ghost nearest the screen centre, X again cycles; Y uses prompts; B closes menus.
+
+## I. Expansion: 8 areas (new this pass)
+- [ ] From the school courtyard walk through the school (or around its sides) and out the back door: a path leads to the CARNIVAL gate (🔒 250K ECTOPLASM). From far away you can see the ferris wheel.
+- [ ] `/ecto 2000000000` then walk gate to gate unlocking each: Carnival 250K · Hospital 2.5M · Harbor 15M · Castle 90M · Spirit Realm 500M. Each unlock: barrier drains, "NEW AREA UNLOCKED!".
+- [ ] In every new area: the crate station is just past the gate on the left, with its own crate (Carnival 60K · Medical 550K · Sailor 3.5M · Royal 22M · Spirit Realm 130M) and odds 60/28/10/2.
+- [ ] Every area has 3 ghost types; the last one is a boss (👑, much bigger, bigger label). The SPIRIT OVERLORD in the Spirit Realm is the biggest of all.
+- [ ] Ghosts don't sit inside props or each other, and stay inside their area. Kill a few of each: orbs drop (bosses drop more, bigger orbs), you collect them, they respawn.
+- [ ] Open one crate in each new area (`/ecto` first): each crate looks different (striped carnival, white medical, rope sailor, gold royal, crystal spirit) but opens with the same animation. Hunters have new hats/tools (top hat, nurse cap, pirate bandana, knight helmet, crystal crown...).
+- [ ] `/hunters` then HUNTERS → EQUIP BEST: your crew is the strongest ones; they follow you and attack normally.
+- [ ] WORLDS button: 8 cards. Locked ones show 🔒 and the price and can't be used. Pick an unlocked area → you appear next to its crate station, standing on open ground. Spam the button: "Wait a moment..." (3 s cooldown).
+- [ ] Each area looks different (carnival tents, white hospital, harbor with a ship and lighthouse, stone castle, floating spirit islands) and mostly NOT glowing; glow only on ghosts, ectoplasm, small lights, crystals, portals.
+- [ ] Rejoin: all unlocked areas, hunters and upgrades are still there.
+- [ ] Device emulator (phone landscape): walk around in the Harbor and the Spirit Realm for a minute, watch for stutter.
 
 ## H. Saving
 - [ ] Stop while holding Ectoplasm and hunters; Play again: same numbers.

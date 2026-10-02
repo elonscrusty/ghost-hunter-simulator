@@ -5,6 +5,8 @@
 --    the screen size changes
 --  * text sizes are fixed (no TextScaled), also device-scaled
 --  * every label has a MaxDistance, so far-away labels disappear instead of cluttering
+--  * optional distance factor (SetDistance): a label never grows as you walk away; it eases
+--    down a little with distance (like the world does) until MaxDistance hides it
 -- Inside a label, lay elements out with Scale-based sizes (fractions of the label).
 local Kit = require(script.Parent.Kit)
 local Theme = require(script.Parent.Theme)
@@ -23,10 +25,45 @@ export type Props = {
 
 local guis: { [BillboardGui]: Vector2 } = setmetatable({} :: any, { __mode = "k" })
 local texts: { [TextLabel]: number } = setmetatable({} :: any, { __mode = "k" })
+local textGui: { [TextLabel]: BillboardGui } = setmetatable({} :: any, { __mode = "k" })
+local factors: { [BillboardGui]: number } = setmetatable({} :: any, { __mode = "k" })
+local guiTexts: { [BillboardGui]: { TextLabel } } = setmetatable({} :: any, { __mode = "k" })
 
 local function applyGui(g: BillboardGui, base: Vector2)
-	local s = Kit.UIScale()
+	local s = Kit.UIScale() * (factors[g] or 1)
 	g.Size = UDim2.fromOffset(math.floor(base.X * s + 0.5), math.floor(base.Y * s + 0.5))
+end
+
+local function applyText(l: TextLabel, base: number)
+	local g = textGui[l]
+	local f = if g then factors[g] or 1 else 1
+	l.TextSize = math.max(8, math.floor(base * Kit.UIScale() * f + 0.5))
+end
+
+-- Distance factor: full size up to Theme.World.FullSizeDistance studs from the camera, then
+-- (ref / d) ^ 0.6 down to Theme.World.MinFactor. Cheap to call every frame: it only touches the
+-- instance when the factor moves by more than 4%.
+function WorldLabel.SetDistance(g: BillboardGui, dist: number)
+	local W = Theme.World
+	local f = if dist <= W.FullSizeDistance then 1 else math.max(W.MinFactor, (W.FullSizeDistance / dist) ^ 0.6)
+	local old = factors[g] or 1
+	if math.abs(f - old) < 0.04 and not (f == 1 and old ~= 1) then
+		return
+	end
+	factors[g] = f
+	local base = guis[g]
+	if base then
+		applyGui(g, base)
+	end
+	local list = guiTexts[g]
+	if list then
+		for _, l in list do
+			local tb = texts[l]
+			if tb then
+				applyText(l, tb)
+			end
+		end
+	end
 end
 
 function WorldLabel.New(p: Props): BillboardGui
@@ -81,7 +118,17 @@ function WorldLabel.Text(parent: Instance, text: string, p: TextProps?): TextLab
 		Parent = parent,
 	})
 	texts[l] = base
-	l.TextSize = math.max(8, math.floor(base * Kit.UIScale() + 0.5))
+	local g = parent:FindFirstAncestorOfClass("BillboardGui") or (if parent:IsA("BillboardGui") then parent else nil)
+	if g then
+		textGui[l] = g
+		local list = guiTexts[g]
+		if not list then
+			list = {}
+			guiTexts[g] = list
+		end
+		table.insert(list, l)
+	end
+	applyText(l, base)
 	local stroke = o.Stroke or 1.5
 	if stroke > 0 then
 		Kit.new("UIStroke", { Thickness = stroke, Color = Theme.Outline, Parent = l })
@@ -92,7 +139,7 @@ end
 function WorldLabel.SetTextStyle(l: TextLabel, style: string)
 	local base = Theme.Type[style] or Theme.Type.Small
 	texts[l] = base
-	l.TextSize = math.max(8, math.floor(base * Kit.UIScale() + 0.5))
+	applyText(l, base)
 end
 
 Kit.ScaleChanged:Connect(function(s: number)
@@ -100,7 +147,7 @@ Kit.ScaleChanged:Connect(function(s: number)
 		applyGui(g, base)
 	end
 	for l, base in texts do
-		l.TextSize = math.max(8, math.floor(base * s + 0.5))
+		applyText(l, base)
 	end
 end)
 

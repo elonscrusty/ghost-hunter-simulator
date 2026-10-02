@@ -91,6 +91,36 @@ local function randomPoint(center: Vector3, radius: number, hover: number): Vect
 	return Vector3.new(center.X + math.cos(a) * r, center.Y + hover, center.Z + math.sin(a) * r)
 end
 
+-- A random point that keeps clear of the other live ghosts of the same spawn area (first try
+-- that leaves `spacing` studs, else the roomiest of a few tries), so ghosts don't stack and
+-- each one stays easy to tap.
+local SPREAD_TRIES = 5
+local function spacedPoint(center: Vector3, radius: number, hover: number, area: number?, self: Ghost?, spacing: number): Vector3
+	local best, bestGap = randomPoint(center, radius, hover), -1
+	if area == nil then
+		return best
+	end
+	local want = spacing * spacing
+	for i = 1, SPREAD_TRIES do
+		local p = if i == 1 then best else randomPoint(center, radius, hover)
+		local gap = math.huge
+		for _, o in ghosts do
+			if o ~= self and o.Alive and o.Area == area then
+				local q = o.To
+				local dx, dz = p.X - q.X, p.Z - q.Z
+				gap = math.min(gap, dx * dx + dz * dz)
+			end
+		end
+		if gap >= want then
+			return p
+		end
+		if gap > bestGap then
+			best, bestGap = p, gap
+		end
+	end
+	return best
+end
+
 local function setSegment(g: Ghost, to: Vector3)
 	local t = now()
 	local from = GhostService.Position(g, t)
@@ -143,7 +173,7 @@ function GhostService.Spawn(def: Config.GhostDef, center: Vector3, radius: numbe
 	local uid = nextUid
 	nextUid += 1
 	local spirit = math.floor(o.Spirit or def.Spirit)
-	local pos = randomPoint(center, radius, def.Hover)
+	local pos = spacedPoint(center, radius, def.Hover, o.Area, nil, Config.Combat.HitboxDiameter * def.Scale * 1.4)
 	local model = buildHitbox(def, pos)
 	model.Name = "Ghost_" .. uid
 	model:SetAttribute("Uid", uid)
@@ -381,7 +411,7 @@ local function moveTick()
 	local t = now()
 	for _, g in ghosts do
 		if g.Alive and t >= g.NextMove then
-			setSegment(g, randomPoint(g.Center, g.Radius, g.Def.Hover))
+			setSegment(g, spacedPoint(g.Center, g.Radius, g.Def.Hover, g.Area, g, Config.Combat.HitboxDiameter * g.Def.Scale * 1.4))
 		end
 	end
 end

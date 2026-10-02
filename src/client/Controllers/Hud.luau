@@ -208,7 +208,7 @@ local function buildMenu(screen: ScreenGui)
 		})
 		b.LayoutOrder = i
 		b.Size = UDim2.fromOffset(CELL_MAX, CELL_MAX)
-		Kit.Label(b, m.Icon, { Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 6), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 3 })
+		Kit.Icon(b, "menu_" .. string.lower(m.Name), m.Icon, { Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 6), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 3 })
 		Kit.Label(b, m.Text, { Size = UDim2.new(1, -4, 0, 16), Position = UDim2.new(0, 2, 1, -21), Style = "Tiny", TextSize = 12, Fit = true, ZIndex = 3 })
 		Hud.Buttons[m.Name] = b
 	end

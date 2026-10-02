@@ -49,6 +49,7 @@ export type Entry = {
 	Pos: Vector3, -- visual centre this frame
 	Base: Vector3, -- centre without bob (for the ground ring)
 	Selected: boolean,
+	Culled: boolean,
 }
 
 local entries: { [number]: Entry } = {}
@@ -89,7 +90,11 @@ local function smooth(a: number): number
 end
 
 local function labelSize(e: Entry): Vector2
-	return if e.Selected then Theme.World.GhostLabelSelected else Theme.World.GhostLabel
+	local boss = e.Def.Kind == "Boss" or e.Def.Kind == "Event"
+	if e.Selected then
+		return if boss then Theme.World.BossLabelSelected else Theme.World.GhostLabelSelected
+	end
+	return if boss then Theme.World.BossLabel else Theme.World.GhostLabel
 end
 
 local function maxDistance(e: Entry): number
@@ -105,8 +110,8 @@ local function styleLabel(e: Entry)
 	WorldLabel.Resize(e.Gui, labelSize(e))
 	e.Gui.MaxDistance = maxDistance(e)
 	e.Gui.AlwaysOnTop = e.Selected
-	e.SpiritText.Visible = e.Selected
-	e.Bar.Size = UDim2.fromScale(0.9, if e.Selected then 0.5 else 0.3)
+	WorldLabel.SetTextStyle(e.SpiritText, if e.Selected then "Small" else "Tiny")
+	e.Bar.Size = UDim2.fromScale(0.9, if e.Selected then 0.5 else 0.42)
 	local st = e.Bar:FindFirstChildOfClass("UIStroke")
 	if st then
 		st.Color = if e.Selected then Color3.new(1, 1, 1) else Theme.Outline
@@ -122,7 +127,7 @@ local function buildLabel(e: Entry)
 		Name = "SpiritGui",
 		Adornee = e.Core,
 		Parent = e.Model,
-		Size = Theme.World.GhostLabel,
+		Size = labelSize(e),
 		Offset = Vector3.new(0, 2.6 * def.Scale + 0.8, 0),
 		MaxDistance = Theme.World.GhostMaxDistance,
 	})
@@ -132,10 +137,10 @@ local function buildLabel(e: Entry)
 	elseif def.Kind == "Boss" or def.Kind == "Event" then
 		nameText = "👑 " .. nameText
 	end
-	e.NameLabel = WorldLabel.Text(gui, nameText, { Size = UDim2.fromScale(1, 0.48), Style = "Small" })
+	e.NameLabel = WorldLabel.Text(gui, nameText, { Size = UDim2.fromScale(1, 0.48), Style = if def.Kind == "Normal" or def.Kind == "MiniBoss" then "Small" else "Body" })
 	local bar: Frame = Kit.new("Frame", {
-		Size = UDim2.fromScale(0.9, 0.3),
-		Position = UDim2.fromScale(0.5, 0.56),
+		Size = UDim2.fromScale(0.9, 0.42),
+		Position = UDim2.fromScale(0.5, 0.52),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.fromRGB(30, 15, 50),
 		Parent = gui,
@@ -146,7 +151,6 @@ local function buildLabel(e: Entry)
 	Kit.Corner(fill, UDim.new(1, 0))
 	Kit.Gradient(fill, def.Glow, Color3.fromRGB(180, 120, 255), 0)
 	e.SpiritText = WorldLabel.Text(bar, "", { Style = "Tiny", ZIndex = 3 })
-	e.SpiritText.Visible = false
 	e.Bar = bar
 	e.Fill = fill
 	e.Gui = gui
@@ -157,7 +161,9 @@ local function updateSpirit(e: Entry, spirit: number)
 	e.Spirit = spirit
 	local frac = if e.Max > 0 then math.clamp(spirit / e.Max, 0, 1) else 0
 	TweenService:Create(e.Fill, TweenInfo.new(0.2), { Size = UDim2.fromScale(frac, 1) }):Play()
-	e.SpiritText.Text = Format.Short(spirit) .. " / " .. Format.Short(e.Max) .. " SPIRIT"
+	e.SpiritText.Text = if e.Selected or e.Def.Kind ~= "Normal"
+		then Format.Short(spirit) .. " / " .. Format.Short(e.Max)
+		else Format.Short(spirit)
 	if spirit < old then
 		e.HitT = os.clock()
 	end
@@ -241,6 +247,7 @@ local function add(model: Instance)
 		Pos = core.Position,
 		Base = core.Position,
 		Selected = false,
+		Culled = false,
 	}
 	readSegment(e)
 	buildLabel(e)
@@ -338,6 +345,10 @@ end
 
 local parts: { BasePart } = {}
 local cframes: { CFrame } = {}
+-- Ghost visuals further than this from the camera are parked (unparented): with 8 zones most
+-- ghosts are far away, and mobile shouldn't draw or animate them. Hysteresis avoids flicker.
+local CULL_OUT = 330
+local CULL_IN = 300
 
 local function step()
 	local t = workspace:GetServerTimeNow()
@@ -352,6 +363,21 @@ local function step()
 		end
 		local a = if e.Dur > 0 then math.clamp((t - e.T0) / e.Dur, 0, 1) else 1
 		local base = e.From:Lerp(e.To, smooth(a))
+		local camDist = (base - camPos).Magnitude
+		if e.Culled then
+			if camDist > CULL_IN then
+				continue
+			end
+			e.Culled = false
+			e.Vis.Parent = e.Model
+			e.Gui.Enabled = true
+		elseif camDist > CULL_OUT and not e.Selected then
+			e.Culled = true
+			e.Vis.Parent = nil
+			e.Gui.Enabled = false
+			continue
+		end
+		WorldLabel.SetDistance(e.Gui, camDist)
 		local s = e.Def.Scale
 		local bob = math.sin(clock * 2.2 + e.Phase) * 0.45 * math.sqrt(s)
 		local pos = base + Vector3.new(0, bob, 0)

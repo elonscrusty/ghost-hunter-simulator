@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Icons = require(GH.Icons)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
 local State = require(Client.State)
@@ -18,13 +19,13 @@ local panel: Kit.Panel
 local passButtons: { [string]: TextButton } = {}
 local ectoLabels: { [string]: TextLabel } = {}
 
-local function card(parent: Instance, order: number, icon: string, name: string, sub: string, price: string, available: boolean, color: string, onBuy: () -> ()): (TextButton, TextLabel)
+local function card(parent: Instance, order: number, iconKey: string?, icon: string, name: string, sub: string, price: string, available: boolean, color: string, onBuy: () -> ()): (TextButton, TextLabel)
 	local f: Frame = Kit.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ZIndex = 62, Parent = parent })
 	Kit.Corner(f, UDim.new(0, 14))
 	Kit.Stroke(f, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	local c = Theme.Buttons[color] or Theme.Buttons.Purple
 	Kit.Gradient(f, c[1], c[2], 90)
-	Kit.Label(f, icon, { Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 6), Style = "Icon", TextSize = 32, ZIndex = 63, Stroke = 0 })
+	Kit.Icon(f, iconKey, icon, { Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 6), Style = "Icon", TextSize = 32, ZIndex = 63, Stroke = 0 })
 	Kit.Label(f, name, { Size = UDim2.new(1, -12, 0, 36), Position = UDim2.fromOffset(6, 48), Style = "Body", ZIndex = 63 })
 	local subLabel = Kit.Label(f, sub, { Size = UDim2.new(1, -12, 0, 30), Position = UDim2.fromOffset(6, 84), ZIndex = 63, Color = Color3.fromRGB(255, 255, 230), Font = Theme.Body, Style = "Tiny", Stroke = 1 })
 	local b = Kit.Button(f, {
@@ -91,7 +92,7 @@ function ShopPanel.Init()
 	local prodRow = section(1, "BOOSTS & ECTOPLASM")
 	for i, p in Config.Products do
 		local sub = if p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
-		local _, subLabel = card(prodRow, i, p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
+		local _, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
 			buy(p.Key)
 		end)
 		if p.Kind == "Ecto" then
@@ -101,7 +102,7 @@ function ShopPanel.Init()
 	local passRow = section(3, "GAME PASSES (FOREVER)")
 	for i, pass in Config.GamePasses do
 		local sub = if pass.Blurb then pass.Blurb elseif pass.Slots then "+" .. pass.Slots .. " EQUIPPED HUNTERS" else "x" .. tostring(pass.Multiplier or 2) .. " ALL ECTOPLASM"
-		local b = card(passRow, i, pass.Icon, pass.Name, sub, pass.PriceLabel, pass.PassId ~= nil, "Orange", function()
+		local b = card(passRow, i, Icons.ForProduct[pass.Key], pass.Icon, pass.Name, sub, pass.PriceLabel, pass.PassId ~= nil, "Orange", function()
 			buy(pass.Key)
 		end)
 		passButtons[pass.Key] = b

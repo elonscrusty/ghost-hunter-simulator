@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Net = require(GH.Net)
+local Config = require(GH.Config)
 
 Net.Init()
 
@@ -63,7 +64,7 @@ for _, name in order do
 	end
 end
 
--- Studio-only test commands (chat): /ecto <n>, /event, /reset-daily, /autoattack
+-- Studio-only test commands (chat): /ecto <n>, /event, /reset-daily, /autoattack, /zones, /hunters
 -- /autoattack grants the Auto Attack pass for this Studio test only (never in a live game).
 if RunService:IsStudio() then
 	local DataService = loaded.DataService
@@ -86,6 +87,18 @@ if RunService:IsStudio() then
 				DataService.Changed(player)
 			elseif msg == "/autoattack" and PlayerInfo and HunterService then
 				PlayerInfo.SetPass(player, "AutoAttack", true)
+				HunterService.Refresh(player)
+			elseif msg == "/zones" then
+				-- unlock every area (gates open for you on the next sync)
+				for _, z in Config.Zones do
+					d.Zones[z.Id] = true
+				end
+				DataService.Changed(player)
+			elseif msg == "/hunters" and HunterService then
+				-- one of every hunter (fills the Index; use EQUIP BEST after)
+				for id in Config.Hunters do
+					HunterService.Add(player, id)
+				end
 				HunterService.Refresh(player)
 			end
 		end)

@@ -16,6 +16,8 @@ local Fx = require(script.Parent.Fx)
 local ProgressService = {}
 
 local GATE_RANGE = 40
+local TRAVEL_COOLDOWN = 3 -- seconds between Fast Travel jumps
+local lastTravel: { [Player]: number } = {}
 
 local zoneRanges: { { number } } = {}
 for _, z in Config.Zones do
@@ -79,6 +81,40 @@ function ProgressService.Init()
 		d.Zones[zone.Id] = true
 		DataService.Changed(player)
 		Fx.To(player, "ZoneUnlocked", { Zone = zone.Id })
+		return { ok = true }
+	end)
+
+	-- Fast Travel (WORLDS menu): only to zones this profile owns, onto the zone's arrival pad.
+	Remotes.Register("Travel", "Default", function(player, zoneId)
+		local d = DataService.Get(player)
+		local zone = type(zoneId) == "string" and Config.ZoneById[zoneId] or nil
+		if not d or not zone then
+			return Remotes.Fail("Unknown area")
+		end
+		if not d.Zones[zone.Id] then
+			return Remotes.Fail("Unlock " .. zone.Name .. " first!")
+		end
+		local now = os.clock()
+		if now - (lastTravel[player] or -math.huge) < TRAVEL_COOLDOWN then
+			return Remotes.Fail("Wait a moment...")
+		end
+		local char = player.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local root = Remotes.Root(player)
+		if not char or not hum or hum.Health <= 0 or not root then
+			return Remotes.Fail("Can't travel right now")
+		end
+		local spawnPos = (Config.Layout.ZoneSpawns :: any)[zone.Id] :: Vector3?
+		if not spawnPos then
+			return Remotes.Fail("Unknown area")
+		end
+		lastTravel[player] = now
+		-- small random offset so a group travelling together doesn't stack
+		local a = math.random() * math.pi * 2
+		local r = math.random() * 3
+		local pos = spawnPos + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		root.AssemblyLinearVelocity = Vector3.zero
+		char:PivotTo(CFrame.lookAt(pos, pos + Vector3.new(0, 0, 1)))
 		return { ok = true }
 	end)
 
@@ -210,6 +246,9 @@ function ProgressService.Start()
 		end
 	end
 	Players.PlayerAdded:Connect(hook)
+	Players.PlayerRemoving:Connect(function(player)
+		lastTravel[player] = nil
+	end)
 	for _, pl in Players:GetPlayers() do
 		hook(pl)
 	end

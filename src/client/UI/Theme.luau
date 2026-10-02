@@ -57,8 +57,12 @@ local Theme = {
 
 	-- World labels (BillboardGui) in logical px; multiplied by the same device scale.
 	World = {
-		GhostLabel = Vector2.new(150, 34), -- name + slim Spirit bar
-		GhostLabelSelected = Vector2.new(190, 46), -- selected: bigger bar + numbers
+		GhostLabel = Vector2.new(150, 38), -- name + Spirit bar with the Spirit value
+		GhostLabelSelected = Vector2.new(190, 48), -- selected: bigger bar + numbers
+		BossLabel = Vector2.new(190, 44), -- zone bosses: a more prominent bar
+		BossLabelSelected = Vector2.new(240, 58),
+		FullSizeDistance = 24, -- world labels are full size up to this distance from the camera...
+		MinFactor = 0.62, -- ...then ease down to this fraction (never bigger) until MaxDistance hides them
 		GhostMaxDistance = 55, -- unselected labels vanish beyond this (studs)
 		BossMaxDistance = 90,
 		SelectedMaxDistance = 160,

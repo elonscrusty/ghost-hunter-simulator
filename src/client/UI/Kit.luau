@@ -11,6 +11,7 @@ local GuiService = game:GetService("GuiService")
 
 local Theme = require(script.Parent.Theme)
 local Signal = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Signal)
+local Icons = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Icons)
 
 local Kit = {}
 
@@ -145,6 +146,27 @@ function Kit.Label(parent: Instance?, text: string, p: LabelProps?): TextLabel
 		Kit.new("UIStroke", { Thickness = stroke, Color = Theme.Outline, Parent = l })
 	end
 	return l
+end
+
+-- An icon: the uploaded image for `key` (shared Icons.luau) when it has an id, otherwise the
+-- emoji as text. Same props as Kit.Label (the image fits inside the label's box).
+function Kit.Icon(parent: Instance?, key: string?, emoji: string, p: LabelProps?): GuiObject
+	local image = Icons.Get(key)
+	if not image then
+		return Kit.Label(parent, emoji, p)
+	end
+	local o: LabelProps = p or {}
+	local img: ImageLabel = Kit.new("ImageLabel", {
+		BackgroundTransparency = 1,
+		Image = image,
+		ScaleType = Enum.ScaleType.Fit,
+		Size = o.Size or UDim2.fromScale(1, 1),
+		Position = o.Position or UDim2.new(),
+		AnchorPoint = o.AnchorPoint or Vector2.zero,
+		ZIndex = o.ZIndex or 1,
+		Parent = parent,
+	})
+	return img
 end
 
 --------------------------------------------------------------------------------

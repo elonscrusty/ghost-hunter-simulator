@@ -170,7 +170,7 @@ local function rebuild()
 		end
 	end
 	local pct = if total > 0 then found / total else 0
-	totalLabel.Text = "COLLECTION " .. found .. "/" .. total .. "  (" .. math.floor(pct * 100 + 0.5) .. "%)"
+	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  •  " .. math.floor(pct * 100 + 0.5) .. "%"
 	Kit.Tween(totalFill, 0.4, { Size = UDim2.fromScale(math.max(pct, 0.02), 1) })
 end
 

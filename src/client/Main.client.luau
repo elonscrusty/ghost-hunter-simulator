@@ -36,6 +36,7 @@ local order = {
 	"ShopPanel",
 	"DailyPanel",
 	"GatePanel",
+	"WorldsPanel",
 	"Boss",
 	"Ambience",
 	"Tutorial",

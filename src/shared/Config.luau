@@ -115,27 +115,27 @@ Config.Zones = {
 		MinZ = 540, MaxZ = 880,
 	},
 	{
-		Id = "Carnival", Name = "ABANDONED CARNIVAL", Order = 4, Cost = 400000, Crate = "Carnival",
+		Id = "Carnival", Name = "ABANDONED CARNIVAL", Order = 4, Cost = 250000, Crate = "Carnival",
 		Ambient = Color3.fromRGB(175, 130, 190), FogColor = Color3.fromRGB(120, 60, 130), Accent = Color3.fromRGB(255, 205, 70),
 		MinZ = 880, MaxZ = 1220,
 	},
 	{
-		Id = "Hospital", Name = "HAUNTED HOSPITAL", Order = 5, Cost = 3200000, Crate = "Medical",
+		Id = "Hospital", Name = "HAUNTED HOSPITAL", Order = 5, Cost = 2500000, Crate = "Medical",
 		Ambient = Color3.fromRGB(150, 175, 200), FogColor = Color3.fromRGB(80, 110, 140), Accent = Color3.fromRGB(140, 230, 255),
 		MinZ = 1220, MaxZ = 1560,
 	},
 	{
-		Id = "Harbor", Name = "GHOST SHIP HARBOR", Order = 6, Cost = 25000000, Crate = "Sailor",
+		Id = "Harbor", Name = "GHOST SHIP HARBOR", Order = 6, Cost = 15000000, Crate = "Sailor",
 		Ambient = Color3.fromRGB(110, 150, 190), FogColor = Color3.fromRGB(40, 80, 120), Accent = Color3.fromRGB(90, 255, 210),
 		MinZ = 1560, MaxZ = 1920,
 	},
 	{
-		Id = "Castle", Name = "CURSED CASTLE", Order = 7, Cost = 190000000, Crate = "Royal",
+		Id = "Castle", Name = "CURSED CASTLE", Order = 7, Cost = 90000000, Crate = "Royal",
 		Ambient = Color3.fromRGB(130, 120, 180), FogColor = Color3.fromRGB(50, 45, 100), Accent = Color3.fromRGB(255, 200, 80),
 		MinZ = 1920, MaxZ = 2280,
 	},
 	{
-		Id = "SpiritRealm", Name = "SPIRIT REALM", Order = 8, Cost = 1400000000, Crate = "SpiritRealm",
+		Id = "SpiritRealm", Name = "SPIRIT REALM", Order = 8, Cost = 500000000, Crate = "SpiritRealm",
 		Ambient = Color3.fromRGB(140, 120, 220), FogColor = Color3.fromRGB(60, 30, 120), Accent = Color3.fromRGB(110, 240, 255),
 		MinZ = 2280, MaxZ = 2680,
 	},
@@ -592,7 +592,7 @@ Config.Crates = {
 		},
 	},
 	Carnival = {
-		Id = "Carnival", Name = "CARNIVAL HUNTER CRATE", Zone = "Carnival", Price = 85000,
+		Id = "Carnival", Name = "CARNIVAL HUNTER CRATE", Zone = "Carnival", Price = 60000,
 		Color = C(230, 60, 70), Trim = C(255, 210, 70), Style = "Carnival",
 		Pool = {
 			{ Hunter = "CarnivalScout", Weight = 60 },
@@ -602,7 +602,7 @@ Config.Crates = {
 		},
 	},
 	Medical = {
-		Id = "Medical", Name = "PARANORMAL MEDICAL CRATE", Zone = "Hospital", Price = 700000,
+		Id = "Medical", Name = "PARANORMAL MEDICAL CRATE", Zone = "Hospital", Price = 550000,
 		Color = C(235, 240, 250), Trim = C(110, 200, 255), Style = "Medical",
 		Pool = {
 			{ Hunter = "MedicalInvestigator", Weight = 60 },
@@ -612,7 +612,7 @@ Config.Crates = {
 		},
 	},
 	Sailor = {
-		Id = "Sailor", Name = "SPECTRAL SAILOR CRATE", Zone = "Harbor", Price = 5500000,
+		Id = "Sailor", Name = "SPECTRAL SAILOR CRATE", Zone = "Harbor", Price = 3500000,
 		Color = C(140, 95, 55), Trim = C(80, 230, 220), Style = "Sailor",
 		Pool = {
 			{ Hunter = "HarborHunter", Weight = 60 },
@@ -622,7 +622,7 @@ Config.Crates = {
 		},
 	},
 	Royal = {
-		Id = "Royal", Name = "ROYAL HUNTER CRATE", Zone = "Castle", Price = 42000000,
+		Id = "Royal", Name = "ROYAL HUNTER CRATE", Zone = "Castle", Price = 22000000,
 		Color = C(70, 40, 120), Trim = C(255, 200, 70), Style = "Royal",
 		Pool = {
 			{ Hunter = "CastleInvestigator", Weight = 60 },
@@ -632,7 +632,7 @@ Config.Crates = {
 		},
 	},
 	SpiritRealm = {
-		Id = "SpiritRealm", Name = "SPIRIT REALM CRATE", Zone = "SpiritRealm", Price = 320000000,
+		Id = "SpiritRealm", Name = "SPIRIT REALM CRATE", Zone = "SpiritRealm", Price = 130000000,
 		Color = C(40, 35, 80), Trim = C(110, 240, 255), Style = "Spirit",
 		Pool = {
 			{ Hunter = "RealmExplorer", Weight = 60 },

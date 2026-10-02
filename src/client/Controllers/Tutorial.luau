@@ -278,6 +278,18 @@ local function tick()
 			goalChip.Visible = true
 			goalLabel.Text = "NEXT: UNLOCK " .. nextZone.Name .. "  " .. Format.Short(math.min(d.Ecto, nextZone.Cost)) .. " / " .. Format.Short(nextZone.Cost)
 			goalFill.Size = UDim2.fromScale(math.clamp(d.Ecto / nextZone.Cost, 0.02, 1), 1)
+		elseif not nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
+			-- every area open: the goal becomes the full Hunter Index
+			local total, found = 0, 0
+			for id in Config.Hunters do
+				total += 1
+				if d.Discovered[id] then
+					found += 1
+				end
+			end
+			goalChip.Visible = found < total
+			goalLabel.Text = "NEXT: DISCOVER EVERY HUNTER  " .. found .. " / " .. total
+			goalFill.Size = UDim2.fromScale(math.clamp(found / math.max(total, 1), 0.02, 1), 1)
 		else
 			goalChip.Visible = false
 		end
