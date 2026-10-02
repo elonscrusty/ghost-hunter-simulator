@@ -347,6 +347,27 @@ function DataService.Get(player: Player): Data?
 	return if p and p.Loaded and not p.Leaving then p.Data else nil
 end
 
+-- DEV ONLY (DevService checks): wipes this player's progress back to a new profile, in place
+-- (other services keep the same table). Keeps purchase receipts (so Robux products are never
+-- granted twice), bought Crate Skips and settings. Game passes live on Roblox, not in the save.
+function DataService.ResetProgress(player: Player): boolean
+	local d = DataService.Get(player)
+	if not d then
+		return false
+	end
+	local keep = { Purchases = d.Purchases, Settings = d.Settings, SkipTokens = d.SkipTokens }
+	local fresh = defaults()
+	table.clear(d :: any)
+	for k, v in fresh :: any do
+		(d :: any)[k] = v
+	end
+	d.Purchases = keep.Purchases
+	d.Settings = keep.Settings
+	d.SkipTokens = keep.SkipTokens
+	DataService.Changed(player)
+	return true
+end
+
 -- Waits (up to timeout) for the player's data.
 function DataService.WaitFor(player: Player, timeout: number?): Data?
 	local t0 = os.clock()

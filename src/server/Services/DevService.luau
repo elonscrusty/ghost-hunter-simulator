@@ -92,6 +92,13 @@ function DevService.Run(player: Player, cmd: string, arg: any): string?
 		if err then
 			return err
 		end
+	elseif cmd == "ResetProgress" then
+		-- the dev's OWN progress only (back to a new player); purchases/passes are kept
+		if not DataService.ResetProgress(player) then
+			return "Couldn't reset"
+		end
+		HunterService.Refresh(player)
+		player:LoadCharacter() -- back to spawn (the old area may be locked now)
 	elseif cmd == "Event" then
 		EventService.TriggerNow()
 	elseif cmd == "ResetDaily" then

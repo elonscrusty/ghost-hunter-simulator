@@ -51,7 +51,7 @@ local function showInbox()
 	inbox:Open()
 end
 
-type Action = { Text: string, Cmd: string, Arg: any?, Color: string }
+type Action = { Text: string, Cmd: string, Arg: any?, Color: string, Confirm: boolean? }
 local ACTIONS: { Action } = {
 	{ Text = "+10K ECTO", Cmd = "Ecto", Arg = 10000, Color = "Green" },
 	{ Text = "+1M ECTO", Cmd = "Ecto", Arg = 1000000, Color = "Green" },
@@ -71,12 +71,24 @@ local ACTIONS: { Action } = {
 	{ Text = "EXCLUSIVE HUNTER", Cmd = "Exclusive", Color = "Teal" },
 	{ Text = "REPLAY TUTORIAL", Cmd = "Tutorial", Color = "Gray" },
 	{ Text = "💬 READ FEEDBACK", Cmd = "Inbox", Color = "Blue" },
+	{ Text = "⚠️ RESET MY PROGRESS", Cmd = "ResetProgress", Color = "Red", Confirm = true },
 }
+
+local armed: { [string]: number } = {} -- dangerous actions need a second tap within 4 s
 
 local function run(a: Action)
 	if a.Cmd == "Inbox" then
 		showInbox()
 		return
+	end
+	if a.Confirm then
+		local t = armed[a.Cmd]
+		if not t or os.clock() - t > 4 then
+			armed[a.Cmd] = os.clock()
+			Kit.Toast("Tap " .. a.Text .. " again to confirm", "Bad")
+			return
+		end
+		armed[a.Cmd] = nil
 	end
 	local res = State.Request("Dev", a.Cmd, a.Arg)
 	if res.ok then
