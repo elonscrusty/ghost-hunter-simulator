@@ -9,7 +9,7 @@
 -- attachments "Center", "Top" (above the head/hat, for billboards) and "Bottom" (tail tip).
 -- Built at scale 1 (body diameter 3.5) and then scaled with Model:ScaleTo(def.Scale).
 -- The ghost faces -Z (its LookVector).
--- The spooky glow comes from the body colour, the small Neon inner core, glowing eyes/flames
+-- The spooky glow comes from the body colour, glowing eyes/flames
 -- where a style has them and the "Aura" ParticleEmitter; horns, stripes, tassels and crown
 -- spikes are solid (vivid glow colour) so big ghosts don't turn into neon blobs.
 -- Neon accessories are limited to small meaningful bits: glowing eyes of the spooky styles,
@@ -141,11 +141,12 @@ function GhostRig.Build(ghostId: string): Model
 		block(Vector3.new(w, 0.18, 0.2), U.Facing(pos, pos) * CFrame.Angles(0, 0, tilt), c)
 	end
 
-	local bodyOpts = { Transparency = 0.12, Shadow = false }
+	-- Opaque body: see-through layered parts (body over a glowing inner core, overlapping tail
+	-- balls) flicker on moving models because the engine re-sorts transparent parts every frame.
+	local bodyOpts = { Shadow = false }
 
 	------------------------------------------------------------------ body + tail
-	ball(BODY_D, CFrame.identity, color, { Transparency = 0.12, Shadow = true })
-	ball(2.3, CFrame.identity, glow, { Material = Enum.Material.Neon, Transparency = 0.55 }) -- inner glow core
+	ball(BODY_D, CFrame.identity, color, { Shadow = true })
 	ball(2.7, at(0, -0.95, 0.45), color, bodyOpts)
 	ball(2.0, at(0.15, -1.75, 0.95), color, bodyOpts)
 	ball(1.35, at(-0.05, -2.35, 1.45), color, bodyOpts)
@@ -208,7 +209,7 @@ function GhostRig.Build(ghostId: string): Model
 		-- crown of green flames
 		for i = 0, 3 do
 			local a = math.pi / 4 + i * math.pi / 2
-			wedge(Vector3.new(0.35, 1.0, 0.6), CFrame.Angles(0, a, 0) * at(0, 1.95, -0.7) * CFrame.Angles(-0.35, 0, 0), glow, { Material = Enum.Material.Neon, Transparency = 0.1 })
+			wedge(Vector3.new(0.35, 1.0, 0.6), CFrame.Angles(0, a, 0) * at(0, 1.95, -0.7) * CFrame.Angles(-0.35, 0, 0), glow, { Material = Enum.Material.Neon })
 		end
 		-- floating household junk
 		cyl(0.12, 1.1, CFrame.Angles(0, 0.6, 0) * at(0, 0.6, -2.7) * CFrame.Angles(0.5, 0, 0.3) * U.AxisY, WHITE) -- plate
@@ -237,8 +238,8 @@ function GhostRig.Build(ghostId: string): Model
 		wedge(Vector3.new(0.6, 1.1, 1.0), at(0, 2.05, 0.95) * CFrame.Angles(-0.4, 0, 0), hood)
 		-- lantern hanging from the right nub
 		cyl(0.2, 0.7, at(1.95, -0.75, -0.45) * U.AxisY, METAL, { Material = Enum.Material.Metal })
-		block(Vector3.new(0.65, 0.75, 0.65), at(1.95, -1.25, -0.45), Color3.fromRGB(210, 220, 230), { Transparency = 0.45 })
-		ball(0.45, at(1.95, -1.25, -0.45), glow, NEON) -- flame (no PointLight: moving lights flicker)
+		block(Vector3.new(0.65, 0.75, 0.65), at(1.95, -1.25, -0.45), Color3.fromRGB(210, 220, 230))
+		ball(0.8, at(1.95, -1.25, -0.45), glow, NEON) -- flame (no PointLight: moving lights flicker)
 		-- chain + weight from the left nub
 		cyl(0.12, 0.45, at(-1.85, -0.78, -0.25), METAL, { Material = Enum.Material.Metal })
 		cyl(0.12, 0.45, at(-1.88, -1.12, -0.25) * U.AxisZ, METAL, { Material = Enum.Material.Metal })
