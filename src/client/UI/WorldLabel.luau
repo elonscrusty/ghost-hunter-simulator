@@ -13,6 +13,8 @@ local Theme = require(script.Parent.Theme)
 
 local WorldLabel = {}
 
+local SIZE_BY_DISTANCE = false
+
 export type Props = {
 	Adornee: Instance?,
 	Parent: Instance?,
@@ -52,6 +54,13 @@ end
 -- (ref / d) ^ 0.6 down to Theme.World.MinFactor. Cheap to call every frame: it only touches the
 -- instance when the factor moves by more than 4%.
 function WorldLabel.SetDistance(g: BillboardGui, dist: number)
+	-- MOBILE TEXT FIX: labels now keep one fixed size. Resizing them with camera distance changed
+	-- the text size of every ghost label over and over while the camera moved (letters popping
+	-- between sizes, and constant re-drawing of text, which phones handle worst). MaxDistance
+	-- still hides far labels.
+	if not SIZE_BY_DISTANCE then
+		return
+	end
 	local W = Theme.World
 	local f = if dist <= W.FullSizeDistance then 1 else math.max(W.MinFactor, (W.FullSizeDistance / dist) ^ 0.6)
 	local old = factors[g] or 1
