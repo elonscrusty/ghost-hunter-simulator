@@ -101,6 +101,31 @@ function RigUtil.DiscFacing(pos: Vector3, normal: Vector3): CFrame
 	return CFrame.lookAt(pos, pos + normal.Unit) * RigUtil.AxisZ
 end
 
+-- Cog wheel lying in the frame's XY plane (disc axis along the frame's Z): a disc of diameter `d`
+-- plus `teeth` square teeth round its rim. Returns every part so the caller can weld them.
+function RigUtil.Gear(d: number, thick: number, teeth: number, cf: CFrame, color: Color3, parent: Instance, opts: Opts?): { BasePart }
+	local parts = { RigUtil.Cyl(thick, d, cf * RigUtil.AxisZ, color, parent, opts) }
+	local t = math.max(d * 0.15, 0.08)
+	for i = 0, teeth - 1 do
+		local a = i * 2 * math.pi / teeth
+		local cfT = cf * CFrame.Angles(0, 0, a) * CFrame.new(0, d / 2 + t * 0.3, 0)
+		table.insert(parts, RigUtil.Block(Vector3.new(t, t * 1.1, thick), cfT, color, parent, opts))
+	end
+	return parts
+end
+
+-- Hollow ring of `n` blocks in the frame's XY plane: `r` to the block centres, `w` radial width,
+-- `thick` along the frame's Z. Returns every part so the caller can weld them.
+function RigUtil.Hoop(r: number, w: number, thick: number, n: number, cf: CFrame, color: Color3, parent: Instance, opts: Opts?): { BasePart }
+	local parts = {}
+	local seg = 2 * (r + w / 2) * math.tan(math.pi / n) + 0.02
+	for i = 0, n - 1 do
+		local a = i * 2 * math.pi / n
+		table.insert(parts, RigUtil.Block(Vector3.new(seg, w, thick), cf * CFrame.Angles(0, 0, a) * CFrame.new(0, r, 0), color, parent, opts))
+	end
+	return parts
+end
+
 function RigUtil.Weld(a: BasePart, b: BasePart): WeldConstraint
 	local w = Instance.new("WeldConstraint")
 	w.Part0 = a

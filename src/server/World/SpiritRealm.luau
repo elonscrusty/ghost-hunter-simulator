@@ -7,7 +7,7 @@
 --   Ghost areas (0,2365) r30, (-82,2400) r24, (75,2470) r26, (-62,2530) r24 and the boss
 --   SPIRIT OVERLORD at (0,2605) r28 hold only flat paint; nothing stands in or hangs above them.
 --   Side walls: crystal-capped rock ridges at X +-140..146 (Z 2283..2677).
---   Back (Z 2645..2677): a huge swirling portal, decorative "next destination" glimpse.
+--   Back (Z 2645..2677): a huge portal arch the path walks through; it frames the Swamp gate.
 --   Outside the walls: open void with floating islands, spirit trees, crystals, waterfalls
 --   pouring into nothing, broken bridges, distant islands, cloud banks and a ringed planet.
 --   Glow: island lips, path edge runes, wall crystal tips, a few crystals, tree spirit-orbs,
@@ -275,41 +275,38 @@ local function bossRing(f: Instance)
 end
 
 local function portal(f: Instance)
+	-- A horseshoe arch the main path walks through: it frames the Swamp gate (Z 2680) and the
+	-- swamp beyond, so the "glimpse of the next destination" is the real next zone.
 	local m = Kit.Model(f, "SpiritPortal")
-	local cy, pz, R = 38, 2666, 32
+	local cy, pz, R = 30, 2666, 32
 	Kit.Box(m, V(-40, 0, 2648), V(40, 0.8, 2677), C(48, 42, 78), { Mat = SLATE, Solid = true })
 	Kit.Box(m, V(-36, 0.8, 2654), V(36, 1.4, 2676), C(60, 52, 92), { Mat = SLATE, Solid = true })
-	-- stone ring
+	-- stone ring (upper part only) + a shimmering inner band
 	local n = 28
 	local segLen = 2 * math.pi * R / n + 0.6
+	local inner = R - 4.5
+	local innerLen = 2 * math.pi * inner / n + 0.4
 	for i = 0, n - 1 do
 		local a = (i + 0.5) / n * math.pi * 2
-		local pos = V(math.cos(a) * R, cy + math.sin(a) * R, pz)
-		Kit.Part(m, V(segLen, 4.5, 4), CFrame.new(pos) * CFrame.Angles(0, 0, a + math.pi / 2), if i % 2 == 0 then C(52, 44, 84) else C(40, 36, 66), { Mat = SLATE, Shadow = true })
-		if i % 4 == 1 then
-			Kit.Part(m, V(1.4, 1.4, 0.3), CFrame.new(pos.X, pos.Y, pz - 2.1) * CFrame.Angles(0, 0, math.pi / 4), C(150, 240, 255), { Mat = NEON })
+		if math.sin(a) > -0.45 then
+			local pos = V(math.cos(a) * R, cy + math.sin(a) * R, pz)
+			Kit.Part(m, V(segLen, 4.5, 4), CFrame.new(pos) * CFrame.Angles(0, 0, a + math.pi / 2), if i % 2 == 0 then C(52, 44, 84) else C(40, 36, 66), { Mat = SLATE, Shadow = true })
+			if i % 4 == 1 then
+				Kit.Part(m, V(1.4, 1.4, 0.3), CFrame.new(pos.X, pos.Y, pz - 2.1) * CFrame.Angles(0, 0, math.pi / 4), C(150, 240, 255), { Mat = NEON })
+			end
+			local ip = V(math.cos(a) * inner, cy + math.sin(a) * inner, pz)
+			Kit.Part(m, V(innerLen, 1.6, 1), CFrame.new(ip) * CFrame.Angles(0, 0, a + math.pi / 2), if i % 2 == 0 then C(160, 90, 255) else C(80, 220, 255), { Mat = Enum.Material.ForceField, Transp = 0.2 })
 		end
 	end
-	-- swirl: dark backing, two shimmering ForceField layers, pale core and two spiral arms
-	Kit.CylFlat(m, 1, 62, V(0, cy, pz + 0.6), "Z", C(10, 6, 22))
-	Kit.CylFlat(m, 0.3, 58, V(0, cy, pz - 0.4), "Z", C(160, 90, 255), { Mat = Enum.Material.ForceField, Transp = 0.2 })
-	Kit.CylFlat(m, 0.3, 42, V(0, cy, pz - 0.8), "Z", C(80, 220, 255), { Mat = Enum.Material.ForceField, Transp = 0.25 })
-	local core = Kit.CylFlat(m, 0.3, 18, V(0, cy, pz - 1.2), "Z", C(225, 210, 255), { Transp = 0.35 })
-	local arms = { Kit.Vivid(C(170, 110, 255)), Kit.Vivid(C(100, 220, 255)) }
-	for arm = 0, 1 do
-		for i = 0, 8 do
-			local ang = arm * math.pi + i * 0.7
-			local r = 3 + i * 3
-			local p = V(math.cos(ang) * r, cy + math.sin(ang) * r, pz - 1.6)
-			Kit.Part(m, V(r * 0.7 + 1, 0.9, 0.3), CFrame.new(p) * CFrame.Angles(0, 0, ang + math.pi / 2), arms[arm + 1], { Transp = 0.15 })
-		end
-	end
-	Kit.Light(core, C(190, 150, 255), 60, 2)
-	Kit.Emitter(core, C(200, 160, 255), 5, 5, 2.5)
-	-- supports from the platform to the ring
+	-- legs carrying the arch down to the platform (outside the gate opening)
 	for _, s in { -1, 1 } do
-		Kit.Box(m, V(s * 16 - 2, 1.4, pz - 2), V(s * 16 + 2, 11, pz + 2), C(44, 38, 70), { Mat = ROCK, Solid = true, Shadow = true })
+		Kit.Box(m, V(s * 25.5, 1.4, pz - 2.5), V(s * 31.5, 18, pz + 2.5), C(44, 38, 70), { Mat = ROCK, Solid = true, Shadow = true })
+		Kit.Box(m, V(s * 25, 1.4, pz - 3), V(s * 32, 4, pz + 3), RUIN_DARK, { Mat = SLATE, Solid = true })
 	end
+	-- glowing keystone with the portal light and sparkles drifting down through the arch
+	local key = Kit.Part(m, V(5, 5, 5), CFrame.new(0, cy + R - 6, pz - 1) * CFrame.Angles(0, 0, math.pi / 4), C(225, 210, 255), { Transp = 0.2 })
+	Kit.Light(key, C(190, 150, 255), 60, 2)
+	Kit.Emitter(key, C(200, 160, 255), 5, 5, 2.5)
 	-- flanking obelisks with crystal tips
 	for _, s in { -1, 1 } do
 		local x = s * 43
@@ -529,11 +526,6 @@ local function outsideScenery(f: Instance)
 		Props.Beam(o, V(x, y, z), V(x + 4, y + 30, z), 4, 4, BARK, { Mat = WOOD })
 		Kit.Ball(o, 22, V(x + 4, y + 34, z), Kit.Vivid(Kit.Pick(LEAVES)), { Transp = 0.25 })
 	end
-	-- the next destination beyond the portal
-	Kit.Disc(o, 0, 2880, 34, 150, 6, C(46, 38, 80), { Mat = ROCK })
-	Kit.Disc(o, 0, 2880, 28, 100, 14, C(32, 28, 56), { Mat = ROCK })
-	Kit.Disc(o, 0, 2880, 14, 50, 20, C(24, 20, 42), { Mat = ROCK })
-	shard(o, V(0, 34, 2880), 46, 7, 0, 0, C(170, 230, 255), true)
 	-- cloud banks and a ringed planet in a strange sky
 	local clouds = {
 		{ -260, 2300, 90, 160 }, { -420, 2460, 130, 220 }, { -300, 2640, 110, 180 }, { 280, 2340, 120, 200 },

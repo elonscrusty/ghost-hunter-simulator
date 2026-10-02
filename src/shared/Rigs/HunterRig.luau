@@ -166,6 +166,9 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		or hat == "Bandana"
 		or hat == "Jester"
 		or hat == "SailorCap"
+		or hat == "Nemes"
+		or hat == "Propeller"
+		or hat == "DivingHelmet"
 	local style = look.HairStyle
 	local hairTop = 1.25
 	local hairColor = look.Hair
@@ -321,6 +324,91 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 				local sz = 0.28 - math.abs(i) * 0.03
 				block(head, Vector3.new(sz, sz, sz), p * U.VertexUp, hatColor, glowOpts)
 			end
+		end
+	elseif hat == "Pith" then
+		-- explorer's pith helmet: dome, wide brim, dark band and a top button
+		local pcf = CFrame.new(0, 0.55 + lift, 0.08) * CFrame.Angles(-0.06, 0, 0)
+		ball(head, 2.12, pcf * CFrame.new(0, 0.1, 0), hatColor)
+		cyl(head, 0.1, 2.75, pcf * CFrame.new(0, -0.02, 0) * U.AxisY, U.Shade(hatColor, 0.92)) -- brim
+		cyl(head, 0.18, 2.15, pcf * CFrame.new(0, 0.14, 0) * U.AxisY, U.Shade(hatColor, 0.55)) -- band
+		ball(head, 0.26, pcf * CFrame.new(0, 1.16, 0), U.Shade(hatColor, 0.8))
+	elseif hat == "Earmuffs" then
+		-- arched head band and two fluffy muffs
+		local bandC = U.Shade(hatColor, 0.55)
+		local pts: { Vector3 } = {}
+		for i = 0, 4 do
+			local a = math.rad(15 + i * 37.5)
+			table.insert(pts, Vector3.new(math.cos(a) * 1.08, 0.1 + math.sin(a) * (1.2 + lift), 0.05))
+		end
+		for i = 1, #pts - 1 do
+			rod(head, pts[i], pts[i + 1], 0.14, bandC, METAL_MAT)
+		end
+		for _, s in { -1, 1 } do
+			ball(head, 0.8, CFrame.new(1.0 * s, 0.05, 0.05), hatColor)
+			cyl(head, 0.1, 0.55, CFrame.new(1.37 * s, 0.05, 0.05), U.Mix(hatColor, WHITE, 0.5))
+		end
+	elseif hat == "Nemes" then
+		-- striped pharaoh headdress: cap, side lappets, back tail and a little cobra
+		local isGold = hatColor.R > 0.8 and hatColor.G > 0.6 and hatColor.B < 0.55
+		local stripe = if isGold then Color3.fromRGB(40, 80, 170) else GOLD
+		local c = Vector3.new(0, 0.42, 0.14)
+		ball(head, 2.1, CFrame.new(c), hatColor)
+		for _, h in { 0.3, 0.68 } do
+			local rr = math.sqrt(1.05 * 1.05 - h * h)
+			cyl(head, 0.1, rr * 2 + 0.06, CFrame.new(c + Vector3.new(0, h, 0)) * U.AxisY, stripe)
+		end
+		for _, s in { -1, 1 } do
+			local lp = CFrame.new(0.88 * s, -0.45, -0.25) * CFrame.Angles(0, 0, 0.08 * s)
+			block(head, Vector3.new(0.3, 1.1, 0.55), lp, hatColor)
+			for _, y in { 0.2, -0.2 } do
+				block(head, Vector3.new(0.33, 0.08, 0.58), lp * CFrame.new(0, y, 0), stripe)
+			end
+		end
+		block(head, Vector3.new(0.7, 0.9, 0.3), CFrame.new(0, -0.35, 0.95), hatColor) -- back tail
+		block(head, Vector3.new(0.12, 0.3, 0.1), CFrame.new(0, 0.88, -0.84), GOLD, METAL_MAT) -- cobra
+		ball(head, 0.17, CFrame.new(0, 1.05, -0.86), GOLD, METAL_MAT)
+	elseif hat == "Propeller" then
+		-- beach-ball beanie with a spinning-ready propeller
+		local alt = U.Vivid(GOLD)
+		ball(head, 2.06, CFrame.new(0, 0.42, 0.12), hatColor)
+		cyl(head, 0.12, 2.1, CFrame.new(0, 0.42, 0.12), alt) -- stripe over the top, front to back
+		cyl(head, 0.16, 2.1, CFrame.new(0, 0.48, 0.12) * U.AxisY, alt) -- band
+		cyl(head, 0.3, 0.1, CFrame.new(0, 1.55, 0.12) * U.AxisY, METAL, METAL_MAT)
+		ball(head, 0.2, CFrame.new(0, 1.72, 0.12), alt)
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.7, 0.05, 0.22), CFrame.new(0.38 * s, 1.72, 0.12) * CFrame.Angles(0.25 * s, 0, 0), if s < 0 then RED else Color3.fromRGB(60, 140, 255))
+		end
+	elseif hat == "DivingHelmet" then
+		-- brass dome over the whole head with a round front window (face shows through)
+		local dark = U.Shade(hatColor, 0.75)
+		ball(head, 2.6, CFrame.new(0, 0.2, 0.4), hatColor, METAL_MAT)
+		local wc = CFrame.new(0, -0.1, -0.86)
+		for _, p in U.Hoop(0.62, 0.18, 0.3, 10, head.CFrame * wc, dark, model, METAL_MAT) do
+			add(head, p)
+		end
+		cyl(head, 0.04, 1.1, wc * CFrame.new(0, 0, -0.2) * U.AxisZ, U.Vivid(look.Beam), { Transparency = 0.75, Reflectance = 0.3, Shadow = false }) -- glass
+		for i = 0, 3 do
+			ball(head, 0.14, wc * CFrame.Angles(0, 0, math.pi / 4 + i * math.pi / 2) * CFrame.new(0, 0.62, -0.16), METAL, METAL_MAT) -- bolts
+		end
+		cyl(head, 0.25, 0.4, CFrame.new(0, 1.52, 0.4) * U.AxisY, dark, METAL_MAT) -- air valve
+		for _, s in { -1, 1 } do
+			cyl(head, 0.2, 0.5, CFrame.new(1.3 * s, 0.25, 0.4), dark, METAL_MAT) -- side ports
+		end
+		cyl(head, 0.25, 2.4, CFrame.new(0, -0.95, 0.25) * U.AxisY, dark, METAL_MAT) -- collar
+	elseif hat == "Gears" then
+		-- brass gear crown with a cog emblem on the front and one on the side
+		local ccf = CFrame.new(0, hairTop - 0.05, 0.1)
+		cyl(head, 0.36, 1.4, ccf * U.AxisY, hatColor, METAL_MAT)
+		for i = 0, 7 do
+			block(head, Vector3.new(0.24, 0.26, 0.2), ccf * CFrame.Angles(0, i * math.pi / 4, 0) * CFrame.new(0, 0.28, -0.62), hatColor, METAL_MAT)
+		end
+		local fg = ccf * CFrame.new(0, 0.22, -0.74)
+		for _, p in U.Gear(0.6, 0.1, 8, head.CFrame * fg, U.Shade(hatColor, 0.8), model, METAL_MAT) do
+			add(head, p)
+		end
+		ball(head, 0.2, fg * CFrame.new(0, 0, -0.06), U.Vivid(look.Beam))
+		for _, p in U.Gear(0.45, 0.08, 6, head.CFrame * ccf * CFrame.new(0.74, 0.12, 0) * CFrame.Angles(0, math.pi / 2, 0), U.Shade(hatColor, 0.9), model, METAL_MAT) do
+			add(head, p)
 		end
 	end
 
@@ -517,6 +605,30 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		tpart(U.Wedge(Vector3.new(0.08, 0.15, 0.35), T(0, -0.075, -1.695) * CFrame.Angles(0, 0, math.pi), tc, model, METAL_MAT))
 		muzzle = tpart(U.Block(Vector3.new(0.1, 0.07, 1.1), T(0, 0, -0.85), beam, model, NEON)) -- glowing fuller
 		tipWorld = T(0, 0, -1.85)
+	elseif tool == "Trident" then
+		local metalOpts = { Material = Enum.Material.Metal }
+		tpart(U.Cyl(2.4, 0.16, T(0, 0.05, -0.55) * U.AxisZ, U.Shade(tc, 0.7), model, metalOpts)) -- shaft
+		tpart(U.Ball(0.22, T(0, 0.05, 0.66), tc, model, metalOpts)) -- butt cap
+		tpart(U.Block(Vector3.new(0.9, 0.14, 0.14), T(0, 0.05, -1.8), tc, model, metalOpts)) -- crossbar
+		for _, t in { { x = 0, len = 0.8, w = 0.16 }, { x = -0.4, len = 0.5, w = 0.12 }, { x = 0.4, len = 0.5, w = 0.12 } } do
+			local zEnd = -1.8 - t.len
+			tpart(U.Block(Vector3.new(t.w, t.w, t.len), T(t.x, 0.05, -1.8 - t.len / 2), tc, model, metalOpts))
+			tpart(U.Wedge(Vector3.new(t.w, t.w * 0.75, 0.28), T(t.x, 0.05 + t.w * 0.375, zEnd - 0.14), tc, model, metalOpts)) -- barbed point
+			tpart(U.Wedge(Vector3.new(t.w, t.w * 0.75, 0.28), T(t.x, 0.05 - t.w * 0.375, zEnd - 0.14) * CFrame.Angles(0, 0, math.pi), tc, model, metalOpts))
+		end
+		muzzle = tpart(U.Ball(0.3, T(0, 0.05, -1.8), beam, model, NEON)) -- gem where the tines meet
+		tipWorld = T(0, 0.05, -2.9)
+	elseif tool == "Wrench" then
+		local metalOpts = { Material = Enum.Material.Metal }
+		tpart(U.Block(Vector3.new(0.14, 0.24, 1.3), T(0, 0.05, -0.45), tc, model, metalOpts)) -- handle
+		tpart(U.Block(Vector3.new(0.2, 0.3, 0.55), T(0, 0.05, 0.05), RED, model)) -- rubber grip
+		tpart(U.Block(Vector3.new(0.18, 0.75, 0.26), T(0, 0.05, -1.2), tc, model, metalOpts)) -- jaw base
+		for _, y in { -0.26, 0.26 } do
+			tpart(U.Block(Vector3.new(0.18, 0.22, 0.45), T(0, 0.05 + y, -1.52), tc, model, metalOpts)) -- jaw prongs
+		end
+		tpart(U.Cyl(0.2, 0.16, T(0, 0.05, -1.02) * U.AxisZ, U.Shade(tc, 0.6), model, metalOpts)) -- adjusting screw
+		muzzle = tpart(U.Ball(0.24, T(0, 0.05, -1.48), beam, model, NEON)) -- glow between the jaws
+		tipWorld = T(0, 0.05, -1.65)
 	else -- Flashlight (default)
 		tpart(U.Cyl(1.2, 0.36, T(0, 0, -0.3) * U.AxisZ, U.Shade(tc, 0.7), model))
 		tpart(U.Cyl(0.38, 0.62, T(0, 0, -1.05) * U.AxisZ, tc, model))

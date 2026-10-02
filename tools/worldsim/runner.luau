@@ -221,7 +221,7 @@ if MAP then
 	end
 	print(string.format("  %-14s %7d %6d %6d %8d   (neon %.1f%%)", "TOTAL", tot.Parts, tot.Neon, tot.Lights, tot.Emitters, 100 * tot.Neon / math.max(1, tot.Parts)))
 	local s = Kit.Stats
-	print(string.format("  Kit.Stats: parts %d, neon %d, lights %d/80, emitters %d/34, floating %d/80, flicker %d/20", s.Parts, s.Neon, s.Lights, s.Emitters, s.Floating, s.Flicker))
+	print(string.format("  Kit.Stats: parts %d, neon %d, lights %d (cap 170), emitters %d (cap 54), floating %d (cap 140), flicker %d (cap 34)", s.Parts, s.Neon, s.Lights, s.Emitters, s.Floating, s.Flicker))
 	if s.Parts ~= tot.Parts then
 		print(string.format("  note: %d parts in the tree vs %d counted by Kit.Stats (parts made outside Kit)", tot.Parts, s.Parts))
 	end

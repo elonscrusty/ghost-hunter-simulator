@@ -1,6 +1,6 @@
 # Status
 
-**Version 1.2: 8-zone expansion. Not yet run in Roblox Studio.**
+**Version 1.3: 16 areas + Robux extras. Not yet run in Roblox Studio.**
 
 ## Done
 - All launch systems: zones + gates, ghosts + Giant Poltergeist event, hunters, crates with a
@@ -31,6 +31,15 @@
   - Ectoplasm + Power counters side by side, centred in the top bar; menu column starts below
     the Roblox chat window.
   - Image icon slots (`src/shared/Icons.luau`) + ChatGPT prompts (`icon-prompts/`).
+- v1.3:
+  - 16 areas: + Phantom Swamp, Frostbite Peaks, Pharaoh's Tomb, Haunted Toy Factory, Sunken City,
+    Clockwork Tower, Inferno Caverns, Ghost King's Throne (final). 48 ghosts, 96 crate hunters
+    (6 per area incl. Mythic + Secret), 16 crates. Map ~14k parts, 160 lights.
+  - Robux: Lucky Hunter, Triple Open, Super Magnet, VIP, +50 Storage, Rainbow Beams, Sparkle
+    Trail (passes); Unlock Next Area, Exclusive Crate (16 exclusive hunters, not needed for
+    completion), Server Luck, Summon Event (products). Ids still to be created (icon-prompts/
+    round 2 has names, prices and pictures).
+  - Economy sim median: Spirit Realm ~13 h, Throne (area 16) ~58 h.
 - Checks: strict type check clean, 35 unit tests (rules, formatting, economy incl. 8-zone curve
   and layout), Rojo build, headless world/rig smoke test (`bash tools/worldsim.sh`).
 - Economy simulation (`tests/EconSim.luau`, realistic solo player, median):
