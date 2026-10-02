@@ -189,6 +189,7 @@ end
 --==================================================================
 -- GHOSTS (Spirit = health; Reward = BASE Ectoplasm per kill. The same ghost type always pays the
 -- same base; FinalReward = Reward * the player's multiplier (upgrades, boosts, passes, global event))
+-- (all rewards x1.25 in v1.5 so progression is 20% faster; prices unchanged)
 --==================================================================
 export type GhostDef = {
 	Id: string,
@@ -212,249 +213,249 @@ Config.Ghosts = {
 	-- ZONE 1
 	WanderingSpirit = {
 		Id = "WanderingSpirit", Name = "WANDERING SPIRIT", Zone = "Neighborhood",
-		Spirit = 30, Reward = 6, Drops = 3, Respawn = 4, Scale = 1, Hover = 5, Speed = 5, Wander = 3.5,
+		Spirit = 30, Reward = 8, Drops = 3, Respawn = 4, Scale = 1, Hover = 5, Speed = 5, Wander = 3.5,
 		Kind = "Normal", Color = Color3.fromRGB(235, 240, 255), Glow = Color3.fromRGB(150, 255, 200), Style = "Plain",
 	},
 	MischiefGhost = {
 		Id = "MischiefGhost", Name = "MISCHIEF GHOST", Zone = "Neighborhood",
-		Spirit = 140, Reward = 22, Drops = 4, Respawn = 6, Scale = 1.3, Hover = 5.5, Speed = 7, Wander = 2.5,
+		Spirit = 140, Reward = 28, Drops = 4, Respawn = 6, Scale = 1.3, Hover = 5.5, Speed = 7, Wander = 2.5,
 		Kind = "Normal", Color = Color3.fromRGB(200, 160, 255), Glow = Color3.fromRGB(255, 120, 220), Style = "Mischief",
 	},
 	NeighborhoodPoltergeist = {
 		Id = "NeighborhoodPoltergeist", Name = "NEIGHBORHOOD POLTERGEIST", Zone = "Neighborhood",
-		Spirit = 700, Reward = 112, Drops = 8, Respawn = 15, Scale = 2.2, Hover = 7, Speed = 4, Wander = 4,
+		Spirit = 700, Reward = 140, Drops = 8, Respawn = 15, Scale = 2.2, Hover = 7, Speed = 4, Wander = 4,
 		Kind = "MiniBoss", Color = Color3.fromRGB(130, 255, 180), Glow = Color3.fromRGB(80, 255, 140), Style = "Poltergeist",
 	},
 	-- ZONE 2
 	GraveSpirit = {
 		Id = "GraveSpirit", Name = "GRAVE SPIRIT", Zone = "Cemetery",
-		Spirit = 900, Reward = 88, Drops = 4, Respawn = 5, Scale = 1.2, Hover = 5, Speed = 5, Wander = 3.5,
+		Spirit = 900, Reward = 110, Drops = 4, Respawn = 5, Scale = 1.2, Hover = 5, Speed = 5, Wander = 3.5,
 		Kind = "Normal", Color = Color3.fromRGB(190, 255, 230), Glow = Color3.fromRGB(60, 255, 170), Style = "Grave",
 	},
 	CryptGhost = {
 		Id = "CryptGhost", Name = "CRYPT GHOST", Zone = "Cemetery",
-		Spirit = 2600, Reward = 225, Drops = 5, Respawn = 8, Scale = 1.5, Hover = 6, Speed = 5, Wander = 3,
+		Spirit = 2600, Reward = 281, Drops = 5, Respawn = 8, Scale = 1.5, Hover = 6, Speed = 5, Wander = 3,
 		Kind = "Normal", Color = Color3.fromRGB(240, 225, 190), Glow = Color3.fromRGB(255, 200, 90), Style = "Crypt",
 	},
 	GraveyardWarden = {
 		Id = "GraveyardWarden", Name = "GRAVEYARD WARDEN", Zone = "Cemetery",
-		Spirit = 9500, Reward = 838, Drops = 10, Respawn = 18, Scale = 2.5, Hover = 7.5, Speed = 3.5, Wander = 4.5,
+		Spirit = 9500, Reward = 1050, Drops = 10, Respawn = 18, Scale = 2.5, Hover = 7.5, Speed = 3.5, Wander = 4.5,
 		Kind = "MiniBoss", Color = Color3.fromRGB(120, 110, 200), Glow = Color3.fromRGB(110, 255, 160), Style = "Warden",
 	},
 	-- ZONE 3
 	HallwayHaunt = {
 		Id = "HallwayHaunt", Name = "HALLWAY HAUNT", Zone = "School",
-		Spirit = 12000, Reward = 1010, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 6, Wander = 3,
+		Spirit = 12000, Reward = 1260, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 6, Wander = 3,
 		Kind = "Normal", Color = Color3.fromRGB(255, 220, 150), Glow = Color3.fromRGB(255, 150, 80), Style = "Hallway",
 	},
 	PossessedStudent = {
 		Id = "PossessedStudent", Name = "POSSESSED STUDENT SPIRIT", Zone = "School",
-		Spirit = 32000, Reward = 2500, Drops = 6, Respawn = 9, Scale = 1.7, Hover = 5.5, Speed = 6.5, Wander = 2.8,
+		Spirit = 32000, Reward = 3120, Drops = 6, Respawn = 9, Scale = 1.7, Hover = 5.5, Speed = 6.5, Wander = 2.8,
 		Kind = "Normal", Color = Color3.fromRGB(160, 230, 255), Glow = Color3.fromRGB(190, 110, 255), Style = "Student",
 	},
 	HeadmasterPhantom = {
 		Id = "HeadmasterPhantom", Name = "HEADMASTER PHANTOM", Zone = "School",
-		Spirit = 130000, Reward = 9750, Drops = 14, Respawn = 25, Scale = 3, Hover = 8, Speed = 3, Wander = 5,
+		Spirit = 130000, Reward = 12200, Drops = 14, Respawn = 25, Scale = 3, Hover = 8, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(170, 120, 255), Glow = Color3.fromRGB(255, 80, 200), Style = "Headmaster",
 	},
 	-- ZONE 4
 	CarnivalSpirit = {
 		Id = "CarnivalSpirit", Name = "CARNIVAL SPIRIT", Zone = "Carnival",
-		Spirit = 60000, Reward = 5380, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 6, Wander = 3,
+		Spirit = 60000, Reward = 6720, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 6, Wander = 3,
 		Kind = "Normal", Color = Color3.fromRGB(255, 235, 200), Glow = Color3.fromRGB(255, 190, 70), Style = "Carnival",
 	},
 	ClownPhantom = {
 		Id = "ClownPhantom", Name = "CLOWN PHANTOM", Zone = "Carnival",
-		Spirit = 160000, Reward = 13800, Drops = 6, Respawn = 9, Scale = 1.7, Hover = 5.5, Speed = 6.5, Wander = 2.6,
+		Spirit = 160000, Reward = 17200, Drops = 6, Respawn = 9, Scale = 1.7, Hover = 5.5, Speed = 6.5, Wander = 2.6,
 		Kind = "Normal", Color = Color3.fromRGB(255, 250, 250), Glow = Color3.fromRGB(255, 80, 120), Style = "Clown",
 	},
 	RingmasterPoltergeist = {
 		Id = "RingmasterPoltergeist", Name = "RINGMASTER POLTERGEIST", Zone = "Carnival",
-		Spirit = 650000, Reward = 51200, Drops = 14, Respawn = 25, Scale = 3.2, Hover = 8.5, Speed = 3, Wander = 5,
+		Spirit = 650000, Reward = 64000, Drops = 14, Respawn = 25, Scale = 3.2, Hover = 8.5, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(230, 70, 80), Glow = Color3.fromRGB(255, 210, 80), Style = "Ringmaster",
 	},
 	-- ZONE 5
 	PatientSpirit = {
 		Id = "PatientSpirit", Name = "PATIENT SPIRIT", Zone = "Hospital",
-		Spirit = 300000, Reward = 26900, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 5, Wander = 3.2,
+		Spirit = 300000, Reward = 33600, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(215, 240, 255), Glow = Color3.fromRGB(120, 230, 200), Style = "Patient",
 	},
 	PhantomDoctor = {
 		Id = "PhantomDoctor", Name = "PHANTOM DOCTOR", Zone = "Hospital",
-		Spirit = 800000, Reward = 68800, Drops = 6, Respawn = 9, Scale = 1.75, Hover = 5.5, Speed = 6, Wander = 2.8,
+		Spirit = 800000, Reward = 86000, Drops = 6, Respawn = 9, Scale = 1.75, Hover = 5.5, Speed = 6, Wander = 2.8,
 		Kind = "Normal", Color = Color3.fromRGB(245, 250, 255), Glow = Color3.fromRGB(170, 120, 255), Style = "Doctor",
 	},
 	HospitalDirector = {
 		Id = "HospitalDirector", Name = "HOSPITAL DIRECTOR", Zone = "Hospital",
-		Spirit = 3200000, Reward = 256000, Drops = 15, Respawn = 25, Scale = 3.3, Hover = 8.5, Speed = 3, Wander = 5,
+		Spirit = 3200000, Reward = 320000, Drops = 15, Respawn = 25, Scale = 3.3, Hover = 8.5, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(150, 210, 190), Glow = Color3.fromRGB(110, 255, 190), Style = "Director",
 	},
 	-- ZONE 6
 	SailorSpirit = {
 		Id = "SailorSpirit", Name = "SAILOR SPIRIT", Zone = "Harbor",
-		Spirit = 1500000, Reward = 134000, Drops = 5, Respawn = 6, Scale = 1.45, Hover = 5, Speed = 5.5, Wander = 3,
+		Spirit = 1500000, Reward = 168000, Drops = 5, Respawn = 6, Scale = 1.45, Hover = 5, Speed = 5.5, Wander = 3,
 		Kind = "Normal", Color = Color3.fromRGB(200, 240, 245), Glow = Color3.fromRGB(80, 230, 230), Style = "Sailor",
 	},
 	PhantomPirate = {
 		Id = "PhantomPirate", Name = "PHANTOM PIRATE", Zone = "Harbor",
-		Spirit = 4000000, Reward = 344000, Drops = 6, Respawn = 9, Scale = 1.8, Hover = 5.5, Speed = 6.5, Wander = 2.6,
+		Spirit = 4000000, Reward = 430000, Drops = 6, Respawn = 9, Scale = 1.8, Hover = 5.5, Speed = 6.5, Wander = 2.6,
 		Kind = "Normal", Color = Color3.fromRGB(170, 240, 210), Glow = Color3.fromRGB(110, 255, 160), Style = "Pirate",
 	},
 	GhostCaptain = {
 		Id = "GhostCaptain", Name = "GHOST CAPTAIN", Zone = "Harbor",
-		Spirit = 16000000, Reward = 1280000, Drops = 15, Respawn = 25, Scale = 3.5, Hover = 9, Speed = 3, Wander = 5,
+		Spirit = 16000000, Reward = 1600000, Drops = 15, Respawn = 25, Scale = 3.5, Hover = 9, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(110, 200, 210), Glow = Color3.fromRGB(90, 255, 200), Style = "Captain",
 	},
 	-- ZONE 7
 	KnightSpirit = {
 		Id = "KnightSpirit", Name = "KNIGHT SPIRIT", Zone = "Castle",
-		Spirit = 7500000, Reward = 662000, Drops = 5, Respawn = 6, Scale = 1.5, Hover = 5, Speed = 5, Wander = 3.2,
+		Spirit = 7500000, Reward = 828000, Drops = 5, Respawn = 6, Scale = 1.5, Hover = 5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(215, 225, 245), Glow = Color3.fromRGB(120, 190, 255), Style = "Knight",
 	},
 	RoyalPhantom = {
 		Id = "RoyalPhantom", Name = "ROYAL PHANTOM", Zone = "Castle",
-		Spirit = 20000000, Reward = 1720000, Drops = 6, Respawn = 9, Scale = 1.85, Hover = 5.5, Speed = 6, Wander = 2.8,
+		Spirit = 20000000, Reward = 2150000, Drops = 6, Respawn = 9, Scale = 1.85, Hover = 5.5, Speed = 6, Wander = 2.8,
 		Kind = "Normal", Color = Color3.fromRGB(230, 200, 255), Glow = Color3.fromRGB(200, 90, 255), Style = "Royal",
 	},
 	CursedKing = {
 		Id = "CursedKing", Name = "CURSED KING", Zone = "Castle",
-		Spirit = 80000000, Reward = 6440000, Drops = 16, Respawn = 25, Scale = 3.7, Hover = 9.5, Speed = 3, Wander = 5,
+		Spirit = 80000000, Reward = 8050000, Drops = 16, Respawn = 25, Scale = 3.7, Hover = 9.5, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(120, 140, 200), Glow = Color3.fromRGB(110, 255, 160), Style = "King",
 	},
 	-- ZONE 8
 	AncientSpirit = {
 		Id = "AncientSpirit", Name = "ANCIENT SPIRIT", Zone = "SpiritRealm",
-		Spirit = 37000000, Reward = 3310000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 37000000, Reward = 4140000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(190, 220, 255), Glow = Color3.fromRGB(110, 240, 255), Style = "Ancient",
 	},
 	VoidPhantom = {
 		Id = "VoidPhantom", Name = "VOID PHANTOM", Zone = "SpiritRealm",
-		Spirit = 100000000, Reward = 8560000, Drops = 6, Respawn = 9, Scale = 1.9, Hover = 6, Speed = 6.5, Wander = 2.6,
+		Spirit = 100000000, Reward = 10700000, Drops = 6, Respawn = 9, Scale = 1.9, Hover = 6, Speed = 6.5, Wander = 2.6,
 		Kind = "Normal", Color = Color3.fromRGB(90, 70, 160), Glow = Color3.fromRGB(190, 110, 255), Style = "Void",
 	},
 	SpiritOverlord = {
 		Id = "SpiritOverlord", Name = "SPIRIT OVERLORD", Zone = "SpiritRealm",
-		Spirit = 420000000, Reward = 32500000, Drops = 18, Respawn = 30, Scale = 5, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 420000000, Reward = 40600000, Drops = 18, Respawn = 30, Scale = 5, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(170, 140, 255), Glow = Color3.fromRGB(90, 255, 230), Style = "Overlord",
 	},
 	BogWisp = {
 		Id = "BogWisp", Name = "BOG WISP", Zone = "Swamp",
-		Spirit = 185000000, Reward = 17200000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 185000000, Reward = 21500000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(180, 230, 170), Glow = Color3.fromRGB(150, 255, 120), Style = "Bog",
 	},
 	MarshPhantom = {
 		Id = "MarshPhantom", Name = "MARSH PHANTOM", Zone = "Swamp",
-		Spirit = 500000000, Reward = 44500000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 500000000, Reward = 55600000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(140, 190, 140), Glow = Color3.fromRGB(200, 255, 90), Style = "Marsh",
 	},
 	SwampLord = {
 		Id = "SwampLord", Name = "SWAMP LORD", Zone = "Swamp",
-		Spirit = 2100000000, Reward = 169000000, Drops = 18, Respawn = 30, Scale = 5.15, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 2100000000, Reward = 211000000, Drops = 18, Respawn = 30, Scale = 5.15, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(90, 140, 90), Glow = Color3.fromRGB(170, 255, 110), Style = "SwampLord",
 	},
 	FrostSpirit = {
 		Id = "FrostSpirit", Name = "FROST SPIRIT", Zone = "Frost",
-		Spirit = 925000000, Reward = 89600000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 925000000, Reward = 112000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(230, 245, 255), Glow = Color3.fromRGB(140, 220, 255), Style = "FrostWisp",
 	},
 	YetiPhantom = {
 		Id = "YetiPhantom", Name = "YETI PHANTOM", Zone = "Frost",
-		Spirit = 2500000000, Reward = 232000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 2500000000, Reward = 290000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(240, 245, 250), Glow = Color3.fromRGB(120, 200, 255), Style = "Yeti",
 	},
 	BlizzardQueen = {
 		Id = "BlizzardQueen", Name = "BLIZZARD QUEEN", Zone = "Frost",
-		Spirit = 10500000000, Reward = 879000000, Drops = 18, Respawn = 30, Scale = 5.30, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 10500000000, Reward = 1100000000, Drops = 18, Respawn = 30, Scale = 5.30, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(200, 230, 255), Glow = Color3.fromRGB(170, 240, 255), Style = "Blizzard",
 	},
 	MummySpirit = {
 		Id = "MummySpirit", Name = "MUMMY SPIRIT", Zone = "Tomb",
-		Spirit = 4620000000, Reward = 466000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 4620000000, Reward = 582000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(240, 230, 200), Glow = Color3.fromRGB(255, 210, 90), Style = "Mummy",
 	},
 	ScarabPhantom = {
 		Id = "ScarabPhantom", Name = "SCARAB PHANTOM", Zone = "Tomb",
-		Spirit = 12500000000, Reward = 1200000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 12500000000, Reward = 1500000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(80, 170, 180), Glow = Color3.fromRGB(90, 255, 220), Style = "Scarab",
 	},
 	PharaohsGhost = {
 		Id = "PharaohsGhost", Name = "PHARAOH'S GHOST", Zone = "Tomb",
-		Spirit = 52500000000, Reward = 4570000000, Drops = 18, Respawn = 30, Scale = 5.45, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 52500000000, Reward = 5710000000, Drops = 18, Respawn = 30, Scale = 5.45, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(255, 220, 130), Glow = Color3.fromRGB(255, 180, 60), Style = "Pharaoh",
 	},
 	ToySoldierSpirit = {
 		Id = "ToySoldierSpirit", Name = "TOY SOLDIER SPIRIT", Zone = "ToyFactory",
-		Spirit = 23100000000, Reward = 2420000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 23100000000, Reward = 3020000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(255, 200, 200), Glow = Color3.fromRGB(255, 90, 120), Style = "ToySoldier",
 	},
 	JackInTheBoxPhantom = {
 		Id = "JackInTheBoxPhantom", Name = "JACK-IN-THE-BOX PHANTOM", Zone = "ToyFactory",
-		Spirit = 62500000000, Reward = 6260000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 62500000000, Reward = 7820000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 140, 220), Style = "JackBox",
 	},
 	PuppetMaster = {
 		Id = "PuppetMaster", Name = "PUPPET MASTER", Zone = "ToyFactory",
-		Spirit = 262000000000, Reward = 23800000000, Drops = 18, Respawn = 30, Scale = 5.60, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 262000000000, Reward = 29800000000, Drops = 18, Respawn = 30, Scale = 5.60, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(220, 170, 240), Glow = Color3.fromRGB(255, 120, 200), Style = "Puppet",
 	},
 	BubbleSpirit = {
 		Id = "BubbleSpirit", Name = "BUBBLE SPIRIT", Zone = "Sunken",
-		Spirit = 116000000000, Reward = 12600000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 116000000000, Reward = 15800000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(180, 240, 255), Glow = Color3.fromRGB(90, 255, 230), Style = "Bubble",
 	},
 	SirenPhantom = {
 		Id = "SirenPhantom", Name = "SIREN PHANTOM", Zone = "Sunken",
-		Spirit = 312000000000, Reward = 32600000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 312000000000, Reward = 40800000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(160, 230, 220), Glow = Color3.fromRGB(140, 255, 200), Style = "Siren",
 	},
 	LeviathanGhost = {
 		Id = "LeviathanGhost", Name = "LEVIATHAN GHOST", Zone = "Sunken",
-		Spirit = 1310000000000, Reward = 123000000000, Drops = 18, Respawn = 30, Scale = 5.75, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 1310000000000, Reward = 154000000000, Drops = 18, Respawn = 30, Scale = 5.75, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(70, 150, 170), Glow = Color3.fromRGB(90, 255, 230), Style = "Leviathan",
 	},
 	CogSpirit = {
 		Id = "CogSpirit", Name = "COG SPIRIT", Zone = "Clockwork",
-		Spirit = 578000000000, Reward = 65400000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 578000000000, Reward = 81800000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(230, 210, 170), Glow = Color3.fromRGB(255, 190, 90), Style = "Cog",
 	},
 	ClockworkPhantom = {
 		Id = "ClockworkPhantom", Name = "CLOCKWORK PHANTOM", Zone = "Clockwork",
-		Spirit = 1560000000000, Reward = 169000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 1560000000000, Reward = 211000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(200, 180, 150), Glow = Color3.fromRGB(255, 220, 120), Style = "Clockwork",
 	},
 	TimeKeeper = {
 		Id = "TimeKeeper", Name = "TIME KEEPER", Zone = "Clockwork",
-		Spirit = 6560000000000, Reward = 642000000000, Drops = 18, Respawn = 30, Scale = 5.90, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 6560000000000, Reward = 802000000000, Drops = 18, Respawn = 30, Scale = 5.90, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(180, 150, 110), Glow = Color3.fromRGB(255, 200, 80), Style = "TimeKeeper",
 	},
 	EmberSpirit = {
 		Id = "EmberSpirit", Name = "EMBER SPIRIT", Zone = "Inferno",
-		Spirit = 2890000000000, Reward = 341000000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 2890000000000, Reward = 426000000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(255, 200, 150), Glow = Color3.fromRGB(255, 150, 60), Style = "Ember",
 	},
 	MagmaPhantom = {
 		Id = "MagmaPhantom", Name = "MAGMA PHANTOM", Zone = "Inferno",
-		Spirit = 7810000000000, Reward = 880000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 7810000000000, Reward = 1100000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(255, 150, 110), Glow = Color3.fromRGB(255, 110, 50), Style = "Magma",
 	},
 	InfernoTitan = {
 		Id = "InfernoTitan", Name = "INFERNO TITAN", Zone = "Inferno",
-		Spirit = 32800000000000, Reward = 3340000000000, Drops = 18, Respawn = 30, Scale = 6.05, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 32800000000000, Reward = 4180000000000, Drops = 18, Respawn = 30, Scale = 6.05, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(200, 90, 70), Glow = Color3.fromRGB(255, 170, 60), Style = "Titan",
 	},
 	RoyalGuardSpirit = {
 		Id = "RoyalGuardSpirit", Name = "ROYAL GUARD SPIRIT", Zone = "Throne",
-		Spirit = 14500000000000, Reward = 1770000000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 14500000000000, Reward = 2210000000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(235, 235, 250), Glow = Color3.fromRGB(255, 220, 120), Style = "Guard",
 	},
 	ShadowPhantom = {
 		Id = "ShadowPhantom", Name = "SHADOW PHANTOM", Zone = "Throne",
-		Spirit = 39100000000000, Reward = 4580000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 39100000000000, Reward = 5720000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(90, 80, 130), Glow = Color3.fromRGB(190, 120, 255), Style = "Shadow",
 	},
 	GhostKing = {
 		Id = "GhostKing", Name = "THE GHOST KING", Zone = "Throne",
-		Spirit = 164000000000000, Reward = 17400000000000, Drops = 18, Respawn = 30, Scale = 6.20, Hover = 14, Speed = 2.5, Wander = 6,
+		Spirit = 164000000000000, Reward = 21800000000000, Drops = 18, Respawn = 30, Scale = 6.20, Hover = 14, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(220, 210, 255), Glow = Color3.fromRGB(255, 230, 140), Style = "GhostKing",
 	},
 	-- EVENT (scaled at spawn time by Config.Event)
@@ -1539,7 +1540,7 @@ Config.Event = {
 	-- high enough that late crews still face a ~60 s fight (the cap only guards against absurd values)
 	PowerCap = 50000000,
 	-- Rewards (per participant): RewardBase * zoneMultiplier * clamp(share * players, MinShare, MaxShare)
-	RewardBase = 500,
+	RewardBase = 625, -- +25% (progression 20% faster)
 	MinShare = 0.35,
 	MaxShare = 2.5,
 	RewardDrops = 18,
