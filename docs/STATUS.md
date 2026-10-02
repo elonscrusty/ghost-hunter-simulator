@@ -47,9 +47,9 @@
   Harbor 8.3 h · Castle 11 h · Spirit Realm 15 h.
 
 ## Owner to do
-1. Playtest in Studio: [STUDIO_TESTS.md](STUDIO_TESTS.md) (nothing has been run in Studio yet).
+1. Playtest: done by the owner (phone, event, leaderboard work).
 2. Shop ids are in (4 products + 3 passes). On launch day: make the game public and put the 3 passes on sale (149 / 299 / 199).
-3. Pick music and nicer sound effects ([AUDIO.md](AUDIO.md)); placeholders play meanwhile.
+3. Music: not wanted (owner decision); the game ships without background music.
 4. Optional: make icons with ChatGPT ([icon-prompts/](../icon-prompts/)), upload them and send Claude the ids.
 5. Game icon, thumbnails, description; then publish.
 
