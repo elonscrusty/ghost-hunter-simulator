@@ -79,20 +79,22 @@ local function beginnerExtras(m: Model, x: number, z: number, crate: Config.Crat
 	local beacon = Kit.Cyl(m, 70, 5, CFrame.new(x, 57, z), Kit.Vivid(crate.Trim), { Mat = Enum.Material.ForceField, Transp = 0.5, Name = "Beacon" })
 	Kit.Emitter(beacon, crate.Trim, 3, 3, 2)
 	Kit.Ball(m, 6, V(x, 22.5, z), Kit.Vivid(crate.Color), { Refl = 0.15 })
-	-- World-space label sized in studs (BillboardGui scale = studs), so it shrinks with
-	-- distance like the station instead of filling a phone screen; text capped for readability.
+	-- World-space label with ONE fixed text size. (It used to be sized in studs with TextScaled,
+	-- which re-sized the text on every camera move: constant text re-drawing that made letters
+	-- glitch on phones.) MaxDistance hides it when far away.
 	local bb: BillboardGui = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromScale(10, 2.5)
+	bb.Size = UDim2.fromOffset(240, 40)
 	bb.StudsOffsetWorldSpace = V(0, -24, 0)
 	bb.MaxDistance = 120
 	bb.LightInfluence = 0
 	bb.Parent = beacon
 	local label = Kit.Label(bb, "🎁 OPEN CRATES! 🎁", C(255, 230, 90), { Stroke = C(120, 50, 10) })
-	label.TextScaled = true
-	local limit: UITextSizeConstraint = Instance.new("UITextSizeConstraint")
-	limit.MinTextSize = 10
-	limit.MaxTextSize = 36
-	limit.Parent = label
+	label.TextScaled = false
+	label.TextSize = 24
+	local st = label:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Thickness = 2
+	end
 end
 
 local function upgradeStation(folder: Instance, pos: Vector3)

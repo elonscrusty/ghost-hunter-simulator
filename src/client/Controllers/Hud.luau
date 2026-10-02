@@ -501,8 +501,10 @@ local function buildBanners()
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
-		ZIndex = 75,
-		Parent = overlay,
+		-- on the HUD screen, below panels (ZIndex 60): an announcement must never cover an open
+		-- popup's title (it used to sit on the overlay, above every panel)
+		ZIndex = 58,
+		Parent = Kit.Screen(),
 	})
 	Kit.Corner(announceFrame, UDim.new(0, 12))
 	Kit.Stroke(announceFrame, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)

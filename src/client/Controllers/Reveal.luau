@@ -708,7 +708,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	-- 6) legendary title slam
 	if rarity.Order >= 5 and not skipping then
 		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", TextSize = 54, ZIndex = 8, Stroke = 4 })
-		Kit.new("UIGradient", { Color = ColorSequence.new(rarity.Color, rarity.Color2), Rotation = 90, Parent = title })
+		-- solid colour (a UIGradient on big text dropped letters on phones)
 		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
 		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
 		task.spawn(cameraShake, 0.35, 0.3)

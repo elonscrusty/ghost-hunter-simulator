@@ -16079,20 +16079,22 @@ local function beginnerExtras(m: Model, x: number, z: number, crate: Config.Crat
 	local beacon = Kit.Cyl(m, 70, 5, CFrame.new(x, 57, z), Kit.Vivid(crate.Trim), { Mat = Enum.Material.ForceField, Transp = 0.5, Name = "Beacon" })
 	Kit.Emitter(beacon, crate.Trim, 3, 3, 2)
 	Kit.Ball(m, 6, V(x, 22.5, z), Kit.Vivid(crate.Color), { Refl = 0.15 })
-	-- World-space label sized in studs (BillboardGui scale = studs), so it shrinks with
-	-- distance like the station instead of filling a phone screen; text capped for readability.
+	-- World-space label with ONE fixed text size. (It used to be sized in studs with TextScaled,
+	-- which re-sized the text on every camera move: constant text re-drawing that made letters
+	-- glitch on phones.) MaxDistance hides it when far away.
 	local bb: BillboardGui = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromScale(10, 2.5)
+	bb.Size = UDim2.fromOffset(240, 40)
 	bb.StudsOffsetWorldSpace = V(0, -24, 0)
 	bb.MaxDistance = 120
 	bb.LightInfluence = 0
 	bb.Parent = beacon
 	local label = Kit.Label(bb, "🎁 OPEN CRATES! 🎁", C(255, 230, 90), { Stroke = C(120, 50, 10) })
-	label.TextScaled = true
-	local limit: UITextSizeConstraint = Instance.new("UITextSizeConstraint")
-	limit.MinTextSize = 10
-	limit.MaxTextSize = 36
-	limit.Parent = label
+	label.TextScaled = false
+	label.TextSize = 24
+	local st = label:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Thickness = 2
+	end
 end
 
 local function upgradeStation(folder: Instance, pos: Vector3)
@@ -20642,8 +20644,9 @@ end
 function EventPopup.Init()
 	panel = Kit.Panel("Ecto2xEvent", "2X ECTOPLASM EVENT!", Vector2.new(460, 270), "Green")
 	local body = panel.Body
-	local big = Kit.Label(body, "2X", { Size = UDim2.new(1, 0, 0, 64), Position = UDim2.fromOffset(0, 10), Color = Theme.Ecto, Style = "Banner", TextSize = 56, ZIndex = 62, Stroke = 3 })
-	Kit.new("UIGradient", { Color = ColorSequence.new(Theme.Ecto, Theme.Gold), Rotation = 90, Parent = big })
+	-- solid colour, no UIGradient: on phones the gradient-filled 56 px "2X" lost its "2" and
+	-- flickered (seen in a player recording)
+	Kit.Label(body, "2X", { Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 12), Color = Theme.Ecto, Style = "Banner", TextSize = 48, ZIndex = 62, Stroke = 3 })
 	Kit.Label(body, "Earn DOUBLE Ectoplasm from ghosts while the event is active!", { Size = UDim2.new(1, -20, 0, 48), Position = UDim2.fromOffset(10, 80), Style = "Body", ZIndex = 62 })
 	local ok = Kit.Button(body, {
 		Text = "LET'S HUNT!",
@@ -21911,8 +21914,10 @@ local function buildBanners()
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
-		ZIndex = 75,
-		Parent = overlay,
+		-- on the HUD screen, below panels (ZIndex 60): an announcement must never cover an open
+		-- popup's title (it used to sit on the overlay, above every panel)
+		ZIndex = 58,
+		Parent = Kit.Screen(),
 	})
 	Kit.Corner(announceFrame, UDim.new(0, 12))
 	Kit.Stroke(announceFrame, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
@@ -24191,7 +24196,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	-- 6) legendary title slam
 	if rarity.Order >= 5 and not skipping then
 		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", TextSize = 54, ZIndex = 8, Stroke = 4 })
-		Kit.new("UIGradient", { Color = ColorSequence.new(rarity.Color, rarity.Color2), Rotation = 90, Parent = title })
+		-- solid colour (a UIGradient on big text dropped letters on phones)
 		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
 		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
 		task.spawn(cameraShake, 0.35, 0.3)

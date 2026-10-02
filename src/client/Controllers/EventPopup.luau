@@ -29,8 +29,9 @@ end
 function EventPopup.Init()
 	panel = Kit.Panel("Ecto2xEvent", "2X ECTOPLASM EVENT!", Vector2.new(460, 270), "Green")
 	local body = panel.Body
-	local big = Kit.Label(body, "2X", { Size = UDim2.new(1, 0, 0, 64), Position = UDim2.fromOffset(0, 10), Color = Theme.Ecto, Style = "Banner", TextSize = 56, ZIndex = 62, Stroke = 3 })
-	Kit.new("UIGradient", { Color = ColorSequence.new(Theme.Ecto, Theme.Gold), Rotation = 90, Parent = big })
+	-- solid colour, no UIGradient: on phones the gradient-filled 56 px "2X" lost its "2" and
+	-- flickered (seen in a player recording)
+	Kit.Label(body, "2X", { Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 12), Color = Theme.Ecto, Style = "Banner", TextSize = 48, ZIndex = 62, Stroke = 3 })
 	Kit.Label(body, "Earn DOUBLE Ectoplasm from ghosts while the event is active!", { Size = UDim2.new(1, -20, 0, 48), Position = UDim2.fromOffset(10, 80), Style = "Body", ZIndex = 62 })
 	local ok = Kit.Button(body, {
 		Text = "LET'S HUNT!",
