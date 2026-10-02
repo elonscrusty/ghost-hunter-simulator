@@ -8933,7 +8933,7 @@ local function buildOddsBoard(board: BasePart, crate: Config.CrateDef)
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 40
 	gui.LightInfluence = 0
-	gui.Brightness = 1.4
+	gui.Brightness = 1.15
 	local bg = Instance.new("Frame")
 	bg.Size = UDim2.fromScale(1, 1)
 	bg.BackgroundColor3 = Color3.fromRGB(35, 20, 60)
@@ -13847,9 +13847,13 @@ function Kit.Gui(part: BasePart, face: Enum.NormalId, pps: number?): SurfaceGui
 	local g: SurfaceGui = Instance.new("SurfaceGui")
 	g.Face = face
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = pps or 40
+	-- 30 px per stud: sharp up close, and far less shimmer when a sign is seen from a distance
+	-- or while the camera moves (a 40 px texture squeezed into a few screen pixels sparkles,
+	-- most on phones). Brightness just above 1 keeps the colours bright without the text
+	-- glowing into the bloom.
+	g.PixelsPerStud = pps or 30
 	g.LightInfluence = 0
-	g.Brightness = 1.5
+	g.Brightness = 1.1
 	g.ZOffset = 1
 	g.ResetOnSpawn = false
 	g.Parent = part
@@ -14128,7 +14132,7 @@ function LightingSetup.Apply()
 	local L = LightingService
 	L.ClockTime = 0.5
 	L.GeographicLatitude = 20
-	L.Brightness = 2.5
+	L.Brightness = 2.2
 	L.Ambient = Color3.fromRGB(150, 120, 200)
 	L.OutdoorAmbient = Color3.fromRGB(160, 140, 210)
 	L.ColorShift_Top = Color3.fromRGB(170, 140, 255)
@@ -14137,7 +14141,7 @@ function LightingSetup.Apply()
 	L.EnvironmentSpecularScale = 0.4
 	L.GlobalShadows = true
 	L.ShadowSoftness = 0.4
-	L.ExposureCompensation = 0.25 -- a touch brighter now that fewer surfaces glow
+	L.ExposureCompensation = 0.12 -- slightly toned down (v1.4.1): same look, easier on the eyes
 	L.FogEnd = 100000
 
 	for _, child in L:GetChildren() do
@@ -14160,31 +14164,31 @@ function LightingSetup.Apply()
 	atmo.Offset = 0.15
 	atmo.Color = Color3.fromRGB(190, 150, 255)
 	atmo.Decay = Color3.fromRGB(110, 70, 180)
-	atmo.Glare = 0.4
+	atmo.Glare = 0.25
 	atmo.Haze = 1.0
 	atmo.Parent = L
 
 	clear("GHBloom")
 	local bloom = Instance.new("BloomEffect")
 	bloom.Name = "GHBloom"
-	bloom.Intensity = 0.3
-	bloom.Size = 20
-	bloom.Threshold = 2
+	bloom.Intensity = 0.2
+	bloom.Size = 16
+	bloom.Threshold = 2.3
 	bloom.Parent = L
 
 	clear("GHColor")
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Name = "GHColor"
-	cc.Saturation = 0.3
-	cc.Contrast = 0.1
-	cc.Brightness = 0.02
+	cc.Saturation = 0.24
+	cc.Contrast = 0.12
+	cc.Brightness = 0
 	cc.TintColor = Color3.fromRGB(255, 245, 255)
 	cc.Parent = L
 
 	clear("GHSunRays")
 	local rays = Instance.new("SunRaysEffect")
 	rays.Name = "GHSunRays"
-	rays.Intensity = 0.06
+	rays.Intensity = 0.04
 	rays.Spread = 0.7
 	rays.Parent = L
 end
@@ -21615,19 +21619,6 @@ end
 
 local function layoutMenu()
 	local logical = Kit.LogicalSize()
-	-- left column
-	local top = if chatBottomCache > 0 then chatBottomCache + 8 else 4
-	local full = columnHeight(#MENU_LEFT)
-	local fit = math.clamp((logical.Y - top - 10) / full, 0.5, 1)
-	menuScale.Scale = fit
-	menu.Size = UDim2.fromOffset(CELL_MAX, full)
-	if top > 4 or full * fit > logical.Y - 120 then
-		menu.Position = UDim2.fromOffset(8, top)
-		menu.AnchorPoint = Vector2.zero
-	else
-		menu.Position = UDim2.new(0, 8, 0.5, 0)
-		menu.AnchorPoint = Vector2.new(0, 0.5)
-	end
 	-- right stack (anchored bottom-right, above the jump button on touch screens)
 	local reserve = bottomReserve()
 	local rightH = columnHeight(#MENU_RIGHT) + GAP * 2 + AUTO_H + GAP * 2 + SMALL
@@ -21637,6 +21628,15 @@ local function layoutMenu()
 	rightStack.Size = UDim2.fromOffset(rightW, rightH)
 	rightStack.Position = UDim2.new(1, -8, 1, -reserve)
 	rightStack.AnchorPoint = Vector2.new(1, 1)
+	-- left column: same button size as the right, top lined up with the right column's top
+	-- (desktop: never above the bottom of the chat window)
+	local rightTop = logical.Y - reserve - rightH * rfit
+	local top = math.max(4, rightTop, if chatBottomCache > 0 then chatBottomCache + 8 else 0)
+	local full = columnHeight(#MENU_LEFT)
+	menuScale.Scale = math.min(rfit, math.clamp((logical.Y - top - 10) / full, 0.5, 1))
+	menu.Size = UDim2.fromOffset(CELL_MAX, full)
+	menu.Position = UDim2.fromOffset(8, top)
+	menu.AnchorPoint = Vector2.zero
 end
 
 local function menuButton(parent: Instance, i: number, m: any): TextButton
@@ -26208,7 +26208,9 @@ local function applyFit(l: TextLabel, info: TextInfo)
 	l.TextSize = size
 	local st = l:FindFirstChildOfClass("UIStroke")
 	if st and info.Stroke > 0 then
-		st.Thickness = math.max(0.75, math.min(info.Stroke * currentScale, size * currentScale * 0.12))
+		-- whole pixels only: a fractional outline (e.g. 0.75 px) is drawn unevenly on phones and
+		-- makes the letters look broken / flickery
+		st.Thickness = math.max(1, math.floor(math.min(info.Stroke * currentScale, size * currentScale * 0.12) + 0.5))
 	end
 end
 
@@ -27094,7 +27096,7 @@ local function applyText(l: TextLabel, base: number)
 	-- keep the outline thin relative to the letters (a fixed 1.5 px outline smeared small text)
 	local st = l:FindFirstChildOfClass("UIStroke")
 	if st then
-		st.Thickness = math.clamp(size * 0.1, 0.75, 1.5)
+		st.Thickness = if size >= 20 then 2 else 1 -- whole pixels (fractional outlines shimmer)
 	end
 end
 

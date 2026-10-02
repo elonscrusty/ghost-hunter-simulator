@@ -44,7 +44,7 @@ local function applyText(l: TextLabel, base: number)
 	-- keep the outline thin relative to the letters (a fixed 1.5 px outline smeared small text)
 	local st = l:FindFirstChildOfClass("UIStroke")
 	if st then
-		st.Thickness = math.clamp(size * 0.1, 0.75, 1.5)
+		st.Thickness = if size >= 20 then 2 else 1 -- whole pixels (fractional outlines shimmer)
 	end
 end
 

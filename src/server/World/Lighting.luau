@@ -18,7 +18,7 @@ function LightingSetup.Apply()
 	local L = LightingService
 	L.ClockTime = 0.5
 	L.GeographicLatitude = 20
-	L.Brightness = 2.5
+	L.Brightness = 2.2
 	L.Ambient = Color3.fromRGB(150, 120, 200)
 	L.OutdoorAmbient = Color3.fromRGB(160, 140, 210)
 	L.ColorShift_Top = Color3.fromRGB(170, 140, 255)
@@ -27,7 +27,7 @@ function LightingSetup.Apply()
 	L.EnvironmentSpecularScale = 0.4
 	L.GlobalShadows = true
 	L.ShadowSoftness = 0.4
-	L.ExposureCompensation = 0.25 -- a touch brighter now that fewer surfaces glow
+	L.ExposureCompensation = 0.12 -- slightly toned down (v1.4.1): same look, easier on the eyes
 	L.FogEnd = 100000
 
 	for _, child in L:GetChildren() do
@@ -50,31 +50,31 @@ function LightingSetup.Apply()
 	atmo.Offset = 0.15
 	atmo.Color = Color3.fromRGB(190, 150, 255)
 	atmo.Decay = Color3.fromRGB(110, 70, 180)
-	atmo.Glare = 0.4
+	atmo.Glare = 0.25
 	atmo.Haze = 1.0
 	atmo.Parent = L
 
 	clear("GHBloom")
 	local bloom = Instance.new("BloomEffect")
 	bloom.Name = "GHBloom"
-	bloom.Intensity = 0.3
-	bloom.Size = 20
-	bloom.Threshold = 2
+	bloom.Intensity = 0.2
+	bloom.Size = 16
+	bloom.Threshold = 2.3
 	bloom.Parent = L
 
 	clear("GHColor")
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Name = "GHColor"
-	cc.Saturation = 0.3
-	cc.Contrast = 0.1
-	cc.Brightness = 0.02
+	cc.Saturation = 0.24
+	cc.Contrast = 0.12
+	cc.Brightness = 0
 	cc.TintColor = Color3.fromRGB(255, 245, 255)
 	cc.Parent = L
 
 	clear("GHSunRays")
 	local rays = Instance.new("SunRaysEffect")
 	rays.Name = "GHSunRays"
-	rays.Intensity = 0.06
+	rays.Intensity = 0.04
 	rays.Spread = 0.7
 	rays.Parent = L
 end

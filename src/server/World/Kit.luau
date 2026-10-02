@@ -173,9 +173,13 @@ function Kit.Gui(part: BasePart, face: Enum.NormalId, pps: number?): SurfaceGui
 	local g: SurfaceGui = Instance.new("SurfaceGui")
 	g.Face = face
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = pps or 40
+	-- 30 px per stud: sharp up close, and far less shimmer when a sign is seen from a distance
+	-- or while the camera moves (a 40 px texture squeezed into a few screen pixels sparkles,
+	-- most on phones). Brightness just above 1 keeps the colours bright without the text
+	-- glowing into the bloom.
+	g.PixelsPerStud = pps or 30
 	g.LightInfluence = 0
-	g.Brightness = 1.5
+	g.Brightness = 1.1
 	g.ZOffset = 1
 	g.ResetOnSpawn = false
 	g.Parent = part

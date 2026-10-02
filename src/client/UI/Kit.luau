@@ -393,7 +393,9 @@ local function applyFit(l: TextLabel, info: TextInfo)
 	l.TextSize = size
 	local st = l:FindFirstChildOfClass("UIStroke")
 	if st and info.Stroke > 0 then
-		st.Thickness = math.max(0.75, math.min(info.Stroke * currentScale, size * currentScale * 0.12))
+		-- whole pixels only: a fractional outline (e.g. 0.75 px) is drawn unevenly on phones and
+		-- makes the letters look broken / flickery
+		st.Thickness = math.max(1, math.floor(math.min(info.Stroke * currentScale, size * currentScale * 0.12) + 0.5))
 	end
 end
 

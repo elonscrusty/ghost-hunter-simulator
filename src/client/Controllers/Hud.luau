@@ -264,19 +264,6 @@ end
 
 local function layoutMenu()
 	local logical = Kit.LogicalSize()
-	-- left column
-	local top = if chatBottomCache > 0 then chatBottomCache + 8 else 4
-	local full = columnHeight(#MENU_LEFT)
-	local fit = math.clamp((logical.Y - top - 10) / full, 0.5, 1)
-	menuScale.Scale = fit
-	menu.Size = UDim2.fromOffset(CELL_MAX, full)
-	if top > 4 or full * fit > logical.Y - 120 then
-		menu.Position = UDim2.fromOffset(8, top)
-		menu.AnchorPoint = Vector2.zero
-	else
-		menu.Position = UDim2.new(0, 8, 0.5, 0)
-		menu.AnchorPoint = Vector2.new(0, 0.5)
-	end
 	-- right stack (anchored bottom-right, above the jump button on touch screens)
 	local reserve = bottomReserve()
 	local rightH = columnHeight(#MENU_RIGHT) + GAP * 2 + AUTO_H + GAP * 2 + SMALL
@@ -286,6 +273,15 @@ local function layoutMenu()
 	rightStack.Size = UDim2.fromOffset(rightW, rightH)
 	rightStack.Position = UDim2.new(1, -8, 1, -reserve)
 	rightStack.AnchorPoint = Vector2.new(1, 1)
+	-- left column: same button size as the right, top lined up with the right column's top
+	-- (desktop: never above the bottom of the chat window)
+	local rightTop = logical.Y - reserve - rightH * rfit
+	local top = math.max(4, rightTop, if chatBottomCache > 0 then chatBottomCache + 8 else 0)
+	local full = columnHeight(#MENU_LEFT)
+	menuScale.Scale = math.min(rfit, math.clamp((logical.Y - top - 10) / full, 0.5, 1))
+	menu.Size = UDim2.fromOffset(CELL_MAX, full)
+	menu.Position = UDim2.fromOffset(8, top)
+	menu.AnchorPoint = Vector2.zero
 end
 
 local function menuButton(parent: Instance, i: number, m: any): TextButton

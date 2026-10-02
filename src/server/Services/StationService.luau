@@ -68,7 +68,7 @@ local function buildOddsBoard(board: BasePart, crate: Config.CrateDef)
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 40
 	gui.LightInfluence = 0
-	gui.Brightness = 1.4
+	gui.Brightness = 1.15
 	local bg = Instance.new("Frame")
 	bg.Size = UDim2.fromScale(1, 1)
 	bg.BackgroundColor3 = Color3.fromRGB(35, 20, 60)
