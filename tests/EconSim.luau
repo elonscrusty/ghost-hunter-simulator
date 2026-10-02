@@ -7,7 +7,7 @@ local Config = require("./_Config")
 local Rules = require("../src/shared/Logic/Rules")
 
 local RUNS = tonumber((...)) or 300
-local MAX_T = 40 * 3600
+local MAX_T = 150 * 3600
 
 local seed = 777
 local function rnd(): number

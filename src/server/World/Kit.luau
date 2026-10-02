@@ -27,11 +27,11 @@ export type Opts = {
 Kit.Rng = Random.new(42)
 
 Kit.Stats = { Parts = 0, Neon = 0, Lights = 0, Emitters = 0, Floating = 0, Flicker = 0 }
--- Budgets for the whole 8-zone map (zones 1-3 use about half of each).
-local MAX_LIGHTS = 96
-local MAX_EMITTERS = 34
-local MAX_FLOATING = 80
-local MAX_FLICKER = 20
+-- Budgets for the whole 16-zone map (per zone ~9 lights, 2-3 emitters, 6-8 floating, 2 flicker).
+local MAX_LIGHTS = 170
+local MAX_EMITTERS = 54
+local MAX_FLOATING = 140
+local MAX_FLICKER = 34
 
 local NO_OPTS: Opts = {}
 

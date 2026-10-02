@@ -27,6 +27,14 @@ local THEMES: { [string]: Theme } = {
 	Harbor = { Stone = C(125, 90, 60), Trim = C(70, 200, 200), Barrier = C(90, 255, 210), Lamp = C(255, 200, 110) },
 	Castle = { Stone = C(150, 150, 165), Trim = C(255, 200, 70), Barrier = C(190, 110, 255), Lamp = C(255, 190, 100) },
 	SpiritRealm = { Stone = C(70, 60, 110), Trim = C(110, 230, 255), Barrier = C(110, 240, 255), Lamp = C(150, 255, 230) },
+	Swamp = { Stone = C(100, 120, 75), Trim = C(170, 255, 120), Barrier = C(150, 255, 120), Lamp = C(200, 255, 140) },
+	Frost = { Stone = C(205, 225, 245), Trim = C(110, 190, 255), Barrier = C(170, 240, 255), Lamp = C(200, 245, 255) },
+	Tomb = { Stone = C(225, 190, 125), Trim = C(70, 200, 220), Barrier = C(255, 210, 90), Lamp = C(255, 220, 140) },
+	ToyFactory = { Stone = C(255, 150, 190), Trim = C(255, 225, 90), Barrier = C(255, 140, 220), Lamp = C(255, 230, 150) },
+	Sunken = { Stone = C(90, 150, 170), Trim = C(255, 220, 120), Barrier = C(90, 255, 230), Lamp = C(150, 255, 240) },
+	Clockwork = { Stone = C(160, 120, 80), Trim = C(230, 200, 120), Barrier = C(255, 190, 90), Lamp = C(255, 210, 130) },
+	Inferno = { Stone = C(90, 55, 55), Trim = C(255, 150, 60), Barrier = C(255, 120, 60), Lamp = C(255, 170, 90) },
+	Throne = { Stone = C(240, 235, 255), Trim = C(255, 215, 90), Barrier = C(255, 230, 140), Lamp = C(255, 240, 180) },
 }
 
 local function buildGate(folder: Instance, id: string, z: number, width: number)

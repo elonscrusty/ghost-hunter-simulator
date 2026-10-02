@@ -22,7 +22,9 @@
 	  Z 1220..1560   ZONE 5 HAUNTED HOSPITAL (Hospital.luau)
 	  Z 1560..1920   ZONE 6 GHOST SHIP HARBOR (Harbor.luau)
 	  Z 1920..2280   ZONE 7 CURSED CASTLE (Castle.luau)
-	  Z 2280..2680   ZONE 8 SPIRIT REALM (SpiritRealm.luau); far wall at Z 2680.
+	  Z 2280..2680   ZONE 8 SPIRIT REALM (SpiritRealm.luau)
+	  Z 2680..5560   ZONES 9-16, 360 each: Swamp, Frost, Tomb, ToyFactory, Sunken, Clockwork,
+	                 Inferno, Throne (one file each); far wall at the last zone's MaxZ.
 	  Every zone from the Cemetery on: gate wall at its MinZ (Boundary + Gates), crate station at
 	  (-28, MinZ + 32), Fast Travel arrival pad at Config.Layout.ZoneSpawns (kept free), main path
 	  along X = 0 to the next gate.
@@ -52,6 +54,14 @@ local Hospital = require(script.Parent.Hospital)
 local Harbor = require(script.Parent.Harbor)
 local Castle = require(script.Parent.Castle)
 local SpiritRealm = require(script.Parent.SpiritRealm)
+local Swamp = require(script.Parent.Swamp)
+local Frost = require(script.Parent.Frost)
+local Tomb = require(script.Parent.Tomb)
+local ToyFactory = require(script.Parent.ToyFactory)
+local Sunken = require(script.Parent.Sunken)
+local Clockwork = require(script.Parent.Clockwork)
+local Inferno = require(script.Parent.Inferno)
+local Throne = require(script.Parent.Throne)
 
 local Builder = {}
 
@@ -97,6 +107,14 @@ function Builder.Build()
 	Harbor.Build(map)
 	Castle.Build(map)
 	SpiritRealm.Build(map)
+	Swamp.Build(map)
+	Frost.Build(map)
+	Tomb.Build(map)
+	ToyFactory.Build(map)
+	Sunken.Build(map)
+	Clockwork.Build(map)
+	Inferno.Build(map)
+	Throne.Build(map)
 
 	map.Parent = Workspace
 	local s = Kit.Stats

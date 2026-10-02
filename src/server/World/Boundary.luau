@@ -24,6 +24,14 @@ local WALLS: { [string]: WallLook } = {
 	Harbor = { Wall = C(120, 85, 55), Cap = C(70, 110, 150), Ball = C(220, 80, 70), Band = C(60, 200, 200), Pumpkins = false },
 	Castle = { Wall = C(140, 140, 155), Cap = C(95, 95, 115), Ball = C(255, 200, 70), Band = C(150, 40, 70), Pumpkins = false },
 	SpiritRealm = { Wall = C(60, 50, 95), Cap = C(90, 80, 140), Ball = C(110, 230, 255), Band = C(170, 100, 255), Pumpkins = false },
+	Swamp = { Wall = C(90, 110, 70), Cap = C(120, 95, 65), Ball = C(170, 255, 120), Band = C(150, 230, 90), Pumpkins = false },
+	Frost = { Wall = C(200, 225, 245), Cap = C(150, 190, 230), Ball = C(170, 240, 255), Band = C(110, 190, 255), Pumpkins = false },
+	Tomb = { Wall = C(220, 185, 120), Cap = C(190, 150, 90), Ball = C(70, 200, 220), Band = C(255, 210, 90), Pumpkins = false },
+	ToyFactory = { Wall = C(255, 150, 190), Cap = C(255, 225, 90), Ball = C(90, 180, 255), Band = C(150, 90, 230), Pumpkins = false },
+	Sunken = { Wall = C(80, 140, 160), Cap = C(200, 190, 150), Ball = C(255, 220, 120), Band = C(90, 255, 230), Pumpkins = false },
+	Clockwork = { Wall = C(150, 110, 75), Cap = C(200, 170, 110), Ball = C(230, 200, 120), Band = C(120, 90, 60), Pumpkins = false },
+	Inferno = { Wall = C(80, 50, 50), Cap = C(110, 70, 60), Ball = C(255, 150, 60), Band = C(255, 110, 50), Pumpkins = false },
+	Throne = { Wall = C(240, 235, 255), Cap = C(200, 180, 240), Ball = C(255, 215, 90), Band = C(150, 100, 230), Pumpkins = false },
 }
 
 local invisible: (Instance, Vector3, Vector3) -> ()

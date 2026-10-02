@@ -139,6 +139,46 @@ Config.Zones = {
 		Ambient = Color3.fromRGB(140, 120, 220), FogColor = Color3.fromRGB(60, 30, 120), Accent = Color3.fromRGB(110, 240, 255),
 		MinZ = 2280, MaxZ = 2680,
 	},
+	{
+		Id = "Swamp", Name = "PHANTOM SWAMP", Order = 9, Cost = 3000000000, Crate = "Bog",
+		Ambient = Color3.fromRGB(120, 160, 120), FogColor = Color3.fromRGB(40, 70, 50), Accent = Color3.fromRGB(150, 255, 120),
+		MinZ = 2680, MaxZ = 3040,
+	},
+	{
+		Id = "Frost", Name = "FROSTBITE PEAKS", Order = 10, Cost = 18000000000, Crate = "Frost",
+		Ambient = Color3.fromRGB(170, 200, 235), FogColor = Color3.fromRGB(110, 150, 200), Accent = Color3.fromRGB(170, 240, 255),
+		MinZ = 3040, MaxZ = 3400,
+	},
+	{
+		Id = "Tomb", Name = "PHARAOH'S TOMB", Order = 11, Cost = 108000000000, Crate = "Tomb",
+		Ambient = Color3.fromRGB(210, 180, 130), FogColor = Color3.fromRGB(120, 90, 50), Accent = Color3.fromRGB(255, 210, 90),
+		MinZ = 3400, MaxZ = 3760,
+	},
+	{
+		Id = "ToyFactory", Name = "HAUNTED TOY FACTORY", Order = 12, Cost = 648000000000, Crate = "Toy",
+		Ambient = Color3.fromRGB(200, 150, 210), FogColor = Color3.fromRGB(110, 60, 120), Accent = Color3.fromRGB(255, 140, 200),
+		MinZ = 3760, MaxZ = 4120,
+	},
+	{
+		Id = "Sunken", Name = "SUNKEN CITY", Order = 13, Cost = 3890000000000, Crate = "Sunken",
+		Ambient = Color3.fromRGB(100, 170, 200), FogColor = Color3.fromRGB(20, 70, 110), Accent = Color3.fromRGB(90, 255, 230),
+		MinZ = 4120, MaxZ = 4480,
+	},
+	{
+		Id = "Clockwork", Name = "CLOCKWORK TOWER", Order = 14, Cost = 23300000000000, Crate = "Clockwork",
+		Ambient = Color3.fromRGB(190, 160, 130), FogColor = Color3.fromRGB(90, 70, 50), Accent = Color3.fromRGB(255, 190, 90),
+		MinZ = 4480, MaxZ = 4840,
+	},
+	{
+		Id = "Inferno", Name = "INFERNO CAVERNS", Order = 15, Cost = 140000000000000, Crate = "Inferno",
+		Ambient = Color3.fromRGB(210, 130, 100), FogColor = Color3.fromRGB(110, 40, 30), Accent = Color3.fromRGB(255, 140, 60),
+		MinZ = 4840, MaxZ = 5200,
+	},
+	{
+		Id = "Throne", Name = "GHOST KING'S THRONE", Order = 16, Cost = 840000000000000, Crate = "Throne",
+		Ambient = Color3.fromRGB(190, 170, 240), FogColor = Color3.fromRGB(70, 50, 130), Accent = Color3.fromRGB(255, 230, 140),
+		MinZ = 5200, MaxZ = 5560,
+	},
 } :: { ZoneDef }
 
 Config.ZoneById = {} :: { [string]: ZoneDef }
@@ -295,6 +335,126 @@ Config.Ghosts = {
 		Id = "SpiritOverlord", Name = "SPIRIT OVERLORD", Zone = "SpiritRealm",
 		Spirit = 420000000, Reward = { 24000000, 28000000 }, Drops = 18, Respawn = 30, Scale = 5, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(170, 140, 255), Glow = Color3.fromRGB(90, 255, 230), Style = "Overlord",
+	},
+	BogWisp = {
+		Id = "BogWisp", Name = "BOG WISP", Zone = "Swamp",
+		Spirit = 185000000, Reward = { 12500000, 15100000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(180, 230, 170), Glow = Color3.fromRGB(150, 255, 120), Style = "Bog",
+	},
+	MarshPhantom = {
+		Id = "MarshPhantom", Name = "MARSH PHANTOM", Zone = "Swamp",
+		Spirit = 500000000, Reward = { 32200000, 39000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(140, 190, 140), Glow = Color3.fromRGB(200, 255, 90), Style = "Marsh",
+	},
+	SwampLord = {
+		Id = "SwampLord", Name = "SWAMP LORD", Zone = "Swamp",
+		Spirit = 2100000000, Reward = { 125000000, 146000000 }, Drops = 18, Respawn = 30, Scale = 5.15, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(90, 140, 90), Glow = Color3.fromRGB(170, 255, 110), Style = "SwampLord",
+	},
+	FrostSpirit = {
+		Id = "FrostSpirit", Name = "FROST SPIRIT", Zone = "Frost",
+		Spirit = 925000000, Reward = { 64900000, 78400000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(230, 245, 255), Glow = Color3.fromRGB(140, 220, 255), Style = "FrostWisp",
+	},
+	YetiPhantom = {
+		Id = "YetiPhantom", Name = "YETI PHANTOM", Zone = "Frost",
+		Spirit = 2500000000, Reward = { 168000000, 203000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(240, 245, 250), Glow = Color3.fromRGB(120, 200, 255), Style = "Yeti",
+	},
+	BlizzardQueen = {
+		Id = "BlizzardQueen", Name = "BLIZZARD QUEEN", Zone = "Frost",
+		Spirit = 10500000000, Reward = { 649000000, 757000000 }, Drops = 18, Respawn = 30, Scale = 5.30, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(200, 230, 255), Glow = Color3.fromRGB(170, 240, 255), Style = "Blizzard",
+	},
+	MummySpirit = {
+		Id = "MummySpirit", Name = "MUMMY SPIRIT", Zone = "Tomb",
+		Spirit = 4620000000, Reward = { 337000000, 408000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(240, 230, 200), Glow = Color3.fromRGB(255, 210, 90), Style = "Mummy",
+	},
+	ScarabPhantom = {
+		Id = "ScarabPhantom", Name = "SCARAB PHANTOM", Zone = "Tomb",
+		Spirit = 12500000000, Reward = { 872000000, 1050000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(80, 170, 180), Glow = Color3.fromRGB(90, 255, 220), Style = "Scarab",
+	},
+	PharaohsGhost = {
+		Id = "PharaohsGhost", Name = "PHARAOH'S GHOST", Zone = "Tomb",
+		Spirit = 52500000000, Reward = { 3370000000, 3940000000 }, Drops = 18, Respawn = 30, Scale = 5.45, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(255, 220, 130), Glow = Color3.fromRGB(255, 180, 60), Style = "Pharaoh",
+	},
+	ToySoldierSpirit = {
+		Id = "ToySoldierSpirit", Name = "TOY SOLDIER SPIRIT", Zone = "ToyFactory",
+		Spirit = 23100000000, Reward = { 1750000000, 2120000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(255, 200, 200), Glow = Color3.fromRGB(255, 90, 120), Style = "ToySoldier",
+	},
+	JackInTheBoxPhantom = {
+		Id = "JackInTheBoxPhantom", Name = "JACK-IN-THE-BOX PHANTOM", Zone = "ToyFactory",
+		Spirit = 62500000000, Reward = { 4530000000, 5480000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 140, 220), Style = "JackBox",
+	},
+	PuppetMaster = {
+		Id = "PuppetMaster", Name = "PUPPET MASTER", Zone = "ToyFactory",
+		Spirit = 262000000000, Reward = { 17500000000, 20500000000 }, Drops = 18, Respawn = 30, Scale = 5.60, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(220, 170, 240), Glow = Color3.fromRGB(255, 120, 200), Style = "Puppet",
+	},
+	BubbleSpirit = {
+		Id = "BubbleSpirit", Name = "BUBBLE SPIRIT", Zone = "Sunken",
+		Spirit = 116000000000, Reward = { 9120000000, 11000000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(180, 240, 255), Glow = Color3.fromRGB(90, 255, 230), Style = "Bubble",
+	},
+	SirenPhantom = {
+		Id = "SirenPhantom", Name = "SIREN PHANTOM", Zone = "Sunken",
+		Spirit = 312000000000, Reward = { 23600000000, 28500000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(160, 230, 220), Glow = Color3.fromRGB(140, 255, 200), Style = "Siren",
+	},
+	LeviathanGhost = {
+		Id = "LeviathanGhost", Name = "LEVIATHAN GHOST", Zone = "Sunken",
+		Spirit = 1310000000000, Reward = { 91200000000, 106000000000 }, Drops = 18, Respawn = 30, Scale = 5.75, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(70, 150, 170), Glow = Color3.fromRGB(90, 255, 230), Style = "Leviathan",
+	},
+	CogSpirit = {
+		Id = "CogSpirit", Name = "COG SPIRIT", Zone = "Clockwork",
+		Spirit = 578000000000, Reward = { 47400000000, 57300000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(230, 210, 170), Glow = Color3.fromRGB(255, 190, 90), Style = "Cog",
+	},
+	ClockworkPhantom = {
+		Id = "ClockworkPhantom", Name = "CLOCKWORK PHANTOM", Zone = "Clockwork",
+		Spirit = 1560000000000, Reward = { 123000000000, 148000000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(200, 180, 150), Glow = Color3.fromRGB(255, 220, 120), Style = "Clockwork",
+	},
+	TimeKeeper = {
+		Id = "TimeKeeper", Name = "TIME KEEPER", Zone = "Clockwork",
+		Spirit = 6560000000000, Reward = { 474000000000, 554000000000 }, Drops = 18, Respawn = 30, Scale = 5.90, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(180, 150, 110), Glow = Color3.fromRGB(255, 200, 80), Style = "TimeKeeper",
+	},
+	EmberSpirit = {
+		Id = "EmberSpirit", Name = "EMBER SPIRIT", Zone = "Inferno",
+		Spirit = 2890000000000, Reward = { 247000000000, 298000000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(255, 200, 150), Glow = Color3.fromRGB(255, 150, 60), Style = "Ember",
+	},
+	MagmaPhantom = {
+		Id = "MagmaPhantom", Name = "MAGMA PHANTOM", Zone = "Inferno",
+		Spirit = 7810000000000, Reward = { 637000000000, 771000000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(255, 150, 110), Glow = Color3.fromRGB(255, 110, 50), Style = "Magma",
+	},
+	InfernoTitan = {
+		Id = "InfernoTitan", Name = "INFERNO TITAN", Zone = "Inferno",
+		Spirit = 32800000000000, Reward = { 2470000000000, 2880000000000 }, Drops = 18, Respawn = 30, Scale = 6.05, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(200, 90, 70), Glow = Color3.fromRGB(255, 170, 60), Style = "Titan",
+	},
+	RoyalGuardSpirit = {
+		Id = "RoyalGuardSpirit", Name = "ROYAL GUARD SPIRIT", Zone = "Throne",
+		Spirit = 14500000000000, Reward = { 1280000000000, 1550000000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(235, 235, 250), Glow = Color3.fromRGB(255, 220, 120), Style = "Guard",
+	},
+	ShadowPhantom = {
+		Id = "ShadowPhantom", Name = "SHADOW PHANTOM", Zone = "Throne",
+		Spirit = 39100000000000, Reward = { 3310000000000, 4010000000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(90, 80, 130), Glow = Color3.fromRGB(190, 120, 255), Style = "Shadow",
+	},
+	GhostKing = {
+		Id = "GhostKing", Name = "THE GHOST KING", Zone = "Throne",
+		Spirit = 164000000000000, Reward = { 12800000000000, 15000000000000 }, Drops = 18, Respawn = 30, Scale = 6.20, Hover = 14, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(220, 210, 255), Glow = Color3.fromRGB(255, 230, 140), Style = "GhostKing",
 	},
 	-- EVENT (scaled at spawn time by Config.Event)
 	GiantPoltergeist = {
@@ -637,6 +797,295 @@ Config.Hunters = {
 		Look = { Skin = C(245, 245, 255), Hair = C(250, 250, 255), HairStyle = "Spiky", Shirt = C(15, 15, 20), Pants = C(10, 10, 15), Shoes = C(250, 250, 255),
 			Hat = "Goggles", HatColor = C(250, 250, 255), Back = "Orbs", BackColor = C(250, 250, 255), Tool = "Cannon", ToolColor = C(250, 250, 255), Beam = C(250, 250, 255), Aura = true },
 	},
+	-- ZONES 9-16
+	SwampScout = {
+		Id = "SwampScout", Name = "Swamp Scout", Rarity = "Common", Zone = "Swamp", Power = 2350000,
+		Blurb = "Squelches loudly. Ghosts hear them coming.",
+		Look = { Skin = C(235, 190, 150), Hair = C(90, 60, 30), HairStyle = "Short", Shirt = C(110, 140, 70), Pants = C(80, 70, 50), Shoes = C(70, 50, 30),
+			Hat = "Pith", HatColor = C(200, 180, 120), Back = "Backpack", BackColor = C(120, 90, 50), Tool = "Lantern", ToolColor = C(80, 70, 60), Beam = C(170, 255, 120) },
+	},
+	BogTracker = {
+		Id = "BogTracker", Name = "Bog Tracker", Rarity = "Uncommon", Zone = "Swamp", Power = 3900000,
+		Blurb = "Follows ghost slime trails for fun.",
+		Look = { Skin = C(200, 140, 100), Hair = C(30, 30, 30), HairStyle = "Spiky", Shirt = C(80, 120, 60), Pants = C(50, 60, 40), Shoes = C(40, 40, 30),
+			Hat = "Cap", HatColor = C(150, 200, 80), Back = "Tank", BackColor = C(150, 255, 120), Tool = "Vacuum", ToolColor = C(120, 160, 80), Beam = C(150, 255, 120) },
+	},
+	MarshMystic = {
+		Id = "MarshMystic", Name = "Marsh Mystic", Rarity = "Rare", Zone = "Swamp", Power = 6500000,
+		Blurb = "Talks to frogs. The frogs know where ghosts are.",
+		Look = { Skin = C(220, 180, 150), Hair = C(60, 90, 50), HairStyle = "Long", Shirt = C(60, 100, 70), Pants = C(40, 60, 40), Shoes = C(100, 70, 40),
+			Hat = "Hood", HatColor = C(50, 90, 60), Back = "Orbs", BackColor = C(200, 255, 100), Tool = "Staff", ToolColor = C(120, 90, 50), Beam = C(200, 255, 100) },
+	},
+	FireflySage = {
+		Id = "FireflySage", Name = "Firefly Sage", Rarity = "Legendary", Zone = "Swamp", Power = 16000000,
+		Blurb = "A thousand fireflies light the way.",
+		Look = { Skin = C(255, 220, 190), Hair = C(255, 240, 150), HairStyle = "Long", Shirt = C(70, 110, 60), Pants = C(40, 70, 40), Shoes = C(255, 220, 90),
+			Hat = "Wizard", HatColor = C(70, 110, 60), Back = "Wings", BackColor = C(255, 240, 120), Tool = "Orb", ToolColor = C(255, 220, 90), Beam = C(255, 240, 120), Aura = true },
+	},
+	FrogPrince = {
+		Id = "FrogPrince", Name = "Frog Prince", Rarity = "Mythic", Zone = "Swamp", Power = 40000000,
+		Blurb = "Kissed a ghost once. Wouldn't recommend.",
+		Look = { Skin = C(140, 210, 120), Hair = C(80, 160, 60), HairStyle = "None", Shirt = C(60, 140, 60), Pants = C(40, 90, 40), Shoes = C(255, 210, 80),
+			Hat = "Crown", HatColor = C(255, 210, 80), Back = "Cape", BackColor = C(200, 40, 60), Tool = "Wand", ToolColor = C(255, 210, 80), Beam = C(170, 255, 110), Aura = true },
+	},
+	GatorKing = {
+		Id = "GatorKing", Name = "The Gator King", Rarity = "Secret", Zone = "Swamp", Power = 100000000,
+		Blurb = "Rules the swamp with a big toothy grin.",
+		Look = { Skin = C(90, 150, 80), Hair = C(40, 70, 40), HairStyle = "None", Shirt = C(50, 110, 60), Pants = C(40, 80, 50), Shoes = C(230, 230, 200),
+			Hat = "Crown", HatColor = C(255, 210, 80), Back = "Shield", BackColor = C(80, 140, 70), Tool = "Trident", ToolColor = C(230, 230, 200), Beam = C(170, 255, 110), Aura = true },
+	},
+	SnowScout = {
+		Id = "SnowScout", Name = "Snow Scout", Rarity = "Common", Zone = "Frost", Power = 11800000,
+		Blurb = "Wears four jackets. Still cold.",
+		Look = { Skin = C(255, 220, 200), Hair = C(150, 90, 50), HairStyle = "Bob", Shirt = C(80, 160, 230), Pants = C(60, 70, 110), Shoes = C(240, 240, 250),
+			Hat = "Earmuffs", HatColor = C(255, 120, 150), Back = "Backpack", BackColor = C(80, 160, 230), Tool = "Flashlight", ToolColor = C(200, 230, 255), Beam = C(170, 240, 255) },
+	},
+	IceClimber = {
+		Id = "IceClimber", Name = "Ice Climber", Rarity = "Uncommon", Zone = "Frost", Power = 19500000,
+		Blurb = "Climbs glaciers to reach floating ghosts.",
+		Look = { Skin = C(240, 200, 170), Hair = C(50, 40, 30), HairStyle = "Short", Shirt = C(230, 90, 80), Pants = C(60, 70, 110), Shoes = C(60, 50, 50),
+			Hat = "Beanie", HatColor = C(80, 160, 230), Back = "Tank", BackColor = C(170, 240, 255), Tool = "Vacuum", ToolColor = C(200, 230, 255), Beam = C(170, 240, 255) },
+	},
+	FrostMage = {
+		Id = "FrostMage", Name = "Frost Mage", Rarity = "Rare", Zone = "Frost", Power = 32500000,
+		Blurb = "Freezes ghosts mid-boo.",
+		Look = { Skin = C(230, 230, 255), Hair = C(240, 250, 255), HairStyle = "Long", Shirt = C(120, 180, 255), Pants = C(70, 100, 180), Shoes = C(230, 240, 255),
+			Hat = "Wizard", HatColor = C(120, 180, 255), Back = "Cape", BackColor = C(200, 230, 255), Tool = "Staff", ToolColor = C(170, 220, 255), Beam = C(170, 240, 255) },
+	},
+	YetiWhisperer = {
+		Id = "YetiWhisperer", Name = "Yeti Whisperer", Rarity = "Legendary", Zone = "Frost", Power = 80000000,
+		Blurb = "Best friends with a very big snowman.",
+		Look = { Skin = C(220, 190, 170), Hair = C(250, 250, 255), HairStyle = "Puff", Shirt = C(240, 245, 255), Pants = C(150, 170, 200), Shoes = C(120, 140, 170),
+			Hat = "Hood", HatColor = C(240, 245, 255), Back = "Wings", BackColor = C(200, 240, 255), Tool = "Orb", ToolColor = C(200, 240, 255), Beam = C(140, 255, 240), Aura = true },
+	},
+	AuroraKnight = {
+		Id = "AuroraKnight", Name = "Aurora Knight", Rarity = "Mythic", Zone = "Frost", Power = 200000000,
+		Blurb = "Armor made of northern lights.",
+		Look = { Skin = C(240, 220, 200), Hair = C(120, 255, 210), HairStyle = "None", Shirt = C(70, 200, 180), Pants = C(60, 90, 160), Shoes = C(200, 240, 255),
+			Hat = "KnightHelm", HatColor = C(140, 230, 255), Back = "Shield", BackColor = C(120, 255, 210), Tool = "Sword", ToolColor = C(200, 255, 240), Beam = C(120, 255, 210), Aura = true },
+	},
+	TheAbominable = {
+		Id = "TheAbominable", Name = "The Abominable", Rarity = "Secret", Zone = "Frost", Power = 500000000,
+		Blurb = "Nobody has a clear photo of them.",
+		Look = { Skin = C(250, 250, 255), Hair = C(250, 250, 255), HairStyle = "Puff", Shirt = C(240, 245, 255), Pants = C(220, 230, 245), Shoes = C(180, 200, 230),
+			Hat = "Hood", HatColor = C(250, 250, 255), Back = "Cape", BackColor = C(170, 240, 255), Tool = "Cannon", ToolColor = C(200, 230, 255), Beam = C(170, 240, 255), Aura = true },
+	},
+	TombExplorer = {
+		Id = "TombExplorer", Name = "Tomb Explorer", Rarity = "Common", Zone = "Tomb", Power = 58800000,
+		Blurb = "Mapped every trap. Stepped on most of them.",
+		Look = { Skin = C(220, 170, 120), Hair = C(120, 70, 30), HairStyle = "Short", Shirt = C(220, 190, 130), Pants = C(150, 110, 60), Shoes = C(110, 70, 40),
+			Hat = "Pith", HatColor = C(220, 190, 130), Back = "Backpack", BackColor = C(150, 100, 60), Tool = "Flashlight", ToolColor = C(255, 220, 120), Beam = C(255, 230, 140) },
+	},
+	ScarabSeeker = {
+		Id = "ScarabSeeker", Name = "Scarab Seeker", Rarity = "Uncommon", Zone = "Tomb", Power = 97500000,
+		Blurb = "Collects beetles. Ghosts find that gross.",
+		Look = { Skin = C(170, 110, 70), Hair = C(30, 25, 20), HairStyle = "Long", Shirt = C(70, 170, 180), Pants = C(190, 160, 110), Shoes = C(90, 60, 30),
+			Hat = "Bandana", HatColor = C(70, 170, 180), Back = "Tank", BackColor = C(90, 255, 220), Tool = "Scanner", ToolColor = C(70, 170, 180), Beam = C(90, 255, 220) },
+	},
+	SandMage = {
+		Id = "SandMage", Name = "Sand Mage", Rarity = "Rare", Zone = "Tomb", Power = 162000000,
+		Blurb = "Builds sandcastles out of ghosts.",
+		Look = { Skin = C(200, 140, 90), Hair = C(30, 30, 30), HairStyle = "None", Shirt = C(240, 230, 200), Pants = C(70, 170, 180), Shoes = C(255, 210, 80),
+			Hat = "Nemes", HatColor = C(70, 170, 200), Back = "Cape", BackColor = C(70, 170, 200), Tool = "Staff", ToolColor = C(255, 210, 80), Beam = C(255, 220, 110) },
+	},
+	PharaohHunter = {
+		Id = "PharaohHunter", Name = "Pharaoh Hunter", Rarity = "Legendary", Zone = "Tomb", Power = 400000000,
+		Blurb = "Wears the crown of the last pharaoh they caught.",
+		Look = { Skin = C(190, 130, 90), Hair = C(30, 30, 30), HairStyle = "None", Shirt = C(255, 210, 80), Pants = C(70, 170, 200), Shoes = C(255, 210, 80),
+			Hat = "Nemes", HatColor = C(255, 210, 80), Back = "Wings", BackColor = C(255, 230, 140), Tool = "Cannon", ToolColor = C(255, 210, 80), Beam = C(255, 220, 110), Aura = true },
+	},
+	SunKeeper = {
+		Id = "SunKeeper", Name = "Sun Keeper", Rarity = "Mythic", Zone = "Tomb", Power = 1000000000,
+		Blurb = "Carries a piece of the desert sun.",
+		Look = { Skin = C(210, 150, 100), Hair = C(255, 230, 140), HairStyle = "Long", Shirt = C(255, 240, 200), Pants = C(255, 200, 80), Shoes = C(255, 210, 80),
+			Hat = "Crown", HatColor = C(255, 200, 60), Back = "Wings", BackColor = C(255, 180, 60), Tool = "Orb", ToolColor = C(255, 230, 140), Beam = C(255, 200, 90), Aura = true },
+	},
+	GoldenMummy = {
+		Id = "GoldenMummy", Name = "The Golden Mummy", Rarity = "Secret", Zone = "Tomb", Power = 2500000000,
+		Blurb = "Wrapped in gold. Unwrapped by nobody.",
+		Look = { Skin = C(255, 215, 100), Hair = C(255, 215, 100), HairStyle = "None", Shirt = C(255, 215, 100), Pants = C(240, 220, 180), Shoes = C(255, 215, 100),
+			Hat = "Nemes", HatColor = C(255, 215, 100), Back = "Cape", BackColor = C(240, 220, 180), Tool = "Staff", ToolColor = C(255, 215, 100), Beam = C(255, 230, 140), Aura = true },
+	},
+	ToyTinker = {
+		Id = "ToyTinker", Name = "Toy Tinker", Rarity = "Common", Zone = "ToyFactory", Power = 294000000,
+		Blurb = "Fixes toys. Unfixes ghosts.",
+		Look = { Skin = C(255, 220, 190), Hair = C(240, 120, 60), HairStyle = "Puff", Shirt = C(80, 170, 255), Pants = C(255, 90, 120), Shoes = C(255, 220, 80),
+			Hat = "Propeller", HatColor = C(255, 90, 120), Back = "Backpack", BackColor = C(255, 220, 80), Tool = "Wrench", ToolColor = C(200, 200, 210), Beam = C(255, 220, 120) },
+	},
+	WindUpKnight = {
+		Id = "WindUpKnight", Name = "Wind-Up Knight", Rarity = "Uncommon", Zone = "ToyFactory", Power = 488000000,
+		Blurb = "Fights for exactly 30 seconds per wind.",
+		Look = { Skin = C(250, 215, 180), Hair = C(90, 60, 40), HairStyle = "None", Shirt = C(220, 50, 60), Pants = C(60, 80, 180), Shoes = C(30, 30, 40),
+			Hat = "KnightHelm", HatColor = C(220, 50, 60), Back = "Shield", BackColor = C(60, 80, 180), Tool = "Sword", ToolColor = C(220, 220, 230), Beam = C(255, 140, 200) },
+	},
+	MarionetteMaster = {
+		Id = "MarionetteMaster", Name = "Marionette Master", Rarity = "Rare", Zone = "ToyFactory", Power = 812000000,
+		Blurb = "Pulls the strings. Ghosts dance.",
+		Look = { Skin = C(240, 200, 170), Hair = C(40, 30, 40), HairStyle = "Long", Shirt = C(140, 60, 170), Pants = C(40, 30, 50), Shoes = C(255, 140, 200),
+			Hat = "TopHat", HatColor = C(140, 60, 170), Back = "Cape", BackColor = C(255, 140, 200), Tool = "Wand", ToolColor = C(255, 255, 255), Beam = C(255, 140, 220) },
+	},
+	TeddyTitan = {
+		Id = "TeddyTitan", Name = "Teddy Titan", Rarity = "Legendary", Zone = "ToyFactory", Power = 2000000000,
+		Blurb = "A giant teddy with a giant heart.",
+		Look = { Skin = C(200, 140, 100), Hair = C(120, 80, 50), HairStyle = "Puff", Shirt = C(190, 130, 80), Pants = C(140, 90, 60), Shoes = C(255, 220, 80),
+			Hat = "Beanie", HatColor = C(190, 130, 80), Back = "Balloons", BackColor = C(255, 140, 200), Tool = "Cannon", ToolColor = C(255, 140, 200), Beam = C(255, 160, 220), Aura = true },
+	},
+	JackInTheBoxer = {
+		Id = "JackInTheBoxer", Name = "Jack-in-the-Boxer", Rarity = "Mythic", Zone = "ToyFactory", Power = 5000000000,
+		Blurb = "POP goes the ghost!",
+		Look = { Skin = C(255, 220, 200), Hair = C(255, 90, 160), HairStyle = "Spiky", Shirt = C(255, 220, 80), Pants = C(80, 170, 255), Shoes = C(255, 90, 160),
+			Hat = "Jester", HatColor = C(255, 90, 160), Back = "Balloons", BackColor = C(80, 170, 255), Tool = "Megaphone", ToolColor = C(255, 220, 80), Beam = C(255, 140, 220), Aura = true },
+	},
+	TheNutcracker = {
+		Id = "TheNutcracker", Name = "The Nutcracker", Rarity = "Secret", Zone = "ToyFactory", Power = 12500000000,
+		Blurb = "Cracks nuts. And cases.",
+		Look = { Skin = C(240, 220, 200), Hair = C(255, 215, 90), HairStyle = "None", Shirt = C(220, 40, 50), Pants = C(30, 40, 90), Shoes = C(30, 30, 40),
+			Hat = "KnightHelm", HatColor = C(220, 40, 50), Back = "Shield", BackColor = C(255, 215, 90), Tool = "Sword", ToolColor = C(255, 215, 90), Beam = C(255, 215, 120), Aura = true },
+	},
+	DeepDiver = {
+		Id = "DeepDiver", Name = "Deep Diver", Rarity = "Common", Zone = "Sunken", Power = 1470000000,
+		Blurb = "Holds their breath for 3 hours.",
+		Look = { Skin = C(240, 200, 170), Hair = C(40, 40, 50), HairStyle = "None", Shirt = C(60, 140, 170), Pants = C(40, 90, 120), Shoes = C(40, 40, 50),
+			Hat = "DivingHelmet", HatColor = C(220, 180, 90), Back = "Tank", BackColor = C(90, 255, 230), Tool = "Trident", ToolColor = C(220, 180, 90), Beam = C(90, 255, 230) },
+	},
+	CoralKeeper = {
+		Id = "CoralKeeper", Name = "Coral Keeper", Rarity = "Uncommon", Zone = "Sunken", Power = 2440000000,
+		Blurb = "Gardens the reef between ghost hunts.",
+		Look = { Skin = C(200, 150, 110), Hair = C(250, 140, 120), HairStyle = "Puff", Shirt = C(255, 130, 140), Pants = C(60, 140, 170), Shoes = C(240, 240, 250),
+			Hat = "Goggles", HatColor = C(90, 255, 230), Back = "Tank", BackColor = C(255, 130, 140), Tool = "Vacuum", ToolColor = C(255, 180, 170), Beam = C(140, 255, 220) },
+	},
+	TideCaller = {
+		Id = "TideCaller", Name = "Tide Caller", Rarity = "Rare", Zone = "Sunken", Power = 4060000000,
+		Blurb = "Calls the waves. The waves answer.",
+		Look = { Skin = C(170, 220, 230), Hair = C(60, 200, 210), HairStyle = "Long", Shirt = C(40, 120, 150), Pants = C(30, 80, 110), Shoes = C(90, 255, 230),
+			Hat = "Hood", HatColor = C(40, 120, 150), Back = "Cape", BackColor = C(90, 255, 230), Tool = "Staff", ToolColor = C(255, 220, 120), Beam = C(90, 255, 230) },
+	},
+	AtlanteanHunter = {
+		Id = "AtlanteanHunter", Name = "Atlantean Hunter", Rarity = "Legendary", Zone = "Sunken", Power = 10000000000,
+		Blurb = "From a city that sank on purpose.",
+		Look = { Skin = C(180, 230, 240), Hair = C(255, 220, 120), HairStyle = "Long", Shirt = C(40, 140, 170), Pants = C(30, 90, 120), Shoes = C(255, 220, 120),
+			Hat = "Crown", HatColor = C(255, 220, 120), Back = "Shield", BackColor = C(90, 255, 230), Tool = "Trident", ToolColor = C(255, 220, 120), Beam = C(90, 255, 230), Aura = true },
+	},
+	PearlSovereign = {
+		Id = "PearlSovereign", Name = "Pearl Sovereign", Rarity = "Mythic", Zone = "Sunken", Power = 25000000000,
+		Blurb = "Rules the deep with a glowing pearl.",
+		Look = { Skin = C(240, 230, 255), Hair = C(240, 200, 255), HairStyle = "Long", Shirt = C(250, 245, 255), Pants = C(140, 200, 230), Shoes = C(255, 240, 255),
+			Hat = "Crown", HatColor = C(255, 240, 255), Back = "Orbs", BackColor = C(255, 250, 255), Tool = "Orb", ToolColor = C(255, 250, 255), Beam = C(240, 200, 255), Aura = true },
+	},
+	AbyssWalker = {
+		Id = "AbyssWalker", Name = "The Abyss Walker", Rarity = "Secret", Zone = "Sunken", Power = 62500000000,
+		Blurb = "Came up from the very bottom.",
+		Look = { Skin = C(30, 40, 60), Hair = C(20, 20, 30), HairStyle = "None", Shirt = C(15, 25, 45), Pants = C(10, 20, 35), Shoes = C(90, 255, 230),
+			Hat = "DivingHelmet", HatColor = C(30, 40, 60), Back = "Cape", BackColor = C(90, 255, 230), Tool = "Trident", ToolColor = C(90, 255, 230), Beam = C(90, 255, 230), Aura = true },
+	},
+	GearScout = {
+		Id = "GearScout", Name = "Gear Scout", Rarity = "Common", Zone = "Clockwork", Power = 7340000000,
+		Blurb = "Hears every tick and tock.",
+		Look = { Skin = C(255, 215, 180), Hair = C(150, 90, 40), HairStyle = "Spiky", Shirt = C(160, 110, 70), Pants = C(80, 60, 50), Shoes = C(60, 40, 30),
+			Hat = "Goggles", HatColor = C(220, 180, 90), Back = "Backpack", BackColor = C(150, 100, 60), Tool = "Wrench", ToolColor = C(200, 180, 120), Beam = C(255, 200, 100) },
+	},
+	ClockTinker = {
+		Id = "ClockTinker", Name = "Clock Tinker", Rarity = "Uncommon", Zone = "Clockwork", Power = 12200000000,
+		Blurb = "Winds the clocks. Unwinds the ghosts.",
+		Look = { Skin = C(230, 190, 150), Hair = C(60, 40, 30), HairStyle = "Short", Shirt = C(120, 80, 50), Pants = C(70, 60, 50), Shoes = C(50, 40, 30),
+			Hat = "TopHat", HatColor = C(90, 70, 50), Back = "Tank", BackColor = C(255, 190, 90), Tool = "Scanner", ToolColor = C(230, 200, 120), Beam = C(255, 200, 100) },
+	},
+	ChronoMage = {
+		Id = "ChronoMage", Name = "Chrono Mage", Rarity = "Rare", Zone = "Clockwork", Power = 20300000000,
+		Blurb = "Hunts ghosts five minutes before they appear.",
+		Look = { Skin = C(200, 150, 110), Hair = C(230, 230, 240), HairStyle = "Long", Shirt = C(90, 80, 140), Pants = C(60, 50, 90), Shoes = C(255, 200, 90),
+			Hat = "Gears", HatColor = C(230, 200, 120), Back = "Cape", BackColor = C(90, 80, 140), Tool = "Staff", ToolColor = C(230, 200, 120), Beam = C(255, 210, 120) },
+	},
+	TimeBender = {
+		Id = "TimeBender", Name = "Time Bender", Rarity = "Legendary", Zone = "Clockwork", Power = 50000000000,
+		Blurb = "Was born tomorrow.",
+		Look = { Skin = C(250, 230, 210), Hair = C(255, 230, 180), HairStyle = "Long", Shirt = C(240, 230, 210), Pants = C(120, 90, 60), Shoes = C(230, 200, 120),
+			Hat = "Gears", HatColor = C(230, 200, 120), Back = "Wings", BackColor = C(230, 200, 120), Tool = "Orb", ToolColor = C(230, 200, 120), Beam = C(255, 220, 140), Aura = true },
+	},
+	SteamTitan = {
+		Id = "SteamTitan", Name = "Steam Titan", Rarity = "Mythic", Zone = "Clockwork", Power = 125000000000,
+		Blurb = "Powered by tea. Lots of tea.",
+		Look = { Skin = C(200, 180, 160), Hair = C(80, 60, 40), HairStyle = "None", Shirt = C(150, 110, 70), Pants = C(90, 70, 50), Shoes = C(200, 180, 120),
+			Hat = "KnightHelm", HatColor = C(200, 170, 110), Back = "Tank", BackColor = C(255, 190, 90), Tool = "Cannon", ToolColor = C(200, 170, 110), Beam = C(255, 200, 100), Aura = true },
+	},
+	TheTimeless = {
+		Id = "TheTimeless", Name = "The Timeless One", Rarity = "Secret", Zone = "Clockwork", Power = 312000000000,
+		Blurb = "Older than the clock tower itself.",
+		Look = { Skin = C(230, 220, 255), Hair = C(255, 255, 255), HairStyle = "Long", Shirt = C(40, 35, 50), Pants = C(30, 25, 40), Shoes = C(255, 210, 120),
+			Hat = "Gears", HatColor = C(255, 210, 120), Back = "Cape", BackColor = C(255, 210, 120), Tool = "Orb", ToolColor = C(255, 210, 120), Beam = C(255, 230, 160), Aura = true },
+	},
+	EmberScout = {
+		Id = "EmberScout", Name = "Ember Scout", Rarity = "Common", Zone = "Inferno", Power = 36700000000,
+		Blurb = "Toasts marshmallows on ghost fire.",
+		Look = { Skin = C(240, 190, 150), Hair = C(255, 120, 40), HairStyle = "Spiky", Shirt = C(255, 140, 60), Pants = C(90, 50, 40), Shoes = C(60, 30, 30),
+			Hat = "Goggles", HatColor = C(255, 200, 80), Back = "Backpack", BackColor = C(255, 140, 60), Tool = "Flashlight", ToolColor = C(255, 200, 80), Beam = C(255, 180, 80) },
+	},
+	LavaDiver = {
+		Id = "LavaDiver", Name = "Lava Diver", Rarity = "Uncommon", Zone = "Inferno", Power = 60900000000,
+		Blurb = "Swims in lava. Don't try it.",
+		Look = { Skin = C(200, 150, 110), Hair = C(60, 30, 20), HairStyle = "None", Shirt = C(200, 80, 50), Pants = C(80, 40, 30), Shoes = C(60, 30, 30),
+			Hat = "DivingHelmet", HatColor = C(255, 170, 80), Back = "Tank", BackColor = C(255, 120, 40), Tool = "Vacuum", ToolColor = C(255, 170, 80), Beam = C(255, 150, 60) },
+	},
+	FireDancer = {
+		Id = "FireDancer", Name = "Fire Dancer", Rarity = "Rare", Zone = "Inferno", Power = 102000000000,
+		Blurb = "Dances so hot the ghosts melt.",
+		Look = { Skin = C(220, 160, 120), Hair = C(255, 90, 40), HairStyle = "Long", Shirt = C(255, 90, 60), Pants = C(255, 200, 80), Shoes = C(255, 90, 60),
+			Hat = "Bandana", HatColor = C(255, 200, 80), Back = "Cape", BackColor = C(255, 90, 60), Tool = "Wand", ToolColor = C(255, 230, 140), Beam = C(255, 140, 60) },
+	},
+	PhoenixHunter = {
+		Id = "PhoenixHunter", Name = "Phoenix Hunter", Rarity = "Legendary", Zone = "Inferno", Power = 250000000000,
+		Blurb = "Rises again after every fall.",
+		Look = { Skin = C(255, 220, 190), Hair = C(255, 150, 50), HairStyle = "Spiky", Shirt = C(255, 170, 60), Pants = C(160, 50, 40), Shoes = C(255, 200, 80),
+			Hat = "Crown", HatColor = C(255, 200, 80), Back = "Wings", BackColor = C(255, 120, 40), Tool = "Cannon", ToolColor = C(255, 200, 80), Beam = C(255, 160, 60), Aura = true },
+	},
+	DragonCaller = {
+		Id = "DragonCaller", Name = "Dragon Caller", Rarity = "Mythic", Zone = "Inferno", Power = 625000000000,
+		Blurb = "Their pet is a dragon. Obviously.",
+		Look = { Skin = C(240, 200, 170), Hair = C(200, 40, 40), HairStyle = "None", Shirt = C(160, 30, 40), Pants = C(60, 20, 30), Shoes = C(255, 160, 60),
+			Hat = "KnightHelm", HatColor = C(255, 160, 60), Back = "Wings", BackColor = C(255, 90, 40), Tool = "Sword", ToolColor = C(255, 200, 90), Beam = C(255, 120, 50), Aura = true },
+	},
+	TheEternalFlame = {
+		Id = "TheEternalFlame", Name = "The Eternal Flame", Rarity = "Secret", Zone = "Inferno", Power = 1560000000000,
+		Blurb = "Has been burning since the first ghost.",
+		Look = { Skin = C(255, 230, 200), Hair = C(255, 240, 180), HairStyle = "Long", Shirt = C(255, 140, 40), Pants = C(120, 30, 20), Shoes = C(255, 220, 120),
+			Hat = "Hood", HatColor = C(255, 140, 40), Back = "Wings", BackColor = C(255, 200, 80), Tool = "Orb", ToolColor = C(255, 240, 180), Beam = C(255, 200, 90), Aura = true },
+	},
+	ThronePage = {
+		Id = "ThronePage", Name = "Throne Page", Rarity = "Common", Zone = "Throne", Power = 184000000000,
+		Blurb = "Carries the king's cape. And a ghost vacuum.",
+		Look = { Skin = C(255, 215, 180), Hair = C(200, 150, 80), HairStyle = "Short", Shirt = C(110, 80, 190), Pants = C(250, 245, 255), Shoes = C(255, 215, 90),
+			Hat = "Cap", HatColor = C(255, 215, 90), Back = "Backpack", BackColor = C(110, 80, 190), Tool = "Flashlight", ToolColor = C(255, 215, 90), Beam = C(255, 230, 140) },
+	},
+	ShadowGuard = {
+		Id = "ShadowGuard", Name = "Shadow Guard", Rarity = "Uncommon", Zone = "Throne", Power = 305000000000,
+		Blurb = "Hides in shadows. Ghosts hide from them.",
+		Look = { Skin = C(170, 150, 200), Hair = C(40, 30, 60), HairStyle = "None", Shirt = C(40, 30, 60), Pants = C(30, 20, 50), Shoes = C(190, 120, 255),
+			Hat = "Hood", HatColor = C(40, 30, 60), Back = "Cape", BackColor = C(190, 120, 255), Tool = "Sword", ToolColor = C(190, 120, 255), Beam = C(190, 120, 255) },
+	},
+	CrownMage = {
+		Id = "CrownMage", Name = "Crown Mage", Rarity = "Rare", Zone = "Throne", Power = 508000000000,
+		Blurb = "Every spell ends with a tiny crown.",
+		Look = { Skin = C(230, 190, 160), Hair = C(240, 240, 255), HairStyle = "Long", Shirt = C(150, 90, 230), Pants = C(80, 50, 140), Shoes = C(255, 215, 90),
+			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Cape", BackColor = C(200, 40, 70), Tool = "Staff", ToolColor = C(255, 215, 90), Beam = C(220, 160, 255) },
+	},
+	KingsChampion = {
+		Id = "KingsChampion", Name = "King's Champion", Rarity = "Legendary", Zone = "Throne", Power = 1250000000000,
+		Blurb = "Defeated every ghost in the kingdom.",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 230, 140), HairStyle = "None", Shirt = C(250, 245, 255), Pants = C(110, 80, 190), Shoes = C(255, 215, 90),
+			Hat = "KnightHelm", HatColor = C(255, 215, 90), Back = "Wings", BackColor = C(255, 230, 140), Tool = "Sword", ToolColor = C(255, 230, 140), Beam = C(255, 230, 140), Aura = true },
+	},
+	EternalMonarch = {
+		Id = "EternalMonarch", Name = "Eternal Monarch", Rarity = "Mythic", Zone = "Throne", Power = 3120000000000,
+		Blurb = "Wears every crown ever won.",
+		Look = { Skin = C(240, 230, 255), Hair = C(255, 240, 200), HairStyle = "Long", Shirt = C(120, 60, 200), Pants = C(60, 30, 110), Shoes = C(255, 215, 90),
+			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Wings", BackColor = C(255, 240, 200), Tool = "Orb", ToolColor = C(255, 240, 200), Beam = C(255, 220, 160), Aura = true },
+	},
+	TheFinalHunter = {
+		Id = "TheFinalHunter", Name = "The Final Hunter", Rarity = "Secret", Zone = "Throne", Power = 7810000000000,
+		Blurb = "The last ghost hunter. Or the first.",
+		Look = { Skin = C(250, 250, 255), Hair = C(255, 255, 255), HairStyle = "Spiky", Shirt = C(250, 250, 255), Pants = C(230, 230, 245), Shoes = C(255, 215, 90),
+			Hat = "Crystal", HatColor = C(255, 230, 140), Back = "Wings", BackColor = C(255, 255, 255), Tool = "Cannon", ToolColor = C(255, 255, 255), Beam = C(255, 250, 220), Aura = true },
+	},
 } :: { [string]: HunterDef }
 
 Config.StarterHunter = "RookieHunter"
@@ -754,6 +1203,102 @@ Config.Crates = {
 			{ Hunter = "GhostHunterZero", Weight = 0.04 },
 		},
 	},
+	Bog = {
+		Id = "Bog", Name = "BOG HUNTER CRATE", Zone = "Swamp", Price = 780000000,
+		Color = C(90, 120, 60), Trim = C(170, 255, 120), Style = "Swamp",
+		Pool = {
+			{ Hunter = "SwampScout", Weight = 60 },
+			{ Hunter = "BogTracker", Weight = 28 },
+			{ Hunter = "MarshMystic", Weight = 10 },
+			{ Hunter = "FireflySage", Weight = 2 },
+			{ Hunter = "FrogPrince", Weight = 0.4 },
+			{ Hunter = "GatorKing", Weight = 0.04 },
+		},
+	},
+	Frost = {
+		Id = "Frost", Name = "FROSTBITE CRATE", Zone = "Frost", Price = 4680000000,
+		Color = C(200, 230, 255), Trim = C(110, 200, 255), Style = "Frost",
+		Pool = {
+			{ Hunter = "SnowScout", Weight = 60 },
+			{ Hunter = "IceClimber", Weight = 28 },
+			{ Hunter = "FrostMage", Weight = 10 },
+			{ Hunter = "YetiWhisperer", Weight = 2 },
+			{ Hunter = "AuroraKnight", Weight = 0.4 },
+			{ Hunter = "TheAbominable", Weight = 0.04 },
+		},
+	},
+	Tomb = {
+		Id = "Tomb", Name = "PHARAOH CRATE", Zone = "Tomb", Price = 28100000000,
+		Color = C(220, 180, 100), Trim = C(70, 200, 220), Style = "Tomb",
+		Pool = {
+			{ Hunter = "TombExplorer", Weight = 60 },
+			{ Hunter = "ScarabSeeker", Weight = 28 },
+			{ Hunter = "SandMage", Weight = 10 },
+			{ Hunter = "PharaohHunter", Weight = 2 },
+			{ Hunter = "SunKeeper", Weight = 0.4 },
+			{ Hunter = "GoldenMummy", Weight = 0.04 },
+		},
+	},
+	Toy = {
+		Id = "Toy", Name = "TOY BOX CRATE", Zone = "ToyFactory", Price = 168000000000,
+		Color = C(255, 120, 170), Trim = C(255, 220, 80), Style = "Toy",
+		Pool = {
+			{ Hunter = "ToyTinker", Weight = 60 },
+			{ Hunter = "WindUpKnight", Weight = 28 },
+			{ Hunter = "MarionetteMaster", Weight = 10 },
+			{ Hunter = "TeddyTitan", Weight = 2 },
+			{ Hunter = "JackInTheBoxer", Weight = 0.4 },
+			{ Hunter = "TheNutcracker", Weight = 0.04 },
+		},
+	},
+	Sunken = {
+		Id = "Sunken", Name = "SUNKEN TREASURE CRATE", Zone = "Sunken", Price = 1010000000000,
+		Color = C(60, 140, 170), Trim = C(255, 220, 120), Style = "Sunken",
+		Pool = {
+			{ Hunter = "DeepDiver", Weight = 60 },
+			{ Hunter = "CoralKeeper", Weight = 28 },
+			{ Hunter = "TideCaller", Weight = 10 },
+			{ Hunter = "AtlanteanHunter", Weight = 2 },
+			{ Hunter = "PearlSovereign", Weight = 0.4 },
+			{ Hunter = "AbyssWalker", Weight = 0.04 },
+		},
+	},
+	Clockwork = {
+		Id = "Clockwork", Name = "CLOCKWORK CRATE", Zone = "Clockwork", Price = 6070000000000,
+		Color = C(150, 110, 70), Trim = C(230, 200, 120), Style = "Clock",
+		Pool = {
+			{ Hunter = "GearScout", Weight = 60 },
+			{ Hunter = "ClockTinker", Weight = 28 },
+			{ Hunter = "ChronoMage", Weight = 10 },
+			{ Hunter = "TimeBender", Weight = 2 },
+			{ Hunter = "SteamTitan", Weight = 0.4 },
+			{ Hunter = "TheTimeless", Weight = 0.04 },
+		},
+	},
+	Inferno = {
+		Id = "Inferno", Name = "INFERNO CRATE", Zone = "Inferno", Price = 36400000000000,
+		Color = C(80, 40, 40), Trim = C(255, 150, 60), Style = "Inferno",
+		Pool = {
+			{ Hunter = "EmberScout", Weight = 60 },
+			{ Hunter = "LavaDiver", Weight = 28 },
+			{ Hunter = "FireDancer", Weight = 10 },
+			{ Hunter = "PhoenixHunter", Weight = 2 },
+			{ Hunter = "DragonCaller", Weight = 0.4 },
+			{ Hunter = "TheEternalFlame", Weight = 0.04 },
+		},
+	},
+	Throne = {
+		Id = "Throne", Name = "KING'S CRATE", Zone = "Throne", Price = 218000000000000,
+		Color = C(250, 245, 255), Trim = C(255, 215, 90), Style = "Throne",
+		Pool = {
+			{ Hunter = "ThronePage", Weight = 60 },
+			{ Hunter = "ShadowGuard", Weight = 28 },
+			{ Hunter = "CrownMage", Weight = 10 },
+			{ Hunter = "KingsChampion", Weight = 2 },
+			{ Hunter = "EternalMonarch", Weight = 0.4 },
+			{ Hunter = "TheFinalHunter", Weight = 0.04 },
+		},
+	},
 } :: { [string]: CrateDef }
 
 -- Luck boost multiplies weights of these rarities (and above) by Boosts.Luck.Multiplier.
@@ -852,7 +1397,7 @@ Config.Daily = {
 	} :: { RewardDef },
 	-- Ecto rewards scale with your best unlocked zone so late players still care
 	-- (roughly the ratio of typical farming income per zone).
-	ZoneMultiplier = { 1, 6, 30, 200, 1200, 7000, 40000, 220000 },
+	ZoneMultiplier = { 1, 6, 30, 200, 1200, 7000, 40000, 220000, 1190000, 6430000, 34700000, 187000000, 1010000000, 5450000000, 29400000000, 159000000000 },
 }
 
 --==================================================================
@@ -965,6 +1510,14 @@ Config.Layout = {
 		Harbor = { Z = 1560, Width = 34 },
 		Castle = { Z = 1920, Width = 34 },
 		SpiritRealm = { Z = 2280, Width = 34 },
+		Swamp = { Z = 2680, Width = 34 },
+		Frost = { Z = 3040, Width = 34 },
+		Tomb = { Z = 3400, Width = 34 },
+		ToyFactory = { Z = 3760, Width = 34 },
+		Sunken = { Z = 4120, Width = 34 },
+		Clockwork = { Z = 4480, Width = 34 },
+		Inferno = { Z = 4840, Width = 34 },
+		Throne = { Z = 5200, Width = 34 },
 	},
 	CrateStations = {
 		Beginner = Vector3.new(-28, 0, 28),
@@ -975,6 +1528,14 @@ Config.Layout = {
 		Sailor = Vector3.new(-28, 0, 1592),
 		Royal = Vector3.new(-28, 0, 1952),
 		SpiritRealm = Vector3.new(-28, 0, 2312),
+		Bog = Vector3.new(-28, 0, 2712),
+		Frost = Vector3.new(-28, 0, 3072),
+		Tomb = Vector3.new(-28, 0, 3432),
+		Toy = Vector3.new(-28, 0, 3792),
+		Sunken = Vector3.new(-28, 0, 4152),
+		Clockwork = Vector3.new(-28, 0, 4512),
+		Inferno = Vector3.new(-28, 0, 4872),
+		Throne = Vector3.new(-28, 0, 5232),
 	},
 	-- Fast Travel (WORLDS menu) arrival points: open ground beside each zone's path, clear of
 	-- ghost areas, stations and props (the builders keep a circle around each one free).
@@ -987,6 +1548,14 @@ Config.Layout = {
 		Harbor = Vector3.new(26, 3, 1592),
 		Castle = Vector3.new(26, 3, 1952),
 		SpiritRealm = Vector3.new(26, 3, 2312),
+		Swamp = Vector3.new(26, 3, 2712),
+		Frost = Vector3.new(26, 3, 3072),
+		Tomb = Vector3.new(26, 3, 3432),
+		ToyFactory = Vector3.new(26, 3, 3792),
+		Sunken = Vector3.new(26, 3, 4152),
+		Clockwork = Vector3.new(26, 3, 4512),
+		Inferno = Vector3.new(26, 3, 4872),
+		Throne = Vector3.new(26, 3, 5232),
 	},
 	UpgradeStation = Vector3.new(28, 0, 28),
 	-- TOP GHOST HUNTERS board beside the spawn plaza, turned toward the plaza
@@ -1038,6 +1607,54 @@ Config.Layout = {
 		{ Ghost = "VoidPhantom", Center = Vector3.new(75, 0, 2470), Radius = 26, Count = 4 },
 		{ Ghost = "VoidPhantom", Center = Vector3.new(-62, 0, 2530), Radius = 24, Count = 4 },
 		{ Ghost = "SpiritOverlord", Center = Vector3.new(0, 0, 2605), Radius = 28, Count = 1 },
+		-- ZONE 9 Phantom Swamp (Z 2680..3040)
+		{ Ghost = "BogWisp", Center = Vector3.new(0, 0, 2765), Radius = 30, Count = 6 },
+		{ Ghost = "BogWisp", Center = Vector3.new(-82, 0, 2800), Radius = 24, Count = 4 },
+		{ Ghost = "MarshPhantom", Center = Vector3.new(75, 0, 2860), Radius = 26, Count = 4 },
+		{ Ghost = "MarshPhantom", Center = Vector3.new(-62, 0, 2920), Radius = 24, Count = 4 },
+		{ Ghost = "SwampLord", Center = Vector3.new(0, 0, 2985), Radius = 26, Count = 1 },
+		-- ZONE 10 Frostbite Peaks (Z 3040..3400)
+		{ Ghost = "FrostSpirit", Center = Vector3.new(0, 0, 3125), Radius = 30, Count = 6 },
+		{ Ghost = "FrostSpirit", Center = Vector3.new(-82, 0, 3160), Radius = 24, Count = 4 },
+		{ Ghost = "YetiPhantom", Center = Vector3.new(75, 0, 3220), Radius = 26, Count = 4 },
+		{ Ghost = "YetiPhantom", Center = Vector3.new(-62, 0, 3280), Radius = 24, Count = 4 },
+		{ Ghost = "BlizzardQueen", Center = Vector3.new(0, 0, 3345), Radius = 26, Count = 1 },
+		-- ZONE 11 Pharaoh'S Tomb (Z 3400..3760)
+		{ Ghost = "MummySpirit", Center = Vector3.new(0, 0, 3485), Radius = 30, Count = 6 },
+		{ Ghost = "MummySpirit", Center = Vector3.new(-82, 0, 3520), Radius = 24, Count = 4 },
+		{ Ghost = "ScarabPhantom", Center = Vector3.new(75, 0, 3580), Radius = 26, Count = 4 },
+		{ Ghost = "ScarabPhantom", Center = Vector3.new(-62, 0, 3640), Radius = 24, Count = 4 },
+		{ Ghost = "PharaohsGhost", Center = Vector3.new(0, 0, 3705), Radius = 26, Count = 1 },
+		-- ZONE 12 Haunted Toy Factory (Z 3760..4120)
+		{ Ghost = "ToySoldierSpirit", Center = Vector3.new(0, 0, 3845), Radius = 30, Count = 6 },
+		{ Ghost = "ToySoldierSpirit", Center = Vector3.new(-82, 0, 3880), Radius = 24, Count = 4 },
+		{ Ghost = "JackInTheBoxPhantom", Center = Vector3.new(75, 0, 3940), Radius = 26, Count = 4 },
+		{ Ghost = "JackInTheBoxPhantom", Center = Vector3.new(-62, 0, 4000), Radius = 24, Count = 4 },
+		{ Ghost = "PuppetMaster", Center = Vector3.new(0, 0, 4065), Radius = 26, Count = 1 },
+		-- ZONE 13 Sunken City (Z 4120..4480)
+		{ Ghost = "BubbleSpirit", Center = Vector3.new(0, 0, 4205), Radius = 30, Count = 6 },
+		{ Ghost = "BubbleSpirit", Center = Vector3.new(-82, 0, 4240), Radius = 24, Count = 4 },
+		{ Ghost = "SirenPhantom", Center = Vector3.new(75, 0, 4300), Radius = 26, Count = 4 },
+		{ Ghost = "SirenPhantom", Center = Vector3.new(-62, 0, 4360), Radius = 24, Count = 4 },
+		{ Ghost = "LeviathanGhost", Center = Vector3.new(0, 0, 4425), Radius = 26, Count = 1 },
+		-- ZONE 14 Clockwork Tower (Z 4480..4840)
+		{ Ghost = "CogSpirit", Center = Vector3.new(0, 0, 4565), Radius = 30, Count = 6 },
+		{ Ghost = "CogSpirit", Center = Vector3.new(-82, 0, 4600), Radius = 24, Count = 4 },
+		{ Ghost = "ClockworkPhantom", Center = Vector3.new(75, 0, 4660), Radius = 26, Count = 4 },
+		{ Ghost = "ClockworkPhantom", Center = Vector3.new(-62, 0, 4720), Radius = 24, Count = 4 },
+		{ Ghost = "TimeKeeper", Center = Vector3.new(0, 0, 4785), Radius = 26, Count = 1 },
+		-- ZONE 15 Inferno Caverns (Z 4840..5200)
+		{ Ghost = "EmberSpirit", Center = Vector3.new(0, 0, 4925), Radius = 30, Count = 6 },
+		{ Ghost = "EmberSpirit", Center = Vector3.new(-82, 0, 4960), Radius = 24, Count = 4 },
+		{ Ghost = "MagmaPhantom", Center = Vector3.new(75, 0, 5020), Radius = 26, Count = 4 },
+		{ Ghost = "MagmaPhantom", Center = Vector3.new(-62, 0, 5080), Radius = 24, Count = 4 },
+		{ Ghost = "InfernoTitan", Center = Vector3.new(0, 0, 5145), Radius = 26, Count = 1 },
+		-- ZONE 16 Ghost King'S Throne (Z 5200..5560)
+		{ Ghost = "RoyalGuardSpirit", Center = Vector3.new(0, 0, 5285), Radius = 30, Count = 6 },
+		{ Ghost = "RoyalGuardSpirit", Center = Vector3.new(-82, 0, 5320), Radius = 24, Count = 4 },
+		{ Ghost = "ShadowPhantom", Center = Vector3.new(75, 0, 5380), Radius = 26, Count = 4 },
+		{ Ghost = "ShadowPhantom", Center = Vector3.new(-62, 0, 5440), Radius = 24, Count = 4 },
+		{ Ghost = "GhostKing", Center = Vector3.new(0, 0, 5505), Radius = 28, Count = 1 },
 	} :: { GhostArea },
 }
 
