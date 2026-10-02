@@ -569,4 +569,7 @@ function DataService.AddPurchase(d: Data, receipt: string)
 	end
 end
 
+-- exposed for the save-compatibility test (tools/datacompat.sh); not used by the game
+DataService._Migrate = migrate
+
 return DataService

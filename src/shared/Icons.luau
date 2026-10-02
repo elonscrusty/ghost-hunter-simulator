@@ -93,6 +93,9 @@ Icons.ForProduct = {
 	ExclusiveCrate = "prod_exclusive_crate",
 	ServerLuck = "prod_server_luck",
 	SummonEvent = "prod_summon_event",
+	PermanentSkip = "pass_permskip",
+	AutoOpen = "pass_autoopen",
+	SingleSkip = "prod_singleskip",
 } :: { [string]: string }
 
 -- crate id -> icon key

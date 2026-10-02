@@ -33,7 +33,7 @@ local function refresh()
 	Kit.Tween(fill, 0.25, { Size = UDim2.fromScale(math.max(frac, 0.03), 1) })
 	progressLabel.Text = Format.Short(math.min(d.Ecto, zone.Cost)) .. " / " .. Format.Short(zone.Cost)
 	if d.Zones[zone.Id] then
-		Kit.SetButtonText(unlockButton, "UNLOCKED ✓")
+		Kit.SetButtonText(unlockButton, "UNLOCKED ✅")
 		unlockButton:SetAttribute("Color", "Gray")
 	elseif d.Ecto >= zone.Cost then
 		Kit.SetButtonText(unlockButton, "UNLOCK!")

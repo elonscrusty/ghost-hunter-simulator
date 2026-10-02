@@ -46,12 +46,12 @@ local function refresh()
 		local cur = Rules.UpgradeValue(up.Levels, level)
 		local cost = Rules.UpgradeCost(up.Costs, level)
 		if cost then
-			row.Value.Text = fmt(up, cur) .. "  →  " .. fmt(up, Rules.UpgradeValue(up.Levels, level + 1))
+			row.Value.Text = fmt(up, cur) .. "  >  " .. fmt(up, Rules.UpgradeValue(up.Levels, level + 1))
 			Kit.SetButtonText(row.Buy, "💚 " .. Format.Short(cost))
 			row.Buy:SetAttribute("Color", if d.Ecto >= cost then "Green" else "Gray")
 		else
 			row.Value.Text = fmt(up, cur) .. "  (MAX)"
-			Kit.SetButtonText(row.Buy, "MAXED ★")
+			Kit.SetButtonText(row.Buy, "MAXED ⭐")
 			row.Buy:SetAttribute("Color", "Orange")
 		end
 	end

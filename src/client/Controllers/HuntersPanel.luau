@@ -234,12 +234,12 @@ local function makeCard(uid: string, hunterId: string): Card
 	})
 	Kit.Corner(eqBadge, UDim.new(1, 0))
 	Kit.Stroke(eqBadge, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	Kit.Label(eqBadge, "✓", { Style = "Body", ZIndex = 69 })
+	Kit.Label(eqBadge, "✅", { Style = "Body", ZIndex = 69 })
 	local lock = Kit.Label(f, "🔒", { Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, 2, 0, -3), AnchorPoint = Vector2.new(1, 0), ZIndex = 68, Stroke = 0, Style = "Small" })
 	lock.Visible = false
 	local sel: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Bad, BackgroundTransparency = 0.45, Visible = false, ZIndex = 70, Parent = f })
 	Kit.Corner(sel, UDim.new(0, 12))
-	Kit.Label(sel, "✖", { Style = "Title", ZIndex = 71 })
+	Kit.Label(sel, "X", { Style = "Title", ZIndex = 71 })
 	f.Activated:Connect(function()
 		Kit.Play("Click")
 		if releaseMode then

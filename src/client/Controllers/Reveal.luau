@@ -417,7 +417,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 				OnClick = function()
 					local r = if free then State.Request("Equip", res.Uid) else State.Request("EquipBest")
 					if r.ok then
-						Kit.SetButtonText(b, "EQUIPPED ✓")
+						Kit.SetButtonText(b, "EQUIPPED ✅")
 						b:SetAttribute("Color", "Gray")
 						b.Active = false
 					else

@@ -132,7 +132,7 @@ function DailyPanel.Init()
 		local iconKey = if r.Kind == "Day7" then "menu_daily" elseif r.Kind == "Boost" then (if r.Boost == "Luck" then "boost_luck" else "boost_ecto2x") else "ecto_pile"
 		Kit.Icon(f, iconKey, icon, { Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 28), Style = "Icon", TextSize = 28, ZIndex = 63, Stroke = 0 })
 		local reward = Kit.Label(f, r.Label, { Size = UDim2.new(1, -12, 0, 52), Position = UDim2.fromOffset(6, 66), ZIndex = 63, Color = Color3.fromRGB(255, 255, 230), Style = "Small" })
-		local check = Kit.Label(f, "✓", { Size = UDim2.fromScale(1, 1), Color = Theme.Good, ZIndex = 66, Style = "Banner", Stroke = 3 })
+		local check = Kit.Label(f, "✅", { Size = UDim2.fromScale(1, 1), Color = Theme.Good, ZIndex = 66, Style = "Banner", Stroke = 3 })
 		check.Visible = false
 		local today = Kit.Label(f, "TODAY!", { Size = UDim2.fromOffset(70, 20), Position = UDim2.new(1, 4, 0, -8), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Body", ZIndex = 67, Stroke = 2 })
 		today.Rotation = 8

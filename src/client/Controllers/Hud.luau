@@ -32,7 +32,6 @@ local powerLabel: TextLabel
 local powerPrefix = "⚡ "
 local boostHolder: Frame
 local dailyBadge: Frame
-local menu: Frame
 local autoButton: TextButton
 local shownEcto = 0
 local targetEcto = 0
@@ -171,41 +170,69 @@ local function buildTop(screen: ScreenGui)
 	powerPrefix = ""
 	powerLabel = Kit.Label(power, "0 POWER", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(42, 0), Color = Theme.Gold, Style = "Heading", Fit = true })
 	-- boosts (only while active)
-	boostHolder = Kit.new("Frame", {
-		Size = UDim2.fromOffset(340, 22),
-		Position = UDim2.new(0.5, 0, 0, 4),
+	-- directly under the counters: next-area progress bar (Tutorial), boss event bar (Boss) and
+	-- active boosts, stacked so they never overlap and never sit in the middle of the play area
+	local stack: Frame = Kit.new("Frame", {
+		Name = "TopStack",
+		Size = UDim2.fromOffset(440, 220),
+		Position = UDim2.new(0.5, 0, 0, 52),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
-		Parent = screen,
+		Parent = top,
+	})
+	Kit.new("UIListLayout", { Padding = UDim.new(0, 5), FillDirection = Enum.FillDirection.Vertical, HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = stack })
+	Hud.TopStack = stack
+	local _ = screen
+	boostHolder = Kit.new("Frame", {
+		Size = UDim2.fromOffset(340, 22),
+		BackgroundTransparency = 1,
+		LayoutOrder = 3,
+		Visible = false,
+		Parent = stack,
 	})
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Parent = boostHolder })
 end
 
-local MENU = {
+-- HUD layout
+--   LEFT  (vertical): HUNTERS, WORLDS, INDEX
+--   RIGHT (vertical, bottom-anchored stack): UPGRADES, SHOP, DAILY, then the free AUTO ATTACK
+--   toggle, then the lower-right row: [DEV] FEEDBACK SETTINGS. On touch screens the stack sits
+--   above the Roblox jump button; on desktop the left column starts under the chat window.
+local MENU_LEFT = {
 	{ Name = "Hunters", Icon = "🔦", Text = "HUNTERS", Color = "Orange" },
 	{ Name = "Worlds", Icon = "🌍", Text = "WORLDS", Color = "Teal" },
 	{ Name = "Index", Icon = "📖", Text = "INDEX", Color = "Blue" },
+}
+local MENU_RIGHT = {
 	{ Name = "Upgrades", Icon = "🧲", Text = "UPGRADES", Color = "Green" },
 	{ Name = "Shop", Icon = "🛒", Text = "SHOP", Color = "Pink" },
 	{ Name = "Daily", Icon = "🎁", Text = "DAILY", Color = "Purple" },
 }
 local CELL_MAX = 84
-local CELL_MIN = 60
 local GAP = 6
-local menuScale: UIScale
+local SMALL = 44 -- settings / feedback / dev buttons
+local AUTO_W, AUTO_H = 132, 40
 
--- One vertical column down the left edge. Buttons are as big as CELL_MAX allows; on short
--- screens (phone landscape) the whole column shrinks so it fits between the top bar and the
--- bottom edge (it starts under the top-left Roblox buttons).
-local menuGrid: UIGridLayout
+local menu: Frame -- left column
+local menuScale: UIScale
+Hud.TopStack = nil :: Frame?
+local rightStack: Frame
+local rightScale: UIScale
+local lowerRow: Frame
+Hud.LowerRow = nil :: Frame? -- other controllers (DEV button) add small buttons here
+Hud.RightStack = nil :: Frame?
 local chatBottomCache = 0
 
+local function touchOnly(): boolean
+	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+end
+
 -- Desktop only: bottom of the Roblox chat window (logical px below our inset), read once after
--- joining and on resizes, so the menu starts under it. Phones keep chat collapsed behind its
--- top-bar button, and following the chat window live made the menu jump around.
+-- joining and on resizes, so the left column starts under it. Phones keep chat collapsed
+-- behind its top-bar button (following it live made the menu jump around).
 local function readChatBottom()
 	chatBottomCache = 0
-	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+	if touchOnly() then
 		return
 	end
 	pcall(function()
@@ -219,26 +246,30 @@ local function readChatBottom()
 	end)
 end
 
--- One column of big buttons; if that would need to shrink below CELL_MIN, two columns of three.
-local function layoutMenu()
-	local n = #MENU
-	local logical = Kit.LogicalSize()
-	local top = if chatBottomCache > 0 then chatBottomCache + 8 else 4
-	local room = logical.Y - top - 10
-	local rows = n
-	local full = CELL_MAX * rows + GAP * (rows - 1)
-	local fit = room / full
-	local cols = 1
-	if fit < CELL_MIN / CELL_MAX then
-		cols = 2
-		rows = math.ceil(n / 2)
-		full = CELL_MAX * rows + GAP * (rows - 1)
-		fit = room / full
+-- Room to keep free above the bottom edge on the right (the touch jump button), logical px.
+local function bottomReserve(): number
+	if not touchOnly() then
+		return 10
 	end
-	fit = math.clamp(fit, 0.5, 1)
-	menuGrid.FillDirectionMaxCells = rows
+	local cam = workspace.CurrentCamera
+	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
+	local small = math.min(vp.X, vp.Y) < 500 -- Roblox uses the small jump button below 500 px
+	local physical = if small then 100 else 225
+	return physical / Kit.UIScale()
+end
+
+local function columnHeight(n: number): number
+	return CELL_MAX * n + GAP * (n - 1)
+end
+
+local function layoutMenu()
+	local logical = Kit.LogicalSize()
+	-- left column
+	local top = if chatBottomCache > 0 then chatBottomCache + 8 else 4
+	local full = columnHeight(#MENU_LEFT)
+	local fit = math.clamp((logical.Y - top - 10) / full, 0.5, 1)
 	menuScale.Scale = fit
-	menu.Size = UDim2.fromOffset(CELL_MAX * cols + GAP * (cols - 1), full)
+	menu.Size = UDim2.fromOffset(CELL_MAX, full)
 	if top > 4 or full * fit > logical.Y - 120 then
 		menu.Position = UDim2.fromOffset(8, top)
 		menu.AnchorPoint = Vector2.zero
@@ -246,36 +277,61 @@ local function layoutMenu()
 		menu.Position = UDim2.new(0, 8, 0.5, 0)
 		menu.AnchorPoint = Vector2.new(0, 0.5)
 	end
+	-- right stack (anchored bottom-right, above the jump button on touch screens)
+	local reserve = bottomReserve()
+	local rightH = columnHeight(#MENU_RIGHT) + GAP * 2 + AUTO_H + GAP * 2 + SMALL
+	local rightW = math.max(CELL_MAX, AUTO_W, SMALL * 3 + GAP * 2)
+	local rfit = math.clamp((logical.Y - reserve - 8) / rightH, 0.5, 1)
+	rightScale.Scale = rfit
+	rightStack.Size = UDim2.fromOffset(rightW, rightH)
+	rightStack.Position = UDim2.new(1, -8, 1, -reserve)
+	rightStack.AnchorPoint = Vector2.new(1, 1)
+end
+
+local function menuButton(parent: Instance, i: number, m: any): TextButton
+	local b = Kit.Button(parent, {
+		Text = "",
+		Color = m.Color,
+		OnClick = function()
+			Hud.Open(m.Name)
+		end,
+	})
+	b.LayoutOrder = i
+	b.Size = UDim2.fromOffset(CELL_MAX, CELL_MAX)
+	Kit.Icon(b, "menu_" .. string.lower(m.Name), m.Icon, { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 7), Style = "Icon", TextSize = 36, Stroke = 0, ZIndex = 3 })
+	Kit.Label(b, m.Text, { Size = UDim2.new(1, -4, 0, 19), Position = UDim2.new(0, 2, 1, -25), Style = "Tiny", TextSize = 14, Fit = true, ZIndex = 3 })
+	Hud.Buttons[m.Name] = b
+	return b
 end
 
 local function buildMenu(screen: ScreenGui)
-	menu = Kit.new("Frame", {
-		Name = "Menu",
-		BackgroundTransparency = 1,
-		Parent = screen,
-	})
+	-- LEFT column
+	menu = Kit.new("Frame", { Name = "Menu", BackgroundTransparency = 1, Parent = screen })
 	menuScale = Kit.new("UIScale", { Parent = menu })
-	menuGrid = Kit.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(CELL_MAX, CELL_MAX),
-		CellPadding = UDim2.fromOffset(GAP, GAP),
-		FillDirection = Enum.FillDirection.Vertical,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = menu,
-	})
-	for i, m in MENU do
-		local b = Kit.Button(menu, {
-			Text = "",
-			Color = m.Color,
-			OnClick = function()
-				Hud.Open(m.Name)
-			end,
-		})
-		b.LayoutOrder = i
-		b.Size = UDim2.fromOffset(CELL_MAX, CELL_MAX)
-		Kit.Icon(b, "menu_" .. string.lower(m.Name), m.Icon, { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 7), Style = "Icon", TextSize = 36, Stroke = 0, ZIndex = 3 })
-		Kit.Label(b, m.Text, { Size = UDim2.new(1, -4, 0, 19), Position = UDim2.new(0, 2, 1, -25), Style = "Tiny", TextSize = 14, Fit = true, ZIndex = 3 })
-		Hud.Buttons[m.Name] = b
+	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Parent = menu })
+	for i, m in MENU_LEFT do
+		menuButton(menu, i, m)
 	end
+	-- RIGHT stack
+	rightStack = Kit.new("Frame", { Name = "RightMenu", BackgroundTransparency = 1, Parent = screen })
+	rightScale = Kit.new("UIScale", { Parent = rightStack })
+	Kit.new("UIListLayout", {
+		Padding = UDim.new(0, GAP * 2),
+		FillDirection = Enum.FillDirection.Vertical,
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		VerticalAlignment = Enum.VerticalAlignment.Bottom,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = rightStack,
+	})
+	local col: Frame = Kit.new("Frame", { Name = "Column", BackgroundTransparency = 1, Size = UDim2.fromOffset(CELL_MAX, columnHeight(#MENU_RIGHT)), LayoutOrder = 1, Parent = rightStack })
+	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Parent = col })
+	for i, m in MENU_RIGHT do
+		menuButton(col, i, m)
+	end
+	lowerRow = Kit.new("Frame", { Name = "LowerRow", BackgroundTransparency = 1, Size = UDim2.fromOffset(SMALL * 3 + GAP * 2, SMALL), LayoutOrder = 3, Parent = rightStack })
+	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, SortOrder = Enum.SortOrder.LayoutOrder, Parent = lowerRow })
+	Hud.LowerRow = lowerRow
+	Hud.RightStack = rightStack
 	-- red "!" on DAILY when a reward is waiting
 	dailyBadge = Kit.new("Frame", {
 		Size = UDim2.fromOffset(20, 20),
@@ -357,35 +413,34 @@ local function buildSettings(screen: ScreenGui)
 	Hud.RegisterPanel("Settings", function()
 		panel:Toggle()
 	end)
-	local gear = Kit.Button(screen, {
-		Text = if Icons.Get("menu_settings") then "" else "⚙",
-		Color = "Gray",
-		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, -10, 0.5, -48),
-		AnchorPoint = Vector2.new(1, 0.5),
-		TextStyle = "Heading",
-		OnClick = function()
-			panel:Toggle()
-		end,
-	})
-	-- 💬 feedback, right above the gear (also in Settings)
-	Kit.Button(screen, {
+	-- lower-right row: FEEDBACK then SETTINGS (the DEV button, for developers, goes first)
+	local _ = screen
+	local feedback = Kit.Button(lowerRow, {
 		Text = "💬",
 		Color = "Blue",
-		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, -10, 0.5, -100),
-		AnchorPoint = Vector2.new(1, 0.5),
+		Size = UDim2.fromOffset(SMALL, SMALL),
 		TextStyle = "Heading",
 		OnClick = function()
 			Hud.Open("Feedback")
 		end,
 	})
+	feedback.LayoutOrder = 2
+	local gear = Kit.Button(lowerRow, {
+		Text = if Icons.Get("menu_settings") then "" else "⚙",
+		Color = "Gray",
+		Size = UDim2.fromOffset(SMALL, SMALL),
+		TextStyle = "Heading",
+		OnClick = function()
+			panel:Toggle()
+		end,
+	})
+	gear.LayoutOrder = 3
 	if Icons.Get("menu_settings") then
 		Kit.Icon(gear, "menu_settings", "", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3 })
 	end
 end
 
--- AUTO ATTACK toggle: only shown to Auto Attack pass owners. The server checks ownership.
+-- AUTO ATTACK toggle: FREE for every player (no pass, no Robux).
 local busyAuto = false
 local function refreshAuto()
 	autoButton.Visible = true -- Auto Attack is free for everyone
@@ -395,12 +450,10 @@ local function refreshAuto()
 end
 
 local function buildAuto(screen: ScreenGui)
-	autoButton = Kit.Button(screen, {
+	autoButton = Kit.Button(rightStack, {
 		Text = "🤖 AUTO: OFF",
 		Color = "Gray",
-		Size = UDim2.fromOffset(132, 40),
-		Position = UDim2.new(1, -10, 0.5, 4),
-		AnchorPoint = Vector2.new(1, 0.5),
+		Size = UDim2.fromOffset(AUTO_W, AUTO_H),
 		TextStyle = "Small",
 		OnClick = function()
 			if busyAuto then
@@ -418,6 +471,7 @@ local function buildAuto(screen: ScreenGui)
 		end,
 	})
 	autoButton.Name = "AutoAttack"
+	autoButton.LayoutOrder = 2
 	autoButton.Visible = false
 	player:GetAttributeChangedSignal("AutoAttack"):Connect(refreshAuto)
 	State.OnData(function()
@@ -474,7 +528,7 @@ local function buildBanners()
 	end
 	local tap: TextButton = Kit.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 77, Parent = announceFrame })
 	tap.Activated:Connect(dismiss)
-	Kit.Label(announceFrame, "✕", { Size = UDim2.fromOffset(28, 28), Position = UDim2.new(1, -6, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Style = "Body", ZIndex = 78 })
+	Kit.CloseButton(announceFrame, dismiss, 79)
 end
 
 local bannerToken = 0
@@ -546,6 +600,8 @@ local function refreshBoosts()
 	end
 	-- server-wide luck someone bought (Robux): everyone sees it
 	chips.ServerLuck = { Icon = "🍀", Name = "SERVER LUCK", Expiry = d.ServerLuckUntil }
+	-- global 2X Ectoplasm event (developer-controlled, no timer)
+	chips.Ecto2x = { Icon = "💚", Name = "2X ECTOPLASM EVENT", Expiry = if workspace:GetAttribute("Ecto2x") == true then now + 1e9 else 0, NoTimer = true }
 	for id, def in chips do
 		local expiry = def.Expiry
 		local left = if expiry then expiry - now else 0
@@ -557,12 +613,13 @@ local function refreshBoosts()
 				l = Kit.Label(f, "", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Color = Theme.Ecto, Style = "Tiny", Fit = true })
 				boostLabels[id] = l
 			end
-			(l :: TextLabel).Text = def.Icon .. " " .. def.Name .. " " .. Format.Time(left)
+			Kit.EctoText(l :: TextLabel, def.Icon .. " " .. def.Name .. (if def.NoTimer then "" else " " .. Format.Time(left)))
 		elseif l then
 			(l.Parent :: Instance):Destroy()
 			boostLabels[id] = nil
 		end
 	end
+	boostHolder.Visible = next(boostLabels) ~= nil
 	local info = d.DailyInfo
 	if info then
 		local canClaim = info.CanClaim or info.Wait - (now - (d.ServerTime or now)) <= 0

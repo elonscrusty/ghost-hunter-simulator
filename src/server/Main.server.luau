@@ -35,6 +35,7 @@ local order = {
 	"EventService",
 	"ShopService",
 	"StationService",
+	"GlobalEventService",
 	"DevService",
 	"FeedbackService",
 	"LeaderboardService",

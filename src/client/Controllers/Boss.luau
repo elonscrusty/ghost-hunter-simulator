@@ -162,12 +162,11 @@ function Boss.Init()
 	frame = Kit.new("Frame", {
 		Name = "BossBar",
 		Size = UDim2.fromOffset(420, 62),
-		Position = UDim2.new(0.5, 0, 0, 30),
-		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
 		ZIndex = 30,
-		Parent = screen,
+		LayoutOrder = 2,
+		Parent = Hud.TopStack or screen,
 	})
 	Kit.Corner(frame, UDim.new(0, 14))
 	Kit.Stroke(frame, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
@@ -197,27 +196,16 @@ function Boss.Init()
 	})
 	goButton.Visible = false
 	-- ✕ closes the event bar (the event keeps running; the boss's own label still shows)
-	Kit.Button(frame, {
-		Text = "✕",
-		Color = "Red",
-		Size = UDim2.fromOffset(30, 30),
-		TextStyle = "Body",
-		Position = UDim2.new(1, 8, 0, -8),
-		AnchorPoint = Vector2.new(1, 0),
-		ZIndex = 34,
-		OnClick = function()
-			dismissed = true
-			show(false)
-		end,
-	})
+	Kit.CloseButton(frame, function()
+		dismissed = true
+		show(false)
+	end, 34)
 	-- small pill to bring it back while the event is still on
-	reopen = Kit.Button(screen, {
+	reopen = Kit.Button(Hud.TopStack or screen, {
 		Text = "👑 EVENT",
 		Color = "Pink",
 		Size = UDim2.fromOffset(96, 30),
 		TextStyle = "Small",
-		Position = UDim2.new(0.5, 0, 0, 30),
-		AnchorPoint = Vector2.new(0.5, 0),
 		ZIndex = 30,
 		OnClick = function()
 			dismissed = false
@@ -225,6 +213,7 @@ function Boss.Init()
 		end,
 	})
 	reopen.Visible = false
+	reopen.LayoutOrder = 2
 end
 
 Boss.PointRequested = Signal.new()

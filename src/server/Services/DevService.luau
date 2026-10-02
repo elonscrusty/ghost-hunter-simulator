@@ -14,6 +14,7 @@ local DataService = require(script.Parent.DataService)
 local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
 local EventService = require(script.Parent.EventService)
+local GlobalEventService = require(script.Parent.GlobalEventService)
 local Remotes = require(script.Parent.Remotes)
 
 local DevService = {}
@@ -80,6 +81,12 @@ function DevService.Run(player: Player, cmd: string, arg: any): string?
 			d.Upgrades[id] = #up.Levels
 		end
 		DataService.Changed(player)
+	elseif cmd == "Ecto2x" then
+		-- GLOBAL 2X Ectoplasm (all servers); arg = true / false
+		local err = GlobalEventService.SetEcto2x(arg == true)
+		if err then
+			return err
+		end
 	elseif cmd == "Event" then
 		EventService.TriggerNow()
 	elseif cmd == "ResetDaily" then

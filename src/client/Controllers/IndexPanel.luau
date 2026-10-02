@@ -101,7 +101,7 @@ local function showDetail(h: Config.HunterDef, found: boolean)
 		detailBlurb.Text = "Not discovered yet. Keep opening crates!"
 	end
 	detailName.TextColor3 = rar.Color
-	detailInfo.Text = rar.Name .. "  •  ⚡ " .. (if found then Format.Commas(h.Power) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) • best unlocked area" else crate.Name .. "  •  " .. Format.Percent(oddsOf(h)))
+	detailInfo.Text = rar.Name .. "  ·  ⚡ " .. (if found then Format.Commas(h.Power) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
 end
 
 local function rebuild()
@@ -155,7 +155,7 @@ local function rebuild()
 		local complete = zf == #list
 		local header: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 62, Parent = section })
 		Kit.Label(header, (if unlocked then "" else "🔒 ") .. z.Name, { Size = UDim2.new(0.6, 0, 1, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
-		Kit.Label(header, (if complete then "★ " else "") .. zf .. "/" .. #list .. " DISCOVERED", { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
+		Kit.Label(header, (if complete then "⭐ " else "") .. zf .. "/" .. #list .. " DISCOVERED", { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
 		local row: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 62, Parent = section })
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(100, 124), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for _, h in list do
@@ -195,7 +195,7 @@ local function rebuild()
 		end
 	end
 	local pct = if total > 0 then found / total else 0
-	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  •  " .. math.floor(pct * 100 + 0.5) .. "%"
+	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  ·  " .. math.floor(pct * 100 + 0.5) .. "%"
 	Kit.Tween(totalFill, 0.4, { Size = UDim2.fromScale(math.max(pct, 0.02), 1) })
 end
 

@@ -14,6 +14,7 @@ if [ -z "$diag" ]; then echo "typecheck: ok"; else echo "typecheck: $(echo "$dia
 out=$(cd tests && "$T/luau/luau" run.luau 2>&1 | tail -1)
 echo "unit tests: $out"; echo "$out" | grep -q " 0 failed" || { (cd tests && "$T/luau/luau" run.luau 2>&1 | grep -E "FAIL|error" | head -20); fail=1; }
 ws=$(bash tools/worldsim.sh 2>&1 | tail -1); echo "$ws"; echo "$ws" | grep -q "0 error(s), 0 layout" || fail=1
+dc=$(bash tools/datacompat.sh 2>&1 | tail -1); echo "$dc"; echo "$dc" | grep -q " 0 failed" || fail=1
 if [ "${1:-}" != "--quick" ]; then
   if "$T/rojo/rojo" build default.project.json -o build/GhostHunterSimulator.rbxlx >/dev/null 2>&1; then echo "build: ok"; else echo "build: FAILED"; fail=1; fi
 fi

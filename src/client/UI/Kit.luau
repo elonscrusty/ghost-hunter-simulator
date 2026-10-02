@@ -146,7 +146,23 @@ function Kit.Label(parent: Instance?, text: string, p: LabelProps?): TextLabel
 	if stroke > 0 then
 		Kit.new("UIStroke", { Thickness = stroke, Color = Theme.Outline, Parent = l })
 	end
+	Kit.FitText(l, size, stroke, style ~= "Icon")
 	return l
+end
+
+-- The game's one close button: red square with a plain "X" (the font has no "✕" glyph, which
+-- is why a popup once showed an empty red square). 44 logical px: a comfortable finger target.
+function Kit.CloseButton(parent: Instance, onClick: () -> (), zIndex: number?): TextButton
+	return Kit.Button(parent, {
+		Text = "X",
+		Color = "Red",
+		Size = UDim2.fromOffset(44, 44),
+		Position = UDim2.new(1, 12, 0, -14),
+		AnchorPoint = Vector2.new(1, 0),
+		ZIndex = zIndex or 64,
+		TextStyle = "Heading",
+		OnClick = onClick,
+	})
 end
 
 -- An icon: the uploaded image for `key` (shared Icons.luau) when it has an id, otherwise the
@@ -225,6 +241,11 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	Kit.EctoText(label, text)
 	local scale = Kit.new("UIScale", { Parent = b })
 	b.MouseEnter:Connect(function()
+		-- touch screens fire MouseEnter with no MouseLeave: a hover grow would stay stuck and make
+		-- buttons overlap their neighbours, so hover only reacts to a real mouse
+		if UserInputService:GetLastInputType() ~= Enum.UserInputType.MouseMovement then
+			return
+		end
 		Kit.Tween(scale, 0.12, { Scale = 1.05 })
 		play("Hover")
 	end)
@@ -329,8 +350,39 @@ local function computeScale(): number
 	return math.clamp(s, Theme.Scale.Min, Theme.Scale.Max)
 end
 
+-- MOBILE TEXT FIX (root cause): one UIScale shrinks each ScreenGui on phones (~0.72), but
+-- UIStroke thickness is NOT scaled by UIScale, so a 2-3 px outline stayed full size around
+-- ~8 px letters and smeared them; the smallest styles also fell below what a phone renders
+-- cleanly. Every Kit label is registered here and, whenever the scale changes:
+--   * its outline is scaled with the screen (and kept thin relative to the letters)
+--   * its text never renders smaller than MIN_TEXT_PX real pixels
+local MIN_TEXT_PX = 10
+type TextInfo = { Base: number, Stroke: number, Min: boolean }
+local fitted: { [TextLabel]: TextInfo } = setmetatable({} :: any, { __mode = "k" })
+
+local function applyFit(l: TextLabel, info: TextInfo)
+	local size = info.Base
+	if info.Min and size * currentScale < MIN_TEXT_PX then
+		size = math.ceil(MIN_TEXT_PX / currentScale)
+	end
+	l.TextSize = size
+	local st = l:FindFirstChildOfClass("UIStroke")
+	if st and info.Stroke > 0 then
+		st.Thickness = math.max(0.75, math.min(info.Stroke * currentScale, size * currentScale * 0.12))
+	end
+end
+
+function Kit.FitText(l: TextLabel, base: number, stroke: number, minSize: boolean)
+	local info: TextInfo = { Base = base, Stroke = stroke, Min = minSize }
+	fitted[l] = info
+	applyFit(l, info)
+end
+
 local function applyScale()
 	currentScale = computeScale()
+	for l, info in fitted do
+		applyFit(l, info)
+	end
 	for _, gui in { screen, overlay, topBar } do
 		local sc = gui and gui:FindFirstChildOfClass("UIScale")
 		if sc then
@@ -581,19 +633,9 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			end
 		end,
 	}
-	-- obvious X (44 logical px ≈ a comfortable finger target even on phones)
-	panel.CloseButton = Kit.Button(root, {
-		Text = "X",
-		Color = "Red",
-		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, 12, 0, -14),
-		AnchorPoint = Vector2.new(1, 0),
-		ZIndex = 64,
-		TextStyle = "Heading",
-		OnClick = function()
-			panel:Close()
-		end,
-	})
+	panel.CloseButton = Kit.CloseButton(root, function()
+		panel:Close()
+	end, 64)
 	table.insert(panels, panel)
 	return panel
 end

@@ -167,4 +167,33 @@ T.each_zone_has_one_mythic_and_one_secret = function()
 		assert(rare / total < 0.01, z.Id .. " mythic/secret too common")
 	end
 end
+T.early_curve_is_smooth = function()
+	-- owner's targets: first area chest 600, second 5,000; no 1,500 -> 40,000 cliff
+	assert(Config.Crates.Haunted.Price == 600, "Haunted crate 600")
+	assert(Config.Crates.Elite.Price == 5000, "Elite crate 5,000")
+	for i = 3, 5 do
+		local r = Config.Zones[i].Cost / Config.Zones[i - 1].Cost
+		assert(r <= 12, Config.Zones[i].Id .. " jump too big: x" .. r)
+	end
+	local prev = 0
+	for _, z in Config.Zones do
+		local c = Config.Crates[z.Crate].Price
+		assert(c > prev, z.Id .. " crate must cost more than the previous area's")
+		prev = c
+	end
+end
+
+T.ghost_rewards_are_fixed_numbers = function()
+	for id, g in Config.Ghosts do
+		assert(type(g.Reward) == "number", id .. " reward must be one fixed base number")
+	end
+end
+
+T.auto_attack_is_not_sold = function()
+	for _, p in Config.GamePasses do
+		if p.Key == "AutoAttack" then
+			assert(p.Hidden == true, "Auto Attack is free: the old pass must stay hidden")
+		end
+	end
+end
 return T

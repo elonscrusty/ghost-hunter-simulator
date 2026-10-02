@@ -91,7 +91,7 @@ local function refresh()
 	for _, pass in Config.GamePasses do
 		local b = passButtons[pass.Key]
 		if b and d.Passes and d.Passes[pass.Key] then
-			Kit.SetButtonText(b, "OWNED ✓")
+			Kit.SetButtonText(b, "OWNED ✅")
 			b:SetAttribute("Color", "Gray")
 		end
 	end

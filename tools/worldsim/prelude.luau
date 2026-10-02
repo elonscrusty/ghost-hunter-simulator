@@ -1022,6 +1022,21 @@ local Imt = {}
 Imt.__type = "Instance"
 local M = {} -- methods
 local CSM = {} -- CollectionService methods
+-- other service methods (probes may add more via SIM.ServiceMethods[class][name] = fn)
+local SVCM: { [string]: { [string]: any } } = {
+	RunService = {
+		IsStudio = function()
+			return true
+		end,
+		IsServer = function()
+			return true
+		end,
+		IsClient = function()
+			return false
+		end,
+	},
+}
+SIM.ServiceMethods = SVCM
 local seq = 0
 
 local function isInst(v: any): boolean
@@ -1106,6 +1121,10 @@ Imt.__index = function(o, k)
 	end
 	if st.Class == "CollectionService" and CSM[k] then
 		return CSM[k]
+	end
+	local svc = SVCM[st.Class] or (if st.Locked then SVCM[st.Props.Name] else nil)
+	if svc and svc[k] then
+		return svc[k]
 	end
 	local m = M[k]
 	if m then

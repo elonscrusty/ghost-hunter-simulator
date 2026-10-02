@@ -39,7 +39,13 @@ end
 local function applyText(l: TextLabel, base: number)
 	local g = textGui[l]
 	local f = if g then factors[g] or 1 else 1
-	l.TextSize = math.max(8, math.floor(base * Kit.UIScale() * f + 0.5))
+	local size = math.max(9, math.floor(base * Kit.UIScale() * f + 0.5))
+	l.TextSize = size
+	-- keep the outline thin relative to the letters (a fixed 1.5 px outline smeared small text)
+	local st = l:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Thickness = math.clamp(size * 0.1, 0.75, 1.5)
+	end
 end
 
 -- Distance factor: full size up to Theme.World.FullSizeDistance studs from the camera, then
@@ -134,6 +140,7 @@ function WorldLabel.Text(parent: Instance, text: string, p: TextProps?): TextLab
 	local stroke = o.Stroke or 1.5
 	if stroke > 0 then
 		Kit.new("UIStroke", { Thickness = stroke, Color = Theme.Outline, Parent = l })
+		applyText(l, base) -- size the new outline too
 	end
 	return l
 end

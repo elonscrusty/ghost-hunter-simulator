@@ -21,6 +21,12 @@ function PlayerInfo.HasPass(player: Player, key: string): boolean
 	return p ~= nil and p[key] == true
 end
 
+-- Global Ectoplasm multiplier (2X ECTOPLASM event, set by GlobalEventService; 1 = off).
+local globalEcto = 1
+function PlayerInfo.SetGlobalEctoMultiplier(m: number)
+	globalEcto = m
+end
+
 -- Server-wide luck (Robux product): os.time() expiry, shared by everyone in this server.
 local serverLuckUntil = 0
 
@@ -92,7 +98,8 @@ function PlayerInfo.EctoMultiplier(player: Player): number
 	if vip and PlayerInfo.HasPass(player, "VIP") then
 		passMul *= vip.Multiplier or 1
 	end
-	return Rules.EctoMultiplier(bonus, PlayerInfo.BoostActive(d, "Ecto"), Config.Boosts.Ecto.Multiplier, passMul)
+	-- FinalReward = BaseGhostReward * this (upgrades, boost, passes, global event)
+	return Rules.EctoMultiplier(bonus, PlayerInfo.BoostActive(d, "Ecto"), Config.Boosts.Ecto.Multiplier, passMul) * globalEcto
 end
 
 function PlayerInfo.LuckMultiplier(player: Player): number

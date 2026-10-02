@@ -150,7 +150,7 @@ end
 local function tapWord(): string
 	local last = UserInputService:GetLastInputType()
 	if last == Enum.UserInputType.Gamepad1 then
-		return "PRESS Ⓧ TO TARGET A GHOST!"
+		return "PRESS (X) TO TARGET A GHOST!"
 	elseif UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
 		return "TAP A GHOST!"
 	end
@@ -420,15 +420,15 @@ function Tutorial.Init()
 			task.wait(0.5)
 		end
 	end)
+	-- NEXT GOAL bar: directly under the Ectoplasm / Power counters (Hud.TopStack)
 	goalChip = Kit.new("Frame", {
 		Size = UDim2.fromOffset(360, 24),
-		Position = UDim2.new(0.5, 0, 0, 30),
-		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Theme.Bg,
 		BackgroundTransparency = 0.2,
 		Visible = false,
 		ZIndex = 20,
-		Parent = screen,
+		LayoutOrder = 1,
+		Parent = Hud.TopStack or screen,
 	})
 	Kit.Corner(goalChip, UDim.new(1, 0))
 	Kit.Stroke(goalChip, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)

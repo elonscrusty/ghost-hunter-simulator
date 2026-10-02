@@ -136,7 +136,7 @@ function refreshButton(crateId: string, d: any, luck: number)
 	if not d.Zones[crate.Zone] then
 		infoLabel.Text = "Unlock " .. (Config.ZoneById[crate.Zone] :: Config.ZoneDef).Name .. " to open this crate"
 	else
-		infoLabel.Text = "Hunters jump out of crates! Better crates → stronger hunters."
+		infoLabel.Text = "Hunters jump out of crates! Better crates > stronger hunters."
 	end
 	luckLabel.Visible = luck > 1
 	local autoOwned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true

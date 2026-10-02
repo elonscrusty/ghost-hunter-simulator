@@ -10,6 +10,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local Hud = require(script.Parent.Hud)
 
 local DevPanel = {}
 
@@ -39,7 +40,7 @@ local function showInbox()
 		Kit.Corner(f, UDim.new(0, 10))
 		Kit.new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = f })
 		Kit.new("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder, Parent = f })
-		local head = (if e.Kind == "Bug" then "🐞 BUG" else "💡 IDEA") .. "  •  " .. tostring(e.Name) .. "  •  " .. tostring(e.Zone) .. "  •  " .. os.date("%Y-%m-%d %H:%M", e.T or 0) .. "  •  v" .. tostring(e.Version)
+		local head = (if e.Kind == "Bug" then "🐞 BUG" else "💡 IDEA") .. "  ·  " .. tostring(e.Name) .. "  ·  " .. tostring(e.Zone) .. "  ·  " .. os.date("%Y-%m-%d %H:%M", e.T or 0) .. "  ·  v" .. tostring(e.Version)
 		local h = Kit.Label(f, head, { Size = UDim2.new(1, 0, 0, 16), Align = Enum.TextXAlignment.Left, Color = if e.Kind == "Bug" then Theme.Bad else Theme.Ecto, Style = "Tiny", Fit = true, ZIndex = 63 })
 		h.LayoutOrder = 1
 		local t = Kit.Label(f, tostring(e.Text), { Size = UDim2.new(1, 0, 0, 0), Align = Enum.TextXAlignment.Left, AlignY = Enum.TextYAlignment.Top, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 63 })
@@ -60,6 +61,8 @@ local ACTIONS: { Action } = {
 	{ Text = "ALL 32 HUNTERS", Cmd = "Hunters", Color = "Orange" },
 	{ Text = "MAX UPGRADES", Cmd = "MaxUpgrades", Color = "Teal" },
 	{ Text = "START EVENT", Cmd = "Event", Color = "Pink" },
+	{ Text = "2X ECTOPLASM: ON", Cmd = "Ecto2x", Arg = true, Color = "Green" },
+	{ Text = "2X ECTOPLASM: OFF", Cmd = "Ecto2x", Arg = false, Color = "Red" },
 	{ Text = "RESET DAILY", Cmd = "ResetDaily", Color = "Purple" },
 	{ Text = "AUTO ATTACK PASS", Cmd = "AutoAttack", Color = "Purple" },
 	{ Text = "ALL GAME PASSES", Cmd = "AllPasses", Color = "Purple" },
@@ -76,7 +79,7 @@ local function run(a: Action)
 	end
 	local res = State.Request("Dev", a.Cmd, a.Arg)
 	if res.ok then
-		Kit.Toast(if a.Cmd == "Ecto" then "+" .. Format.Short(a.Arg :: number) .. " Ectoplasm" else a.Text .. " ✓", "Good")
+		Kit.Toast(if a.Cmd == "Ecto" then "+" .. Format.Short(a.Arg :: number) .. " Ectoplasm" else a.Text .. " ✅", "Good")
 	else
 		Kit.Toast(res.err or "Failed", "Bad")
 	end
@@ -122,18 +125,18 @@ function DevPanel.Init()
 	})
 	Kit.new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = inboxList })
 
-	devButton = Kit.Button(Kit.Screen(), {
+	-- lower-right row next to FEEDBACK / SETTINGS
+	devButton = Kit.Button(Hud.LowerRow or Kit.Screen(), {
 		Text = "🛠",
 		Color = "Gray",
 		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, -60, 0.5, -48),
-		AnchorPoint = Vector2.new(1, 0.5),
 		TextStyle = "Heading",
 		OnClick = function()
 			panel:Toggle()
 		end,
 	})
 	devButton.Visible = false
+	devButton.LayoutOrder = 1
 end
 
 function DevPanel.Start()

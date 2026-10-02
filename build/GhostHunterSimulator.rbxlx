@@ -127,17 +127,17 @@ Config.Zones = {
 		MinZ = 260, MaxZ = 540,
 	},
 	{
-		Id = "School", Name = "HAUNTED SCHOOL", Order = 3, Cost = 40000, Crate = "Elite",
+		Id = "School", Name = "HAUNTED SCHOOL", Order = 3, Cost = 15000, Crate = "Elite",
 		Ambient = Color3.fromRGB(160, 130, 210), FogColor = Color3.fromRGB(70, 50, 120), Accent = Color3.fromRGB(190, 110, 255),
 		MinZ = 540, MaxZ = 880,
 	},
 	{
-		Id = "Carnival", Name = "ABANDONED CARNIVAL", Order = 4, Cost = 250000, Crate = "Carnival",
+		Id = "Carnival", Name = "ABANDONED CARNIVAL", Order = 4, Cost = 150000, Crate = "Carnival",
 		Ambient = Color3.fromRGB(175, 130, 190), FogColor = Color3.fromRGB(120, 60, 130), Accent = Color3.fromRGB(255, 205, 70),
 		MinZ = 880, MaxZ = 1220,
 	},
 	{
-		Id = "Hospital", Name = "HAUNTED HOSPITAL", Order = 5, Cost = 2500000, Crate = "Medical",
+		Id = "Hospital", Name = "HAUNTED HOSPITAL", Order = 5, Cost = 1500000, Crate = "Medical",
 		Ambient = Color3.fromRGB(150, 175, 200), FogColor = Color3.fromRGB(80, 110, 140), Accent = Color3.fromRGB(140, 230, 255),
 		MinZ = 1220, MaxZ = 1560,
 	},
@@ -204,15 +204,15 @@ for _, z in Config.Zones do
 end
 
 --==================================================================
--- GHOSTS (Spirit = health; Reward = Ectoplasm BEFORE bonuses; {min, max} kept equal so the
--- same ghost always pays the same)
+-- GHOSTS (Spirit = health; Reward = BASE Ectoplasm per kill. The same ghost type always pays the
+-- same base; FinalReward = Reward * the player's multiplier (upgrades, boosts, passes, global event))
 --==================================================================
 export type GhostDef = {
 	Id: string,
 	Name: string,
 	Zone: string,
 	Spirit: number,
-	Reward: { number }, -- {min, max}
+	Reward: number, -- BASE Ectoplasm per kill (fixed; multipliers apply on top)
 	Drops: number, -- how many physical orbs the reward is split into
 	Respawn: number, -- seconds
 	Scale: number,
@@ -229,255 +229,255 @@ Config.Ghosts = {
 	-- ZONE 1
 	WanderingSpirit = {
 		Id = "WanderingSpirit", Name = "WANDERING SPIRIT", Zone = "Neighborhood",
-		Spirit = 30, Reward = { 6, 6 }, Drops = 3, Respawn = 4, Scale = 1, Hover = 5, Speed = 5, Wander = 3.5,
+		Spirit = 30, Reward = 6, Drops = 3, Respawn = 4, Scale = 1, Hover = 5, Speed = 5, Wander = 3.5,
 		Kind = "Normal", Color = Color3.fromRGB(235, 240, 255), Glow = Color3.fromRGB(150, 255, 200), Style = "Plain",
 	},
 	MischiefGhost = {
 		Id = "MischiefGhost", Name = "MISCHIEF GHOST", Zone = "Neighborhood",
-		Spirit = 140, Reward = { 22, 22 }, Drops = 4, Respawn = 6, Scale = 1.3, Hover = 5.5, Speed = 7, Wander = 2.5,
+		Spirit = 140, Reward = 22, Drops = 4, Respawn = 6, Scale = 1.3, Hover = 5.5, Speed = 7, Wander = 2.5,
 		Kind = "Normal", Color = Color3.fromRGB(200, 160, 255), Glow = Color3.fromRGB(255, 120, 220), Style = "Mischief",
 	},
 	NeighborhoodPoltergeist = {
 		Id = "NeighborhoodPoltergeist", Name = "NEIGHBORHOOD POLTERGEIST", Zone = "Neighborhood",
-		Spirit = 700, Reward = { 112, 112 }, Drops = 8, Respawn = 15, Scale = 2.2, Hover = 7, Speed = 4, Wander = 4,
+		Spirit = 700, Reward = 112, Drops = 8, Respawn = 15, Scale = 2.2, Hover = 7, Speed = 4, Wander = 4,
 		Kind = "MiniBoss", Color = Color3.fromRGB(130, 255, 180), Glow = Color3.fromRGB(80, 255, 140), Style = "Poltergeist",
 	},
 	-- ZONE 2
 	GraveSpirit = {
 		Id = "GraveSpirit", Name = "GRAVE SPIRIT", Zone = "Cemetery",
-		Spirit = 900, Reward = { 88, 88 }, Drops = 4, Respawn = 5, Scale = 1.2, Hover = 5, Speed = 5, Wander = 3.5,
+		Spirit = 900, Reward = 88, Drops = 4, Respawn = 5, Scale = 1.2, Hover = 5, Speed = 5, Wander = 3.5,
 		Kind = "Normal", Color = Color3.fromRGB(190, 255, 230), Glow = Color3.fromRGB(60, 255, 170), Style = "Grave",
 	},
 	CryptGhost = {
 		Id = "CryptGhost", Name = "CRYPT GHOST", Zone = "Cemetery",
-		Spirit = 2600, Reward = { 225, 225 }, Drops = 5, Respawn = 8, Scale = 1.5, Hover = 6, Speed = 5, Wander = 3,
+		Spirit = 2600, Reward = 225, Drops = 5, Respawn = 8, Scale = 1.5, Hover = 6, Speed = 5, Wander = 3,
 		Kind = "Normal", Color = Color3.fromRGB(240, 225, 190), Glow = Color3.fromRGB(255, 200, 90), Style = "Crypt",
 	},
 	GraveyardWarden = {
 		Id = "GraveyardWarden", Name = "GRAVEYARD WARDEN", Zone = "Cemetery",
-		Spirit = 9500, Reward = { 838, 838 }, Drops = 10, Respawn = 18, Scale = 2.5, Hover = 7.5, Speed = 3.5, Wander = 4.5,
+		Spirit = 9500, Reward = 838, Drops = 10, Respawn = 18, Scale = 2.5, Hover = 7.5, Speed = 3.5, Wander = 4.5,
 		Kind = "MiniBoss", Color = Color3.fromRGB(120, 110, 200), Glow = Color3.fromRGB(110, 255, 160), Style = "Warden",
 	},
 	-- ZONE 3
 	HallwayHaunt = {
 		Id = "HallwayHaunt", Name = "HALLWAY HAUNT", Zone = "School",
-		Spirit = 12000, Reward = { 1010, 1010 }, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 6, Wander = 3,
+		Spirit = 12000, Reward = 1010, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 6, Wander = 3,
 		Kind = "Normal", Color = Color3.fromRGB(255, 220, 150), Glow = Color3.fromRGB(255, 150, 80), Style = "Hallway",
 	},
 	PossessedStudent = {
 		Id = "PossessedStudent", Name = "POSSESSED STUDENT SPIRIT", Zone = "School",
-		Spirit = 32000, Reward = { 2500, 2500 }, Drops = 6, Respawn = 9, Scale = 1.7, Hover = 5.5, Speed = 6.5, Wander = 2.8,
+		Spirit = 32000, Reward = 2500, Drops = 6, Respawn = 9, Scale = 1.7, Hover = 5.5, Speed = 6.5, Wander = 2.8,
 		Kind = "Normal", Color = Color3.fromRGB(160, 230, 255), Glow = Color3.fromRGB(190, 110, 255), Style = "Student",
 	},
 	HeadmasterPhantom = {
 		Id = "HeadmasterPhantom", Name = "HEADMASTER PHANTOM", Zone = "School",
-		Spirit = 130000, Reward = { 9750, 9750 }, Drops = 14, Respawn = 25, Scale = 3, Hover = 8, Speed = 3, Wander = 5,
+		Spirit = 130000, Reward = 9750, Drops = 14, Respawn = 25, Scale = 3, Hover = 8, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(170, 120, 255), Glow = Color3.fromRGB(255, 80, 200), Style = "Headmaster",
 	},
 	-- ZONE 4
 	CarnivalSpirit = {
 		Id = "CarnivalSpirit", Name = "CARNIVAL SPIRIT", Zone = "Carnival",
-		Spirit = 60000, Reward = { 5380, 5380 }, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 6, Wander = 3,
+		Spirit = 60000, Reward = 5380, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 6, Wander = 3,
 		Kind = "Normal", Color = Color3.fromRGB(255, 235, 200), Glow = Color3.fromRGB(255, 190, 70), Style = "Carnival",
 	},
 	ClownPhantom = {
 		Id = "ClownPhantom", Name = "CLOWN PHANTOM", Zone = "Carnival",
-		Spirit = 160000, Reward = { 13800, 13800 }, Drops = 6, Respawn = 9, Scale = 1.7, Hover = 5.5, Speed = 6.5, Wander = 2.6,
+		Spirit = 160000, Reward = 13800, Drops = 6, Respawn = 9, Scale = 1.7, Hover = 5.5, Speed = 6.5, Wander = 2.6,
 		Kind = "Normal", Color = Color3.fromRGB(255, 250, 250), Glow = Color3.fromRGB(255, 80, 120), Style = "Clown",
 	},
 	RingmasterPoltergeist = {
 		Id = "RingmasterPoltergeist", Name = "RINGMASTER POLTERGEIST", Zone = "Carnival",
-		Spirit = 650000, Reward = { 51200, 51200 }, Drops = 14, Respawn = 25, Scale = 3.2, Hover = 8.5, Speed = 3, Wander = 5,
+		Spirit = 650000, Reward = 51200, Drops = 14, Respawn = 25, Scale = 3.2, Hover = 8.5, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(230, 70, 80), Glow = Color3.fromRGB(255, 210, 80), Style = "Ringmaster",
 	},
 	-- ZONE 5
 	PatientSpirit = {
 		Id = "PatientSpirit", Name = "PATIENT SPIRIT", Zone = "Hospital",
-		Spirit = 300000, Reward = { 26900, 26900 }, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 5, Wander = 3.2,
+		Spirit = 300000, Reward = 26900, Drops = 5, Respawn = 6, Scale = 1.4, Hover = 5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(215, 240, 255), Glow = Color3.fromRGB(120, 230, 200), Style = "Patient",
 	},
 	PhantomDoctor = {
 		Id = "PhantomDoctor", Name = "PHANTOM DOCTOR", Zone = "Hospital",
-		Spirit = 800000, Reward = { 68800, 68800 }, Drops = 6, Respawn = 9, Scale = 1.75, Hover = 5.5, Speed = 6, Wander = 2.8,
+		Spirit = 800000, Reward = 68800, Drops = 6, Respawn = 9, Scale = 1.75, Hover = 5.5, Speed = 6, Wander = 2.8,
 		Kind = "Normal", Color = Color3.fromRGB(245, 250, 255), Glow = Color3.fromRGB(170, 120, 255), Style = "Doctor",
 	},
 	HospitalDirector = {
 		Id = "HospitalDirector", Name = "HOSPITAL DIRECTOR", Zone = "Hospital",
-		Spirit = 3200000, Reward = { 256000, 256000 }, Drops = 15, Respawn = 25, Scale = 3.3, Hover = 8.5, Speed = 3, Wander = 5,
+		Spirit = 3200000, Reward = 256000, Drops = 15, Respawn = 25, Scale = 3.3, Hover = 8.5, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(150, 210, 190), Glow = Color3.fromRGB(110, 255, 190), Style = "Director",
 	},
 	-- ZONE 6
 	SailorSpirit = {
 		Id = "SailorSpirit", Name = "SAILOR SPIRIT", Zone = "Harbor",
-		Spirit = 1500000, Reward = { 134000, 134000 }, Drops = 5, Respawn = 6, Scale = 1.45, Hover = 5, Speed = 5.5, Wander = 3,
+		Spirit = 1500000, Reward = 134000, Drops = 5, Respawn = 6, Scale = 1.45, Hover = 5, Speed = 5.5, Wander = 3,
 		Kind = "Normal", Color = Color3.fromRGB(200, 240, 245), Glow = Color3.fromRGB(80, 230, 230), Style = "Sailor",
 	},
 	PhantomPirate = {
 		Id = "PhantomPirate", Name = "PHANTOM PIRATE", Zone = "Harbor",
-		Spirit = 4000000, Reward = { 344000, 344000 }, Drops = 6, Respawn = 9, Scale = 1.8, Hover = 5.5, Speed = 6.5, Wander = 2.6,
+		Spirit = 4000000, Reward = 344000, Drops = 6, Respawn = 9, Scale = 1.8, Hover = 5.5, Speed = 6.5, Wander = 2.6,
 		Kind = "Normal", Color = Color3.fromRGB(170, 240, 210), Glow = Color3.fromRGB(110, 255, 160), Style = "Pirate",
 	},
 	GhostCaptain = {
 		Id = "GhostCaptain", Name = "GHOST CAPTAIN", Zone = "Harbor",
-		Spirit = 16000000, Reward = { 1280000, 1280000 }, Drops = 15, Respawn = 25, Scale = 3.5, Hover = 9, Speed = 3, Wander = 5,
+		Spirit = 16000000, Reward = 1280000, Drops = 15, Respawn = 25, Scale = 3.5, Hover = 9, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(110, 200, 210), Glow = Color3.fromRGB(90, 255, 200), Style = "Captain",
 	},
 	-- ZONE 7
 	KnightSpirit = {
 		Id = "KnightSpirit", Name = "KNIGHT SPIRIT", Zone = "Castle",
-		Spirit = 7500000, Reward = { 662000, 662000 }, Drops = 5, Respawn = 6, Scale = 1.5, Hover = 5, Speed = 5, Wander = 3.2,
+		Spirit = 7500000, Reward = 662000, Drops = 5, Respawn = 6, Scale = 1.5, Hover = 5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(215, 225, 245), Glow = Color3.fromRGB(120, 190, 255), Style = "Knight",
 	},
 	RoyalPhantom = {
 		Id = "RoyalPhantom", Name = "ROYAL PHANTOM", Zone = "Castle",
-		Spirit = 20000000, Reward = { 1720000, 1720000 }, Drops = 6, Respawn = 9, Scale = 1.85, Hover = 5.5, Speed = 6, Wander = 2.8,
+		Spirit = 20000000, Reward = 1720000, Drops = 6, Respawn = 9, Scale = 1.85, Hover = 5.5, Speed = 6, Wander = 2.8,
 		Kind = "Normal", Color = Color3.fromRGB(230, 200, 255), Glow = Color3.fromRGB(200, 90, 255), Style = "Royal",
 	},
 	CursedKing = {
 		Id = "CursedKing", Name = "CURSED KING", Zone = "Castle",
-		Spirit = 80000000, Reward = { 6440000, 6440000 }, Drops = 16, Respawn = 25, Scale = 3.7, Hover = 9.5, Speed = 3, Wander = 5,
+		Spirit = 80000000, Reward = 6440000, Drops = 16, Respawn = 25, Scale = 3.7, Hover = 9.5, Speed = 3, Wander = 5,
 		Kind = "Boss", Color = Color3.fromRGB(120, 140, 200), Glow = Color3.fromRGB(110, 255, 160), Style = "King",
 	},
 	-- ZONE 8
 	AncientSpirit = {
 		Id = "AncientSpirit", Name = "ANCIENT SPIRIT", Zone = "SpiritRealm",
-		Spirit = 37000000, Reward = { 3310000, 3310000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 37000000, Reward = 3310000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(190, 220, 255), Glow = Color3.fromRGB(110, 240, 255), Style = "Ancient",
 	},
 	VoidPhantom = {
 		Id = "VoidPhantom", Name = "VOID PHANTOM", Zone = "SpiritRealm",
-		Spirit = 100000000, Reward = { 8560000, 8560000 }, Drops = 6, Respawn = 9, Scale = 1.9, Hover = 6, Speed = 6.5, Wander = 2.6,
+		Spirit = 100000000, Reward = 8560000, Drops = 6, Respawn = 9, Scale = 1.9, Hover = 6, Speed = 6.5, Wander = 2.6,
 		Kind = "Normal", Color = Color3.fromRGB(90, 70, 160), Glow = Color3.fromRGB(190, 110, 255), Style = "Void",
 	},
 	SpiritOverlord = {
 		Id = "SpiritOverlord", Name = "SPIRIT OVERLORD", Zone = "SpiritRealm",
-		Spirit = 420000000, Reward = { 32500000, 32500000 }, Drops = 18, Respawn = 30, Scale = 5, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 420000000, Reward = 32500000, Drops = 18, Respawn = 30, Scale = 5, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(170, 140, 255), Glow = Color3.fromRGB(90, 255, 230), Style = "Overlord",
 	},
 	BogWisp = {
 		Id = "BogWisp", Name = "BOG WISP", Zone = "Swamp",
-		Spirit = 185000000, Reward = { 17200000, 17200000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 185000000, Reward = 17200000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(180, 230, 170), Glow = Color3.fromRGB(150, 255, 120), Style = "Bog",
 	},
 	MarshPhantom = {
 		Id = "MarshPhantom", Name = "MARSH PHANTOM", Zone = "Swamp",
-		Spirit = 500000000, Reward = { 44500000, 44500000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 500000000, Reward = 44500000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(140, 190, 140), Glow = Color3.fromRGB(200, 255, 90), Style = "Marsh",
 	},
 	SwampLord = {
 		Id = "SwampLord", Name = "SWAMP LORD", Zone = "Swamp",
-		Spirit = 2100000000, Reward = { 169000000, 169000000 }, Drops = 18, Respawn = 30, Scale = 5.15, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 2100000000, Reward = 169000000, Drops = 18, Respawn = 30, Scale = 5.15, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(90, 140, 90), Glow = Color3.fromRGB(170, 255, 110), Style = "SwampLord",
 	},
 	FrostSpirit = {
 		Id = "FrostSpirit", Name = "FROST SPIRIT", Zone = "Frost",
-		Spirit = 925000000, Reward = { 89600000, 89600000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 925000000, Reward = 89600000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(230, 245, 255), Glow = Color3.fromRGB(140, 220, 255), Style = "FrostWisp",
 	},
 	YetiPhantom = {
 		Id = "YetiPhantom", Name = "YETI PHANTOM", Zone = "Frost",
-		Spirit = 2500000000, Reward = { 232000000, 232000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 2500000000, Reward = 232000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(240, 245, 250), Glow = Color3.fromRGB(120, 200, 255), Style = "Yeti",
 	},
 	BlizzardQueen = {
 		Id = "BlizzardQueen", Name = "BLIZZARD QUEEN", Zone = "Frost",
-		Spirit = 10500000000, Reward = { 879000000, 879000000 }, Drops = 18, Respawn = 30, Scale = 5.30, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 10500000000, Reward = 879000000, Drops = 18, Respawn = 30, Scale = 5.30, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(200, 230, 255), Glow = Color3.fromRGB(170, 240, 255), Style = "Blizzard",
 	},
 	MummySpirit = {
 		Id = "MummySpirit", Name = "MUMMY SPIRIT", Zone = "Tomb",
-		Spirit = 4620000000, Reward = { 466000000, 466000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 4620000000, Reward = 466000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(240, 230, 200), Glow = Color3.fromRGB(255, 210, 90), Style = "Mummy",
 	},
 	ScarabPhantom = {
 		Id = "ScarabPhantom", Name = "SCARAB PHANTOM", Zone = "Tomb",
-		Spirit = 12500000000, Reward = { 1200000000, 1200000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 12500000000, Reward = 1200000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(80, 170, 180), Glow = Color3.fromRGB(90, 255, 220), Style = "Scarab",
 	},
 	PharaohsGhost = {
 		Id = "PharaohsGhost", Name = "PHARAOH'S GHOST", Zone = "Tomb",
-		Spirit = 52500000000, Reward = { 4570000000, 4570000000 }, Drops = 18, Respawn = 30, Scale = 5.45, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 52500000000, Reward = 4570000000, Drops = 18, Respawn = 30, Scale = 5.45, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(255, 220, 130), Glow = Color3.fromRGB(255, 180, 60), Style = "Pharaoh",
 	},
 	ToySoldierSpirit = {
 		Id = "ToySoldierSpirit", Name = "TOY SOLDIER SPIRIT", Zone = "ToyFactory",
-		Spirit = 23100000000, Reward = { 2420000000, 2420000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 23100000000, Reward = 2420000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(255, 200, 200), Glow = Color3.fromRGB(255, 90, 120), Style = "ToySoldier",
 	},
 	JackInTheBoxPhantom = {
 		Id = "JackInTheBoxPhantom", Name = "JACK-IN-THE-BOX PHANTOM", Zone = "ToyFactory",
-		Spirit = 62500000000, Reward = { 6260000000, 6260000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 62500000000, Reward = 6260000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 140, 220), Style = "JackBox",
 	},
 	PuppetMaster = {
 		Id = "PuppetMaster", Name = "PUPPET MASTER", Zone = "ToyFactory",
-		Spirit = 262000000000, Reward = { 23800000000, 23800000000 }, Drops = 18, Respawn = 30, Scale = 5.60, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 262000000000, Reward = 23800000000, Drops = 18, Respawn = 30, Scale = 5.60, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(220, 170, 240), Glow = Color3.fromRGB(255, 120, 200), Style = "Puppet",
 	},
 	BubbleSpirit = {
 		Id = "BubbleSpirit", Name = "BUBBLE SPIRIT", Zone = "Sunken",
-		Spirit = 116000000000, Reward = { 12600000000, 12600000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 116000000000, Reward = 12600000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(180, 240, 255), Glow = Color3.fromRGB(90, 255, 230), Style = "Bubble",
 	},
 	SirenPhantom = {
 		Id = "SirenPhantom", Name = "SIREN PHANTOM", Zone = "Sunken",
-		Spirit = 312000000000, Reward = { 32600000000, 32600000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 312000000000, Reward = 32600000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(160, 230, 220), Glow = Color3.fromRGB(140, 255, 200), Style = "Siren",
 	},
 	LeviathanGhost = {
 		Id = "LeviathanGhost", Name = "LEVIATHAN GHOST", Zone = "Sunken",
-		Spirit = 1310000000000, Reward = { 123000000000, 123000000000 }, Drops = 18, Respawn = 30, Scale = 5.75, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 1310000000000, Reward = 123000000000, Drops = 18, Respawn = 30, Scale = 5.75, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(70, 150, 170), Glow = Color3.fromRGB(90, 255, 230), Style = "Leviathan",
 	},
 	CogSpirit = {
 		Id = "CogSpirit", Name = "COG SPIRIT", Zone = "Clockwork",
-		Spirit = 578000000000, Reward = { 65400000000, 65400000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 578000000000, Reward = 65400000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(230, 210, 170), Glow = Color3.fromRGB(255, 190, 90), Style = "Cog",
 	},
 	ClockworkPhantom = {
 		Id = "ClockworkPhantom", Name = "CLOCKWORK PHANTOM", Zone = "Clockwork",
-		Spirit = 1560000000000, Reward = { 169000000000, 169000000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 1560000000000, Reward = 169000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(200, 180, 150), Glow = Color3.fromRGB(255, 220, 120), Style = "Clockwork",
 	},
 	TimeKeeper = {
 		Id = "TimeKeeper", Name = "TIME KEEPER", Zone = "Clockwork",
-		Spirit = 6560000000000, Reward = { 642000000000, 642000000000 }, Drops = 18, Respawn = 30, Scale = 5.90, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 6560000000000, Reward = 642000000000, Drops = 18, Respawn = 30, Scale = 5.90, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(180, 150, 110), Glow = Color3.fromRGB(255, 200, 80), Style = "TimeKeeper",
 	},
 	EmberSpirit = {
 		Id = "EmberSpirit", Name = "EMBER SPIRIT", Zone = "Inferno",
-		Spirit = 2890000000000, Reward = { 341000000000, 341000000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 2890000000000, Reward = 341000000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(255, 200, 150), Glow = Color3.fromRGB(255, 150, 60), Style = "Ember",
 	},
 	MagmaPhantom = {
 		Id = "MagmaPhantom", Name = "MAGMA PHANTOM", Zone = "Inferno",
-		Spirit = 7810000000000, Reward = { 880000000000, 880000000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 7810000000000, Reward = 880000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(255, 150, 110), Glow = Color3.fromRGB(255, 110, 50), Style = "Magma",
 	},
 	InfernoTitan = {
 		Id = "InfernoTitan", Name = "INFERNO TITAN", Zone = "Inferno",
-		Spirit = 32800000000000, Reward = { 3340000000000, 3340000000000 }, Drops = 18, Respawn = 30, Scale = 6.05, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 32800000000000, Reward = 3340000000000, Drops = 18, Respawn = 30, Scale = 6.05, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(200, 90, 70), Glow = Color3.fromRGB(255, 170, 60), Style = "Titan",
 	},
 	RoyalGuardSpirit = {
 		Id = "RoyalGuardSpirit", Name = "ROYAL GUARD SPIRIT", Zone = "Throne",
-		Spirit = 14500000000000, Reward = { 1770000000000, 1770000000000 }, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 14500000000000, Reward = 1770000000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(235, 235, 250), Glow = Color3.fromRGB(255, 220, 120), Style = "Guard",
 	},
 	ShadowPhantom = {
 		Id = "ShadowPhantom", Name = "SHADOW PHANTOM", Zone = "Throne",
-		Spirit = 39100000000000, Reward = { 4580000000000, 4580000000000 }, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 39100000000000, Reward = 4580000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(90, 80, 130), Glow = Color3.fromRGB(190, 120, 255), Style = "Shadow",
 	},
 	GhostKing = {
 		Id = "GhostKing", Name = "THE GHOST KING", Zone = "Throne",
-		Spirit = 164000000000000, Reward = { 17400000000000, 17400000000000 }, Drops = 18, Respawn = 30, Scale = 6.20, Hover = 14, Speed = 2.5, Wander = 6,
+		Spirit = 164000000000000, Reward = 17400000000000, Drops = 18, Respawn = 30, Scale = 6.20, Hover = 14, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(220, 210, 255), Glow = Color3.fromRGB(255, 230, 140), Style = "GhostKing",
 	},
 	-- EVENT (scaled at spawn time by Config.Event)
 	GiantPoltergeist = {
 		Id = "GiantPoltergeist", Name = "GIANT POLTERGEIST", Zone = "Neighborhood",
-		Spirit = 6000, Reward = { 0, 0 }, Drops = 0, Respawn = 0, Scale = 6, Hover = 14, Speed = 4, Wander = 5,
+		Spirit = 6000, Reward = 0, Drops = 0, Respawn = 0, Scale = 6, Hover = 14, Speed = 4, Wander = 5,
 		Kind = "Event", Color = Color3.fromRGB(255, 120, 230), Glow = Color3.fromRGB(255, 230, 90), Style = "Giant",
 	},
 } :: { [string]: GhostDef }
@@ -1267,7 +1267,7 @@ Config.Crates = {
 		},
 	},
 	Elite = {
-		Id = "Elite", Name = "ELITE HUNTER CRATE", Zone = "School", Price = 9000,
+		Id = "Elite", Name = "ELITE HUNTER CRATE", Zone = "School", Price = 5000,
 		Color = C(40, 30, 70), Trim = C(220, 120, 255), Style = "Elite",
 		Pool = {
 			{ Hunter = "SchoolInvestigator", Weight = 60 },
@@ -1279,7 +1279,7 @@ Config.Crates = {
 		},
 	},
 	Carnival = {
-		Id = "Carnival", Name = "CARNIVAL HUNTER CRATE", Zone = "Carnival", Price = 60000,
+		Id = "Carnival", Name = "CARNIVAL HUNTER CRATE", Zone = "Carnival", Price = 40000,
 		Color = C(230, 60, 70), Trim = C(255, 210, 70), Style = "Carnival",
 		Pool = {
 			{ Hunter = "CarnivalScout", Weight = 60 },
@@ -1291,7 +1291,7 @@ Config.Crates = {
 		},
 	},
 	Medical = {
-		Id = "Medical", Name = "PARANORMAL MEDICAL CRATE", Zone = "Hospital", Price = 550000,
+		Id = "Medical", Name = "PARANORMAL MEDICAL CRATE", Zone = "Hospital", Price = 400000,
 		Color = C(235, 240, 250), Trim = C(110, 200, 255), Style = "Medical",
 		Pool = {
 			{ Hunter = "MedicalInvestigator", Weight = 60 },
@@ -1546,7 +1546,7 @@ Config.Daily = {
 Config.Event = {
 	Ghost = "GiantPoltergeist",
 	FirstDelay = 240, -- seconds after server start
-	Interval = 600, -- seconds between events (end → next warning)
+	Interval = 600, -- seconds between events (end > next warning)
 	WarningSeconds = 15,
 	Duration = 180, -- seconds to defeat it before it escapes
 	-- Spirit = Base + SpiritPerPower * sum(min(crew power, PowerCap) of players in server),
@@ -1569,13 +1569,14 @@ Config.Event = {
 -- SHOP (Robux). Fill in the IDs after creating products on the Creator Hub.
 --==================================================================
 export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string, Amount: number?, Boost: string?, Seconds: number?, ProductId: number?, PriceLabel: string, Blurb: string? }
-export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Storage: number?, Blurb: string? }
+export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Storage: number?, Blurb: string?, Hidden: boolean? }
 
 Config.Products = {
 	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = 3715910102, PriceLabel = "R$ 149" },
 	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 12000, ProductId = 3715909987, PriceLabel = "R$ 199" },
 	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 199" },
 	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 149" },
+	{ Key = "SingleSkip", Name = "SINGLE CRATE SKIP", Icon = "⏩", Kind = "CrateSkip", ProductId = nil, PriceLabel = "R$ 10", Blurb = "Skip one crate animation" },
 	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", Amount = 12000, ProductId = 3715915055, PriceLabel = "R$ 199", Blurb = "Opens your next locked area right now" },
 	{ Key = "ExclusiveCrate", Name = "EXCLUSIVE CRATE", Icon = "💎", Kind = "ExclusiveCrate", ProductId = 3715915093, PriceLabel = "R$ 199", Blurb = "An EXCLUSIVE hunter for your best area" },
 	{ Key = "ServerLuck", Name = "SERVER LUCK 15 MIN", Icon = "🍀", Kind = "ServerLuck", Seconds = 900, ProductId = 3715915133, PriceLabel = "R$ 149", Blurb = "2x crate luck for EVERYONE in the server" },
@@ -1585,13 +1586,17 @@ Config.Products = {
 Config.GamePasses = {
 	{ Key = "ExtraSlots", Name = "+2 HUNTER SLOTS", Icon = "🎒", PassId = 2007038280, PriceLabel = "R$ 149", Slots = 2 },
 	{ Key = "DoubleEcto", Name = "PERMANENT 2x ECTOPLASM", Icon = "💎", PassId = 2005844290, PriceLabel = "R$ 299", Multiplier = 2 },
-	{ Key = "AutoAttack", Name = "AUTO ATTACK", Icon = "🤖", PassId = 2007026293, PriceLabel = "R$ 199", Blurb = "Your crew picks the next ghost for you" },
+	-- LEGACY: Auto Attack is FREE for everyone now. The pass is no longer sold (Hidden); players who
+	-- bought it get AUTO OPEN for free instead (Config.LegacyAutoAttackGrantsAutoOpen).
+	{ Key = "AutoAttack", Name = "AUTO ATTACK", Icon = "🤖", PassId = 2007026293, PriceLabel = "R$ 199", Blurb = "Your crew picks the next ghost for you", Hidden = true },
 	{ Key = "LuckyHunter", Name = "LUCKY HUNTER", Icon = "🍀", PassId = 2005532289, PriceLabel = "R$ 349", Multiplier = 1.5, Blurb = "Better crate luck forever (x1.5)" },
 	{ Key = "TripleOpen", Name = "TRIPLE OPEN", Icon = "📦", PassId = 2004530357, PriceLabel = "R$ 199", Blurb = "Open 3 crates at once" },
 	{ Key = "SuperMagnet", Name = "SUPER MAGNET", Icon = "🧲", PassId = 2006720281, PriceLabel = "R$ 149", Multiplier = 1.6, Blurb = "Grab Ectoplasm from much further away" },
 	{ Key = "VIP", Name = "VIP", Icon = "👑", PassId = 2005856286, PriceLabel = "R$ 249", Multiplier = 1.1, Blurb = "VIP tag, gold name, +10% Ectoplasm" },
 	{ Key = "Storage", Name = "+50 HUNTER STORAGE", Icon = "🗃️", PassId = 2005124303, PriceLabel = "R$ 99", Storage = 50, Blurb = "Keep 50 more hunters" },
 	{ Key = "RainbowBeams", Name = "RAINBOW BEAMS", Icon = "🌈", PassId = 2004968300, PriceLabel = "R$ 149", Blurb = "Your crew fires rainbow beams (looks only)" },
+	{ Key = "PermanentSkip", Name = "PERMANENT CRATE SKIP", Icon = "⏩", PassId = nil, PriceLabel = "R$ 129", Blurb = "Skip every crate animation, forever" },
+	{ Key = "AutoOpen", Name = "AUTO OPEN", Icon = "🔁", PassId = nil, PriceLabel = "R$ 99", Blurb = "Crates open by themselves while you stand at them" },
 	{ Key = "SparkleTrail", Name = "SPARKLE TRAIL", Icon = "✨", PassId = 2006036302, PriceLabel = "R$ 99", Blurb = "A sparkly trail follows you (looks only)" },
 } :: { PassDef }
 
@@ -1601,6 +1606,30 @@ Config.GamePasses = {
 -- With the pass + toggle ON, the server picks the nearest ghost in the zone you stand in.
 -- No extra damage, rewards, drops or pickup range.
 --==================================================================
+-- Players who bought the old Auto Attack pass (Auto Attack is free now) get Auto Open for free.
+Config.LegacyAutoAttackGrantsAutoOpen = true
+
+-- Crate skips: the reveal is only a cinematic; the hunter is already rolled and saved before it
+-- plays, so skipping never changes, rerolls or duplicates a reward.
+Config.CrateSkip = { Product = "SingleSkip", Pass = "PermanentSkip", MaxTokens = 50 }
+
+-- AUTO OPEN (game pass): the server re-opens the chosen crate while you stand at its station.
+Config.AutoOpen = {
+	Pass = "AutoOpen",
+	Interval = 5.6, -- seconds between opens (time for the full reveal)
+	FastInterval = 1.6, -- with Permanent Crate Skip: quick reveal
+}
+
+-- GLOBAL EVENTS (developer-controlled from the DEV panel; never automatic). State lives in a
+-- DataStore (new servers read it) and changes are broadcast with MessagingService.
+Config.GlobalEvents = {
+	DataStoreName = "GhostHunterGlobal_v1",
+	Key = "Events",
+	Topic = "GHGlobalEvents",
+	RefreshSeconds = 60, -- servers also re-read the state this often (in case a message is missed)
+	Ecto2xMultiplier = 2,
+}
+
 -- Robux extras
 Config.ServerLuck = { Multiplier = 2, MaxStackSeconds = 3600 } -- server-wide crate luck (product)
 Config.TripleOpen = { Count = 3, Pass = "TripleOpen" }
@@ -5470,6 +5499,7 @@ local order = {
 	"EventService",
 	"ShopService",
 	"StationService",
+	"GlobalEventService",
 	"DevService",
 	"FeedbackService",
 	"LeaderboardService",
@@ -5552,6 +5582,7 @@ export type Data = {
 	Tutorial: number,
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
+	SkipTokens: number, -- bought Single Crate Skips not used yet (added in 1.4; old saves get 0)
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
 }
@@ -5576,6 +5607,7 @@ local function defaults(): Data
 		Tutorial = 1,
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
+		SkipTokens = 0,
 		Orphans = {},
 		Extra = {},
 	}
@@ -6079,6 +6111,9 @@ function DataService.AddPurchase(d: Data, receipt: string)
 	end
 end
 
+-- exposed for the save-compatibility test (tools/datacompat.sh); not used by the game
+DataService._Migrate = migrate
+
 return DataService
 ]]></string>
           </Properties>
@@ -6102,6 +6137,7 @@ local DataService = require(script.Parent.DataService)
 local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
 local EventService = require(script.Parent.EventService)
+local GlobalEventService = require(script.Parent.GlobalEventService)
 local Remotes = require(script.Parent.Remotes)
 
 local DevService = {}
@@ -6168,6 +6204,12 @@ function DevService.Run(player: Player, cmd: string, arg: any): string?
 			d.Upgrades[id] = #up.Levels
 		end
 		DataService.Changed(player)
+	elseif cmd == "Ecto2x" then
+		-- GLOBAL 2X Ectoplasm (all servers); arg = true / false
+		local err = GlobalEventService.SetEcto2x(arg == true)
+		if err then
+			return err
+		end
 	elseif cmd == "Event" then
 		EventService.TriggerNow()
 	elseif cmd == "ResetDaily" then
@@ -7048,7 +7090,7 @@ local function setTarget(player: Player, uid: number?, auto: boolean?)
 end
 
 function GhostService.AutoActive(player: Player): boolean
-	return autoOn[player] == true and PlayerInfo.HasPass(player, Config.AutoAttack.Pass)
+	return autoOn[player] == true -- FREE for every player (no pass)
 end
 
 -- Auto Attack pick: nearest living ghost the player may fight, in the zone the player is
@@ -7109,7 +7151,7 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 			if player.Parent and (player == killer or dmg >= minShare) then
 				local d = DataService.Get(player)
 				if d then
-					local base = rng:NextInteger(g.Def.Reward[1], g.Def.Reward[2])
+					local base = g.Def.Reward -- fixed per ghost type
 					local total = math.max(1, math.floor(base * PlayerInfo.EctoMultiplier(player) + 0.5))
 					DropService.Spawn(player, pos, total, g.Def.Drops, nil)
 					d.Stats.Ghosts += 1
@@ -7242,14 +7284,11 @@ function GhostService.Init()
 	folder.Parent = workspace
 	Net.Event("SelectTarget").OnServerEvent:Connect(onSelect)
 
-	-- AUTO ATTACK toggle. Ownership is checked on the server (game pass); the toggle only
-	-- automates picking targets: damage, rewards and pickups are exactly the same.
+	-- AUTO ATTACK toggle: FREE for everyone. It only automates picking targets: damage,
+	-- rewards and pickups are exactly the same as tapping ghosts yourself.
 	Remotes.Register("AutoAttack", "Default", function(player, on)
 		if type(on) ~= "boolean" then
 			return Remotes.Fail("Bad value")
-		end
-		if on and not PlayerInfo.HasPass(player, Config.AutoAttack.Pass) then
-			return Remotes.Fail("Auto Attack is a game pass - see the SHOP!")
 		end
 		if on then
 			autoOn[player] = true
@@ -7313,6 +7352,141 @@ return GhostService
         </Item>
         <Item class="ModuleScript" referent="27">
           <Properties>
+            <string name="Name">GlobalEventService</string>
+            <string name="Source"><![CDATA[--!strict
+-- Developer-controlled GLOBAL events (currently: 2X ECTOPLASM). Never automatic: the state is
+-- OFF unless a developer turns it on from the DEV panel, and it stays whatever was last set.
+--   * state is stored in a DataStore (Config.GlobalEvents) so NEW servers read it at start
+--   * a change is broadcast with MessagingService so RUNNING servers update within seconds
+--   * every server also re-reads the DataStore every RefreshSeconds (a missed message heals)
+--   * clients see workspace attribute "Ecto2x" (indicator) and get an "Ecto2xEvent" message
+-- Only DevService (server-checked developer UserIds) can change it. In Studio changes stay in
+-- the test server, so a Studio test can never switch the event on for live players.
+local DataStoreService = game:GetService("DataStoreService")
+local MessagingService = game:GetService("MessagingService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GH = ReplicatedStorage:WaitForChild("GH")
+local Config = require(GH.Config)
+local DataService = require(script.Parent.DataService)
+local PlayerInfo = require(script.Parent.PlayerInfo)
+local Fx = require(script.Parent.Fx)
+
+local GlobalEventService = {}
+
+type State = { Ecto2x: boolean, T: number }
+
+local G = Config.GlobalEvents
+local IS_STUDIO = RunService:IsStudio()
+local store: DataStore? = nil
+local current: State = { Ecto2x = false, T = 0 }
+
+local function sanitize(v: any): State
+	if type(v) == "table" then
+		return { Ecto2x = v.Ecto2x == true, T = if type(v.T) == "number" then v.T else 0 }
+	end
+	return { Ecto2x = false, T = 0 }
+end
+
+-- Applies a state in this server (idempotent; older states are ignored).
+local function apply(new: State, announce: boolean)
+	if new.T < current.T then
+		return
+	end
+	local was = current.Ecto2x
+	current = new
+	PlayerInfo.SetGlobalEctoMultiplier(if new.Ecto2x then G.Ecto2xMultiplier else 1)
+	workspace:SetAttribute("Ecto2x", new.Ecto2x)
+	if was ~= new.Ecto2x then
+		for _, p in Players:GetPlayers() do
+			DataService.Changed(p) -- refresh the multiplier shown in their HUD
+		end
+		if announce then
+			Fx.All("Ecto2xEvent", { On = new.Ecto2x })
+		end
+	end
+end
+
+local function load(): State?
+	local s = store
+	if not s then
+		return nil
+	end
+	local ok, v = pcall(function()
+		return s:GetAsync(G.Key)
+	end)
+	return if ok then sanitize(v) else nil
+end
+
+function GlobalEventService.Ecto2x(): boolean
+	return current.Ecto2x
+end
+
+-- Developer action (DevService checks the player first). Returns an error text or nil.
+function GlobalEventService.SetEcto2x(on: boolean): string?
+	local new: State = { Ecto2x = on, T = os.time() }
+	if IS_STUDIO or not store then
+		apply(new, true)
+		return nil
+	end
+	local s = store :: DataStore
+	local ok, err = pcall(function()
+		s:SetAsync(G.Key, new)
+	end)
+	if not ok then
+		return "Couldn't save the event state: " .. tostring(err)
+	end
+	apply(new, true)
+	pcall(function()
+		MessagingService:PublishAsync(G.Topic, new)
+	end)
+	return nil
+end
+
+function GlobalEventService.Init()
+	if not IS_STUDIO then
+		local ok, ds = pcall(function()
+			return DataStoreService:GetDataStore(G.DataStoreName)
+		end)
+		store = if ok then ds else nil
+	end
+	workspace:SetAttribute("Ecto2x", false)
+end
+
+function GlobalEventService.Start()
+	-- new server: read the saved state (missing = OFF; nothing ever turns it on by itself)
+	task.spawn(function()
+		local s = load()
+		if s then
+			apply(s, false)
+		end
+	end)
+	if not IS_STUDIO then
+		pcall(function()
+			MessagingService:SubscribeAsync(G.Topic, function(msg)
+				apply(sanitize(msg.Data), true)
+			end)
+		end)
+		task.spawn(function()
+			while true do
+				task.wait(G.RefreshSeconds)
+				local s = load()
+				if s then
+					apply(s, true)
+				end
+			end
+		end)
+	end
+end
+
+return GlobalEventService
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="28">
+          <Properties>
             <string name="Name">HunterService</string>
             <string name="Source"><![CDATA[--!strict
 -- Hunter inventory, equipping and crate opening (server-authoritative rolls).
@@ -7331,6 +7505,8 @@ local Remotes = require(script.Parent.Remotes)
 local Fx = require(script.Parent.Fx)
 
 local HunterService = {}
+-- player -> token of their running Auto Open loop (a new token stops the old loop)
+local autoOpen: { [Player]: {} } = {}
 HunterService.GrantExclusive = nil :: any
 
 local rng = Random.new()
@@ -7480,6 +7656,62 @@ function HunterService.Init()
 		return first
 	end)
 
+	-- CRATE SKIP: the reveal is client-side only (the hunter is already rolled and saved), so a
+	-- skip never touches the reward. Permanent Crate Skip owners skip for free; otherwise one
+	-- bought Single Crate Skip token is used.
+	Remotes.Register("UseSkip", "Default", function(player)
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		if PlayerInfo.HasPermanentSkip(player) then
+			return { ok = true, Permanent = true }
+		end
+		if (d.SkipTokens or 0) > 0 then
+			d.SkipTokens -= 1
+			DataService.Changed(player)
+			return { ok = true, Left = d.SkipTokens }
+		end
+		return { ok = false, err = "NeedSkip" }
+	end)
+
+	-- AUTO OPEN (game pass): one server loop per player re-opens the chosen crate through the
+	-- normal openCrate checks (zone, distance, price, storage), so it can't bypass anything or
+	-- run twice at once. Stops on OFF, failure, leaving, or when the pass is missing.
+	Remotes.Register("AutoOpen", "Default", function(player, crateId)
+		if crateId == nil or crateId == false then
+			autoOpen[player] = nil
+			player:SetAttribute("AutoOpen", nil)
+			return { ok = true, On = false }
+		end
+		if not PlayerInfo.HasAutoOpen(player) then
+			return Remotes.Fail("NeedPass")
+		end
+		if type(crateId) ~= "string" or not Config.Crates[crateId] or not Config.Layout.CrateStations[crateId] then
+			return Remotes.Fail("Bad crate")
+		end
+		local token = {}
+		autoOpen[player] = token
+		player:SetAttribute("AutoOpen", crateId)
+		task.spawn(function()
+			while autoOpen[player] == token and player.Parent do
+				local r = openCrate(player, crateId)
+				if autoOpen[player] ~= token then
+					break
+				end
+				if not r.ok then
+					autoOpen[player] = nil
+					player:SetAttribute("AutoOpen", nil)
+					Fx.To(player, "AutoOpenStopped", { Reason = r.err })
+					break
+				end
+				Fx.To(player, "AutoOpened", { Crate = crateId, Hunter = r.Hunter, Uid = r.Uid, IsNew = r.IsNew })
+				task.wait(if PlayerInfo.HasPermanentSkip(player) then Config.AutoOpen.FastInterval else Config.AutoOpen.Interval)
+			end
+		end)
+		return { ok = true, On = true }
+	end)
+
 	-- Robux Exclusive Crate (granted by ShopService after a purchase)
 	HunterService.GrantExclusive = function(p: Player): (string?, string?, boolean)
 		local zone = Config.Zones[PlayerInfo.BestZone(p)]
@@ -7599,6 +7831,7 @@ end
 
 function HunterService.Start()
 	Players.PlayerRemoving:Connect(function(player)
+		autoOpen[player] = nil -- stops their Auto Open loop
 		PlayerInfo.Forget(player)
 	end)
 end
@@ -7607,7 +7840,7 @@ return HunterService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="28">
+        <Item class="ModuleScript" referent="29">
           <Properties>
             <string name="Name">LeaderboardService</string>
             <string name="Source"><![CDATA[--!strict
@@ -7758,7 +7991,7 @@ return LeaderboardService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="29">
+        <Item class="ModuleScript" referent="30">
           <Properties>
             <string name="Name">PlayerInfo</string>
             <string name="Source"><![CDATA[--!strict
@@ -7784,6 +8017,12 @@ function PlayerInfo.HasPass(player: Player, key: string): boolean
 	return p ~= nil and p[key] == true
 end
 
+-- Global Ectoplasm multiplier (2X ECTOPLASM event, set by GlobalEventService; 1 = off).
+local globalEcto = 1
+function PlayerInfo.SetGlobalEctoMultiplier(m: number)
+	globalEcto = m
+end
+
 -- Server-wide luck (Robux product): os.time() expiry, shared by everyone in this server.
 local serverLuckUntil = 0
 
@@ -7794,6 +8033,16 @@ end
 function PlayerInfo.AddServerLuck(seconds: number)
 	local now = os.time()
 	serverLuckUntil = math.min(math.max(serverLuckUntil, now) + seconds, now + Config.ServerLuck.MaxStackSeconds)
+end
+
+-- AUTO OPEN pass (or the legacy Auto Attack pass, now that Auto Attack is free)
+function PlayerInfo.HasAutoOpen(player: Player): boolean
+	return PlayerInfo.HasPass(player, Config.AutoOpen.Pass)
+		or (Config.LegacyAutoAttackGrantsAutoOpen and PlayerInfo.HasPass(player, "AutoAttack"))
+end
+
+function PlayerInfo.HasPermanentSkip(player: Player): boolean
+	return PlayerInfo.HasPass(player, Config.CrateSkip.Pass)
 end
 
 function PlayerInfo.Forget(player: Player)
@@ -7845,7 +8094,8 @@ function PlayerInfo.EctoMultiplier(player: Player): number
 	if vip and PlayerInfo.HasPass(player, "VIP") then
 		passMul *= vip.Multiplier or 1
 	end
-	return Rules.EctoMultiplier(bonus, PlayerInfo.BoostActive(d, "Ecto"), Config.Boosts.Ecto.Multiplier, passMul)
+	-- FinalReward = BaseGhostReward * this (upgrades, boost, passes, global event)
+	return Rules.EctoMultiplier(bonus, PlayerInfo.BoostActive(d, "Ecto"), Config.Boosts.Ecto.Multiplier, passMul) * globalEcto
 end
 
 function PlayerInfo.LuckMultiplier(player: Player): number
@@ -7921,6 +8171,7 @@ function PlayerInfo.Init()
 		for _, p in Config.GamePasses do
 			owned[p.Key] = PlayerInfo.HasPass(player, p.Key)
 		end
+		owned[Config.AutoOpen.Pass] = PlayerInfo.HasAutoOpen(player)
 		s.Passes = owned
 	end)
 end
@@ -7929,7 +8180,7 @@ return PlayerInfo
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="30">
+        <Item class="ModuleScript" referent="31">
           <Properties>
             <string name="Name">ProgressService</string>
             <string name="Source"><![CDATA[--!strict
@@ -8206,7 +8457,7 @@ return ProgressService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="31">
+        <Item class="ModuleScript" referent="32">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -8297,7 +8548,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="32">
+        <Item class="ModuleScript" referent="33">
           <Properties>
             <string name="Name">ShopService</string>
             <string name="Source"><![CDATA[--!strict
@@ -8342,6 +8593,9 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 		DataService.AddEcto(player, p.Amount * PlayerInfo.ZoneMultiplier(player))
 	elseif p.Kind == "Boost" and p.Boost and p.Seconds then
 		PlayerInfo.AddBoost(d, p.Boost, p.Seconds)
+	elseif p.Kind == "CrateSkip" then
+		d.SkipTokens = math.min((d.SkipTokens or 0) + 1, Config.CrateSkip.MaxTokens)
+		Fx.To(player, "SkipGranted", {})
 	elseif p.Kind == "SkipArea" then
 		local z = nextLockedZone(d)
 		if z then
@@ -8501,6 +8755,9 @@ function ShopService.Init()
 					return Remotes.Fail("Coming soon!")
 				end
 				local d = DataService.Get(player)
+				if p.Kind == "CrateSkip" and PlayerInfo.HasPermanentSkip(player) then
+					return Remotes.Fail("You already have Permanent Crate Skip!")
+				end
 				if p.Kind == "SkipArea" and d and not nextLockedZone(d) then
 					return Remotes.Fail("Every area is already unlocked!")
 				end
@@ -8538,6 +8795,12 @@ function ShopService.Init()
 				if PlayerInfo.HasPass(player, pass.Key) then
 					return Remotes.Fail("You already own this!")
 				end
+				if pass.Key == Config.AutoOpen.Pass and PlayerInfo.HasAutoOpen(player) then
+					return Remotes.Fail("You already have Auto Open!")
+				end
+				if pass.Hidden then
+					return Remotes.Fail("This isn't sold anymore")
+				end
 				MarketplaceService:PromptGamePassPurchase(player, pass.PassId)
 				return { ok = true }
 			end
@@ -8568,7 +8831,7 @@ return ShopService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="33">
+        <Item class="ModuleScript" referent="34">
           <Properties>
             <string name="Name">StationService</string>
             <string name="Source"><![CDATA[--!strict
@@ -8669,7 +8932,7 @@ local function buildOddsBoard(board: BasePart, crate: Config.CrateDef)
 		g2.Parent = row
 		row.Parent = bg
 		label(row, string.upper(def.Name), UDim2.fromScale(0.55, 0.55), UDim2.fromScale(0.03, 0.05), Color3.new(1, 1, 1))
-		label(row, rar.Name .. "  •  ⚡" .. Format.Commas(def.Power), UDim2.fromScale(0.55, 0.38), UDim2.fromScale(0.03, 0.58), Color3.fromRGB(255, 255, 230))
+		label(row, rar.Name .. "  ·  ⚡" .. Format.Commas(def.Power), UDim2.fromScale(0.55, 0.38), UDim2.fromScale(0.03, 0.58), Color3.fromRGB(255, 255, 230))
 		label(row, Format.Percent(odds[e.Hunter]), UDim2.fromScale(0.35, 0.8), UDim2.fromScale(0.62, 0.1), Color3.new(1, 1, 1))
 	end
 	gui.Parent = board
@@ -8702,7 +8965,7 @@ function StationService.Start()
 		end
 		local anchor = station:FindFirstChild("PromptAnchor")
 		if anchor then
-			prompt(anchor, "Open Crate", crate.Name .. " • " .. Format.Commas(crate.Price), { Crate = crateId })
+			prompt(anchor, "Open Crate", crate.Name .. " · " .. Format.Commas(crate.Price), { Crate = crateId })
 		end
 	end
 	local up = find({ "Map", "Stations", "UpgradeStation", "PromptAnchor" })
@@ -8712,7 +8975,7 @@ function StationService.Start()
 	for _, zone in Config.Zones do
 		local anchor = find({ "Map", "Gates", "Gate_" .. zone.Id, "PromptAnchor" })
 		if anchor then
-			prompt(anchor, "Unlock", zone.Name .. " • " .. Format.Commas(zone.Cost), { Zone = zone.Id })
+			prompt(anchor, "Unlock", zone.Name .. " · " .. Format.Commas(zone.Cost), { Zone = zone.Id })
 		end
 	end
 end
@@ -8722,11 +8985,11 @@ return StationService
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="34">
+      <Item class="Folder" referent="35">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="35">
+        <Item class="ModuleScript" referent="36">
           <Properties>
             <string name="Name">Arena</string>
             <string name="Source"><![CDATA[--!strict
@@ -8855,7 +9118,7 @@ return Arena
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">Boundary</string>
             <string name="Source"><![CDATA[--!strict
@@ -9024,7 +9287,7 @@ return Boundary
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">Builder</string>
             <string name="Source"><![CDATA[--!strict
@@ -9154,7 +9417,7 @@ return Builder
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Carnival</string>
             <string name="Source"><![CDATA[--!strict
@@ -9812,7 +10075,7 @@ return Carnival
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">Castle</string>
             <string name="Source"><![CDATA[--!strict
@@ -10382,7 +10645,7 @@ return Castle
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">Cemetery</string>
             <string name="Source"><![CDATA[--!strict
@@ -10617,7 +10880,7 @@ return Cemetery
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Clockwork</string>
             <string name="Source"><![CDATA[--!strict
@@ -11055,7 +11318,7 @@ return Clockwork
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">Frost</string>
             <string name="Source"><![CDATA[--!strict
@@ -11544,7 +11807,7 @@ return Frost
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Gates</string>
             <string name="Source"><![CDATA[--!strict
@@ -11674,7 +11937,7 @@ return Gates
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Harbor</string>
             <string name="Source"><![CDATA[--!strict
@@ -12268,7 +12531,7 @@ return Harbor
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Hospital</string>
             <string name="Source"><![CDATA[--!strict
@@ -12960,7 +13223,7 @@ return Hospital
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">Inferno</string>
             <string name="Source"><![CDATA[--!strict
@@ -13377,7 +13640,7 @@ return Inferno
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">Kit</string>
             <string name="Source"><![CDATA[--!strict
@@ -13748,7 +14011,7 @@ return Kit
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -13813,7 +14076,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="49">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">Lighting</string>
             <string name="Source"><![CDATA[--!strict
@@ -13901,7 +14164,7 @@ return LightingSetup
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="50">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">Neighborhood</string>
             <string name="Source"><![CDATA[--!strict
@@ -14272,7 +14535,7 @@ return Neighborhood
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">Props</string>
             <string name="Source"><![CDATA[--!strict
@@ -14524,7 +14787,7 @@ return Props
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">School</string>
             <string name="Source"><![CDATA[--!strict
@@ -15083,7 +15346,7 @@ return School
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">SpiritRealm</string>
             <string name="Source"><![CDATA[--!strict
@@ -15645,7 +15908,7 @@ return SpiritRealm
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="54">
+        <Item class="ModuleScript" referent="55">
           <Properties>
             <string name="Name">Stations</string>
             <string name="Source"><![CDATA[--!strict
@@ -15817,7 +16080,7 @@ return Stations
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="55">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">Sunken</string>
             <string name="Source"><![CDATA[--!strict
@@ -16284,7 +16547,7 @@ return Sunken
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">Swamp</string>
             <string name="Source"><![CDATA[--!strict
@@ -16834,7 +17097,7 @@ return Swamp
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="57">
+        <Item class="ModuleScript" referent="58">
           <Properties>
             <string name="Name">Throne</string>
             <string name="Source"><![CDATA[--!strict
@@ -17237,7 +17500,7 @@ return Throne
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">Tomb</string>
             <string name="Source"><![CDATA[--!strict
@@ -17693,7 +17956,7 @@ return Tomb
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">ToyFactory</string>
             <string name="Source"><![CDATA[--!strict
@@ -18248,18 +18511,18 @@ return ToyFactory
       </Item>
     </Item>
   </Item>
-  <Item class="SoundService" referent="60">
+  <Item class="SoundService" referent="61">
     <Properties>
       <string name="Name">SoundService</string>
     </Properties>
   </Item>
-  <Item class="StarterGui" referent="61">
+  <Item class="StarterGui" referent="62">
     <Properties>
       <string name="Name">StarterGui</string>
       <token name="ScreenOrientation">2</token>
     </Properties>
   </Item>
-  <Item class="StarterPlayer" referent="62">
+  <Item class="StarterPlayer" referent="63">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">60</float>
@@ -18269,19 +18532,19 @@ return ToyFactory
       <float name="CharacterWalkSpeed">16</float>
       <bool name="LoadCharacterAppearance">true</bool>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="63">
+    <Item class="StarterPlayerScripts" referent="64">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="64">
+      <Item class="Folder" referent="65">
         <Properties>
           <string name="Name">GHClient</string>
         </Properties>
-        <Item class="Folder" referent="65">
+        <Item class="Folder" referent="66">
           <Properties>
             <string name="Name">Controllers</string>
           </Properties>
-          <Item class="ModuleScript" referent="66">
+          <Item class="ModuleScript" referent="67">
             <Properties>
               <string name="Name">Ambience</string>
               <string name="Source"><![CDATA[--!strict
@@ -18397,7 +18660,7 @@ local function applyGates()
 			end
 		end
 		if cost then
-			cost.Text = if owned then "✓ UNLOCKED" else "🔒 " .. Format.Short(z.Cost) .. " ECTOPLASM"
+			cost.Text = if owned then "✅ UNLOCKED" else "🔒 " .. Format.Short(z.Cost) .. " ECTOPLASM"
 		end
 		if prompt then
 			prompt.Enabled = not owned
@@ -18413,12 +18676,12 @@ local function unlockSequence(zoneId: string)
 	unlocking[zoneId] = true
 	local barrier, cost, prompt = gateParts(zoneId)
 	Sound.Play("ZoneUnlock")
-	Hud.Banner("NEW AREA UNLOCKED!", zone.Name .. "  •  NEW GHOSTS  •  NEW CRATE", zone.Accent)
+	Hud.Banner("NEW AREA UNLOCKED!", zone.Name .. "  ·  NEW GHOSTS  ·  NEW CRATE", zone.Accent)
 	if prompt then
 		prompt.Enabled = false
 	end
 	if cost then
-		cost.Text = "✓ UNLOCKED"
+		cost.Text = "✅ UNLOCKED"
 	end
 	-- camera emphasis: quick punch-in + shake
 	local cam = workspace.CurrentCamera
@@ -18580,7 +18843,7 @@ return Ambience
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="67">
+          <Item class="ModuleScript" referent="68">
             <Properties>
               <string name="Name">Boss</string>
               <string name="Source"><![CDATA[--!strict
@@ -18747,12 +19010,11 @@ function Boss.Init()
 	frame = Kit.new("Frame", {
 		Name = "BossBar",
 		Size = UDim2.fromOffset(420, 62),
-		Position = UDim2.new(0.5, 0, 0, 30),
-		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
 		ZIndex = 30,
-		Parent = screen,
+		LayoutOrder = 2,
+		Parent = Hud.TopStack or screen,
 	})
 	Kit.Corner(frame, UDim.new(0, 14))
 	Kit.Stroke(frame, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
@@ -18782,27 +19044,16 @@ function Boss.Init()
 	})
 	goButton.Visible = false
 	-- ✕ closes the event bar (the event keeps running; the boss's own label still shows)
-	Kit.Button(frame, {
-		Text = "✕",
-		Color = "Red",
-		Size = UDim2.fromOffset(30, 30),
-		TextStyle = "Body",
-		Position = UDim2.new(1, 8, 0, -8),
-		AnchorPoint = Vector2.new(1, 0),
-		ZIndex = 34,
-		OnClick = function()
-			dismissed = true
-			show(false)
-		end,
-	})
+	Kit.CloseButton(frame, function()
+		dismissed = true
+		show(false)
+	end, 34)
 	-- small pill to bring it back while the event is still on
-	reopen = Kit.Button(screen, {
+	reopen = Kit.Button(Hud.TopStack or screen, {
 		Text = "👑 EVENT",
 		Color = "Pink",
 		Size = UDim2.fromOffset(96, 30),
 		TextStyle = "Small",
-		Position = UDim2.new(0.5, 0, 0, 30),
-		AnchorPoint = Vector2.new(0.5, 0),
 		ZIndex = 30,
 		OnClick = function()
 			dismissed = false
@@ -18810,6 +19061,7 @@ function Boss.Init()
 		end,
 	})
 	reopen.Visible = false
+	reopen.LayoutOrder = 2
 end
 
 Boss.PointRequested = Signal.new()
@@ -18844,7 +19096,7 @@ return Boss
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="68">
+          <Item class="ModuleScript" referent="69">
             <Properties>
               <string name="Name">CratePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -18873,6 +19125,10 @@ local panel: Kit.Panel
 local list: ScrollingFrame
 local openButton: TextButton
 local tripleButton: TextButton
+local autoButton: TextButton
+-- Auto Open results waiting to be shown (the server keeps opening while one plays)
+local autoQueue: { any } = {}
+local autoPlaying = false
 local infoLabel: TextLabel
 local luckLabel: TextLabel
 local current: string? = nil
@@ -18981,9 +19237,13 @@ function refreshButton(crateId: string, d: any, luck: number)
 	if not d.Zones[crate.Zone] then
 		infoLabel.Text = "Unlock " .. (Config.ZoneById[crate.Zone] :: Config.ZoneDef).Name .. " to open this crate"
 	else
-		infoLabel.Text = "Hunters jump out of crates! Better crates → stronger hunters."
+		infoLabel.Text = "Hunters jump out of crates! Better crates > stronger hunters."
 	end
 	luckLabel.Visible = luck > 1
+	local autoOwned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true
+	local autoOn = player:GetAttribute("AutoOpen") ~= nil
+	Kit.SetButtonText(autoButton, if not autoOwned then "🔒 AUTO OPEN" elseif autoOn then "AUTO OPEN: ON" else "AUTO OPEN: OFF")
+	autoButton:SetAttribute("Color", if not autoOwned then "Gray" elseif autoOn then "Green" else "Purple")
 	local triple = d.Passes and d.Passes[Config.TripleOpen.Pass] == true
 	tripleButton.Visible = triple == true
 	openButton.Position = if triple then UDim2.new(0.5, -75, 1, -4) else UDim2.new(0.5, 0, 1, -4)
@@ -19024,6 +19284,10 @@ local function buyTriple()
 	if busy or not crateId or Reveal.IsPlaying() then
 		return
 	end
+	if player:GetAttribute("AutoOpen") then
+		Kit.Toast("Turn AUTO OPEN off first", "Bad")
+		return
+	end
 	if not nearStation(crateId) then
 		Kit.Toast("Walk to the crate first!", "Bad")
 		return
@@ -19042,6 +19306,10 @@ end
 local function buy()
 	local crateId = current
 	if busy or not crateId or Reveal.IsPlaying() then
+		return
+	end
+	if player:GetAttribute("AutoOpen") then
+		Kit.Toast("Turn AUTO OPEN off first", "Bad")
 		return
 	end
 	local d = State.Data
@@ -19108,7 +19376,7 @@ function CratePanel.Init()
 		Visible = false,
 		Parent = panel.Root,
 	})
-	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
+	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -180, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
 	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
@@ -19154,10 +19422,98 @@ function CratePanel.Init()
 		OnClick = buyTriple,
 	})
 	tripleButton.Visible = false
+	-- AUTO OPEN (game pass; NOT Auto Attack, which is free): locked button prompts the pass
+	autoButton = Kit.Button(panel.Body, {
+		Text = "🔒 AUTO OPEN",
+		Color = "Gray",
+		Size = UDim2.fromOffset(170, 34),
+		Position = UDim2.new(1, 0, 0, 8),
+		AnchorPoint = Vector2.new(1, 0),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = function()
+			local crateId = current
+			local d = State.Data
+			if busy or not crateId or not d then
+				return
+			end
+			local owned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true
+			if not owned then
+				local res = State.Request("Buy", Config.AutoOpen.Pass)
+				if not res.ok then
+					Kit.Toast(res.err or "Auto Open isn't available yet", "Bad")
+				end
+				return
+			end
+			if player:GetAttribute("AutoOpen") then
+				State.Request("AutoOpen", nil)
+				refresh()
+				return
+			end
+			if not nearStation(crateId) then
+				Kit.Toast("Walk to the crate first!", "Bad")
+				return
+			end
+			busy = true
+			local res = State.Request("AutoOpen", crateId)
+			busy = false
+			if res.ok then
+				panel:Close()
+				Kit.Toast("AUTO OPEN: ON - stand still at the crate", "Good")
+			else
+				Kit.Toast(if res.err == "NeedPass" then "Auto Open is a game pass" else (res.err or "Couldn't start"), "Bad")
+			end
+		end,
+	})
 end
 
 function CratePanel.Start()
 	-- Robux Exclusive Crate: the server grants the hunter and tells us to play the reveal
+	-- AUTO OPEN results: play them one after another (never two reveals at once)
+	local function playNextAuto()
+		if autoPlaying then
+			return
+		end
+		local nextRes = table.remove(autoQueue, 1)
+		if not nextRes then
+			return
+		end
+		autoPlaying = true
+		openedSignal:Fire(nextRes)
+		Reveal.Play(nextRes, nil, { Auto = true })
+	end
+	Reveal.Finished:Connect(function()
+		if autoPlaying then
+			autoPlaying = false
+			task.defer(playNextAuto)
+		end
+	end)
+	Reveal.AutoStopped:Connect(function()
+		table.clear(autoQueue)
+	end)
+	State.OnFx("AutoOpened", function(data: any)
+		if type(data) ~= "table" or type(data.Hunter) ~= "string" or not Config.Hunters[data.Hunter] then
+			return
+		end
+		local res: Reveal.Result = { Crate = tostring(data.Crate), Hunter = data.Hunter, Uid = tostring(data.Uid), IsNew = data.IsNew == true }
+		if #autoQueue >= 3 then
+			-- reveals can't keep up: list the extra hunter instead of queueing forever
+			local h = Config.Hunters[res.Hunter]
+			Kit.Toast("Auto Open: " .. Config.Rarities[h.Rarity].Name .. " " .. h.Name, "Good")
+			openedSignal:Fire(res)
+			return
+		end
+		table.insert(autoQueue, res)
+		if panel.IsOpen then
+			panel:Close()
+		end
+		playNextAuto()
+	end)
+	State.OnFx("AutoOpenStopped", function(data: any)
+		local reason = if type(data) == "table" and type(data.Reason) == "string" then data.Reason else "stopped"
+		Kit.Toast("AUTO OPEN stopped: " .. reason, "Bad")
+	end)
+
 	State.OnFx("Exclusive", function(data: any)
 		if type(data) == "table" and type(data.Hunter) == "string" and Config.Hunters[data.Hunter] then
 			if panel.IsOpen then
@@ -19200,7 +19556,7 @@ return CratePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="69">
+          <Item class="ModuleScript" referent="70">
             <Properties>
               <string name="Name">Crew</string>
               <string name="Source"><![CDATA[--!strict
@@ -19308,7 +19664,7 @@ local function addTag(m: Member, isLocal: boolean)
 		Offset = Vector3.new(0, m.Rig.Height + 0.7, 0),
 		MaxDistance = if isLocal then Theme.World.CrewMaxDistance else Theme.World.CrewMaxDistance * 0.6,
 	})
-	WorldLabel.Text(gui, string.rep("★", math.min(rar.Order, 5)) .. " " .. def.Name, { Style = "Tiny", Color = rar.Color })
+	WorldLabel.Text(gui, string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name, { Style = "Tiny", Color = rar.Color })
 	-- rare+ hunters stand on a soft rarity-coloured disc
 	if rar.Order >= 3 then
 		local disc = Instance.new("Part")
@@ -19672,7 +20028,7 @@ return Crew
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="70">
+          <Item class="ModuleScript" referent="71">
             <Properties>
               <string name="Name">DailyPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -19809,7 +20165,7 @@ function DailyPanel.Init()
 		local iconKey = if r.Kind == "Day7" then "menu_daily" elseif r.Kind == "Boost" then (if r.Boost == "Luck" then "boost_luck" else "boost_ecto2x") else "ecto_pile"
 		Kit.Icon(f, iconKey, icon, { Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 28), Style = "Icon", TextSize = 28, ZIndex = 63, Stroke = 0 })
 		local reward = Kit.Label(f, r.Label, { Size = UDim2.new(1, -12, 0, 52), Position = UDim2.fromOffset(6, 66), ZIndex = 63, Color = Color3.fromRGB(255, 255, 230), Style = "Small" })
-		local check = Kit.Label(f, "✓", { Size = UDim2.fromScale(1, 1), Color = Theme.Good, ZIndex = 66, Style = "Banner", Stroke = 3 })
+		local check = Kit.Label(f, "✅", { Size = UDim2.fromScale(1, 1), Color = Theme.Good, ZIndex = 66, Style = "Banner", Stroke = 3 })
 		check.Visible = false
 		local today = Kit.Label(f, "TODAY!", { Size = UDim2.fromOffset(70, 20), Position = UDim2.new(1, 4, 0, -8), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Body", ZIndex = 67, Stroke = 2 })
 		today.Rotation = 8
@@ -19861,7 +20217,7 @@ return DailyPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="72">
             <Properties>
               <string name="Name">DevPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -19876,6 +20232,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local Hud = require(script.Parent.Hud)
 
 local DevPanel = {}
 
@@ -19905,7 +20262,7 @@ local function showInbox()
 		Kit.Corner(f, UDim.new(0, 10))
 		Kit.new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = f })
 		Kit.new("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder, Parent = f })
-		local head = (if e.Kind == "Bug" then "🐞 BUG" else "💡 IDEA") .. "  •  " .. tostring(e.Name) .. "  •  " .. tostring(e.Zone) .. "  •  " .. os.date("%Y-%m-%d %H:%M", e.T or 0) .. "  •  v" .. tostring(e.Version)
+		local head = (if e.Kind == "Bug" then "🐞 BUG" else "💡 IDEA") .. "  ·  " .. tostring(e.Name) .. "  ·  " .. tostring(e.Zone) .. "  ·  " .. os.date("%Y-%m-%d %H:%M", e.T or 0) .. "  ·  v" .. tostring(e.Version)
 		local h = Kit.Label(f, head, { Size = UDim2.new(1, 0, 0, 16), Align = Enum.TextXAlignment.Left, Color = if e.Kind == "Bug" then Theme.Bad else Theme.Ecto, Style = "Tiny", Fit = true, ZIndex = 63 })
 		h.LayoutOrder = 1
 		local t = Kit.Label(f, tostring(e.Text), { Size = UDim2.new(1, 0, 0, 0), Align = Enum.TextXAlignment.Left, AlignY = Enum.TextYAlignment.Top, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 63 })
@@ -19926,6 +20283,8 @@ local ACTIONS: { Action } = {
 	{ Text = "ALL 32 HUNTERS", Cmd = "Hunters", Color = "Orange" },
 	{ Text = "MAX UPGRADES", Cmd = "MaxUpgrades", Color = "Teal" },
 	{ Text = "START EVENT", Cmd = "Event", Color = "Pink" },
+	{ Text = "2X ECTOPLASM: ON", Cmd = "Ecto2x", Arg = true, Color = "Green" },
+	{ Text = "2X ECTOPLASM: OFF", Cmd = "Ecto2x", Arg = false, Color = "Red" },
 	{ Text = "RESET DAILY", Cmd = "ResetDaily", Color = "Purple" },
 	{ Text = "AUTO ATTACK PASS", Cmd = "AutoAttack", Color = "Purple" },
 	{ Text = "ALL GAME PASSES", Cmd = "AllPasses", Color = "Purple" },
@@ -19942,7 +20301,7 @@ local function run(a: Action)
 	end
 	local res = State.Request("Dev", a.Cmd, a.Arg)
 	if res.ok then
-		Kit.Toast(if a.Cmd == "Ecto" then "+" .. Format.Short(a.Arg :: number) .. " Ectoplasm" else a.Text .. " ✓", "Good")
+		Kit.Toast(if a.Cmd == "Ecto" then "+" .. Format.Short(a.Arg :: number) .. " Ectoplasm" else a.Text .. " ✅", "Good")
 	else
 		Kit.Toast(res.err or "Failed", "Bad")
 	end
@@ -19988,18 +20347,18 @@ function DevPanel.Init()
 	})
 	Kit.new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = inboxList })
 
-	devButton = Kit.Button(Kit.Screen(), {
+	-- lower-right row next to FEEDBACK / SETTINGS
+	devButton = Kit.Button(Hud.LowerRow or Kit.Screen(), {
 		Text = "🛠",
 		Color = "Gray",
 		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, -60, 0.5, -48),
-		AnchorPoint = Vector2.new(1, 0.5),
 		TextStyle = "Heading",
 		OnClick = function()
 			panel:Toggle()
 		end,
 	})
 	devButton.Visible = false
+	devButton.LayoutOrder = 1
 end
 
 function DevPanel.Start()
@@ -20014,7 +20373,7 @@ return DevPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="73">
             <Properties>
               <string name="Name">Effects</string>
               <string name="Source"><![CDATA[--!strict
@@ -20161,7 +20520,80 @@ return Effects
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="73">
+          <Item class="ModuleScript" referent="74">
+            <Properties>
+              <string name="Name">EventPopup</string>
+              <string name="Source"><![CDATA[--!strict
+-- 2X ECTOPLASM EVENT announcement. Shown when a developer turns the global event on, and once
+-- after joining while it is already on. Closing it only hides the popup (the event keeps
+-- running; the "2X ECTOPLASM EVENT" chip under the counters stays while it's active).
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GH = ReplicatedStorage:WaitForChild("GH")
+local Client = script.Parent.Parent
+local State = require(Client.State)
+local Kit = require(Client.UI.Kit)
+local Theme = require(Client.UI.Theme)
+local Sound = require(script.Parent.Sound)
+
+local EventPopup = {}
+
+local panel: Kit.Panel
+local shownThisSession = false
+local _ = GH
+
+local function show()
+	if panel.IsOpen then
+		return
+	end
+	shownThisSession = true
+	Sound.Play("ZoneUnlock")
+	panel:Open()
+end
+
+function EventPopup.Init()
+	panel = Kit.Panel("Ecto2xEvent", "2X ECTOPLASM EVENT!", Vector2.new(460, 270), "Green")
+	local body = panel.Body
+	local big = Kit.Label(body, "2X", { Size = UDim2.new(1, 0, 0, 64), Position = UDim2.fromOffset(0, 10), Color = Theme.Ecto, Style = "Banner", TextSize = 56, ZIndex = 62, Stroke = 3 })
+	Kit.new("UIGradient", { Color = ColorSequence.new(Theme.Ecto, Theme.Gold), Rotation = 90, Parent = big })
+	Kit.Label(body, "Earn DOUBLE Ectoplasm from ghosts while the event is active!", { Size = UDim2.new(1, -20, 0, 48), Position = UDim2.fromOffset(10, 80), Style = "Body", ZIndex = 62 })
+	local ok = Kit.Button(body, {
+		Text = "LET'S HUNT!",
+		Color = "Green",
+		Size = UDim2.fromOffset(220, 48),
+		Position = UDim2.new(0.5, 0, 1, -4),
+		AnchorPoint = Vector2.new(0.5, 1),
+		ZIndex = 63,
+		OnClick = function()
+			panel:Close()
+		end,
+	})
+	panel.Primary = ok
+end
+
+function EventPopup.Start()
+	State.OnFx("Ecto2xEvent", function(data: any)
+		if type(data) == "table" and data.On == true then
+			show()
+		elseif panel.IsOpen then
+			panel:Close()
+		end
+	end)
+	-- joined while the event is already on: show it once, after loading settles
+	task.spawn(function()
+		State.WaitForData()
+		task.wait(4)
+		if workspace:GetAttribute("Ecto2x") == true and not shownThisSession and not Kit.CurrentPanel() then
+			show()
+		end
+	end)
+end
+
+return EventPopup
+]]></string>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="75">
             <Properties>
               <string name="Name">FeedbackPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -20281,7 +20713,7 @@ return FeedbackPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="74">
+          <Item class="ModuleScript" referent="76">
             <Properties>
               <string name="Name">GatePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -20319,7 +20751,7 @@ local function refresh()
 	Kit.Tween(fill, 0.25, { Size = UDim2.fromScale(math.max(frac, 0.03), 1) })
 	progressLabel.Text = Format.Short(math.min(d.Ecto, zone.Cost)) .. " / " .. Format.Short(zone.Cost)
 	if d.Zones[zone.Id] then
-		Kit.SetButtonText(unlockButton, "UNLOCKED ✓")
+		Kit.SetButtonText(unlockButton, "UNLOCKED ✅")
 		unlockButton:SetAttribute("Color", "Gray")
 	elseif d.Ecto >= zone.Cost then
 		Kit.SetButtonText(unlockButton, "UNLOCK!")
@@ -20405,7 +20837,7 @@ return GatePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="77">
             <Properties>
               <string name="Name">Ghosts</string>
               <string name="Source"><![CDATA[--!strict
@@ -20885,7 +21317,7 @@ return Ghosts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -20922,7 +21354,6 @@ local powerLabel: TextLabel
 local powerPrefix = "⚡ "
 local boostHolder: Frame
 local dailyBadge: Frame
-local menu: Frame
 local autoButton: TextButton
 local shownEcto = 0
 local targetEcto = 0
@@ -21061,41 +21492,69 @@ local function buildTop(screen: ScreenGui)
 	powerPrefix = ""
 	powerLabel = Kit.Label(power, "0 POWER", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(42, 0), Color = Theme.Gold, Style = "Heading", Fit = true })
 	-- boosts (only while active)
-	boostHolder = Kit.new("Frame", {
-		Size = UDim2.fromOffset(340, 22),
-		Position = UDim2.new(0.5, 0, 0, 4),
+	-- directly under the counters: next-area progress bar (Tutorial), boss event bar (Boss) and
+	-- active boosts, stacked so they never overlap and never sit in the middle of the play area
+	local stack: Frame = Kit.new("Frame", {
+		Name = "TopStack",
+		Size = UDim2.fromOffset(440, 220),
+		Position = UDim2.new(0.5, 0, 0, 52),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
-		Parent = screen,
+		Parent = top,
+	})
+	Kit.new("UIListLayout", { Padding = UDim.new(0, 5), FillDirection = Enum.FillDirection.Vertical, HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = stack })
+	Hud.TopStack = stack
+	local _ = screen
+	boostHolder = Kit.new("Frame", {
+		Size = UDim2.fromOffset(340, 22),
+		BackgroundTransparency = 1,
+		LayoutOrder = 3,
+		Visible = false,
+		Parent = stack,
 	})
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Parent = boostHolder })
 end
 
-local MENU = {
+-- HUD layout
+--   LEFT  (vertical): HUNTERS, WORLDS, INDEX
+--   RIGHT (vertical, bottom-anchored stack): UPGRADES, SHOP, DAILY, then the free AUTO ATTACK
+--   toggle, then the lower-right row: [DEV] FEEDBACK SETTINGS. On touch screens the stack sits
+--   above the Roblox jump button; on desktop the left column starts under the chat window.
+local MENU_LEFT = {
 	{ Name = "Hunters", Icon = "🔦", Text = "HUNTERS", Color = "Orange" },
 	{ Name = "Worlds", Icon = "🌍", Text = "WORLDS", Color = "Teal" },
 	{ Name = "Index", Icon = "📖", Text = "INDEX", Color = "Blue" },
+}
+local MENU_RIGHT = {
 	{ Name = "Upgrades", Icon = "🧲", Text = "UPGRADES", Color = "Green" },
 	{ Name = "Shop", Icon = "🛒", Text = "SHOP", Color = "Pink" },
 	{ Name = "Daily", Icon = "🎁", Text = "DAILY", Color = "Purple" },
 }
 local CELL_MAX = 84
-local CELL_MIN = 60
 local GAP = 6
-local menuScale: UIScale
+local SMALL = 44 -- settings / feedback / dev buttons
+local AUTO_W, AUTO_H = 132, 40
 
--- One vertical column down the left edge. Buttons are as big as CELL_MAX allows; on short
--- screens (phone landscape) the whole column shrinks so it fits between the top bar and the
--- bottom edge (it starts under the top-left Roblox buttons).
-local menuGrid: UIGridLayout
+local menu: Frame -- left column
+local menuScale: UIScale
+Hud.TopStack = nil :: Frame?
+local rightStack: Frame
+local rightScale: UIScale
+local lowerRow: Frame
+Hud.LowerRow = nil :: Frame? -- other controllers (DEV button) add small buttons here
+Hud.RightStack = nil :: Frame?
 local chatBottomCache = 0
 
+local function touchOnly(): boolean
+	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+end
+
 -- Desktop only: bottom of the Roblox chat window (logical px below our inset), read once after
--- joining and on resizes, so the menu starts under it. Phones keep chat collapsed behind its
--- top-bar button, and following the chat window live made the menu jump around.
+-- joining and on resizes, so the left column starts under it. Phones keep chat collapsed
+-- behind its top-bar button (following it live made the menu jump around).
 local function readChatBottom()
 	chatBottomCache = 0
-	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+	if touchOnly() then
 		return
 	end
 	pcall(function()
@@ -21109,26 +21568,30 @@ local function readChatBottom()
 	end)
 end
 
--- One column of big buttons; if that would need to shrink below CELL_MIN, two columns of three.
-local function layoutMenu()
-	local n = #MENU
-	local logical = Kit.LogicalSize()
-	local top = if chatBottomCache > 0 then chatBottomCache + 8 else 4
-	local room = logical.Y - top - 10
-	local rows = n
-	local full = CELL_MAX * rows + GAP * (rows - 1)
-	local fit = room / full
-	local cols = 1
-	if fit < CELL_MIN / CELL_MAX then
-		cols = 2
-		rows = math.ceil(n / 2)
-		full = CELL_MAX * rows + GAP * (rows - 1)
-		fit = room / full
+-- Room to keep free above the bottom edge on the right (the touch jump button), logical px.
+local function bottomReserve(): number
+	if not touchOnly() then
+		return 10
 	end
-	fit = math.clamp(fit, 0.5, 1)
-	menuGrid.FillDirectionMaxCells = rows
+	local cam = workspace.CurrentCamera
+	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
+	local small = math.min(vp.X, vp.Y) < 500 -- Roblox uses the small jump button below 500 px
+	local physical = if small then 100 else 225
+	return physical / Kit.UIScale()
+end
+
+local function columnHeight(n: number): number
+	return CELL_MAX * n + GAP * (n - 1)
+end
+
+local function layoutMenu()
+	local logical = Kit.LogicalSize()
+	-- left column
+	local top = if chatBottomCache > 0 then chatBottomCache + 8 else 4
+	local full = columnHeight(#MENU_LEFT)
+	local fit = math.clamp((logical.Y - top - 10) / full, 0.5, 1)
 	menuScale.Scale = fit
-	menu.Size = UDim2.fromOffset(CELL_MAX * cols + GAP * (cols - 1), full)
+	menu.Size = UDim2.fromOffset(CELL_MAX, full)
 	if top > 4 or full * fit > logical.Y - 120 then
 		menu.Position = UDim2.fromOffset(8, top)
 		menu.AnchorPoint = Vector2.zero
@@ -21136,36 +21599,61 @@ local function layoutMenu()
 		menu.Position = UDim2.new(0, 8, 0.5, 0)
 		menu.AnchorPoint = Vector2.new(0, 0.5)
 	end
+	-- right stack (anchored bottom-right, above the jump button on touch screens)
+	local reserve = bottomReserve()
+	local rightH = columnHeight(#MENU_RIGHT) + GAP * 2 + AUTO_H + GAP * 2 + SMALL
+	local rightW = math.max(CELL_MAX, AUTO_W, SMALL * 3 + GAP * 2)
+	local rfit = math.clamp((logical.Y - reserve - 8) / rightH, 0.5, 1)
+	rightScale.Scale = rfit
+	rightStack.Size = UDim2.fromOffset(rightW, rightH)
+	rightStack.Position = UDim2.new(1, -8, 1, -reserve)
+	rightStack.AnchorPoint = Vector2.new(1, 1)
+end
+
+local function menuButton(parent: Instance, i: number, m: any): TextButton
+	local b = Kit.Button(parent, {
+		Text = "",
+		Color = m.Color,
+		OnClick = function()
+			Hud.Open(m.Name)
+		end,
+	})
+	b.LayoutOrder = i
+	b.Size = UDim2.fromOffset(CELL_MAX, CELL_MAX)
+	Kit.Icon(b, "menu_" .. string.lower(m.Name), m.Icon, { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 7), Style = "Icon", TextSize = 36, Stroke = 0, ZIndex = 3 })
+	Kit.Label(b, m.Text, { Size = UDim2.new(1, -4, 0, 19), Position = UDim2.new(0, 2, 1, -25), Style = "Tiny", TextSize = 14, Fit = true, ZIndex = 3 })
+	Hud.Buttons[m.Name] = b
+	return b
 end
 
 local function buildMenu(screen: ScreenGui)
-	menu = Kit.new("Frame", {
-		Name = "Menu",
-		BackgroundTransparency = 1,
-		Parent = screen,
-	})
+	-- LEFT column
+	menu = Kit.new("Frame", { Name = "Menu", BackgroundTransparency = 1, Parent = screen })
 	menuScale = Kit.new("UIScale", { Parent = menu })
-	menuGrid = Kit.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(CELL_MAX, CELL_MAX),
-		CellPadding = UDim2.fromOffset(GAP, GAP),
-		FillDirection = Enum.FillDirection.Vertical,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = menu,
-	})
-	for i, m in MENU do
-		local b = Kit.Button(menu, {
-			Text = "",
-			Color = m.Color,
-			OnClick = function()
-				Hud.Open(m.Name)
-			end,
-		})
-		b.LayoutOrder = i
-		b.Size = UDim2.fromOffset(CELL_MAX, CELL_MAX)
-		Kit.Icon(b, "menu_" .. string.lower(m.Name), m.Icon, { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 7), Style = "Icon", TextSize = 36, Stroke = 0, ZIndex = 3 })
-		Kit.Label(b, m.Text, { Size = UDim2.new(1, -4, 0, 19), Position = UDim2.new(0, 2, 1, -25), Style = "Tiny", TextSize = 14, Fit = true, ZIndex = 3 })
-		Hud.Buttons[m.Name] = b
+	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Parent = menu })
+	for i, m in MENU_LEFT do
+		menuButton(menu, i, m)
 	end
+	-- RIGHT stack
+	rightStack = Kit.new("Frame", { Name = "RightMenu", BackgroundTransparency = 1, Parent = screen })
+	rightScale = Kit.new("UIScale", { Parent = rightStack })
+	Kit.new("UIListLayout", {
+		Padding = UDim.new(0, GAP * 2),
+		FillDirection = Enum.FillDirection.Vertical,
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		VerticalAlignment = Enum.VerticalAlignment.Bottom,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = rightStack,
+	})
+	local col: Frame = Kit.new("Frame", { Name = "Column", BackgroundTransparency = 1, Size = UDim2.fromOffset(CELL_MAX, columnHeight(#MENU_RIGHT)), LayoutOrder = 1, Parent = rightStack })
+	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Parent = col })
+	for i, m in MENU_RIGHT do
+		menuButton(col, i, m)
+	end
+	lowerRow = Kit.new("Frame", { Name = "LowerRow", BackgroundTransparency = 1, Size = UDim2.fromOffset(SMALL * 3 + GAP * 2, SMALL), LayoutOrder = 3, Parent = rightStack })
+	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, SortOrder = Enum.SortOrder.LayoutOrder, Parent = lowerRow })
+	Hud.LowerRow = lowerRow
+	Hud.RightStack = rightStack
 	-- red "!" on DAILY when a reward is waiting
 	dailyBadge = Kit.new("Frame", {
 		Size = UDim2.fromOffset(20, 20),
@@ -21238,57 +21726,56 @@ local function buildSettings(screen: ScreenGui)
 			local b = buttons[t.Key]
 			b:SetAttribute("Color", if on then "Green" else "Gray")
 			Kit.SetButtonText(b, t.Text .. (if on then ": ON" else ": OFF"))
+			if t.Key == "FastReveal" then
+				-- fast crate opening is part of the Permanent Crate Skip pass
+				b.Visible = d.Passes ~= nil and d.Passes[Config.CrateSkip.Pass] == true
+			end
 		end
 	end)
 	Hud.RegisterPanel("Settings", function()
 		panel:Toggle()
 	end)
-	local gear = Kit.Button(screen, {
-		Text = if Icons.Get("menu_settings") then "" else "⚙",
-		Color = "Gray",
-		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, -10, 0.5, -48),
-		AnchorPoint = Vector2.new(1, 0.5),
-		TextStyle = "Heading",
-		OnClick = function()
-			panel:Toggle()
-		end,
-	})
-	-- 💬 feedback, right above the gear (also in Settings)
-	Kit.Button(screen, {
+	-- lower-right row: FEEDBACK then SETTINGS (the DEV button, for developers, goes first)
+	local _ = screen
+	local feedback = Kit.Button(lowerRow, {
 		Text = "💬",
 		Color = "Blue",
-		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, -10, 0.5, -100),
-		AnchorPoint = Vector2.new(1, 0.5),
+		Size = UDim2.fromOffset(SMALL, SMALL),
 		TextStyle = "Heading",
 		OnClick = function()
 			Hud.Open("Feedback")
 		end,
 	})
+	feedback.LayoutOrder = 2
+	local gear = Kit.Button(lowerRow, {
+		Text = if Icons.Get("menu_settings") then "" else "⚙",
+		Color = "Gray",
+		Size = UDim2.fromOffset(SMALL, SMALL),
+		TextStyle = "Heading",
+		OnClick = function()
+			panel:Toggle()
+		end,
+	})
+	gear.LayoutOrder = 3
 	if Icons.Get("menu_settings") then
 		Kit.Icon(gear, "menu_settings", "", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3 })
 	end
 end
 
--- AUTO ATTACK toggle: only shown to Auto Attack pass owners. The server checks ownership.
+-- AUTO ATTACK toggle: FREE for every player (no pass, no Robux).
 local busyAuto = false
 local function refreshAuto()
-	local d = State.Data
-	local owned = d ~= nil and d.Passes ~= nil and d.Passes[Config.AutoAttack.Pass] == true
-	autoButton.Visible = owned
+	autoButton.Visible = true -- Auto Attack is free for everyone
 	local on = player:GetAttribute("AutoAttack") == true
 	Kit.SetButtonText(autoButton, if on then "🤖 AUTO: ON" else "🤖 AUTO: OFF")
 	autoButton:SetAttribute("Color", if on then "Green" else "Gray")
 end
 
 local function buildAuto(screen: ScreenGui)
-	autoButton = Kit.Button(screen, {
+	autoButton = Kit.Button(rightStack, {
 		Text = "🤖 AUTO: OFF",
 		Color = "Gray",
-		Size = UDim2.fromOffset(132, 40),
-		Position = UDim2.new(1, -10, 0.5, 4),
-		AnchorPoint = Vector2.new(1, 0.5),
+		Size = UDim2.fromOffset(AUTO_W, AUTO_H),
 		TextStyle = "Small",
 		OnClick = function()
 			if busyAuto then
@@ -21306,6 +21793,7 @@ local function buildAuto(screen: ScreenGui)
 		end,
 	})
 	autoButton.Name = "AutoAttack"
+	autoButton.LayoutOrder = 2
 	autoButton.Visible = false
 	player:GetAttributeChangedSignal("AutoAttack"):Connect(refreshAuto)
 	State.OnData(function()
@@ -21362,7 +21850,7 @@ local function buildBanners()
 	end
 	local tap: TextButton = Kit.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 77, Parent = announceFrame })
 	tap.Activated:Connect(dismiss)
-	Kit.Label(announceFrame, "✕", { Size = UDim2.fromOffset(28, 28), Position = UDim2.new(1, -6, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Style = "Body", ZIndex = 78 })
+	Kit.CloseButton(announceFrame, dismiss, 79)
 end
 
 local bannerToken = 0
@@ -21434,6 +21922,8 @@ local function refreshBoosts()
 	end
 	-- server-wide luck someone bought (Robux): everyone sees it
 	chips.ServerLuck = { Icon = "🍀", Name = "SERVER LUCK", Expiry = d.ServerLuckUntil }
+	-- global 2X Ectoplasm event (developer-controlled, no timer)
+	chips.Ecto2x = { Icon = "💚", Name = "2X ECTOPLASM EVENT", Expiry = if workspace:GetAttribute("Ecto2x") == true then now + 1e9 else 0, NoTimer = true }
 	for id, def in chips do
 		local expiry = def.Expiry
 		local left = if expiry then expiry - now else 0
@@ -21445,12 +21935,13 @@ local function refreshBoosts()
 				l = Kit.Label(f, "", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Color = Theme.Ecto, Style = "Tiny", Fit = true })
 				boostLabels[id] = l
 			end
-			(l :: TextLabel).Text = def.Icon .. " " .. def.Name .. " " .. Format.Time(left)
+			Kit.EctoText(l :: TextLabel, def.Icon .. " " .. def.Name .. (if def.NoTimer then "" else " " .. Format.Time(left)))
 		elseif l then
 			(l.Parent :: Instance):Destroy()
 			boostLabels[id] = nil
 		end
 	end
+	boostHolder.Visible = next(boostLabels) ~= nil
 	local info = d.DailyInfo
 	if info then
 		local canClaim = info.CanClaim or info.Wait - (now - (d.ServerTime or now)) <= 0
@@ -21561,7 +22052,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">HuntersPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -21800,12 +22291,12 @@ local function makeCard(uid: string, hunterId: string): Card
 	})
 	Kit.Corner(eqBadge, UDim.new(1, 0))
 	Kit.Stroke(eqBadge, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	Kit.Label(eqBadge, "✓", { Style = "Body", ZIndex = 69 })
+	Kit.Label(eqBadge, "✅", { Style = "Body", ZIndex = 69 })
 	local lock = Kit.Label(f, "🔒", { Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, 2, 0, -3), AnchorPoint = Vector2.new(1, 0), ZIndex = 68, Stroke = 0, Style = "Small" })
 	lock.Visible = false
 	local sel: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Bad, BackgroundTransparency = 0.45, Visible = false, ZIndex = 70, Parent = f })
 	Kit.Corner(sel, UDim.new(0, 12))
-	Kit.Label(sel, "✖", { Style = "Title", ZIndex = 71 })
+	Kit.Label(sel, "X", { Style = "Title", ZIndex = 71 })
 	f.Activated:Connect(function()
 		Kit.Play("Click")
 		if releaseMode then
@@ -22183,7 +22674,7 @@ return HuntersPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">IndexPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -22289,7 +22780,7 @@ local function showDetail(h: Config.HunterDef, found: boolean)
 		detailBlurb.Text = "Not discovered yet. Keep opening crates!"
 	end
 	detailName.TextColor3 = rar.Color
-	detailInfo.Text = rar.Name .. "  •  ⚡ " .. (if found then Format.Commas(h.Power) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) • best unlocked area" else crate.Name .. "  •  " .. Format.Percent(oddsOf(h)))
+	detailInfo.Text = rar.Name .. "  ·  ⚡ " .. (if found then Format.Commas(h.Power) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
 end
 
 local function rebuild()
@@ -22343,7 +22834,7 @@ local function rebuild()
 		local complete = zf == #list
 		local header: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 62, Parent = section })
 		Kit.Label(header, (if unlocked then "" else "🔒 ") .. z.Name, { Size = UDim2.new(0.6, 0, 1, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
-		Kit.Label(header, (if complete then "★ " else "") .. zf .. "/" .. #list .. " DISCOVERED", { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
+		Kit.Label(header, (if complete then "⭐ " else "") .. zf .. "/" .. #list .. " DISCOVERED", { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
 		local row: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 62, Parent = section })
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(100, 124), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for _, h in list do
@@ -22383,7 +22874,7 @@ local function rebuild()
 		end
 	end
 	local pct = if total > 0 then found / total else 0
-	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  •  " .. math.floor(pct * 100 + 0.5) .. "%"
+	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  ·  " .. math.floor(pct * 100 + 0.5) .. "%"
 	Kit.Tween(totalFill, 0.4, { Size = UDim2.fromScale(math.max(pct, 0.02), 1) })
 end
 
@@ -22501,7 +22992,7 @@ return IndexPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">Orbs</string>
               <string name="Source"><![CDATA[--!strict
@@ -22861,7 +23352,7 @@ return Orbs
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="82">
             <Properties>
               <string name="Name">Reveal</string>
               <string name="Source"><![CDATA[--!strict
@@ -22937,14 +23428,62 @@ local finishedSignal = Signal.new()
 Reveal.Finished = finishedSignal -- (result)
 local startedSignal = Signal.new()
 Reveal.Started = startedSignal
+local stopAutoSignal = Signal.new()
+Reveal.AutoStopped = stopAutoSignal -- the player pressed STOP AUTO OPEN
 
 function Reveal.IsPlaying(): boolean
 	return playing
 end
 
+local function hasPermanentSkip(): boolean
+	local d = State.Data
+	return d ~= nil and d.Passes ~= nil and d.Passes[Config.CrateSkip.Pass] == true
+end
+
+-- "Fast crate opening" is part of Permanent Crate Skip (skipping is paid now).
 local function fast(): boolean
 	local d = State.Data
-	return d ~= nil and d.Settings.FastReveal == true
+	return d ~= nil and d.Settings.FastReveal == true and hasPermanentSkip()
+end
+
+-- SKIP: Permanent Crate Skip owners skip free; others use a bought Single Crate Skip (10 R$).
+-- The server checks and spends; the reveal is only a cinematic of a hunter that's already saved.
+local skipBusy = false
+local pendingSkip = false
+local skipButton: TextButton? = nil
+local autoMode = false
+
+local function skipLabel(): string
+	local d = State.Data
+	if hasPermanentSkip() then
+		return "SKIP ⏩"
+	end
+	local tokens = if d then d.SkipTokens or 0 else 0
+	return if tokens > 0 then "SKIP ⏩ (" .. tokens .. ")" else "SKIP ⏩ R$10"
+end
+
+local function requestSkip()
+	if skipping or cardShown or not playing or skipBusy then
+		return
+	end
+	skipBusy = true
+	local res = State.Request("UseSkip")
+	skipBusy = false
+	if res.ok then
+		pendingSkip = false
+		skipping = true
+		return
+	end
+	if res.err == "NeedSkip" then
+		local buy = State.Request("Buy", Config.CrateSkip.Product)
+		if buy.ok then
+			pendingSkip = true -- the purchase arrives as a SkipGranted message
+		else
+			Kit.Toast(buy.err or "Skip isn't available", "Bad")
+		end
+	else
+		Kit.Toast(res.err or "Couldn't skip", "Bad")
+	end
 end
 
 -- Runs fn(alpha) every frame for `t` seconds (alpha 0→1). On skip: fn(1) immediately.
@@ -23103,16 +23642,30 @@ local function buildGui(): (ScreenGui, TextButton)
 	})
 	Kit.new("UIScale", { Scale = Kit.UIScale(), Parent = g })
 	local skip = Kit.Button(g, {
-		Text = "SKIP ⏩",
-		Color = "Gray",
-		Size = UDim2.fromOffset(110, 40),
+		Text = skipLabel(),
+		Color = if hasPermanentSkip() then "Gray" else "Orange",
+		Size = UDim2.fromOffset(150, 40),
 		Position = UDim2.new(1, -16, 1, -16),
 		AnchorPoint = Vector2.new(1, 1),
 		ZIndex = 5,
 		OnClick = function()
-			skipping = true
+			task.spawn(requestSkip)
 		end,
 	})
+	skipButton = skip
+	if autoMode then
+		Kit.Button(g, {
+			Text = "STOP AUTO OPEN",
+			Color = "Red",
+			Size = UDim2.fromOffset(180, 40),
+			Position = UDim2.new(0, 16, 1, -16),
+			AnchorPoint = Vector2.new(0, 1),
+			ZIndex = 5,
+			OnClick = function()
+				Reveal.StopAuto()
+			end,
+		})
+	end
 	gui = g
 	return g, skip
 end
@@ -23151,10 +23704,11 @@ end
 local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	local def = Config.Hunters[res.Hunter]
 	local d = State.Data
+	-- right side of the screen, so the hunter (shifted left by the camera) stays the focus
 	local card: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(470, 196),
-		Position = UDim2.new(0.5, 0, 1, -16),
-		AnchorPoint = Vector2.new(0.5, 1),
+		Size = UDim2.fromOffset(360, 232),
+		Position = UDim2.new(1, -20, 0.5, 10),
+		AnchorPoint = Vector2.new(1, 0.5),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		ZIndex = 10,
 		Parent = g,
@@ -23164,6 +23718,9 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Gradient(card, Theme.Panel2, Theme.Bg, 90)
 	local sc = Kit.new("UIScale", { Scale = 0.3, Parent = card })
 	Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+	-- slide in from the right edge
+	card.Position = UDim2.new(1, 380, 0.5, 10)
+	Kit.Tween(card, 0.35, { Position = UDim2.new(1, -20, 0.5, 10) }, Enum.EasingStyle.Back)
 	-- rarity ribbon
 	local ribbon: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(200, 32),
@@ -23179,7 +23736,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Label(ribbon, rarity.Name, { Style = "Heading", ZIndex = 13 })
 	Kit.Label(card, string.upper(def.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
 	Kit.Label(card, "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", ZIndex = 11 })
-	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 76), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
+	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 78), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
 		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, 4), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
 		stamp.Rotation = 14
@@ -23188,13 +23745,13 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	end
 	-- buttons
 	local row: Frame = Kit.new("Frame", {
-		Size = UDim2.new(1, -30, 0, 46),
-		Position = UDim2.new(0, 15, 1, -58),
+		Size = UDim2.new(1, -20, 0, 46),
+		Position = UDim2.new(0, 10, 1, -58),
 		BackgroundTransparency = 1,
 		ZIndex = 11,
 		Parent = card,
 	})
-	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 10), Parent = row })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), Parent = row })
 	local equipped = d and table.find(d.Equipped, res.Uid) ~= nil
 	local slots = if d then d.Slots or Config.Inventory.BaseSlots else Config.Inventory.BaseSlots
 	if d and not equipped then
@@ -23212,12 +23769,12 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 			b = Kit.Button(row, {
 				Text = if free then "EQUIP" else "EQUIP BEST",
 				Color = "Green",
-				Size = UDim2.fromOffset(140, 44),
+				Size = UDim2.fromOffset(118, 44),
 				ZIndex = 12,
 				OnClick = function()
 					local r = if free then State.Request("Equip", res.Uid) else State.Request("EquipBest")
 					if r.ok then
-						Kit.SetButtonText(b, "EQUIPPED ✓")
+						Kit.SetButtonText(b, "EQUIPPED ✅")
 						b:SetAttribute("Color", "Gray")
 						b.Active = false
 					else
@@ -23234,7 +23791,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 		Kit.Button(row, {
 			Text = "AGAIN 💚" .. Format.Short(crate.Price),
 			Color = "Purple",
-			Size = UDim2.fromOffset(150, 44),
+			Size = UDim2.fromOffset(122, 44),
 			ZIndex = 12,
 			OnClick = function()
 				fnAgain()
@@ -23244,7 +23801,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	okButton = Kit.Button(row, {
 		Text = "OK",
 		Color = "Blue",
-		Size = UDim2.fromOffset(100, 44),
+		Size = UDim2.fromOffset(84, 44),
 		ZIndex = 12,
 		OnClick = function()
 			Reveal.Close()
@@ -23308,8 +23865,12 @@ function Reveal.Close()
 	finishedSignal:Fire()
 end
 
+export type PlayOpts = { Auto: boolean? }
+
 -- Plays the opening for a server-confirmed result. `again` (optional) re-buys the same crate.
-function Reveal.Play(res: Result, again: (() -> ())?)
+-- opts.Auto: Auto Open reveal (STOP button, the card closes by itself).
+function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
+	autoMode = opts ~= nil and opts.Auto == true
 	local def = Config.Hunters[res.Hunter]
 	local crateDef = Config.Crates[res.Crate]
 	if not def or not crateDef then
@@ -23321,7 +23882,7 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 		teardownStage() -- "AGAIN": keep the camera, rebuild the stage
 	end
 	playing = true
-	skipping = false
+	skipping = autoMode and hasPermanentSkip() -- Auto Open + Permanent Skip: quick reveals
 	startedSignal:Fire()
 	Targeting.SetBlocked(true)
 	setControls(false)
@@ -23332,7 +23893,7 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 			if cardShown then
 				Reveal.Close()
 			else
-				skipping = true
+				task.spawn(requestSkip)
 			end
 		end
 		return Enum.ContextActionResult.Sink
@@ -23512,8 +24073,20 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 	raySpeed = 25
 	cam.CFrame = camCF
 	cam.Focus = CFrame.new(STAGE + Vector3.new(0, 2.6, 0))
+	-- slide the camera so the hunter sits left of centre, clear of the info card on the right
+	local side = Vector3.new(-3.6, 0, 0)
+	tween(cam, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { CFrame = CFrame.lookAt(STAGE + Vector3.new(0, 4.6, -13) + side, STAGE + Vector3.new(0, 2.6, 0) + side) })
 	resultCard(g, res, rarity)
 	cardShown = true
+	if autoMode then
+		-- Auto Open: the card closes by itself so the next crate can play
+		local myStage = stage
+		task.delay(if hasPermanentSkip() then 0.6 else 1.4, function()
+			if playing and stage == myStage then
+				Reveal.Close()
+			end
+		end)
+	end
 	if okButton and UserInputService.GamepadEnabled and UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1 then
 		GuiService.SelectedObject = okButton
 	end
@@ -23526,7 +24099,24 @@ function Reveal.Init()
 	cc = effect
 end
 
+function Reveal.StopAuto()
+	autoMode = false
+	task.spawn(function()
+		State.Request("AutoOpen", nil)
+	end)
+	stopAutoSignal:Fire()
+end
+
 function Reveal.Start()
+	-- a Single Crate Skip bought during a reveal is used right away
+	State.OnFx("SkipGranted", function()
+		if skipButton and skipButton.Parent then
+			Kit.SetButtonText(skipButton, skipLabel())
+		end
+		if pendingSkip and playing and not cardShown then
+			task.spawn(requestSkip)
+		end
+	end)
 	-- respawning mid-reveal must not leave the camera stuck
 	player.CharacterAdded:Connect(function()
 		if playing then
@@ -23539,7 +24129,7 @@ return Reveal
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="83">
             <Properties>
               <string name="Name">ShopPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -23635,7 +24225,7 @@ local function refresh()
 	for _, pass in Config.GamePasses do
 		local b = passButtons[pass.Key]
 		if b and d.Passes and d.Passes[pass.Key] then
-			Kit.SetButtonText(b, "OWNED ✓")
+			Kit.SetButtonText(b, "OWNED ✅")
 			b:SetAttribute("Color", "Gray")
 		end
 	end
@@ -23675,6 +24265,9 @@ function ShopPanel.Init()
 	end
 	local passRow = section(3, "GAME PASSES (FOREVER)")
 	for i, pass in Config.GamePasses do
+		if pass.Hidden then
+			continue -- no longer sold (e.g. the old Auto Attack pass: Auto Attack is free now)
+		end
 		local sub = if pass.Blurb then pass.Blurb elseif pass.Slots then "+" .. pass.Slots .. " EQUIPPED HUNTERS" else "x" .. tostring(pass.Multiplier or 2) .. " ALL ECTOPLASM"
 		local b = card(passRow, i, Icons.ForProduct[pass.Key], pass.Icon, pass.Name, sub, pass.PriceLabel, pass.PassId ~= nil, "Orange", function()
 			buy(pass.Key)
@@ -23709,7 +24302,7 @@ return ShopPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">Sound</string>
               <string name="Source"><![CDATA[--!strict
@@ -23827,7 +24420,7 @@ return Sound
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">Targeting</string>
               <string name="Source"><![CDATA[--!strict
@@ -24104,7 +24697,7 @@ return Targeting
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">Tutorial</string>
               <string name="Source"><![CDATA[--!strict
@@ -24259,7 +24852,7 @@ end
 local function tapWord(): string
 	local last = UserInputService:GetLastInputType()
 	if last == Enum.UserInputType.Gamepad1 then
-		return "PRESS Ⓧ TO TARGET A GHOST!"
+		return "PRESS (X) TO TARGET A GHOST!"
 	elseif UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
 		return "TAP A GHOST!"
 	end
@@ -24529,15 +25122,15 @@ function Tutorial.Init()
 			task.wait(0.5)
 		end
 	end)
+	-- NEXT GOAL bar: directly under the Ectoplasm / Power counters (Hud.TopStack)
 	goalChip = Kit.new("Frame", {
 		Size = UDim2.fromOffset(360, 24),
-		Position = UDim2.new(0.5, 0, 0, 30),
-		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Theme.Bg,
 		BackgroundTransparency = 0.2,
 		Visible = false,
 		ZIndex = 20,
-		Parent = screen,
+		LayoutOrder = 1,
+		Parent = Hud.TopStack or screen,
 	})
 	Kit.Corner(goalChip, UDim.new(1, 0))
 	Kit.Stroke(goalChip, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
@@ -24628,7 +25221,7 @@ return Tutorial
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">UpgradesPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -24679,12 +25272,12 @@ local function refresh()
 		local cur = Rules.UpgradeValue(up.Levels, level)
 		local cost = Rules.UpgradeCost(up.Costs, level)
 		if cost then
-			row.Value.Text = fmt(up, cur) .. "  →  " .. fmt(up, Rules.UpgradeValue(up.Levels, level + 1))
+			row.Value.Text = fmt(up, cur) .. "  >  " .. fmt(up, Rules.UpgradeValue(up.Levels, level + 1))
 			Kit.SetButtonText(row.Buy, "💚 " .. Format.Short(cost))
 			row.Buy:SetAttribute("Color", if d.Ecto >= cost then "Green" else "Gray")
 		else
 			row.Value.Text = fmt(up, cur) .. "  (MAX)"
-			Kit.SetButtonText(row.Buy, "MAXED ★")
+			Kit.SetButtonText(row.Buy, "MAXED ⭐")
 			row.Buy:SetAttribute("Color", "Orange")
 		end
 	end
@@ -24789,7 +25382,7 @@ return UpgradesPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="88">
             <Properties>
               <string name="Name">WorldsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -24959,7 +25552,7 @@ return WorldsPanel
             </Properties>
           </Item>
         </Item>
-        <Item class="LocalScript" referent="87">
+        <Item class="LocalScript" referent="89">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -25003,6 +25596,7 @@ local order = {
 	"WorldsPanel",
 	"DevPanel",
 	"FeedbackPanel",
+	"EventPopup",
 	"Boss",
 	"Ambience",
 	"Tutorial",
@@ -25023,7 +25617,7 @@ end
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="88">
+        <Item class="ModuleScript" referent="90">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -25171,11 +25765,11 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="89">
+        <Item class="Folder" referent="91">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="90">
+          <Item class="ModuleScript" referent="92">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!strict
@@ -25326,7 +25920,23 @@ function Kit.Label(parent: Instance?, text: string, p: LabelProps?): TextLabel
 	if stroke > 0 then
 		Kit.new("UIStroke", { Thickness = stroke, Color = Theme.Outline, Parent = l })
 	end
+	Kit.FitText(l, size, stroke, style ~= "Icon")
 	return l
+end
+
+-- The game's one close button: red square with a plain "X" (the font has no "✕" glyph, which
+-- is why a popup once showed an empty red square). 44 logical px: a comfortable finger target.
+function Kit.CloseButton(parent: Instance, onClick: () -> (), zIndex: number?): TextButton
+	return Kit.Button(parent, {
+		Text = "X",
+		Color = "Red",
+		Size = UDim2.fromOffset(44, 44),
+		Position = UDim2.new(1, 12, 0, -14),
+		AnchorPoint = Vector2.new(1, 0),
+		ZIndex = zIndex or 64,
+		TextStyle = "Heading",
+		OnClick = onClick,
+	})
 end
 
 -- An icon: the uploaded image for `key` (shared Icons.luau) when it has an id, otherwise the
@@ -25405,6 +26015,11 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	Kit.EctoText(label, text)
 	local scale = Kit.new("UIScale", { Parent = b })
 	b.MouseEnter:Connect(function()
+		-- touch screens fire MouseEnter with no MouseLeave: a hover grow would stay stuck and make
+		-- buttons overlap their neighbours, so hover only reacts to a real mouse
+		if UserInputService:GetLastInputType() ~= Enum.UserInputType.MouseMovement then
+			return
+		end
 		Kit.Tween(scale, 0.12, { Scale = 1.05 })
 		play("Hover")
 	end)
@@ -25509,8 +26124,39 @@ local function computeScale(): number
 	return math.clamp(s, Theme.Scale.Min, Theme.Scale.Max)
 end
 
+-- MOBILE TEXT FIX (root cause): one UIScale shrinks each ScreenGui on phones (~0.72), but
+-- UIStroke thickness is NOT scaled by UIScale, so a 2-3 px outline stayed full size around
+-- ~8 px letters and smeared them; the smallest styles also fell below what a phone renders
+-- cleanly. Every Kit label is registered here and, whenever the scale changes:
+--   * its outline is scaled with the screen (and kept thin relative to the letters)
+--   * its text never renders smaller than MIN_TEXT_PX real pixels
+local MIN_TEXT_PX = 10
+type TextInfo = { Base: number, Stroke: number, Min: boolean }
+local fitted: { [TextLabel]: TextInfo } = setmetatable({} :: any, { __mode = "k" })
+
+local function applyFit(l: TextLabel, info: TextInfo)
+	local size = info.Base
+	if info.Min and size * currentScale < MIN_TEXT_PX then
+		size = math.ceil(MIN_TEXT_PX / currentScale)
+	end
+	l.TextSize = size
+	local st = l:FindFirstChildOfClass("UIStroke")
+	if st and info.Stroke > 0 then
+		st.Thickness = math.max(0.75, math.min(info.Stroke * currentScale, size * currentScale * 0.12))
+	end
+end
+
+function Kit.FitText(l: TextLabel, base: number, stroke: number, minSize: boolean)
+	local info: TextInfo = { Base = base, Stroke = stroke, Min = minSize }
+	fitted[l] = info
+	applyFit(l, info)
+end
+
 local function applyScale()
 	currentScale = computeScale()
+	for l, info in fitted do
+		applyFit(l, info)
+	end
 	for _, gui in { screen, overlay, topBar } do
 		local sc = gui and gui:FindFirstChildOfClass("UIScale")
 		if sc then
@@ -25761,19 +26407,9 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			end
 		end,
 	}
-	-- obvious X (44 logical px ≈ a comfortable finger target even on phones)
-	panel.CloseButton = Kit.Button(root, {
-		Text = "X",
-		Color = "Red",
-		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, 12, 0, -14),
-		AnchorPoint = Vector2.new(1, 0),
-		ZIndex = 64,
-		TextStyle = "Heading",
-		OnClick = function()
-			panel:Close()
-		end,
-	})
+	panel.CloseButton = Kit.CloseButton(root, function()
+		panel:Close()
+	end, 64)
 	table.insert(panels, panel)
 	return panel
 end
@@ -25873,7 +26509,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="91">
+          <Item class="ModuleScript" referent="93">
             <Properties>
               <string name="Name">Portrait</string>
               <string name="Source"><![CDATA[--!strict
@@ -26257,7 +26893,7 @@ return Portrait
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="92">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -26338,7 +26974,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="93">
+          <Item class="ModuleScript" referent="95">
             <Properties>
               <string name="Name">WorldLabel</string>
               <string name="Source"><![CDATA[--!strict
@@ -26382,7 +27018,13 @@ end
 local function applyText(l: TextLabel, base: number)
 	local g = textGui[l]
 	local f = if g then factors[g] or 1 else 1
-	l.TextSize = math.max(8, math.floor(base * Kit.UIScale() * f + 0.5))
+	local size = math.max(9, math.floor(base * Kit.UIScale() * f + 0.5))
+	l.TextSize = size
+	-- keep the outline thin relative to the letters (a fixed 1.5 px outline smeared small text)
+	local st = l:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Thickness = math.clamp(size * 0.1, 0.75, 1.5)
+	end
 end
 
 -- Distance factor: full size up to Theme.World.FullSizeDistance studs from the camera, then
@@ -26477,6 +27119,7 @@ function WorldLabel.Text(parent: Instance, text: string, p: TextProps?): TextLab
 	local stroke = o.Stroke or 1.5
 	if stroke > 0 then
 		Kit.new("UIStroke", { Thickness = stroke, Color = Theme.Outline, Parent = l })
+		applyText(l, base) -- size the new outline too
 	end
 	return l
 end
@@ -26504,7 +27147,7 @@ return WorldLabel
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="94">
+  <Item class="Workspace" referent="96">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

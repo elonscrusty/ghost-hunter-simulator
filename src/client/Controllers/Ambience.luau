@@ -111,7 +111,7 @@ local function applyGates()
 			end
 		end
 		if cost then
-			cost.Text = if owned then "✓ UNLOCKED" else "🔒 " .. Format.Short(z.Cost) .. " ECTOPLASM"
+			cost.Text = if owned then "✅ UNLOCKED" else "🔒 " .. Format.Short(z.Cost) .. " ECTOPLASM"
 		end
 		if prompt then
 			prompt.Enabled = not owned
@@ -127,12 +127,12 @@ local function unlockSequence(zoneId: string)
 	unlocking[zoneId] = true
 	local barrier, cost, prompt = gateParts(zoneId)
 	Sound.Play("ZoneUnlock")
-	Hud.Banner("NEW AREA UNLOCKED!", zone.Name .. "  •  NEW GHOSTS  •  NEW CRATE", zone.Accent)
+	Hud.Banner("NEW AREA UNLOCKED!", zone.Name .. "  ·  NEW GHOSTS  ·  NEW CRATE", zone.Accent)
 	if prompt then
 		prompt.Enabled = false
 	end
 	if cost then
-		cost.Text = "✓ UNLOCKED"
+		cost.Text = "✅ UNLOCKED"
 	end
 	-- camera emphasis: quick punch-in + shake
 	local cam = workspace.CurrentCamera

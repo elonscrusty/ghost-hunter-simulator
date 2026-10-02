@@ -16,7 +16,7 @@ trap 'rm -rf "$OUT"' EXIT
 B="$OUT/worldsim_bundle.luau"
 DELIM="]==========]"
 
-files=(tools/worldsim/prelude.luau tools/worldsim/runner.luau $(find src/shared src/server/World -name '*.luau' | sort) ${WORLDSIM_PROBE:+"$WORLDSIM_PROBE"})
+files=(tools/worldsim/prelude.luau tools/worldsim/runner.luau $(find src/shared src/server/World -name '*.luau' | sort) ${WORLDSIM_EXTRA:-} ${WORLDSIM_PROBE:+"$WORLDSIM_PROBE"})
 {
   echo "local FILES = {}"
   for f in "${files[@]}"; do
