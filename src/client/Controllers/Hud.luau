@@ -348,6 +348,10 @@ local function buildSettings(screen: ScreenGui)
 			local b = buttons[t.Key]
 			b:SetAttribute("Color", if on then "Green" else "Gray")
 			Kit.SetButtonText(b, t.Text .. (if on then ": ON" else ": OFF"))
+			if t.Key == "FastReveal" then
+				-- fast crate opening is part of the Permanent Crate Skip pass
+				b.Visible = d.Passes ~= nil and d.Passes[Config.CrateSkip.Pass] == true
+			end
 		end
 	end)
 	Hud.RegisterPanel("Settings", function()
@@ -384,9 +388,7 @@ end
 -- AUTO ATTACK toggle: only shown to Auto Attack pass owners. The server checks ownership.
 local busyAuto = false
 local function refreshAuto()
-	local d = State.Data
-	local owned = d ~= nil and d.Passes ~= nil and d.Passes[Config.AutoAttack.Pass] == true
-	autoButton.Visible = owned
+	autoButton.Visible = true -- Auto Attack is free for everyone
 	local on = player:GetAttribute("AutoAttack") == true
 	Kit.SetButtonText(autoButton, if on then "🤖 AUTO: ON" else "🤖 AUTO: OFF")
 	autoButton:SetAttribute("Color", if on then "Green" else "Gray")

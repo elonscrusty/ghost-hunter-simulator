@@ -71,14 +71,62 @@ local finishedSignal = Signal.new()
 Reveal.Finished = finishedSignal -- (result)
 local startedSignal = Signal.new()
 Reveal.Started = startedSignal
+local stopAutoSignal = Signal.new()
+Reveal.AutoStopped = stopAutoSignal -- the player pressed STOP AUTO OPEN
 
 function Reveal.IsPlaying(): boolean
 	return playing
 end
 
+local function hasPermanentSkip(): boolean
+	local d = State.Data
+	return d ~= nil and d.Passes ~= nil and d.Passes[Config.CrateSkip.Pass] == true
+end
+
+-- "Fast crate opening" is part of Permanent Crate Skip (skipping is paid now).
 local function fast(): boolean
 	local d = State.Data
-	return d ~= nil and d.Settings.FastReveal == true
+	return d ~= nil and d.Settings.FastReveal == true and hasPermanentSkip()
+end
+
+-- SKIP: Permanent Crate Skip owners skip free; others use a bought Single Crate Skip (10 R$).
+-- The server checks and spends; the reveal is only a cinematic of a hunter that's already saved.
+local skipBusy = false
+local pendingSkip = false
+local skipButton: TextButton? = nil
+local autoMode = false
+
+local function skipLabel(): string
+	local d = State.Data
+	if hasPermanentSkip() then
+		return "SKIP ⏩"
+	end
+	local tokens = if d then d.SkipTokens or 0 else 0
+	return if tokens > 0 then "SKIP ⏩ (" .. tokens .. ")" else "SKIP ⏩ R$10"
+end
+
+local function requestSkip()
+	if skipping or cardShown or not playing or skipBusy then
+		return
+	end
+	skipBusy = true
+	local res = State.Request("UseSkip")
+	skipBusy = false
+	if res.ok then
+		pendingSkip = false
+		skipping = true
+		return
+	end
+	if res.err == "NeedSkip" then
+		local buy = State.Request("Buy", Config.CrateSkip.Product)
+		if buy.ok then
+			pendingSkip = true -- the purchase arrives as a SkipGranted message
+		else
+			Kit.Toast(buy.err or "Skip isn't available", "Bad")
+		end
+	else
+		Kit.Toast(res.err or "Couldn't skip", "Bad")
+	end
 end
 
 -- Runs fn(alpha) every frame for `t` seconds (alpha 0→1). On skip: fn(1) immediately.
@@ -237,16 +285,30 @@ local function buildGui(): (ScreenGui, TextButton)
 	})
 	Kit.new("UIScale", { Scale = Kit.UIScale(), Parent = g })
 	local skip = Kit.Button(g, {
-		Text = "SKIP ⏩",
-		Color = "Gray",
-		Size = UDim2.fromOffset(110, 40),
+		Text = skipLabel(),
+		Color = if hasPermanentSkip() then "Gray" else "Orange",
+		Size = UDim2.fromOffset(150, 40),
 		Position = UDim2.new(1, -16, 1, -16),
 		AnchorPoint = Vector2.new(1, 1),
 		ZIndex = 5,
 		OnClick = function()
-			skipping = true
+			task.spawn(requestSkip)
 		end,
 	})
+	skipButton = skip
+	if autoMode then
+		Kit.Button(g, {
+			Text = "STOP AUTO OPEN",
+			Color = "Red",
+			Size = UDim2.fromOffset(180, 40),
+			Position = UDim2.new(0, 16, 1, -16),
+			AnchorPoint = Vector2.new(0, 1),
+			ZIndex = 5,
+			OnClick = function()
+				Reveal.StopAuto()
+			end,
+		})
+	end
 	gui = g
 	return g, skip
 end
@@ -285,10 +347,11 @@ end
 local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	local def = Config.Hunters[res.Hunter]
 	local d = State.Data
+	-- right side of the screen, so the hunter (shifted left by the camera) stays the focus
 	local card: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(470, 196),
-		Position = UDim2.new(0.5, 0, 1, -16),
-		AnchorPoint = Vector2.new(0.5, 1),
+		Size = UDim2.fromOffset(360, 232),
+		Position = UDim2.new(1, -20, 0.5, 10),
+		AnchorPoint = Vector2.new(1, 0.5),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		ZIndex = 10,
 		Parent = g,
@@ -298,6 +361,9 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Gradient(card, Theme.Panel2, Theme.Bg, 90)
 	local sc = Kit.new("UIScale", { Scale = 0.3, Parent = card })
 	Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+	-- slide in from the right edge
+	card.Position = UDim2.new(1, 380, 0.5, 10)
+	Kit.Tween(card, 0.35, { Position = UDim2.new(1, -20, 0.5, 10) }, Enum.EasingStyle.Back)
 	-- rarity ribbon
 	local ribbon: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(200, 32),
@@ -313,7 +379,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Label(ribbon, rarity.Name, { Style = "Heading", ZIndex = 13 })
 	Kit.Label(card, string.upper(def.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
 	Kit.Label(card, "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", ZIndex = 11 })
-	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 76), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
+	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 78), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
 		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, 4), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
 		stamp.Rotation = 14
@@ -322,13 +388,13 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	end
 	-- buttons
 	local row: Frame = Kit.new("Frame", {
-		Size = UDim2.new(1, -30, 0, 46),
-		Position = UDim2.new(0, 15, 1, -58),
+		Size = UDim2.new(1, -20, 0, 46),
+		Position = UDim2.new(0, 10, 1, -58),
 		BackgroundTransparency = 1,
 		ZIndex = 11,
 		Parent = card,
 	})
-	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 10), Parent = row })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), Parent = row })
 	local equipped = d and table.find(d.Equipped, res.Uid) ~= nil
 	local slots = if d then d.Slots or Config.Inventory.BaseSlots else Config.Inventory.BaseSlots
 	if d and not equipped then
@@ -346,7 +412,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 			b = Kit.Button(row, {
 				Text = if free then "EQUIP" else "EQUIP BEST",
 				Color = "Green",
-				Size = UDim2.fromOffset(140, 44),
+				Size = UDim2.fromOffset(118, 44),
 				ZIndex = 12,
 				OnClick = function()
 					local r = if free then State.Request("Equip", res.Uid) else State.Request("EquipBest")
@@ -368,7 +434,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 		Kit.Button(row, {
 			Text = "AGAIN 💚" .. Format.Short(crate.Price),
 			Color = "Purple",
-			Size = UDim2.fromOffset(150, 44),
+			Size = UDim2.fromOffset(122, 44),
 			ZIndex = 12,
 			OnClick = function()
 				fnAgain()
@@ -378,7 +444,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	okButton = Kit.Button(row, {
 		Text = "OK",
 		Color = "Blue",
-		Size = UDim2.fromOffset(100, 44),
+		Size = UDim2.fromOffset(84, 44),
 		ZIndex = 12,
 		OnClick = function()
 			Reveal.Close()
@@ -442,8 +508,12 @@ function Reveal.Close()
 	finishedSignal:Fire()
 end
 
+export type PlayOpts = { Auto: boolean? }
+
 -- Plays the opening for a server-confirmed result. `again` (optional) re-buys the same crate.
-function Reveal.Play(res: Result, again: (() -> ())?)
+-- opts.Auto: Auto Open reveal (STOP button, the card closes by itself).
+function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
+	autoMode = opts ~= nil and opts.Auto == true
 	local def = Config.Hunters[res.Hunter]
 	local crateDef = Config.Crates[res.Crate]
 	if not def or not crateDef then
@@ -455,7 +525,7 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 		teardownStage() -- "AGAIN": keep the camera, rebuild the stage
 	end
 	playing = true
-	skipping = false
+	skipping = autoMode and hasPermanentSkip() -- Auto Open + Permanent Skip: quick reveals
 	startedSignal:Fire()
 	Targeting.SetBlocked(true)
 	setControls(false)
@@ -466,7 +536,7 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 			if cardShown then
 				Reveal.Close()
 			else
-				skipping = true
+				task.spawn(requestSkip)
 			end
 		end
 		return Enum.ContextActionResult.Sink
@@ -646,8 +716,20 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 	raySpeed = 25
 	cam.CFrame = camCF
 	cam.Focus = CFrame.new(STAGE + Vector3.new(0, 2.6, 0))
+	-- slide the camera so the hunter sits left of centre, clear of the info card on the right
+	local side = Vector3.new(-3.6, 0, 0)
+	tween(cam, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { CFrame = CFrame.lookAt(STAGE + Vector3.new(0, 4.6, -13) + side, STAGE + Vector3.new(0, 2.6, 0) + side) })
 	resultCard(g, res, rarity)
 	cardShown = true
+	if autoMode then
+		-- Auto Open: the card closes by itself so the next crate can play
+		local myStage = stage
+		task.delay(if hasPermanentSkip() then 0.6 else 1.4, function()
+			if playing and stage == myStage then
+				Reveal.Close()
+			end
+		end)
+	end
 	if okButton and UserInputService.GamepadEnabled and UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1 then
 		GuiService.SelectedObject = okButton
 	end
@@ -660,7 +742,24 @@ function Reveal.Init()
 	cc = effect
 end
 
+function Reveal.StopAuto()
+	autoMode = false
+	task.spawn(function()
+		State.Request("AutoOpen", nil)
+	end)
+	stopAutoSignal:Fire()
+end
+
 function Reveal.Start()
+	-- a Single Crate Skip bought during a reveal is used right away
+	State.OnFx("SkipGranted", function()
+		if skipButton and skipButton.Parent then
+			Kit.SetButtonText(skipButton, skipLabel())
+		end
+		if pendingSkip and playing and not cardShown then
+			task.spawn(requestSkip)
+		end
+	end)
 	-- respawning mid-reveal must not leave the camera stuck
 	player.CharacterAdded:Connect(function()
 		if playing then

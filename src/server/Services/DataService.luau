@@ -40,6 +40,7 @@ export type Data = {
 	Tutorial: number,
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
+	SkipTokens: number, -- bought Single Crate Skips not used yet (added in 1.4; old saves get 0)
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
 }
@@ -64,6 +65,7 @@ local function defaults(): Data
 		Tutorial = 1,
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
+		SkipTokens = 0,
 		Orphans = {},
 		Extra = {},
 	}

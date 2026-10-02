@@ -33,6 +33,16 @@ function PlayerInfo.AddServerLuck(seconds: number)
 	serverLuckUntil = math.min(math.max(serverLuckUntil, now) + seconds, now + Config.ServerLuck.MaxStackSeconds)
 end
 
+-- AUTO OPEN pass (or the legacy Auto Attack pass, now that Auto Attack is free)
+function PlayerInfo.HasAutoOpen(player: Player): boolean
+	return PlayerInfo.HasPass(player, Config.AutoOpen.Pass)
+		or (Config.LegacyAutoAttackGrantsAutoOpen and PlayerInfo.HasPass(player, "AutoAttack"))
+end
+
+function PlayerInfo.HasPermanentSkip(player: Player): boolean
+	return PlayerInfo.HasPass(player, Config.CrateSkip.Pass)
+end
+
 function PlayerInfo.Forget(player: Player)
 	passes[player] = nil
 end
@@ -158,6 +168,7 @@ function PlayerInfo.Init()
 		for _, p in Config.GamePasses do
 			owned[p.Key] = PlayerInfo.HasPass(player, p.Key)
 		end
+		owned[Config.AutoOpen.Pass] = PlayerInfo.HasAutoOpen(player)
 		s.Passes = owned
 	end)
 end

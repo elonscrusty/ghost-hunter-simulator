@@ -40,6 +40,9 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 		DataService.AddEcto(player, p.Amount * PlayerInfo.ZoneMultiplier(player))
 	elseif p.Kind == "Boost" and p.Boost and p.Seconds then
 		PlayerInfo.AddBoost(d, p.Boost, p.Seconds)
+	elseif p.Kind == "CrateSkip" then
+		d.SkipTokens = math.min((d.SkipTokens or 0) + 1, Config.CrateSkip.MaxTokens)
+		Fx.To(player, "SkipGranted", {})
 	elseif p.Kind == "SkipArea" then
 		local z = nextLockedZone(d)
 		if z then
@@ -199,6 +202,9 @@ function ShopService.Init()
 					return Remotes.Fail("Coming soon!")
 				end
 				local d = DataService.Get(player)
+				if p.Kind == "CrateSkip" and PlayerInfo.HasPermanentSkip(player) then
+					return Remotes.Fail("You already have Permanent Crate Skip!")
+				end
 				if p.Kind == "SkipArea" and d and not nextLockedZone(d) then
 					return Remotes.Fail("Every area is already unlocked!")
 				end
@@ -235,6 +241,12 @@ function ShopService.Init()
 				end
 				if PlayerInfo.HasPass(player, pass.Key) then
 					return Remotes.Fail("You already own this!")
+				end
+				if pass.Key == Config.AutoOpen.Pass and PlayerInfo.HasAutoOpen(player) then
+					return Remotes.Fail("You already have Auto Open!")
+				end
+				if pass.Hidden then
+					return Remotes.Fail("This isn't sold anymore")
 				end
 				MarketplaceService:PromptGamePassPurchase(player, pass.PassId)
 				return { ok = true }

@@ -10,7 +10,7 @@ local function zoneHunters(zone)
 	table.sort(out, function(a, b) return a.Power < b.Power end)
 	return out
 end
-local function avg(r) return (r[1] + r[2]) / 2 end
+local function avg(r) return r end
 
 T.every_reference_exists = function()
 	for id, c in Config.Crates do

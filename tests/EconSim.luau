@@ -161,11 +161,11 @@ for run = 1, RUNS do
 			-- players don't sit on a boss for minutes: only fight ones that die in <= 25 s
 			if zones[g.Zone] and g.Kind ~= "Event" and (g.Kind == "Normal" or g.Spirit / power <= 25) then
 				local killT = g.Spirit / power + overhead
-				local rate = ((g.Reward[1] + g.Reward[2]) / 2) * (1 + bonus) / killT
+				local rate = g.Reward * (1 + bonus) / killT
 				if rate > bestRate then best, bestRate, bestTime = g, rate, killT end
 			end
 		end
-		local reward = (best.Reward[1] + rnd() * (best.Reward[2] - best.Reward[1])) * (1 + bonus)
+		local reward = best.Reward * (1 + bonus)
 		t += bestTime
 		ecto += math.floor(reward + 0.5)
 		mark("first_kill")

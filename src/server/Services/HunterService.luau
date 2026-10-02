@@ -15,6 +15,8 @@ local Remotes = require(script.Parent.Remotes)
 local Fx = require(script.Parent.Fx)
 
 local HunterService = {}
+-- player -> token of their running Auto Open loop (a new token stops the old loop)
+local autoOpen: { [Player]: {} } = {}
 HunterService.GrantExclusive = nil :: any
 
 local rng = Random.new()
@@ -164,6 +166,62 @@ function HunterService.Init()
 		return first
 	end)
 
+	-- CRATE SKIP: the reveal is client-side only (the hunter is already rolled and saved), so a
+	-- skip never touches the reward. Permanent Crate Skip owners skip for free; otherwise one
+	-- bought Single Crate Skip token is used.
+	Remotes.Register("UseSkip", "Default", function(player)
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		if PlayerInfo.HasPermanentSkip(player) then
+			return { ok = true, Permanent = true }
+		end
+		if (d.SkipTokens or 0) > 0 then
+			d.SkipTokens -= 1
+			DataService.Changed(player)
+			return { ok = true, Left = d.SkipTokens }
+		end
+		return { ok = false, err = "NeedSkip" }
+	end)
+
+	-- AUTO OPEN (game pass): one server loop per player re-opens the chosen crate through the
+	-- normal openCrate checks (zone, distance, price, storage), so it can't bypass anything or
+	-- run twice at once. Stops on OFF, failure, leaving, or when the pass is missing.
+	Remotes.Register("AutoOpen", "Default", function(player, crateId)
+		if crateId == nil or crateId == false then
+			autoOpen[player] = nil
+			player:SetAttribute("AutoOpen", nil)
+			return { ok = true, On = false }
+		end
+		if not PlayerInfo.HasAutoOpen(player) then
+			return Remotes.Fail("NeedPass")
+		end
+		if type(crateId) ~= "string" or not Config.Crates[crateId] or not Config.Layout.CrateStations[crateId] then
+			return Remotes.Fail("Bad crate")
+		end
+		local token = {}
+		autoOpen[player] = token
+		player:SetAttribute("AutoOpen", crateId)
+		task.spawn(function()
+			while autoOpen[player] == token and player.Parent do
+				local r = openCrate(player, crateId)
+				if autoOpen[player] ~= token then
+					break
+				end
+				if not r.ok then
+					autoOpen[player] = nil
+					player:SetAttribute("AutoOpen", nil)
+					Fx.To(player, "AutoOpenStopped", { Reason = r.err })
+					break
+				end
+				Fx.To(player, "AutoOpened", { Crate = crateId, Hunter = r.Hunter, Uid = r.Uid, IsNew = r.IsNew })
+				task.wait(if PlayerInfo.HasPermanentSkip(player) then Config.AutoOpen.FastInterval else Config.AutoOpen.Interval)
+			end
+		end)
+		return { ok = true, On = true }
+	end)
+
 	-- Robux Exclusive Crate (granted by ShopService after a purchase)
 	HunterService.GrantExclusive = function(p: Player): (string?, string?, boolean)
 		local zone = Config.Zones[PlayerInfo.BestZone(p)]
@@ -283,6 +341,7 @@ end
 
 function HunterService.Start()
 	Players.PlayerRemoving:Connect(function(player)
+		autoOpen[player] = nil -- stops their Auto Open loop
 		PlayerInfo.Forget(player)
 	end)
 end

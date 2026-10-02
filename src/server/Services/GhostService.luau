@@ -228,7 +228,7 @@ local function setTarget(player: Player, uid: number?, auto: boolean?)
 end
 
 function GhostService.AutoActive(player: Player): boolean
-	return autoOn[player] == true and PlayerInfo.HasPass(player, Config.AutoAttack.Pass)
+	return autoOn[player] == true -- FREE for every player (no pass)
 end
 
 -- Auto Attack pick: nearest living ghost the player may fight, in the zone the player is
@@ -289,7 +289,7 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 			if player.Parent and (player == killer or dmg >= minShare) then
 				local d = DataService.Get(player)
 				if d then
-					local base = rng:NextInteger(g.Def.Reward[1], g.Def.Reward[2])
+					local base = g.Def.Reward -- fixed per ghost type
 					local total = math.max(1, math.floor(base * PlayerInfo.EctoMultiplier(player) + 0.5))
 					DropService.Spawn(player, pos, total, g.Def.Drops, nil)
 					d.Stats.Ghosts += 1
@@ -422,14 +422,11 @@ function GhostService.Init()
 	folder.Parent = workspace
 	Net.Event("SelectTarget").OnServerEvent:Connect(onSelect)
 
-	-- AUTO ATTACK toggle. Ownership is checked on the server (game pass); the toggle only
-	-- automates picking targets: damage, rewards and pickups are exactly the same.
+	-- AUTO ATTACK toggle: FREE for everyone. It only automates picking targets: damage,
+	-- rewards and pickups are exactly the same as tapping ghosts yourself.
 	Remotes.Register("AutoAttack", "Default", function(player, on)
 		if type(on) ~= "boolean" then
 			return Remotes.Fail("Bad value")
-		end
-		if on and not PlayerInfo.HasPass(player, Config.AutoAttack.Pass) then
-			return Remotes.Fail("Auto Attack is a game pass - see the SHOP!")
 		end
 		if on then
 			autoOn[player] = true

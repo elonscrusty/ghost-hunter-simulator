@@ -24,6 +24,10 @@ local panel: Kit.Panel
 local list: ScrollingFrame
 local openButton: TextButton
 local tripleButton: TextButton
+local autoButton: TextButton
+-- Auto Open results waiting to be shown (the server keeps opening while one plays)
+local autoQueue: { any } = {}
+local autoPlaying = false
 local infoLabel: TextLabel
 local luckLabel: TextLabel
 local current: string? = nil
@@ -135,6 +139,10 @@ function refreshButton(crateId: string, d: any, luck: number)
 		infoLabel.Text = "Hunters jump out of crates! Better crates → stronger hunters."
 	end
 	luckLabel.Visible = luck > 1
+	local autoOwned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true
+	local autoOn = player:GetAttribute("AutoOpen") ~= nil
+	Kit.SetButtonText(autoButton, if not autoOwned then "🔒 AUTO OPEN" elseif autoOn then "AUTO OPEN: ON" else "AUTO OPEN: OFF")
+	autoButton:SetAttribute("Color", if not autoOwned then "Gray" elseif autoOn then "Green" else "Purple")
 	local triple = d.Passes and d.Passes[Config.TripleOpen.Pass] == true
 	tripleButton.Visible = triple == true
 	openButton.Position = if triple then UDim2.new(0.5, -75, 1, -4) else UDim2.new(0.5, 0, 1, -4)
@@ -175,6 +183,10 @@ local function buyTriple()
 	if busy or not crateId or Reveal.IsPlaying() then
 		return
 	end
+	if player:GetAttribute("AutoOpen") then
+		Kit.Toast("Turn AUTO OPEN off first", "Bad")
+		return
+	end
 	if not nearStation(crateId) then
 		Kit.Toast("Walk to the crate first!", "Bad")
 		return
@@ -193,6 +205,10 @@ end
 local function buy()
 	local crateId = current
 	if busy or not crateId or Reveal.IsPlaying() then
+		return
+	end
+	if player:GetAttribute("AutoOpen") then
+		Kit.Toast("Turn AUTO OPEN off first", "Bad")
 		return
 	end
 	local d = State.Data
@@ -259,7 +275,7 @@ function CratePanel.Init()
 		Visible = false,
 		Parent = panel.Root,
 	})
-	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
+	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -180, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
 	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
@@ -305,10 +321,98 @@ function CratePanel.Init()
 		OnClick = buyTriple,
 	})
 	tripleButton.Visible = false
+	-- AUTO OPEN (game pass; NOT Auto Attack, which is free): locked button prompts the pass
+	autoButton = Kit.Button(panel.Body, {
+		Text = "🔒 AUTO OPEN",
+		Color = "Gray",
+		Size = UDim2.fromOffset(170, 34),
+		Position = UDim2.new(1, 0, 0, 8),
+		AnchorPoint = Vector2.new(1, 0),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = function()
+			local crateId = current
+			local d = State.Data
+			if busy or not crateId or not d then
+				return
+			end
+			local owned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true
+			if not owned then
+				local res = State.Request("Buy", Config.AutoOpen.Pass)
+				if not res.ok then
+					Kit.Toast(res.err or "Auto Open isn't available yet", "Bad")
+				end
+				return
+			end
+			if player:GetAttribute("AutoOpen") then
+				State.Request("AutoOpen", nil)
+				refresh()
+				return
+			end
+			if not nearStation(crateId) then
+				Kit.Toast("Walk to the crate first!", "Bad")
+				return
+			end
+			busy = true
+			local res = State.Request("AutoOpen", crateId)
+			busy = false
+			if res.ok then
+				panel:Close()
+				Kit.Toast("AUTO OPEN: ON - stand still at the crate", "Good")
+			else
+				Kit.Toast(if res.err == "NeedPass" then "Auto Open is a game pass" else (res.err or "Couldn't start"), "Bad")
+			end
+		end,
+	})
 end
 
 function CratePanel.Start()
 	-- Robux Exclusive Crate: the server grants the hunter and tells us to play the reveal
+	-- AUTO OPEN results: play them one after another (never two reveals at once)
+	local function playNextAuto()
+		if autoPlaying then
+			return
+		end
+		local nextRes = table.remove(autoQueue, 1)
+		if not nextRes then
+			return
+		end
+		autoPlaying = true
+		openedSignal:Fire(nextRes)
+		Reveal.Play(nextRes, nil, { Auto = true })
+	end
+	Reveal.Finished:Connect(function()
+		if autoPlaying then
+			autoPlaying = false
+			task.defer(playNextAuto)
+		end
+	end)
+	Reveal.AutoStopped:Connect(function()
+		table.clear(autoQueue)
+	end)
+	State.OnFx("AutoOpened", function(data: any)
+		if type(data) ~= "table" or type(data.Hunter) ~= "string" or not Config.Hunters[data.Hunter] then
+			return
+		end
+		local res: Reveal.Result = { Crate = tostring(data.Crate), Hunter = data.Hunter, Uid = tostring(data.Uid), IsNew = data.IsNew == true }
+		if #autoQueue >= 3 then
+			-- reveals can't keep up: list the extra hunter instead of queueing forever
+			local h = Config.Hunters[res.Hunter]
+			Kit.Toast("Auto Open: " .. Config.Rarities[h.Rarity].Name .. " " .. h.Name, "Good")
+			openedSignal:Fire(res)
+			return
+		end
+		table.insert(autoQueue, res)
+		if panel.IsOpen then
+			panel:Close()
+		end
+		playNextAuto()
+	end)
+	State.OnFx("AutoOpenStopped", function(data: any)
+		local reason = if type(data) == "table" and type(data.Reason) == "string" then data.Reason else "stopped"
+		Kit.Toast("AUTO OPEN stopped: " .. reason, "Bad")
+	end)
+
 	State.OnFx("Exclusive", function(data: any)
 		if type(data) == "table" and type(data.Hunter) == "string" and Config.Hunters[data.Hunter] then
 			if panel.IsOpen then

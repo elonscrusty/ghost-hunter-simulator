@@ -131,6 +131,9 @@ function ShopPanel.Init()
 	end
 	local passRow = section(3, "GAME PASSES (FOREVER)")
 	for i, pass in Config.GamePasses do
+		if pass.Hidden then
+			continue -- no longer sold (e.g. the old Auto Attack pass: Auto Attack is free now)
+		end
 		local sub = if pass.Blurb then pass.Blurb elseif pass.Slots then "+" .. pass.Slots .. " EQUIPPED HUNTERS" else "x" .. tostring(pass.Multiplier or 2) .. " ALL ECTOPLASM"
 		local b = card(passRow, i, Icons.ForProduct[pass.Key], pass.Icon, pass.Name, sub, pass.PriceLabel, pass.PassId ~= nil, "Orange", function()
 			buy(pass.Key)
