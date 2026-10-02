@@ -911,9 +911,9 @@ Config.Products = {
 } :: { ProductDef }
 -- Ecto product amounts scale with best zone (same table as Daily.ZoneMultiplier).
 Config.GamePasses = {
-	{ Key = "ExtraSlots", Name = "+2 HUNTER SLOTS", Icon = "🎒", PassId = nil, PriceLabel = "R$ 149", Slots = 2 },
-	{ Key = "DoubleEcto", Name = "PERMANENT 2x ECTOPLASM", Icon = "💎", PassId = nil, PriceLabel = "R$ 299", Multiplier = 2 },
-	{ Key = "AutoAttack", Name = "AUTO ATTACK", Icon = "🤖", PassId = nil, PriceLabel = "R$ 199", Blurb = "Your crew picks the next ghost for you" },
+	{ Key = "ExtraSlots", Name = "+2 HUNTER SLOTS", Icon = "🎒", PassId = 2007038280, PriceLabel = "R$ 149", Slots = 2 },
+	{ Key = "DoubleEcto", Name = "PERMANENT 2x ECTOPLASM", Icon = "💎", PassId = 2005844290, PriceLabel = "R$ 299", Multiplier = 2 },
+	{ Key = "AutoAttack", Name = "AUTO ATTACK", Icon = "🤖", PassId = 2007026293, PriceLabel = "R$ 199", Blurb = "Your crew picks the next ghost for you" },
 } :: { PassDef }
 
 --==================================================================
