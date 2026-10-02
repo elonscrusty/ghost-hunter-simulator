@@ -125,7 +125,7 @@ local function openCrate(player: Player, crateId: any): any
 	local def = Config.Hunters[hunterId]
 	local rarity = Config.Rarities[def.Rarity]
 	if rarity.Announce then
-		Fx.All("Announce", {
+		Fx.AllExcept(player, "Announce", {
 			Text = string.format("%s hatched a %s %s!", player.DisplayName, rarity.Name, string.upper(def.Name)),
 			Color = def.Rarity,
 		})

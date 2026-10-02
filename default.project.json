@@ -35,7 +35,8 @@
       "$className": "Workspace",
       "$properties": {
         "Gravity": 196.2,
-        "StreamingEnabled": false
+        "StreamingEnabled": false,
+        "SignalBehavior": "Deferred"
       }
     },
     "Lighting": {

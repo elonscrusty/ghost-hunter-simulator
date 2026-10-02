@@ -53,7 +53,8 @@ local function refresh()
 	end
 	local crate = Config.Crates[crateId]
 	panel.Title.Text = crate.Name
-	local luck = d.LuckMultiplier or 1
+	-- the luck boost ends on the server clock even if no new snapshot arrives
+	local luck = if (d.Boosts.Luck or 0) > State.Now() then Config.Boosts.Luck.Multiplier else 1
 	local odds = Rules.Odds(crate.Pool :: any, rarityOrder, luck, Config.LuckAffectsFromOrder)
 	-- cards only change with the crate, luck or discoveries; the button changes with Ectoplasm
 	local key = crateId .. "|" .. luck
@@ -223,6 +224,7 @@ function CratePanel.Init()
 		OnClick = buy,
 	})
 	openButton.Name = "OpenButton"
+	panel.Primary = openButton
 end
 
 function CratePanel.Start()
@@ -234,6 +236,14 @@ function CratePanel.Start()
 	State.EctoChanged:Connect(function()
 		if panel.IsOpen then
 			refresh()
+		end
+	end)
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			if panel.IsOpen then
+				refresh() -- keeps the odds honest when a luck boost runs out
+			end
 		end
 	end)
 end

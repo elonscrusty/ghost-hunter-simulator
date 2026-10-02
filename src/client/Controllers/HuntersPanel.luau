@@ -105,9 +105,9 @@ local function sortedUids(d: any): { string }
 	return uids
 end
 
-local function setInspect(uid: string?)
-	inspectUid = uid
-	local d = State.Data
+local previewUid: string? = nil
+
+local function clearPreview()
 	if spinConn then
 		spinConn:Disconnect()
 		spinConn = nil
@@ -118,23 +118,35 @@ local function setInspect(uid: string?)
 		end
 	end
 	spinModel = nil
+	previewUid = nil
+end
+
+local function setInspect(uid: string?)
+	inspectUid = uid
+	local d = State.Data
 	local h = uid and d and d.Hunters[uid]
 	inspect.Visible = h ~= nil and not releaseMode
 	emptyHint.Visible = not inspect.Visible and not releaseMode
-	if not h or not d then
+	if not h or not d or not uid then
+		clearPreview()
 		return
 	end
 	local def = Config.Hunters[h.Id]
 	local rar = rarityOf(h.Id)
-	local _, model = Portrait.Viewport(viewHolder, h.Id, false)
-	spinModel = model
-	if model then
-		local t0 = os.clock()
-		spinConn = RunService.RenderStepped:Connect(function()
-			if spinModel then
-				spinModel:PivotTo(CFrame.Angles(0, math.sin((os.clock() - t0) * 0.8) * 0.6, 0))
-			end
-		end)
+	-- the 3D preview is only rebuilt when you pick a different hunter (not on every update)
+	if previewUid ~= uid then
+		clearPreview()
+		previewUid = uid
+		local _, model = Portrait.Viewport(viewHolder, h.Id, false)
+		spinModel = model
+		if model then
+			local t0 = os.clock()
+			spinConn = RunService.RenderStepped:Connect(function()
+				if spinModel then
+					spinModel:PivotTo(CFrame.Angles(0, math.sin((os.clock() - t0) * 0.8) * 0.6, 0))
+				end
+			end)
+		end
 	end
 	nameLabel.Text = string.upper(def.Name)
 	rarityLabel.Text = rar.Name
@@ -251,11 +263,15 @@ local function makeCard(uid: string, hunterId: string): Card
 	return { Frame = f, Equip = eqBadge, Lock = lock, Select = sel }
 end
 
+local BATCH = 24 -- new cards per frame: a 150-hunter inventory opens without a hitch
+local rebuildQueued = false
+
 local function rebuild()
 	local d = State.Data
 	if not d then
 		return
 	end
+	local created = 0
 	-- remove cards for hunters that are gone
 	for uid, c in cards do
 		if not d.Hunters[uid] then
@@ -272,6 +288,21 @@ local function rebuild()
 		local h = d.Hunters[uid]
 		local c = cards[uid]
 		if not c then
+			if created >= BATCH then
+				-- finish the rest next frame
+				if not rebuildQueued then
+					rebuildQueued = true
+					task.spawn(function()
+						task.wait() -- next frame
+						rebuildQueued = false
+						if panel.IsOpen then
+							rebuild()
+						end
+					end)
+				end
+				continue
+			end
+			created += 1
 			c = makeCard(uid, h.Id)
 			cards[uid] = c
 		end
@@ -358,6 +389,7 @@ function HuntersPanel.Init()
 		end,
 	})
 	equipBestButton.Name = "EquipBest"
+	panel.Primary = equipBestButton
 	-- grid
 	grid = Kit.new("ScrollingFrame", {
 		BackgroundColor3 = Theme.Bg,
@@ -563,10 +595,7 @@ function HuntersPanel.Start()
 		if releaseMode then
 			setReleaseMode(false)
 		end
-		if spinConn then
-			spinConn:Disconnect()
-			spinConn = nil
-		end
+		clearPreview()
 	end)
 	State.Changed:Connect(function()
 		if panel.IsOpen then

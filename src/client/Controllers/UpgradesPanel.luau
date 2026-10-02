@@ -119,6 +119,9 @@ function UpgradesPanel.Init()
 			end,
 		})
 		rows[id] = { Pips = pips, Value = value, Buy = buy }
+		if i == 1 then
+			panel.Primary = buy
+		end
 	end
 	Hud.RegisterPanel("Upgrades", function()
 		panel:Toggle()

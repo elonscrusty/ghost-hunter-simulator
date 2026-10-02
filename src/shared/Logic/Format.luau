@@ -28,7 +28,11 @@ function Format.Short(n: number): string
 	end
 	local digits = if v >= 100 then 0 elseif v >= 10 then 1 else 2
 	local s = string.format("%." .. digits .. "f", math.floor(v * 10 ^ digits) / 10 ^ digits)
-	s = s:gsub("%.?0+$", "")
+	if digits > 0 then
+		-- trim trailing decimal zeros only ("1.50" -> "1.5", "2.00" -> "2"; "100" stays "100")
+		s = s:gsub("0+$", "")
+		s = s:gsub("%.$", "")
+	end
 	return (if n < 0 then "-" else "") .. s .. SUFFIX[i]
 end
 

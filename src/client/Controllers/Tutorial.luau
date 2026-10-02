@@ -45,7 +45,6 @@ local markerPart: Part
 local guideTarget: (() -> Vector3?)? = nil
 local guideUntil = math.huge
 local framed = false
-local equipRing: Frame? = nil
 
 local DOTS = 12
 local SPACING = 3.6
@@ -66,14 +65,28 @@ local function rootPart(): BasePart?
 end
 
 local hidden = CFrame.new(0, -400, 0)
+local dotsHidden = true
+local parts: { BasePart } = {}
+local cfs: { CFrame } = {}
+
+local function hideDots()
+	if dotsHidden then
+		return -- nothing to do: no per-frame writes while the guide is off
+	end
+	dotsHidden = true
+	for _, d in dots do
+		d.CFrame = hidden
+	end
+end
+
 local function updateGuide()
 	local root = rootPart()
 	local target = if guideTarget and os.clock() < guideUntil then guideTarget() else nil
 	if not root or not target or Reveal.IsPlaying() then
-		for _, d in dots do
-			d.CFrame = hidden
+		hideDots()
+		if marker.Enabled then
+			marker.Enabled = false
 		end
-		marker.Enabled = false
 		return
 	end
 	markerPart.CFrame = CFrame.new(target)
@@ -82,17 +95,16 @@ local function updateGuide()
 	local flat = Vector3.new(target.X - from.X, 0, target.Z - from.Z)
 	local dist = flat.Magnitude
 	if dist < 6 then
-		for _, d in dots do
-			d.CFrame = hidden
-		end
+		hideDots()
 		return
 	end
+	dotsHidden = false
 	local dir = flat.Unit
 	local t = os.clock()
 	local offset = (t * 6) % SPACING -- dots flow toward the target
 	local groundEnd = math.min(target.Y, from.Y + 2)
-	local parts: { BasePart } = {}
-	local cfs: { CFrame } = {}
+	table.clear(parts)
+	table.clear(cfs)
 	for i, d in dots do
 		local along = 2.5 + (i - 1) * SPACING + offset
 		if along > dist - 2 then
@@ -187,26 +199,33 @@ local function advance(to: number)
 	end
 end
 
-local function setEquipRing(on: boolean)
-	if on and not equipRing then
-		local b = HuntersPanel.EquipBestButton()
+-- Pulsing ring on a button inside a menu: while a menu is open the guidance lives on the
+-- button itself (a prompt pill would sit under/over the menu).
+local rings: { [GuiObject]: Frame } = {}
+local function pulseRing(b: GuiObject, on: boolean)
+	local existing = rings[b]
+	if on and not existing then
 		local ring: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 80, Parent = b })
-		Kit.Corner(ring, UDim.new(0, 16))
-		local st = Kit.Stroke(ring, 5, Theme.Ecto, Enum.ApplyStrokeMode.Border)
-		equipRing = ring
+		Kit.Corner(ring, UDim.new(0, 12))
+		local st = Kit.Stroke(ring, 4, Theme.Ecto, Enum.ApplyStrokeMode.Border)
+		rings[b] = ring
 		task.spawn(function()
 			while ring.Parent do
 				ring.Size = UDim2.fromScale(1, 1)
 				st.Transparency = 0
-				Kit.Tween(ring, 0.8, { Size = UDim2.new(1, 24, 1, 24) })
+				Kit.Tween(ring, 0.8, { Size = UDim2.new(1, 20, 1, 20) })
 				Kit.Tween(st, 0.8, { Transparency = 1 })
 				task.wait(0.9)
 			end
 		end)
-	elseif not on and equipRing then
-		equipRing:Destroy()
-		equipRing = nil
+	elseif not on and existing then
+		existing:Destroy()
+		rings[b] = nil
 	end
+end
+
+local function setEquipRing(on: boolean)
+	pulseRing(HuntersPanel.EquipBestButton(), on)
 end
 
 -- One-time camera framing of the nearest ghost for brand-new players.
@@ -265,7 +284,7 @@ local function tick()
 		return
 	end
 	goalChip.Visible = false
-	if Reveal.IsPlaying() then
+	if Reveal.IsPlaying() or (panel ~= nil and panel ~= "Crate" and panel ~= "Hunters") then
 		setPrompt(nil)
 		return
 	end
@@ -296,12 +315,15 @@ local function tick()
 	elseif step == 3 then
 		local price = Config.Crates.Beginner.Price
 		if (d.Stats.Crates or 0) >= 1 then
+			pulseRing(CratePanel.Button(), false)
 			advance(4)
 		elseif d.Ecto >= price or (d.FreeCrates.Beginner or 0) > 0 then
 			if CratePanel.IsOpen() then
-				setPrompt("TAP OPEN!")
+				setPrompt(nil)
+				pulseRing(CratePanel.Button(), true)
 				setGuide(nil)
 			else
+				pulseRing(CratePanel.Button(), false)
 				setPrompt("OPEN A HUNTER CRATE!", "Follow the trail to the crate")
 				setGuide(cratePos)
 			end
@@ -310,12 +332,13 @@ local function tick()
 			setGuide(if target == 0 then nearestGhost else nil)
 		end
 	elseif step == 4 then
-		if #d.Equipped >= 2 then
+		-- done once a second hunter is equipped (or all you own, if you released the new one)
+		if #d.Equipped >= math.min(2, State.CountOwned()) then
 			Hud.Pulse("Hunters", false)
 			setEquipRing(false)
 			advance(5)
 		elseif panel == "Hunters" then
-			setPrompt("TAP EQUIP BEST!")
+			setPrompt(nil)
 			Hud.Pulse("Hunters", false)
 			setEquipRing(true)
 		else
@@ -361,7 +384,7 @@ function Tutorial.Init()
 	Kit.Button(promptFrame, {
 		Text = "SKIP",
 		Color = "Gray",
-		Size = UDim2.fromOffset(52, 30),
+		Size = UDim2.fromOffset(58, 40),
 		Position = UDim2.new(1, -8, 0.5, 0),
 		AnchorPoint = Vector2.new(1, 0.5),
 		TextStyle = "Tiny",

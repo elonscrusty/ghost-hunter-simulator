@@ -15,7 +15,6 @@ local TweenService = game:GetService("TweenService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
-local Net = require(GH.Net)
 local Rules = require(GH.Logic.Rules)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
@@ -165,6 +164,9 @@ local function unlockSequence(zoneId: string)
 	applyGates()
 end
 
+local stepParts: { BasePart } = {}
+local stepCfs: { CFrame } = {}
+
 local function step()
 	local cam = workspace.CurrentCamera
 	if not cam then
@@ -172,8 +174,9 @@ local function step()
 	end
 	local camPos = cam.CFrame.Position
 	local t = os.clock()
-	local parts: { BasePart } = {}
-	local cfs: { CFrame } = {}
+	table.clear(stepParts)
+	table.clear(stepCfs)
+	local parts, cfs = stepParts, stepCfs
 	for part, p in props do
 		if (p.Base.Position - camPos).Magnitude > 160 then
 			continue
@@ -220,13 +223,18 @@ function Ambience.Start()
 				local part = flickers[math.random(1, #flickers)]
 				local light = part:FindFirstChildWhichIsA("Light")
 				if light then
+					local base = part:GetAttribute("BaseTransparency")
+					if type(base) ~= "number" then
+						base = part.Transparency
+						part:SetAttribute("BaseTransparency", base)
+					end
 					local n = math.random(1, 3)
 					for _ = 1, n do
 						light.Enabled = false
-						part.Transparency = 0.6
+						part.Transparency = math.max(base :: number, 0.6)
 						task.wait(0.04 + math.random() * 0.08)
 						light.Enabled = true
-						part.Transparency = 0
+						part.Transparency = base :: number
 						task.wait(0.03 + math.random() * 0.06)
 					end
 				end
@@ -251,10 +259,12 @@ function Ambience.Start()
 	end)
 
 	-- gates
-	State.Changed:Connect(applyGates)
-	Net.Event("Fx").OnClientEvent:Connect(function(kind: string, data: any)
-		if kind == "ZoneUnlocked" and type(data) == "table" and type(data.Zone) == "string" then
-			task.spawn(unlockSequence, data.Zone)
+	State.OnData(function()
+		applyGates()
+	end)
+	State.OnFx("ZoneUnlocked", function(data: any)
+		if type(data) == "table" and type(data.Zone) == "string" then
+			unlockSequence(data.Zone)
 		end
 	end)
 

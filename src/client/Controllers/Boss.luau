@@ -9,11 +9,11 @@ local TweenService = game:GetService("TweenService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
-local Net = require(GH.Net)
 local Format = require(GH.Logic.Format)
 local Signal = require(GH.Signal)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
+local State = require(Client.State)
 local Theme = require(Client.UI.Theme)
 local Hud = require(script.Parent.Hud)
 local Ghosts = require(script.Parent.Ghosts)
@@ -122,7 +122,7 @@ local function onBoss(data: any)
 			task.spawn(function()
 				local cam = workspace.CurrentCamera
 				local t0 = os.clock()
-				while os.clock() - t0 < 0.6 do
+				while os.clock() - t0 < 0.6 and cam.CameraType ~= Enum.CameraType.Scriptable do
 					local k = 0.6 * (1 - (os.clock() - t0) / 0.6)
 					cam.CFrame *= CFrame.new((math.random() - 0.5) * k, (math.random() - 0.5) * k, 0)
 					RunService.RenderStepped:Wait()
@@ -177,7 +177,7 @@ function Boss.Init()
 	goButton = Kit.Button(frame, {
 		Text = "📍 SHOW ME",
 		Color = "Pink",
-		Size = UDim2.fromOffset(120, 32),
+		Size = UDim2.fromOffset(140, 40),
 		TextStyle = "Small",
 		Position = UDim2.new(0.5, 0, 1, 6),
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -196,11 +196,7 @@ function Boss.State(): (string, Vector3)
 end
 
 function Boss.Start()
-	Net.Event("Fx").OnClientEvent:Connect(function(kind: string, data: any)
-		if kind == "Boss" then
-			onBoss(data)
-		end
-	end)
+	State.OnFx("Boss", onBoss)
 	RunService.Heartbeat:Connect(function()
 		if state == "Warning" then
 			local left = math.max(0, warnAt - workspace:GetServerTimeNow())

@@ -269,12 +269,13 @@ local function makeScreen(name: string, order: number): ScreenGui
 	local g: ScreenGui = Kit.new("ScreenGui", {
 		Name = name,
 		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		DisplayOrder = order,
-		ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets,
-		Parent = player:WaitForChild("PlayerGui"),
 	})
+	-- keep clear of the Roblox top bar and device notches (set after creation: the older
+	-- IgnoreGuiInset property would otherwise overwrite it depending on assignment order)
+	g.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+	g.Parent = player:WaitForChild("PlayerGui")
 	Kit.new("UIScale", { Scale = currentScale, Parent = g })
 	return g
 end
@@ -337,7 +338,13 @@ export type Panel = {
 	Fit: (Panel) -> (),
 	OnOpen: Signal.Signal,
 	OnClose: Signal.Signal,
+	Primary: GuiObject?, -- gamepad: selected when the panel opens (else the X button)
+	CloseButton: GuiObject?,
 }
+
+local function usingGamepad(): boolean
+	return UserInputService.GamepadEnabled and UserInputService:GetLastInputType().Name:match("^Gamepad") ~= nil
+end
 
 local current: Panel? = nil
 local dim: TextButton? = nil
@@ -447,6 +454,9 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			play("PanelOpen")
 			self.OnOpen:Fire()
 			panelOpenedSignal:Fire(self.Name)
+			if usingGamepad() then
+				GuiService.SelectedObject = self.Primary or self.CloseButton
+			end
 		end,
 		Close = function(self: Panel)
 			if not self.IsOpen then
@@ -462,6 +472,10 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 						d.Visible = false
 					end
 				end)
+			end
+			local sel = GuiService.SelectedObject
+			if sel and sel:IsDescendantOf(root) then
+				GuiService.SelectedObject = nil
 			end
 			Kit.Tween(scale, 0.12, { Scale = 0.75 })
 			task.delay(0.12, function()
@@ -481,7 +495,7 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 		end,
 	}
 	-- obvious X (44 logical px ≈ a comfortable finger target even on phones)
-	Kit.Button(root, {
+	panel.CloseButton = Kit.Button(root, {
 		Text = "X",
 		Color = "Red",
 		Size = UDim2.fromOffset(44, 44),

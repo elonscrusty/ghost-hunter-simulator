@@ -11,12 +11,12 @@ local TweenService = game:GetService("TweenService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
-local Net = require(GH.Net)
 local Signal = require(GH.Signal)
 local Format = require(GH.Logic.Format)
 local GhostRig = require(GH.Rigs.GhostRig)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
+local State = require(Client.State)
 local Theme = require(Client.UI.Theme)
 local WorldLabel = require(Client.UI.WorldLabel)
 local Effects = require(script.Parent.Effects)
@@ -251,7 +251,8 @@ local function add(model: Instance)
 		Ghosts.SetSelected(uid)
 	end
 	model:GetAttributeChangedSignal("T0"):Connect(function()
-		readSegment(e)
+		-- From/To/T0/Dur are set together; read them once they have all arrived
+		task.defer(readSegment, e)
 	end)
 	model:GetAttributeChangedSignal("Spirit"):Connect(function()
 		updateSpirit(e, (model:GetAttribute("Spirit") :: number?) or 0)
@@ -428,11 +429,7 @@ function Ghosts.Start()
 	for _, m in folder:GetChildren() do
 		task.spawn(add, m)
 	end
-	Net.Event("Fx").OnClientEvent:Connect(function(kind: string, data: any)
-		if kind == "Poof" then
-			poof(data)
-		end
-	end)
+	State.OnFx("Poof", poof)
 	RunService.RenderStepped:Connect(step)
 end
 

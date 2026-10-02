@@ -6,11 +6,15 @@
 -- CameraPunch). Commons are quick; "Fast crate opening" in settings shortens everything; SKIP
 -- jumps straight to the result. Every step is written as anim(duration, apply(alpha)) so a
 -- skip simply applies each step's end state.
+local ContextActionService = game:GetService("ContextActionService")
+local GuiService = game:GetService("GuiService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local UserInputService = game:GetService("UserInputService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
@@ -50,6 +54,19 @@ local poseConn: RBXScriptConnection? = nil
 local hunterRig: HunterRig.Rig? = nil
 local hunterState = "Idle"
 local againFn: (() -> ())? = nil
+local liveTweens: { Tween } = {}
+local shakeToken = 0
+local cardShown = false
+local okButton: TextButton? = nil
+
+-- Tweens the reveal starts are tracked so closing it can stop them (no lingering darkening
+-- or FOV changes after a quick SKIP + OK).
+local function tween(obj: Instance, info: TweenInfo, props: { [string]: any }): Tween
+	local tw = TweenService:Create(obj, info, props)
+	table.insert(liveTweens, tw)
+	tw:Play()
+	return tw
+end
 local finishedSignal = Signal.new()
 Reveal.Finished = finishedSignal -- (result)
 local startedSignal = Signal.new()
@@ -251,12 +268,18 @@ local function cameraShake(intensity: number, t: number)
 	if not cam or skipping then
 		return
 	end
+	local my = shakeToken
 	local base = cam.CFrame
 	anim(t, function(a)
+		if my ~= shakeToken or not playing then
+			return
+		end
 		local k = intensity * (1 - a)
 		cam.CFrame = base * CFrame.new((math.random() - 0.5) * k, (math.random() - 0.5) * k, 0)
 	end)
-	cam.CFrame = base
+	if my == shakeToken and playing then
+		cam.CFrame = base
+	end
 end
 
 local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
@@ -352,7 +375,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 			end,
 		})
 	end
-	Kit.Button(row, {
+	okButton = Kit.Button(row, {
 		Text = "OK",
 		Color = "Blue",
 		Size = UDim2.fromOffset(100, 44),
@@ -364,6 +387,13 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 end
 
 local function teardownStage()
+	shakeToken += 1
+	for _, tw in liveTweens do
+		tw:Cancel()
+	end
+	table.clear(liveTweens)
+	cardShown = false
+	okButton = nil
 	if poseConn then
 		poseConn:Disconnect()
 		poseConn = nil
@@ -403,6 +433,11 @@ function Reveal.Close()
 	Kit.Screen().Enabled = true
 	setControls(true)
 	Targeting.SetBlocked(false)
+	ProximityPromptService.Enabled = Kit.CurrentPanel() == nil
+	ContextActionService:UnbindAction("GHRevealB")
+	if GuiService.SelectedObject and not GuiService.SelectedObject:IsDescendantOf(Kit.Screen()) then
+		GuiService.SelectedObject = nil
+	end
 	playing = false
 	finishedSignal:Fire()
 end
@@ -425,6 +460,17 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 	Targeting.SetBlocked(true)
 	setControls(false)
 	Kit.Screen().Enabled = false
+	ProximityPromptService.Enabled = false -- station prompts would float over the cinematic
+	ContextActionService:BindActionAtPriority("GHRevealB", function(_, inputState)
+		if inputState == Enum.UserInputState.Begin then
+			if cardShown then
+				Reveal.Close()
+			else
+				skipping = true
+			end
+		end
+		return Enum.ContextActionResult.Sink
+	end, false, 3000, Enum.KeyCode.ButtonB)
 	buildStage(rarity)
 	local g, skip = buildGui()
 	local cam = workspace.CurrentCamera
@@ -432,6 +478,7 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 	cam.FieldOfView = CAM_FOV
 	local camCF = CFrame.lookAt(STAGE + Vector3.new(0, 4.6, -13), STAGE + Vector3.new(0, 2.6, 0))
 	cam.CFrame = camCF
+	cam.Focus = CFrame.new(STAGE + Vector3.new(0, 2.6, 0)) -- lighting detail follows Focus
 	flash(Color3.new(1, 1, 1), 0.35)
 
 	local f = if fast() then 0.5 else 1
@@ -488,7 +535,7 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 		charge = e
 	end
 	if cc and rarity.Darken > 0 and not skipping then
-		TweenService:Create(cc, TweenInfo.new(shakeT * 0.6), { Brightness = -rarity.Darken * 0.35, Saturation = -rarity.Darken * 0.4 }):Play()
+		tween(cc, TweenInfo.new(shakeT * 0.6), { Brightness = -rarity.Darken * 0.35, Saturation = -rarity.Darken * 0.4 })
 	end
 	local rl = (if stage then stage:FindFirstChild("RarityLight", true) else nil) :: any
 	if not skipping then
@@ -541,16 +588,16 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 		Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = rarity.Particles, Size = 0.9, Speed = 26, Life = 1.1, Gravity = 18 })
 		Effects.Ring(STAGE + Vector3.new(0, 0.2, 0), rarity.Color, 10, 0.6)
 		if cc then
-			TweenService:Create(cc, TweenInfo.new(0.5), { Brightness = 0.12, Saturation = 0.15 }):Play()
+			tween(cc, TweenInfo.new(0.5), { Brightness = 0.12, Saturation = 0.15 })
 			task.delay(0.5, function()
 				if cc then
-					TweenService:Create(cc, TweenInfo.new(0.6), { Brightness = 0, Saturation = 0 }):Play()
+					tween(cc, TweenInfo.new(0.6), { Brightness = 0, Saturation = 0 })
 				end
 			end)
 		end
 		if rarity.CameraPunch then
 			cam.FieldOfView = CAM_FOV - 10
-			TweenService:Create(cam, TweenInfo.new(0.45, Enum.EasingStyle.Back), { FieldOfView = CAM_FOV }):Play()
+			tween(cam, TweenInfo.new(0.45, Enum.EasingStyle.Back), { FieldOfView = CAM_FOV })
 			task.spawn(cameraShake, 0.5 * rarity.ShakeIntensity, 0.35)
 		end
 	end
@@ -598,7 +645,12 @@ function Reveal.Play(res: Result, again: (() -> ())?)
 	skipping = false
 	raySpeed = 25
 	cam.CFrame = camCF
+	cam.Focus = CFrame.new(STAGE + Vector3.new(0, 2.6, 0))
 	resultCard(g, res, rarity)
+	cardShown = true
+	if okButton and UserInputService.GamepadEnabled and UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1 then
+		GuiService.SelectedObject = okButton
+	end
 end
 
 function Reveal.Init()

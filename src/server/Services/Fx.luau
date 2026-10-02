@@ -15,6 +15,15 @@ function Fx.All(kind: string, data: any?)
 	remote:FireAllClients(kind, data)
 end
 
+-- Everyone except one player (e.g. the opener of a legendary crate, who sees the reveal).
+function Fx.AllExcept(except: Player, kind: string, data: any?)
+	for _, pl in game:GetService("Players"):GetPlayers() do
+		if pl ~= except then
+			remote:FireClient(pl, kind, data)
+		end
+	end
+end
+
 function Fx.To(player: Player, kind: string, data: any?)
 	remote:FireClient(player, kind, data)
 end

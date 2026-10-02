@@ -104,7 +104,9 @@ function Sound.Start()
 	if music then
 		music:Play()
 	end
-	State.Changed:Connect(refreshMusic)
+	State.OnData(function()
+		refreshMusic()
+	end)
 end
 
 return Sound

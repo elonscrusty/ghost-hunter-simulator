@@ -153,7 +153,11 @@ local function cycleTarget()
 		return
 	end
 	local list = {}
+	local d = State.Data
 	for uid, e in Ghosts.All() do
+		if e.Dying or (d and not d.Zones[e.Def.Zone]) then
+			continue
+		end
 		if (e.Pos - p).Magnitude <= Config.Combat.MaxRange then
 			local sp, onScreen = cam:WorldToViewportPoint(e.Pos)
 			if onScreen then

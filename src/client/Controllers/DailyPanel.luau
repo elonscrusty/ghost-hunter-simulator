@@ -148,6 +148,7 @@ function DailyPanel.Init()
 		ZIndex = 63,
 		OnClick = claim,
 	})
+	panel.Primary = claimButton
 	Hud.RegisterPanel("Daily", function()
 		panel:Toggle()
 	end)

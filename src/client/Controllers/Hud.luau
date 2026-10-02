@@ -9,7 +9,6 @@ local RunService = game:GetService("RunService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
-local Net = require(GH.Net)
 local Format = require(GH.Logic.Format)
 local Rules = require(GH.Logic.Rules)
 local Client = script.Parent.Parent
@@ -250,7 +249,7 @@ local function buildSettings(screen: ScreenGui)
 		})
 		buttons[t.Key] = b
 	end
-	State.Changed:Connect(function(d)
+	State.OnData(function(d)
 		for _, t in toggles do
 			local on = d.Settings[t.Key] == true
 			local b = buttons[t.Key]
@@ -264,9 +263,9 @@ local function buildSettings(screen: ScreenGui)
 	Kit.Button(screen, {
 		Text = "⚙",
 		Color = "Gray",
-		Size = UDim2.fromOffset(42, 42),
-		Position = UDim2.new(1, -10, 0, 8),
-		AnchorPoint = Vector2.new(1, 0),
+		Size = UDim2.fromOffset(44, 44),
+		Position = UDim2.new(1, -10, 0.5, -48),
+		AnchorPoint = Vector2.new(1, 0.5),
 		TextStyle = "Heading",
 		OnClick = function()
 			panel:Toggle()
@@ -289,9 +288,9 @@ local function buildAuto(screen: ScreenGui)
 	autoButton = Kit.Button(screen, {
 		Text = "🤖 AUTO: OFF",
 		Color = "Gray",
-		Size = UDim2.fromOffset(132, 36),
-		Position = UDim2.new(1, -10, 0, 58),
-		AnchorPoint = Vector2.new(1, 0),
+		Size = UDim2.fromOffset(132, 40),
+		Position = UDim2.new(1, -10, 0.5, 4),
+		AnchorPoint = Vector2.new(1, 0.5),
 		TextStyle = "Small",
 		OnClick = function()
 			if busyAuto then
@@ -311,7 +310,9 @@ local function buildAuto(screen: ScreenGui)
 	autoButton.Name = "AutoAttack"
 	autoButton.Visible = false
 	player:GetAttributeChangedSignal("AutoAttack"):Connect(refreshAuto)
-	State.Changed:Connect(refreshAuto)
+	State.OnData(function()
+		refreshAuto()
+	end)
 end
 
 local function buildBanners()
@@ -341,6 +342,7 @@ local function buildBanners()
 		Position = UDim2.new(0.5, 0, 0, -60),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
+		Visible = false,
 		ZIndex = 75,
 		Parent = overlay,
 	})
@@ -393,10 +395,15 @@ function Hud.Announce(text: string, c1: Color3?, c2: Color3?)
 	local g = announceFrame:FindFirstChildOfClass("UIGradient") :: UIGradient
 	g.Color = ColorSequence.new(c1 or Theme.Gold, c2 or Color3.fromRGB(255, 120, 40))
 	-- below the boss bar / goal chip so event warnings never stack on top of each other
+	announceFrame.Visible = true
 	Kit.Tween(announceFrame, 0.3, { Position = UDim2.new(0.5, 0, 0, 174) }, Enum.EasingStyle.Back)
 	task.delay(4, function()
 		if announceToken == my then
 			Kit.Tween(announceFrame, 0.3, { Position = UDim2.new(0.5, 0, 0, -60) })
+			task.wait(0.3)
+			if announceToken == my then
+				announceFrame.Visible = false -- parked off-screen must not peek under the top bar
+			end
 		end
 	end)
 end
@@ -435,9 +442,16 @@ local function refreshBoosts()
 	end
 end
 
+local seeded = false
 local function onData(d: any)
 	powerLabel.Text = "⚡ " .. Format.Short(d.CrewPower or 0) .. " POWER"
 	targetEcto = d.Ecto
+	if not seeded then
+		-- first snapshot: show the balance as-is (no count-up from 0 on every join)
+		seeded = true
+		shownEcto = d.Ecto
+		ectoLabel.Text = Format.Short(d.Ecto)
+	end
 	refreshBoosts()
 end
 
@@ -460,7 +474,7 @@ function Hud.Init()
 end
 
 function Hud.Start()
-	State.Changed:Connect(onData)
+	State.OnData(onData)
 	State.EctoChanged:Connect(function(new: number, old: number)
 		targetEcto = new
 		if new > old then
@@ -502,13 +516,12 @@ function Hud.Start()
 			end
 		end
 	end)
-	Net.Event("Fx").OnClientEvent:Connect(function(kind: string, data: any)
-		if kind == "Toast" then
-			Kit.Toast(data.Text, data.Color)
-		elseif kind == "Announce" then
-			local r = Config.Rarities[data.Color]
-			Hud.Announce(data.Text, r and r.Color, r and r.Color2)
-		end
+	State.OnFx("Toast", function(data: any)
+		Kit.Toast(data.Text, data.Color)
+	end)
+	State.OnFx("Announce", function(data: any)
+		local r = Config.Rarities[data.Color]
+		Hud.Announce(data.Text, r and r.Color, r and r.Color2)
 	end)
 end
 

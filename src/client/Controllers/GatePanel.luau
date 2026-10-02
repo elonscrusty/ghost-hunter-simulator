@@ -98,6 +98,7 @@ function GatePanel.Init()
 			end
 		end,
 	})
+	panel.Primary = unlockButton
 end
 
 function GatePanel.Start()
