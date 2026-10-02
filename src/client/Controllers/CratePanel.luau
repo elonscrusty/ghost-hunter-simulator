@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Icons = require(GH.Icons)
 local Rules = require(GH.Logic.Rules)
 local Format = require(GH.Logic.Format)
 local Signal = require(GH.Signal)
@@ -25,6 +26,7 @@ local openButton: TextButton
 local infoLabel: TextLabel
 local luckLabel: TextLabel
 local current: string? = nil
+local crateIcon: ImageLabel
 local busy = false
 local openedSignal = Signal.new()
 CratePanel.Opened = openedSignal -- (result) after a successful purchase
@@ -53,6 +55,9 @@ local function refresh()
 	end
 	local crate = Config.Crates[crateId]
 	panel.Title.Text = crate.Name
+	local img = Icons.Get(Icons.ForCrate[crateId])
+	crateIcon.Image = img or ""
+	crateIcon.Visible = img ~= nil
 	-- the luck boost ends on the server clock even if no new snapshot arrives
 	local luck = if (d.Boosts.Luck or 0) > State.Now() then Config.Boosts.Luck.Multiplier else 1
 	local odds = Rules.Odds(crate.Pool :: any, rarityOrder, luck, Config.LuckAffectsFromOrder)
@@ -190,6 +195,16 @@ end
 
 function CratePanel.Init()
 	panel = Kit.Panel("Crate", "HUNTER CRATE", Vector2.new(700, 380), "Orange")
+	-- crate picture in the top-left corner (uploaded icon per crate, see Icons.ForCrate)
+	crateIcon = Kit.new("ImageLabel", {
+		BackgroundTransparency = 1,
+		ScaleType = Enum.ScaleType.Fit,
+		Size = UDim2.fromOffset(72, 72),
+		Position = UDim2.fromOffset(-14, -34),
+		ZIndex = 64,
+		Visible = false,
+		Parent = panel.Root,
+	})
 	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false

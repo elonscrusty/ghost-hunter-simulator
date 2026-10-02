@@ -18,7 +18,7 @@ local Sound = require(script.Parent.Sound)
 
 local WorldsPanel = {}
 
-type Card = { Frame: Frame, Status: TextLabel, Lock: TextLabel, Go: TextButton }
+type Card = { Frame: Frame, Status: TextLabel, Lock: GuiObject, Go: TextButton }
 
 local player = Players.LocalPlayer
 local panel: Kit.Panel
@@ -129,7 +129,7 @@ function WorldsPanel.Init()
 		end
 		Kit.Label(f, z.Name, { Size = UDim2.new(1, -12, 0, 36), Position = UDim2.fromOffset(6, if hasIcon then 38 else 32), Style = "Body", ZIndex = 64 })
 		local status = Kit.Label(f, "", { Size = UDim2.new(1, -12, 0, 18), Position = UDim2.fromOffset(6, 74), Style = "Small", Fit = true, ZIndex = 64 })
-		local lock = Kit.Label(f, "🔒", { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(1, -6, 0, 4), AnchorPoint = Vector2.new(1, 0), Style = "Icon", Stroke = 0, ZIndex = 65 })
+		local lock = Kit.Icon(f, "lock", "🔒", { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(1, -6, 0, 4), AnchorPoint = Vector2.new(1, 0), Style = "Icon", Stroke = 0, ZIndex = 65 })
 		local go = Kit.Button(f, {
 			Text = "GO!",
 			Color = "Green",

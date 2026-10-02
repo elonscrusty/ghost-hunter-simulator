@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Icons = require(GH.Icons)
 local Format = require(GH.Logic.Format)
 local Rules = require(GH.Logic.Rules)
 local Client = script.Parent.Parent
@@ -26,6 +27,7 @@ Hud.Buttons = {} :: { [string]: TextButton }
 local ectoLabel: TextLabel
 local ectoPill: Frame
 local powerLabel: TextLabel
+local powerPrefix = "⚡ "
 local boostHolder: Frame
 local dailyBadge: Frame
 local menu: Frame
@@ -127,6 +129,20 @@ local function buildTop(screen: ScreenGui)
 	Kit.Gradient(orb, Theme.Ecto, Theme.Ecto2, 135)
 	local shine: Frame = Kit.new("Frame", { Size = UDim2.fromScale(0.3, 0.24), Position = UDim2.fromScale(0.26, 0.2), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.3, ZIndex = 4, Parent = orb })
 	Kit.Corner(shine, UDim.new(1, 0))
+	if Icons.Get("ecto") then
+		-- uploaded Ectoplasm icon replaces the drawn orb
+		orb.BackgroundTransparency = 1
+		shine.Visible = false
+		local st = orb:FindFirstChildOfClass("UIStroke")
+		if st then
+			st.Enabled = false
+		end
+		local g = orb:FindFirstChildOfClass("UIGradient")
+		if g then
+			g.Enabled = false
+		end
+		Kit.Icon(orb, "ecto", "", { Size = UDim2.fromScale(1.15, 1.15), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 4 })
+	end
 	ectoLabel = Kit.Label(ectoPill, "0", { Size = UDim2.new(1, -46, 1, 0), Position = UDim2.fromOffset(40, 0), Color = Theme.Ecto, Style = "Currency", Fit = true })
 	-- crew power
 	local power: Frame = Kit.new("Frame", {
@@ -138,7 +154,12 @@ local function buildTop(screen: ScreenGui)
 		Parent = screen,
 	})
 	Kit.Corner(power, UDim.new(1, 0))
-	powerLabel = Kit.Label(power, "⚡ 0 POWER", { Size = UDim2.new(1, -12, 1, 0), Position = UDim2.fromOffset(6, 0), Color = Theme.Gold, Style = "Small", Fit = true })
+	local powerIcon = Icons.Get("power") ~= nil
+	if powerIcon then
+		Kit.Icon(power, "power", "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3 })
+	end
+	powerPrefix = if powerIcon then "" else "⚡ "
+	powerLabel = Kit.Label(power, powerPrefix .. "0 POWER", { Size = UDim2.new(1, if powerIcon then -30 else -12, 1, 0), Position = UDim2.fromOffset(if powerIcon then 26 else 6, 0), Color = Theme.Gold, Style = "Small", Fit = true })
 	-- boosts (only while active)
 	boostHolder = Kit.new("Frame", {
 		Size = UDim2.fromOffset(340, 22),
@@ -270,8 +291,8 @@ local function buildSettings(screen: ScreenGui)
 	Hud.RegisterPanel("Settings", function()
 		panel:Toggle()
 	end)
-	Kit.Button(screen, {
-		Text = "⚙",
+	local gear = Kit.Button(screen, {
+		Text = if Icons.Get("menu_settings") then "" else "⚙",
 		Color = "Gray",
 		Size = UDim2.fromOffset(44, 44),
 		Position = UDim2.new(1, -10, 0.5, -48),
@@ -281,6 +302,9 @@ local function buildSettings(screen: ScreenGui)
 			panel:Toggle()
 		end,
 	})
+	if Icons.Get("menu_settings") then
+		Kit.Icon(gear, "menu_settings", "", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3 })
+	end
 end
 
 -- AUTO ATTACK toggle: only shown to Auto Attack pass owners. The server checks ownership.
@@ -454,7 +478,7 @@ end
 
 local seeded = false
 local function onData(d: any)
-	powerLabel.Text = "⚡ " .. Format.Short(d.CrewPower or 0) .. " POWER"
+	powerLabel.Text = powerPrefix .. Format.Short(d.CrewPower or 0) .. " POWER"
 	targetEcto = d.Ecto
 	if not seeded then
 		-- first snapshot: show the balance as-is (no count-up from 0 on every join)
