@@ -887,10 +887,10 @@ export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string
 export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Blurb: string? }
 
 Config.Products = {
-	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = nil, PriceLabel = "R$ 49" },
-	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 12000, ProductId = nil, PriceLabel = "R$ 199" },
-	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = nil, PriceLabel = "R$ 49" },
-	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = nil, PriceLabel = "R$ 49" },
+	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = 3715910102, PriceLabel = "R$ 49" },
+	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 12000, ProductId = 3715909987, PriceLabel = "R$ 199" },
+	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 49" },
+	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 49" },
 } :: { ProductDef }
 -- Ecto product amounts scale with best zone (same table as Daily.ZoneMultiplier).
 Config.GamePasses = {
