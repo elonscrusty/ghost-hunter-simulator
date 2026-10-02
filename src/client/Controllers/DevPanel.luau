@@ -61,6 +61,7 @@ local ACTIONS: { Action } = {
 	{ Text = "ALL 32 HUNTERS", Cmd = "Hunters", Color = "Orange" },
 	{ Text = "MAX UPGRADES", Cmd = "MaxUpgrades", Color = "Teal" },
 	{ Text = "START EVENT", Cmd = "Event", Color = "Pink" },
+	{ Text = "2X ECTOPLASM: 2 DAYS", Cmd = "Ecto2x", Arg = 48, Color = "Green" },
 	{ Text = "2X ECTOPLASM: ON", Cmd = "Ecto2x", Arg = true, Color = "Green" },
 	{ Text = "2X ECTOPLASM: OFF", Cmd = "Ecto2x", Arg = false, Color = "Red" },
 	{ Text = "RESET DAILY", Cmd = "ResetDaily", Color = "Purple" },

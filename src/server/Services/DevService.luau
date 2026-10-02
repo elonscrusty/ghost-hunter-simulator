@@ -82,8 +82,13 @@ function DevService.Run(player: Player, cmd: string, arg: any): string?
 		end
 		DataService.Changed(player)
 	elseif cmd == "Ecto2x" then
-		-- GLOBAL 2X Ectoplasm (all servers); arg = true / false
-		local err = GlobalEventService.SetEcto2x(arg == true)
+		-- GLOBAL 2X Ectoplasm (all servers); arg = true (until OFF) / false / hours (timed, 1-168)
+		local err
+		if type(arg) == "number" and arg == arg then
+			err = GlobalEventService.SetEcto2x(true, math.clamp(arg, 1, 168) * 3600)
+		else
+			err = GlobalEventService.SetEcto2x(arg == true)
+		end
 		if err then
 			return err
 		end

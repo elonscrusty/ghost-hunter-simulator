@@ -5,6 +5,8 @@
 --   * a change is broadcast with MessagingService so RUNNING servers update within seconds
 --   * every server also re-reads the DataStore every RefreshSeconds (a missed message heals)
 --   * clients see workspace attribute "Ecto2x" (indicator) and get an "Ecto2xEvent" message
+--   * an event can have an end time (Ends, unix seconds; 0 = until turned off). Every server
+--     switches itself OFF when it passes, so a timed event needs no further action
 -- Only DevService (server-checked developer UserIds) can change it. In Studio changes stay in
 -- the test server, so a Studio test can never switch the event on for live players.
 local DataStoreService = game:GetService("DataStoreService")
@@ -21,35 +23,48 @@ local Fx = require(script.Parent.Fx)
 
 local GlobalEventService = {}
 
-type State = { Ecto2x: boolean, T: number }
+type State = { Ecto2x: boolean, T: number, Ends: number }
 
 local G = Config.GlobalEvents
 local IS_STUDIO = RunService:IsStudio()
 local store: DataStore? = nil
-local current: State = { Ecto2x = false, T = 0 }
+local current: State = { Ecto2x = false, T = 0, Ends = 0 }
 
 local function sanitize(v: any): State
 	if type(v) == "table" then
-		return { Ecto2x = v.Ecto2x == true, T = if type(v.T) == "number" then v.T else 0 }
+		return {
+			Ecto2x = v.Ecto2x == true,
+			T = if type(v.T) == "number" then v.T else 0,
+			Ends = if type(v.Ends) == "number" then v.Ends else 0,
+		}
 	end
-	return { Ecto2x = false, T = 0 }
+	return { Ecto2x = false, T = 0, Ends = 0 }
 end
+
+local function active(st: State): boolean
+	return st.Ecto2x and (st.Ends <= 0 or os.time() < st.Ends)
+end
+
+local shownOn = false -- what this server currently applies (saved state + end time)
 
 -- Applies a state in this server (idempotent; older states are ignored).
 local function apply(new: State, announce: boolean)
 	if new.T < current.T then
 		return
 	end
-	local was = current.Ecto2x
 	current = new
-	PlayerInfo.SetGlobalEctoMultiplier(if new.Ecto2x then G.Ecto2xMultiplier else 1)
-	workspace:SetAttribute("Ecto2x", new.Ecto2x)
-	if was ~= new.Ecto2x then
+	local on = active(new)
+	local was = shownOn
+	shownOn = on
+	PlayerInfo.SetGlobalEctoMultiplier(if on then G.Ecto2xMultiplier else 1)
+	workspace:SetAttribute("Ecto2x", on)
+	workspace:SetAttribute("Ecto2xEnds", if on then new.Ends else 0)
+	if was ~= on then
 		for _, p in Players:GetPlayers() do
 			DataService.Changed(p) -- refresh the multiplier shown in their HUD
 		end
 		if announce then
-			Fx.All("Ecto2xEvent", { On = new.Ecto2x })
+			Fx.All("Ecto2xEvent", { On = on })
 		end
 	end
 end
@@ -66,12 +81,15 @@ local function load(): State?
 end
 
 function GlobalEventService.Ecto2x(): boolean
-	return current.Ecto2x
+	return shownOn
 end
 
--- Developer action (DevService checks the player first). Returns an error text or nil.
-function GlobalEventService.SetEcto2x(on: boolean): string?
-	local new: State = { Ecto2x = on, T = os.time() }
+-- Developer action (DevService checks the player first). `seconds` > 0 makes a timed event
+-- that ends by itself on every server. Returns an error text or nil.
+function GlobalEventService.SetEcto2x(on: boolean, seconds: number?): string?
+	local now = os.time()
+	local ends = if on and seconds and seconds > 0 then now + math.floor(seconds) else 0
+	local new: State = { Ecto2x = on, T = now, Ends = ends }
 	if IS_STUDIO or not store then
 		apply(new, true)
 		return nil
@@ -111,6 +129,16 @@ function GlobalEventService.Start()
 		local s = load()
 		if s then
 			apply(s, false)
+		end
+	end)
+	-- timed events: switch OFF locally once the end time passes (the saved state stays as is;
+	-- every server and every new server reaches the same answer from Ends)
+	task.spawn(function()
+		while true do
+			task.wait(5)
+			if shownOn and not active(current) then
+				apply(current, true)
+			end
 		end
 	end)
 	if not IS_STUDIO then

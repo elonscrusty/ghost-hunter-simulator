@@ -594,8 +594,15 @@ local function refreshBoosts()
 	end
 	-- server-wide luck someone bought (Robux): everyone sees it
 	chips.ServerLuck = { Icon = "🍀", Name = "SERVER LUCK", Expiry = d.ServerLuckUntil }
-	-- global 2X Ectoplasm event (developer-controlled, no timer)
-	chips.Ecto2x = { Icon = "💚", Name = "2X ECTOPLASM EVENT", Expiry = if workspace:GetAttribute("Ecto2x") == true then now + 1e9 else 0, NoTimer = true }
+	-- global 2X Ectoplasm event (developer-controlled; a countdown when it was started for a set time)
+	local ends = workspace:GetAttribute("Ecto2xEnds")
+	local timed = type(ends) == "number" and ends > 0
+	chips.Ecto2x = {
+		Icon = "💚",
+		Name = "2X ECTOPLASM",
+		Expiry = if workspace:GetAttribute("Ecto2x") ~= true then 0 elseif timed then ends else now + 1e9,
+		NoTimer = not timed,
+	}
 	for id, def in chips do
 		local expiry = def.Expiry
 		local left = if expiry then expiry - now else 0
