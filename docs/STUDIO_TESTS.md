@@ -2,7 +2,7 @@
 
 Open `build/GhostHunterSimulator.rbxlx`, turn on API access (PUBLISHING.md step 2), press
 **Play**. Tick each box; anything that fails, note what you saw (a phone photo is fine).
-Chat commands (Studio only): `/ecto 5000`, `/event`, `/reset-daily`, `/autoattack`
+The 🛠 DEV button (top right, next to ⚙) has all test tools. Chat commands also work (Studio or owner only): `/ecto 5000`, `/event`, `/reset-daily`, `/autoattack`
 (gives you the Auto Attack pass for this test only), `/zones` (unlocks all 8 areas),
 `/hunters` (gives you one of each of the 32 hunters).
 

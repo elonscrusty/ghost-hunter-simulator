@@ -808,6 +808,10 @@ Config.RateLimits = {
 	Inventory = { Count = 12, Window = 1 },
 }
 
+-- Extra developer accounts (UserIds) that get the DEV button in live servers. The game's
+-- creator (or the owner of the creator group) and anyone in Studio always get it.
+Config.DevUserIds = {} :: { number }
+
 Config.Data = {
 	AutosaveSeconds = 90,
 	Retries = 5,

@@ -21,6 +21,8 @@
     labels; spirit value always shown.
   - Mobile performance: far ghost visuals parked, ghosts spread out (no stacking), budgets for
     lights/emitters; material pass on zones 1-3 (fewer neon parts).
+  - 🛠 DEV button (owner/Studio only, server-checked): Ectoplasm, unlock areas, all hunters,
+    max upgrades, start event, reset daily, Auto Attack pass, replay tutorial.
   - Image icon slots (`src/shared/Icons.luau`) + ChatGPT prompts (`docs/ICON_PROMPTS.md`).
 - Checks: strict type check clean, 35 unit tests (rules, formatting, economy incl. 8-zone curve
   and layout), Rojo build, headless world/rig smoke test (`bash tools/worldsim.sh`).
@@ -36,9 +38,6 @@
 5. Game icon, thumbnails, description; then publish.
 
 ## Next (ideas)
-- **DEV button (owner request):** an owner-only in-game developer panel button (shown only to the
-  game owner / in Studio) with the test tools: give Ectoplasm, unlock all areas, give all
-  hunters, start the Giant Poltergeist, reset daily, toggle Auto Attack. Server-checked by UserId.
 - Index area-completion rewards; more events in later areas.
 
 ## Known limits / ideas for later

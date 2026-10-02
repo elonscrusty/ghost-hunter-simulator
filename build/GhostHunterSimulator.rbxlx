@@ -825,6 +825,10 @@ Config.RateLimits = {
 	Inventory = { Count = 12, Window = 1 },
 }
 
+-- Extra developer accounts (UserIds) that get the DEV button in live servers. The game's
+-- creator (or the owner of the creator group) and anyone in Studio always get it.
+Config.DevUserIds = {} :: { number }
+
 Config.Data = {
 	AutosaveSeconds = 90,
 	Retries = 5,
@@ -3347,13 +3351,10 @@ return Sounds
 -- GHOST HUNTER SIMULATOR server entry. Builds the world, then initialises services in order.
 -- Every step is protected: one failing system logs a warning instead of stopping the others.
 local PhysicsService = game:GetService("PhysicsService")
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Net = require(GH.Net)
-local Config = require(GH.Config)
 
 Net.Init()
 
@@ -3383,6 +3384,7 @@ local order = {
 	"EventService",
 	"ShopService",
 	"StationService",
+	"DevService",
 }
 local loaded: { [string]: any } = {}
 for _, name in order do
@@ -3409,50 +3411,7 @@ for _, name in order do
 	end
 end
 
--- Studio-only test commands (chat): /ecto <n>, /event, /reset-daily, /autoattack, /zones, /hunters
--- /autoattack grants the Auto Attack pass for this Studio test only (never in a live game).
-if RunService:IsStudio() then
-	local DataService = loaded.DataService
-	local EventService = loaded.EventService
-	local PlayerInfo = loaded.PlayerInfo
-	local HunterService = loaded.HunterService
-	local function hook(player: Player)
-		player.Chatted:Connect(function(msg)
-			local d = DataService and DataService.Get(player)
-			if not d then
-				return
-			end
-			local n = msg:match("^/ecto%s+(%d+)")
-			if n then
-				DataService.AddEcto(player, tonumber(n) :: number)
-			elseif msg == "/event" and EventService then
-				EventService.TriggerNow()
-			elseif msg == "/reset-daily" then
-				d.Daily.Last = 0
-				DataService.Changed(player)
-			elseif msg == "/autoattack" and PlayerInfo and HunterService then
-				PlayerInfo.SetPass(player, "AutoAttack", true)
-				HunterService.Refresh(player)
-			elseif msg == "/zones" then
-				-- unlock every area (gates open for you on the next sync)
-				for _, z in Config.Zones do
-					d.Zones[z.Id] = true
-				end
-				DataService.Changed(player)
-			elseif msg == "/hunters" and HunterService then
-				-- one of every hunter (fills the Index; use EQUIP BEST after)
-				for id in Config.Hunters do
-					HunterService.Add(player, id)
-				end
-				HunterService.Refresh(player)
-			end
-		end)
-	end
-	Players.PlayerAdded:Connect(hook)
-	for _, pl in Players:GetPlayers() do
-		hook(pl)
-	end
-end
+-- Developer tools (DEV button + chat commands) live in Services/DevService.
 ]]></string>
         </Properties>
       </Item>
@@ -4038,6 +3997,163 @@ return DataService
         </Item>
         <Item class="ModuleScript" referent="21">
           <Properties>
+            <string name="Name">DevService</string>
+            <string name="Source"><![CDATA[--!strict
+-- Owner-only developer tools (DEV button + Studio chat commands). A player is a dev when the
+-- game runs in Studio, when they created the game (or own the group that did), or when their
+-- UserId is in Config.DevUserIds. Every command is re-checked here on the server, so the
+-- button showing up on a client means nothing by itself.
+-- NOTE: in a live server these change the dev's REAL saved profile.
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GH = ReplicatedStorage:WaitForChild("GH")
+local Config = require(GH.Config)
+local DataService = require(script.Parent.DataService)
+local PlayerInfo = require(script.Parent.PlayerInfo)
+local HunterService = require(script.Parent.HunterService)
+local EventService = require(script.Parent.EventService)
+local Remotes = require(script.Parent.Remotes)
+
+local DevService = {}
+
+local devs: { [Player]: boolean } = {}
+
+local function checkDev(player: Player): boolean
+	if RunService:IsStudio() then
+		return true
+	end
+	if table.find(Config.DevUserIds, player.UserId) then
+		return true
+	end
+	if game.CreatorType == Enum.CreatorType.User then
+		return player.UserId == game.CreatorId
+	end
+	local ok, rank = pcall(function()
+		return player:GetRankInGroup(game.CreatorId)
+	end)
+	return ok and rank == 255
+end
+
+function DevService.IsDev(player: Player): boolean
+	return devs[player] == true
+end
+
+local MAX_ECTO_GRANT = 1e12
+
+-- Runs one dev command; returns an error text or nil.
+function DevService.Run(player: Player, cmd: string, arg: any): string?
+	if not devs[player] then
+		return "Not allowed"
+	end
+	local d = DataService.Get(player)
+	if not d then
+		return "Loading..."
+	end
+	if cmd == "Ecto" then
+		local n = tonumber(arg)
+		if not n or n ~= n or n <= 0 then
+			return "Bad amount"
+		end
+		DataService.AddEcto(player, math.min(math.floor(n), MAX_ECTO_GRANT))
+	elseif cmd == "Zones" then
+		for _, z in Config.Zones do
+			d.Zones[z.Id] = true
+		end
+		DataService.Changed(player)
+	elseif cmd == "Hunters" then
+		local count = 0
+		for _ in d.Hunters do
+			count += 1
+		end
+		for id in Config.Hunters do
+			if count >= Config.Inventory.MaxHunters then
+				break
+			end
+			HunterService.Add(player, id)
+			count += 1
+		end
+		HunterService.Refresh(player)
+	elseif cmd == "MaxUpgrades" then
+		for id, up in Config.Upgrades do
+			d.Upgrades[id] = #up.Levels
+		end
+		DataService.Changed(player)
+	elseif cmd == "Event" then
+		EventService.TriggerNow()
+	elseif cmd == "ResetDaily" then
+		d.Daily.Last = 0
+		DataService.Changed(player)
+	elseif cmd == "AutoAttack" then
+		PlayerInfo.SetPass(player, "AutoAttack", true)
+		HunterService.Refresh(player)
+	elseif cmd == "Tutorial" then
+		d.Tutorial = 1
+		DataService.Changed(player)
+	else
+		return "Unknown command"
+	end
+	return nil
+end
+
+function DevService.Init()
+	Remotes.Register("Dev", "Default", function(player, cmd, arg)
+		if type(cmd) ~= "string" then
+			return Remotes.Fail("Bad command")
+		end
+		local err = DevService.Run(player, cmd, arg)
+		if err then
+			return Remotes.Fail(err)
+		end
+		return { ok = true }
+	end)
+end
+
+local CHAT: { [string]: string } = {
+	["/event"] = "Event",
+	["/reset-daily"] = "ResetDaily",
+	["/autoattack"] = "AutoAttack",
+	["/zones"] = "Zones",
+	["/hunters"] = "Hunters",
+	["/maxupgrades"] = "MaxUpgrades",
+	["/tutorial"] = "Tutorial",
+}
+
+function DevService.Start()
+	local function hook(player: Player)
+		task.spawn(function()
+			devs[player] = checkDev(player)
+			-- the client shows the DEV button for this attribute; the server still checks every call
+			player:SetAttribute("IsDev", devs[player])
+		end)
+		player.Chatted:Connect(function(msg)
+			if not devs[player] then
+				return
+			end
+			local n = msg:match("^/ecto%s+(%d+)")
+			if n then
+				DevService.Run(player, "Ecto", tonumber(n))
+			elseif CHAT[msg] then
+				DevService.Run(player, CHAT[msg], nil)
+			end
+		end)
+	end
+	Players.PlayerAdded:Connect(hook)
+	for _, pl in Players:GetPlayers() do
+		hook(pl)
+	end
+	Players.PlayerRemoving:Connect(function(player)
+		devs[player] = nil
+	end)
+end
+
+return DevService
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="22">
+          <Properties>
             <string name="Name">DropService</string>
             <string name="Source"><![CDATA[--!strict
 -- Physical Ectoplasm orbs. The SERVER decides where each orb lands, what it is worth and
@@ -4210,7 +4326,7 @@ return DropService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="22">
+        <Item class="ModuleScript" referent="23">
           <Properties>
             <string name="Name">EventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -4362,7 +4478,7 @@ return EventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="23">
+        <Item class="ModuleScript" referent="24">
           <Properties>
             <string name="Name">Fx</string>
             <string name="Source"><![CDATA[--!strict
@@ -4403,7 +4519,7 @@ return Fx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="24">
+        <Item class="ModuleScript" referent="25">
           <Properties>
             <string name="Name">GhostService</string>
             <string name="Source"><![CDATA[--!strict
@@ -4899,7 +5015,7 @@ return GhostService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="25">
+        <Item class="ModuleScript" referent="26">
           <Properties>
             <string name="Name">HunterService</string>
             <string name="Source"><![CDATA[--!strict
@@ -5158,7 +5274,7 @@ return HunterService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="26">
+        <Item class="ModuleScript" referent="27">
           <Properties>
             <string name="Name">PlayerInfo</string>
             <string name="Source"><![CDATA[--!strict
@@ -5290,7 +5406,7 @@ return PlayerInfo
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="27">
+        <Item class="ModuleScript" referent="28">
           <Properties>
             <string name="Name">ProgressService</string>
             <string name="Source"><![CDATA[--!strict
@@ -5567,7 +5683,7 @@ return ProgressService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="28">
+        <Item class="ModuleScript" referent="29">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -5658,7 +5774,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="29">
+        <Item class="ModuleScript" referent="30">
           <Properties>
             <string name="Name">ShopService</string>
             <string name="Source"><![CDATA[--!strict
@@ -5807,7 +5923,7 @@ return ShopService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="30">
+        <Item class="ModuleScript" referent="31">
           <Properties>
             <string name="Name">StationService</string>
             <string name="Source"><![CDATA[--!strict
@@ -5958,11 +6074,11 @@ return StationService
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="31">
+      <Item class="Folder" referent="32">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="32">
+        <Item class="ModuleScript" referent="33">
           <Properties>
             <string name="Name">Arena</string>
             <string name="Source"><![CDATA[--!strict
@@ -6091,7 +6207,7 @@ return Arena
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="33">
+        <Item class="ModuleScript" referent="34">
           <Properties>
             <string name="Name">Boundary</string>
             <string name="Source"><![CDATA[--!strict
@@ -6252,7 +6368,7 @@ return Boundary
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="34">
+        <Item class="ModuleScript" referent="35">
           <Properties>
             <string name="Name">Builder</string>
             <string name="Source"><![CDATA[--!strict
@@ -6362,7 +6478,7 @@ return Builder
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="35">
+        <Item class="ModuleScript" referent="36">
           <Properties>
             <string name="Name">Carnival</string>
             <string name="Source"><![CDATA[--!strict
@@ -7020,7 +7136,7 @@ return Carnival
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">Castle</string>
             <string name="Source"><![CDATA[--!strict
@@ -7590,7 +7706,7 @@ return Castle
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">Cemetery</string>
             <string name="Source"><![CDATA[--!strict
@@ -7825,7 +7941,7 @@ return Cemetery
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Gates</string>
             <string name="Source"><![CDATA[--!strict
@@ -7947,7 +8063,7 @@ return Gates
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">Harbor</string>
             <string name="Source"><![CDATA[--!strict
@@ -8541,7 +8657,7 @@ return Harbor
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">Hospital</string>
             <string name="Source"><![CDATA[--!strict
@@ -9233,7 +9349,7 @@ return Hospital
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Kit</string>
             <string name="Source"><![CDATA[--!strict
@@ -9604,7 +9720,7 @@ return Kit
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">Lighting</string>
             <string name="Source"><![CDATA[--!strict
@@ -9692,7 +9808,7 @@ return LightingSetup
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Neighborhood</string>
             <string name="Source"><![CDATA[--!strict
@@ -10063,7 +10179,7 @@ return Neighborhood
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Props</string>
             <string name="Source"><![CDATA[--!strict
@@ -10315,7 +10431,7 @@ return Props
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">School</string>
             <string name="Source"><![CDATA[--!strict
@@ -10874,7 +10990,7 @@ return School
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">SpiritRealm</string>
             <string name="Source"><![CDATA[--!strict
@@ -11444,7 +11560,7 @@ return SpiritRealm
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">Stations</string>
             <string name="Source"><![CDATA[--!strict
@@ -11619,18 +11735,18 @@ return Stations
       </Item>
     </Item>
   </Item>
-  <Item class="SoundService" referent="48">
+  <Item class="SoundService" referent="49">
     <Properties>
       <string name="Name">SoundService</string>
     </Properties>
   </Item>
-  <Item class="StarterGui" referent="49">
+  <Item class="StarterGui" referent="50">
     <Properties>
       <string name="Name">StarterGui</string>
       <token name="ScreenOrientation">2</token>
     </Properties>
   </Item>
-  <Item class="StarterPlayer" referent="50">
+  <Item class="StarterPlayer" referent="51">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">60</float>
@@ -11640,19 +11756,19 @@ return Stations
       <float name="CharacterWalkSpeed">16</float>
       <bool name="LoadCharacterAppearance">true</bool>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="51">
+    <Item class="StarterPlayerScripts" referent="52">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="52">
+      <Item class="Folder" referent="53">
         <Properties>
           <string name="Name">GHClient</string>
         </Properties>
-        <Item class="Folder" referent="53">
+        <Item class="Folder" referent="54">
           <Properties>
             <string name="Name">Controllers</string>
           </Properties>
-          <Item class="ModuleScript" referent="54">
+          <Item class="ModuleScript" referent="55">
             <Properties>
               <string name="Name">Ambience</string>
               <string name="Source"><![CDATA[--!strict
@@ -11951,7 +12067,7 @@ return Ambience
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="55">
+          <Item class="ModuleScript" referent="56">
             <Properties>
               <string name="Name">Boss</string>
               <string name="Source"><![CDATA[--!strict
@@ -12215,7 +12331,7 @@ return Boss
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="56">
+          <Item class="ModuleScript" referent="57">
             <Properties>
               <string name="Name">CratePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -12495,7 +12611,7 @@ return CratePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="57">
+          <Item class="ModuleScript" referent="58">
             <Properties>
               <string name="Name">Crew</string>
               <string name="Source"><![CDATA[--!strict
@@ -12962,7 +13078,7 @@ return Crew
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="58">
+          <Item class="ModuleScript" referent="59">
             <Properties>
               <string name="Name">DailyPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -13151,7 +13267,105 @@ return DailyPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="59">
+          <Item class="ModuleScript" referent="60">
+            <Properties>
+              <string name="Name">DevPanel</string>
+              <string name="Source"><![CDATA[--!strict
+-- DEV panel: owner-only test tools. The 🛠 button appears only when the server marked this
+-- player as a developer (attribute "IsDev"); every action is checked again on the server.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GH = ReplicatedStorage:WaitForChild("GH")
+local Format = require(GH.Logic.Format)
+local Client = script.Parent.Parent
+local State = require(Client.State)
+local Kit = require(Client.UI.Kit)
+local Theme = require(Client.UI.Theme)
+
+local DevPanel = {}
+
+local player = Players.LocalPlayer
+local panel: Kit.Panel
+local devButton: TextButton
+
+type Action = { Text: string, Cmd: string, Arg: any?, Color: string }
+local ACTIONS: { Action } = {
+	{ Text = "+10K ECTO", Cmd = "Ecto", Arg = 10000, Color = "Green" },
+	{ Text = "+1M ECTO", Cmd = "Ecto", Arg = 1000000, Color = "Green" },
+	{ Text = "+1B ECTO", Cmd = "Ecto", Arg = 1000000000, Color = "Green" },
+	{ Text = "+1T ECTO", Cmd = "Ecto", Arg = 1000000000000, Color = "Green" },
+	{ Text = "UNLOCK ALL AREAS", Cmd = "Zones", Color = "Blue" },
+	{ Text = "ALL 32 HUNTERS", Cmd = "Hunters", Color = "Orange" },
+	{ Text = "MAX UPGRADES", Cmd = "MaxUpgrades", Color = "Teal" },
+	{ Text = "START EVENT", Cmd = "Event", Color = "Pink" },
+	{ Text = "RESET DAILY", Cmd = "ResetDaily", Color = "Purple" },
+	{ Text = "AUTO ATTACK PASS", Cmd = "AutoAttack", Color = "Purple" },
+	{ Text = "REPLAY TUTORIAL", Cmd = "Tutorial", Color = "Gray" },
+}
+
+local function run(a: Action)
+	local res = State.Request("Dev", a.Cmd, a.Arg)
+	if res.ok then
+		Kit.Toast(if a.Cmd == "Ecto" then "+" .. Format.Short(a.Arg :: number) .. " Ectoplasm" else a.Text .. " ✓", "Good")
+	else
+		Kit.Toast(res.err or "Failed", "Bad")
+	end
+end
+
+function DevPanel.Init()
+	panel = Kit.Panel("Dev", "🛠 DEV TOOLS", Vector2.new(620, 360), "Gray")
+	local list: ScrollingFrame = Kit.new("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, -34),
+		Position = UDim2.fromOffset(0, 8),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		ZIndex = 61,
+		Parent = panel.Body,
+	})
+	Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(180, 46), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
+	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), Parent = list })
+	for i, a in ACTIONS do
+		local b = Kit.Button(list, { Text = a.Text, Color = a.Color, TextStyle = "Small", ZIndex = 62, OnClick = function()
+			run(a)
+		end })
+		b.LayoutOrder = i
+		if i == 1 then
+			panel.Primary = b
+		end
+	end
+	Kit.Label(panel.Body, "Only you can see this. In a live server these change your real save.", { Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, -22), Color = Theme.Muted, Font = Theme.Body, Style = "Tiny", Stroke = 0, ZIndex = 62 })
+
+	devButton = Kit.Button(Kit.Screen(), {
+		Text = "🛠",
+		Color = "Gray",
+		Size = UDim2.fromOffset(44, 44),
+		Position = UDim2.new(1, -60, 0.5, -48),
+		AnchorPoint = Vector2.new(1, 0.5),
+		TextStyle = "Heading",
+		OnClick = function()
+			panel:Toggle()
+		end,
+	})
+	devButton.Visible = false
+end
+
+function DevPanel.Start()
+	local function refresh()
+		devButton.Visible = player:GetAttribute("IsDev") == true
+	end
+	player:GetAttributeChangedSignal("IsDev"):Connect(refresh)
+	refresh()
+end
+
+return DevPanel
+]]></string>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="61">
             <Properties>
               <string name="Name">Effects</string>
               <string name="Source"><![CDATA[--!strict
@@ -13298,7 +13512,7 @@ return Effects
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="60">
+          <Item class="ModuleScript" referent="62">
             <Properties>
               <string name="Name">GatePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -13421,7 +13635,7 @@ return GatePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="61">
+          <Item class="ModuleScript" referent="63">
             <Properties>
               <string name="Name">Ghosts</string>
               <string name="Source"><![CDATA[--!strict
@@ -13901,7 +14115,7 @@ return Ghosts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="62">
+          <Item class="ModuleScript" referent="64">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -14483,7 +14697,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="63">
+          <Item class="ModuleScript" referent="65">
             <Properties>
               <string name="Name">HuntersPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -15104,7 +15318,7 @@ return HuntersPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="64">
+          <Item class="ModuleScript" referent="66">
             <Properties>
               <string name="Name">IndexPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -15397,7 +15611,7 @@ return IndexPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="65">
+          <Item class="ModuleScript" referent="67">
             <Properties>
               <string name="Name">Orbs</string>
               <string name="Source"><![CDATA[--!strict
@@ -15757,7 +15971,7 @@ return Orbs
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="66">
+          <Item class="ModuleScript" referent="68">
             <Properties>
               <string name="Name">Reveal</string>
               <string name="Source"><![CDATA[--!strict
@@ -16435,7 +16649,7 @@ return Reveal
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="67">
+          <Item class="ModuleScript" referent="69">
             <Properties>
               <string name="Name">ShopPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16566,7 +16780,7 @@ return ShopPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="68">
+          <Item class="ModuleScript" referent="70">
             <Properties>
               <string name="Name">Sound</string>
               <string name="Source"><![CDATA[--!strict
@@ -16684,7 +16898,7 @@ return Sound
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="69">
+          <Item class="ModuleScript" referent="71">
             <Properties>
               <string name="Name">Targeting</string>
               <string name="Source"><![CDATA[--!strict
@@ -16961,7 +17175,7 @@ return Targeting
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="70">
+          <Item class="ModuleScript" referent="72">
             <Properties>
               <string name="Name">Tutorial</string>
               <string name="Source"><![CDATA[--!strict
@@ -17482,7 +17696,7 @@ return Tutorial
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="73">
             <Properties>
               <string name="Name">UpgradesPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -17643,7 +17857,7 @@ return UpgradesPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="74">
             <Properties>
               <string name="Name">WorldsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -17813,7 +18027,7 @@ return WorldsPanel
             </Properties>
           </Item>
         </Item>
-        <Item class="LocalScript" referent="73">
+        <Item class="LocalScript" referent="75">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -17855,6 +18069,7 @@ local order = {
 	"DailyPanel",
 	"GatePanel",
 	"WorldsPanel",
+	"DevPanel",
 	"Boss",
 	"Ambience",
 	"Tutorial",
@@ -17875,7 +18090,7 @@ end
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="74">
+        <Item class="ModuleScript" referent="76">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -18023,11 +18238,11 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="75">
+        <Item class="Folder" referent="77">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!strict
@@ -18660,7 +18875,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">Portrait</string>
               <string name="Source"><![CDATA[--!strict
@@ -18975,7 +19190,7 @@ return Portrait
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -19056,7 +19271,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">WorldLabel</string>
               <string name="Source"><![CDATA[--!strict
@@ -19222,7 +19437,7 @@ return WorldLabel
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="80">
+  <Item class="Workspace" referent="82">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

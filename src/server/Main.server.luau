@@ -2,13 +2,10 @@
 -- GHOST HUNTER SIMULATOR server entry. Builds the world, then initialises services in order.
 -- Every step is protected: one failing system logs a warning instead of stopping the others.
 local PhysicsService = game:GetService("PhysicsService")
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Net = require(GH.Net)
-local Config = require(GH.Config)
 
 Net.Init()
 
@@ -38,6 +35,7 @@ local order = {
 	"EventService",
 	"ShopService",
 	"StationService",
+	"DevService",
 }
 local loaded: { [string]: any } = {}
 for _, name in order do
@@ -64,47 +62,4 @@ for _, name in order do
 	end
 end
 
--- Studio-only test commands (chat): /ecto <n>, /event, /reset-daily, /autoattack, /zones, /hunters
--- /autoattack grants the Auto Attack pass for this Studio test only (never in a live game).
-if RunService:IsStudio() then
-	local DataService = loaded.DataService
-	local EventService = loaded.EventService
-	local PlayerInfo = loaded.PlayerInfo
-	local HunterService = loaded.HunterService
-	local function hook(player: Player)
-		player.Chatted:Connect(function(msg)
-			local d = DataService and DataService.Get(player)
-			if not d then
-				return
-			end
-			local n = msg:match("^/ecto%s+(%d+)")
-			if n then
-				DataService.AddEcto(player, tonumber(n) :: number)
-			elseif msg == "/event" and EventService then
-				EventService.TriggerNow()
-			elseif msg == "/reset-daily" then
-				d.Daily.Last = 0
-				DataService.Changed(player)
-			elseif msg == "/autoattack" and PlayerInfo and HunterService then
-				PlayerInfo.SetPass(player, "AutoAttack", true)
-				HunterService.Refresh(player)
-			elseif msg == "/zones" then
-				-- unlock every area (gates open for you on the next sync)
-				for _, z in Config.Zones do
-					d.Zones[z.Id] = true
-				end
-				DataService.Changed(player)
-			elseif msg == "/hunters" and HunterService then
-				-- one of every hunter (fills the Index; use EQUIP BEST after)
-				for id in Config.Hunters do
-					HunterService.Add(player, id)
-				end
-				HunterService.Refresh(player)
-			end
-		end)
-	end
-	Players.PlayerAdded:Connect(hook)
-	for _, pl in Players:GetPlayers() do
-		hook(pl)
-	end
-end
+-- Developer tools (DEV button + chat commands) live in Services/DevService.
