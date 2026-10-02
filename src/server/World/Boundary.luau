@@ -12,6 +12,19 @@ local C = Color3.fromRGB
 local V = Vector3.new
 local INVIS_TOP = 80
 local HW = Config.Layout.HalfWidth -- 140
+local END = Config.Zones[#Config.Zones].MaxZ -- far end of the map
+
+-- Zone-separation wall look per gate (wall / cap stone / cap ball / painted band).
+type WallLook = { Wall: Color3, Cap: Color3, Ball: Color3, Band: Color3, Pumpkins: boolean }
+local WALLS: { [string]: WallLook } = {
+	Cemetery = { Wall = C(135, 115, 175), Cap = C(185, 170, 220), Ball = C(255, 160, 60), Band = C(150, 255, 120), Pumpkins = true },
+	School = { Wall = C(215, 110, 95), Cap = C(250, 230, 210), Ball = C(200, 130, 255), Band = C(200, 120, 255), Pumpkins = true },
+	Carnival = { Wall = C(230, 70, 80), Cap = C(255, 240, 215), Ball = C(255, 205, 60), Band = C(70, 140, 255), Pumpkins = false },
+	Hospital = { Wall = C(225, 230, 238), Cap = C(150, 200, 235), Ball = C(140, 220, 180), Band = C(110, 190, 255), Pumpkins = false },
+	Harbor = { Wall = C(120, 85, 55), Cap = C(70, 110, 150), Ball = C(220, 80, 70), Band = C(60, 200, 200), Pumpkins = false },
+	Castle = { Wall = C(140, 140, 155), Cap = C(95, 95, 115), Ball = C(255, 200, 70), Band = C(150, 40, 70), Pumpkins = false },
+	SpiritRealm = { Wall = C(60, 50, 95), Cap = C(90, 80, 140), Ball = C(110, 230, 255), Band = C(170, 100, 255), Pumpkins = false },
+}
 
 local function invisible(parent: Instance, a: Vector3, b: Vector3)
 	local p = Kit.Box(parent, a, b, C(255, 255, 255), { Transp = 1, Solid = true, Name = "InvisibleWall", Shadow = false })
@@ -74,26 +87,21 @@ function Boundary.Build(map: Instance)
 	stoneRun(f, V(-W, 0, 263), V(-HW, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
 	stoneRun(f, V(HW, 0, 263), V(W, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
 	-- School: brick with purple tops (sides + far end)
-	brickRun(f, V(-W, 0, 543), V(-HW, 14, 886), 30)
-	brickRun(f, V(HW, 0, 543), V(W, 14, 886), 30)
-	brickRun(f, V(-W, 0, 880), V(W, 14, 886), 30)
+	brickRun(f, V(-W, 0, 543), V(-HW, 14, 877), 30)
+	brickRun(f, V(HW, 0, 543), V(W, 14, 877), 30)
+	-- Zones 4-8 build their own ground, side walls and outside scenery (see their builders).
 
 	-- Zone separation walls with the gate opening centred on X = 0.
 	for id, gate in Kit.Gates(Config.Layout) do
 		local z = gate.Z
 		local half = gate.Width / 2
 		local h = 18
-		if id == "Cemetery" then
-			for _, s in { -1, 1 } do
-				stoneRun(f, V(s * (half + 8), 0, z - 3), V(s * W, h, z + 3), C(135, 115, 175), C(185, 170, 220), C(255, 160, 60), 24)
-			end
-		else
-			for _, s in { -1, 1 } do
-				stoneRun(f, V(s * (half + 8), 0, z - 3), V(s * W, h, z + 3), C(215, 110, 95), C(250, 230, 210), C(200, 130, 255), 24)
-			end
+		local look = WALLS[id] or WALLS.School
+		for _, s in { -1, 1 } do
+			stoneRun(f, V(s * (half + 8), 0, z - 3), V(s * W, h, z + 3), look.Wall, look.Cap, look.Ball, 24)
 		end
 		-- painted band along the wall faces
-		local band = Kit.Vivid(if id == "Cemetery" then C(150, 255, 120) else C(200, 120, 255))
+		local band = Kit.Vivid(look.Band)
 		for _, s in { -1, 1 } do
 			for _, fz in { -1, 1 } do
 				Kit.Box(f, V(s * (half + 6), 3, z + fz * 3.05), V(s * (W - 1), 3.6, z + fz * 3.25), band)
@@ -102,8 +110,8 @@ function Boundary.Build(map: Instance)
 		end
 		-- above the arch beam (beam fills Y 30..36 of the opening)
 		invisible(f, V(-half, 36, z - 3), V(half, INVIS_TOP, z + 3))
-		-- pumpkins along the wall top on the approach side
-		for i = 1, 4 do
+		-- pumpkins along the wall top on the approach side (the spooky-town zones only)
+		for i = 1, if look.Pumpkins then 4 else 0 do
 			for _, s in { -1, 1 } do
 				local x = s * (half + 12 + i * 26)
 				Props.Pumpkin(f, V(x, h + 1.2, z - 1.5), 3.6, 0, -1)
@@ -111,15 +119,15 @@ function Boundary.Build(map: Instance)
 		end
 	end
 
-	-- Invisible outer walls (play area is |X| <= 140, Z -60..880)
-	invisible(f, V(-W, 0, -66), V(-HW, INVIS_TOP, 886))
-	invisible(f, V(HW, 0, -66), V(W, INVIS_TOP, 886))
+	-- Invisible outer walls (play area is |X| <= 140, Z -60..END)
+	invisible(f, V(-W, 0, -66), V(-HW, INVIS_TOP, END + 6))
+	invisible(f, V(HW, 0, -66), V(W, INVIS_TOP, END + 6))
 	invisible(f, V(-W, 0, -66), V(W, INVIS_TOP, -60))
-	invisible(f, V(-W, 0, 880), V(W, INVIS_TOP, 886))
+	invisible(f, V(-W, 0, END), V(W, INVIS_TOP, END + 6))
 
 	-- Outer scenery: soft purple hills and big trees just beyond the walls.
 	local hill = { C(120, 90, 190), C(100, 150, 120), C(150, 100, 200) }
-	for i = 0, 9 do
+	for i = 0, 9 do -- zones 1-3 (Z < 880)
 		local z = -40 + i * 95
 		for _, s in { -1, 1 } do
 			Kit.Ball(f, 70, V(s * 185, -12, z + s * 20), Kit.Pick(hill), { Mat = Enum.Material.Grass })

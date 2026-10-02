@@ -111,7 +111,7 @@ local function applyGates()
 			end
 		end
 		if cost then
-			cost.Text = if owned then "✓ UNLOCKED" else "🔒 " .. Format.Commas(z.Cost) .. " ECTOPLASM"
+			cost.Text = if owned then "✓ UNLOCKED" else "🔒 " .. Format.Short(z.Cost) .. " ECTOPLASM"
 		end
 		if prompt then
 			prompt.Enabled = not owned

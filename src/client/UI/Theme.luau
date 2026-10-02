@@ -25,6 +25,7 @@ local Theme = {
 		Red = { C(255, 110, 120), C(215, 50, 80) },
 		Gray = { C(150, 145, 170), C(105, 100, 130) },
 		Pink = { C(255, 130, 220), C(220, 70, 170) },
+		Teal = { C(90, 235, 215), C(30, 160, 170) },
 	} :: { [string]: { Color3 } },
 	Title = Enum.Font.FredokaOne,
 	Body = Enum.Font.GothamBold,

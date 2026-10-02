@@ -6,8 +6,8 @@
 local Config = require("./_Config")
 local Rules = require("../src/shared/Logic/Rules")
 
-local RUNS = 300
-local MAX_T = 6 * 3600
+local RUNS = tonumber((...)) or 300
+local MAX_T = 40 * 3600
 
 local seed = 777
 local function rnd(): number
@@ -18,10 +18,18 @@ end
 local function powerOf(id) return Config.Hunters[id].Power end
 local function rarityOrder(id) return Config.Rarities[Config.Hunters[id].Rarity].Order end
 
-local milestones = {
-	"first_kill", "first_crate", "first_upgrade", "crew_x2", "cemetery", "first_haunted_crate",
-	"school", "first_elite_crate", "index_zone1", "index_zone2", "index_all", "all_upgrades",
-}
+local milestones = { "first_kill", "first_crate", "first_upgrade", "crew_x2" }
+for i, z in Config.Zones do
+	if i > 1 then
+		table.insert(milestones, string.lower(z.Id))
+		table.insert(milestones, "crate_" .. z.Crate)
+	end
+end
+for _, z in Config.Zones do
+	table.insert(milestones, "index_" .. z.Id)
+end
+table.insert(milestones, "index_all")
+table.insert(milestones, "all_upgrades")
 local results = {}
 for _, m in milestones do results[m] = {} end
 local finalPower = {}
@@ -38,7 +46,7 @@ for run = 1, RUNS do
 	local hit = {}
 	local startPower = powerOf(Config.StarterHunter)
 	local function mark(name)
-		if not hit[name] then
+		if not hit[name] and results[name] then
 			hit[name] = true
 			table.insert(results[name], t)
 		end
@@ -124,15 +132,15 @@ for run = 1, RUNS do
 				discovered[h] = true
 				equipped = Rules.EquipBest(owned, powerOf, rarityOrder, Config.Inventory.BaseSlots)
 				mark("first_crate")
-				if crate.Id == "Haunted" then mark("first_haunted_crate") end
-				if crate.Id == "Elite" then mark("first_elite_crate") end
+				mark("crate_" .. crate.Id)
 				t += 2.5 -- reveal + equip
 				spent = true
 			end
 		end
 		if crewPower() >= startPower * 2 then mark("crew_x2") end
-		if zoneComplete("Neighborhood") then mark("index_zone1") end
-		if zoneComplete("Cemetery") then mark("index_zone2") end
+		for _, z in Config.Zones do
+			if zoneComplete(z.Id) then mark("index_" .. z.Id) end
+		end
 		local all = true
 		for id in Config.Hunters do if not discovered[id] then all = false end end
 		if all then mark("index_all") end
@@ -175,8 +183,8 @@ local function fmt(s)
 	if s < 120 then return string.format("%6.0fs", s) end
 	return string.format("%6.1fm", s / 60)
 end
-print(string.format("%-20s %8s %8s %8s  reached", "milestone", "p10", "median", "p90"))
+print(string.format("%-22s %8s %8s %8s  reached", "milestone", "p10", "median", "p90"))
 for _, m in milestones do
 	local l = results[m]
-	print(string.format("%-20s %8s %8s %8s  %d/%d", m, fmt(pct(l, 0.1)), fmt(pct(l, 0.5)), fmt(pct(l, 0.9)), #l, RUNS))
+	print(string.format("%-22s %8s %8s %8s  %d/%d", m, fmt(pct(l, 0.1)), fmt(pct(l, 0.5)), fmt(pct(l, 0.9)), #l, RUNS))
 end

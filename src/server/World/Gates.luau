@@ -7,6 +7,7 @@
 -- skull's eyes glow.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
+local Format = require(game:GetService("ReplicatedStorage").GH.Logic.Format)
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
 
@@ -21,6 +22,11 @@ type Theme = { Stone: Color3, Trim: Color3, Barrier: Color3, Lamp: Color3 }
 local THEMES: { [string]: Theme } = {
 	Cemetery = { Stone = C(150, 125, 200), Trim = C(140, 255, 120), Barrier = C(180, 110, 255), Lamp = C(140, 255, 160) },
 	School = { Stone = C(225, 120, 100), Trim = C(210, 120, 255), Barrier = C(100, 255, 190), Lamp = C(220, 150, 255) },
+	Carnival = { Stone = C(235, 75, 85), Trim = C(255, 210, 70), Barrier = C(255, 120, 200), Lamp = C(255, 220, 120) },
+	Hospital = { Stone = C(220, 228, 238), Trim = C(100, 180, 255), Barrier = C(120, 255, 200), Lamp = C(170, 230, 255) },
+	Harbor = { Stone = C(125, 90, 60), Trim = C(70, 200, 200), Barrier = C(90, 255, 210), Lamp = C(255, 200, 110) },
+	Castle = { Stone = C(150, 150, 165), Trim = C(255, 200, 70), Barrier = C(190, 110, 255), Lamp = C(255, 190, 100) },
+	SpiritRealm = { Stone = C(70, 60, 110), Trim = C(110, 230, 255), Barrier = C(110, 240, 255), Lamp = C(150, 255, 230) },
 }
 
 local function buildGate(folder: Instance, id: string, z: number, width: number)
@@ -88,7 +94,7 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 		Pos = UDim2.fromScale(0.03, 0.04),
 		Size = UDim2.fromScale(0.94, 0.5),
 	})
-	Kit.Label(gui, "🔒 " .. Kit.Comma(zone.Cost) .. " ECTOPLASM", C(150, 255, 140), {
+	Kit.Label(gui, "🔒 " .. Format.Short(zone.Cost) .. " ECTOPLASM", C(150, 255, 140), {
 		Name = "CostLabel",
 		Pos = UDim2.fromScale(0.08, 0.56),
 		Size = UDim2.fromScale(0.84, 0.38),

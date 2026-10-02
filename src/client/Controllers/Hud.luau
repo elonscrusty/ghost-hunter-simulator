@@ -29,7 +29,6 @@ local powerLabel: TextLabel
 local boostHolder: Frame
 local dailyBadge: Frame
 local menu: Frame
-local menuGrid: UIGridLayout
 local autoButton: TextButton
 local shownEcto = 0
 local targetEcto = 0
@@ -153,24 +152,34 @@ end
 
 local MENU = {
 	{ Name = "Hunters", Icon = "🔦", Text = "HUNTERS", Color = "Orange" },
+	{ Name = "Worlds", Icon = "🌍", Text = "WORLDS", Color = "Teal" },
 	{ Name = "Index", Icon = "📖", Text = "INDEX", Color = "Blue" },
 	{ Name = "Upgrades", Icon = "🧲", Text = "UPGRADES", Color = "Green" },
 	{ Name = "Shop", Icon = "🛒", Text = "SHOP", Color = "Pink" },
 	{ Name = "Daily", Icon = "🎁", Text = "DAILY", Color = "Purple" },
 }
-local CELL = 58
+local CELL_MAX = 70
+local CELL_MIN = 50
+local GAP = 6
+local menuScale: UIScale
 
--- One column, vertically centred, on tall screens; a 2-wide block in the top-left on short
--- (phone landscape) screens so it never overlaps the movement thumbstick.
+-- One vertical column down the left edge. Buttons are as big as CELL_MAX allows; on short
+-- screens (phone landscape) the whole column shrinks so it fits between the top bar and the
+-- bottom edge (it starts under the top-left Roblox buttons).
 local function layoutMenu()
-	if Kit.IsCompact() then
-		menuGrid.FillDirectionMaxCells = 3
-		menu.Size = UDim2.fromOffset(CELL * 2 + 6, CELL * 3 + 12)
-		menu.Position = UDim2.fromOffset(8, 56)
+	local n = #MENU
+	local full = CELL_MAX * n + GAP * (n - 1)
+	local logical = Kit.LogicalSize()
+	local compact = Kit.IsCompact()
+	local top = if compact then 56 else 0
+	local room = logical.Y - top - 12
+	local fit = math.clamp(room / full, CELL_MIN / CELL_MAX, 1)
+	menuScale.Scale = fit
+	menu.Size = UDim2.fromOffset(CELL_MAX, full)
+	if compact or full * fit > logical.Y - 120 then
+		menu.Position = UDim2.fromOffset(8, top)
 		menu.AnchorPoint = Vector2.zero
 	else
-		menuGrid.FillDirectionMaxCells = 5
-		menu.Size = UDim2.fromOffset(CELL, CELL * 5 + 24)
 		menu.Position = UDim2.new(0, 10, 0.5, 0)
 		menu.AnchorPoint = Vector2.new(0, 0.5)
 	end
@@ -182,9 +191,9 @@ local function buildMenu(screen: ScreenGui)
 		BackgroundTransparency = 1,
 		Parent = screen,
 	})
-	menuGrid = Kit.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(CELL, CELL),
-		CellPadding = UDim2.fromOffset(6, 6),
+	menuScale = Kit.new("UIScale", { Parent = menu })
+	Kit.new("UIListLayout", {
+		Padding = UDim.new(0, GAP),
 		FillDirection = Enum.FillDirection.Vertical,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = menu,
@@ -198,8 +207,9 @@ local function buildMenu(screen: ScreenGui)
 			end,
 		})
 		b.LayoutOrder = i
-		Kit.Label(b, m.Icon, { Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 5), Style = "Icon", Stroke = 0, ZIndex = 3 })
-		Kit.Label(b, m.Text, { Size = UDim2.new(1, -4, 0, 14), Position = UDim2.new(0, 2, 1, -18), Style = "Tiny", Fit = true, ZIndex = 3 })
+		b.Size = UDim2.fromOffset(CELL_MAX, CELL_MAX)
+		Kit.Label(b, m.Icon, { Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 6), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 3 })
+		Kit.Label(b, m.Text, { Size = UDim2.new(1, -4, 0, 16), Position = UDim2.new(0, 2, 1, -21), Style = "Tiny", TextSize = 12, Fit = true, ZIndex = 3 })
 		Hud.Buttons[m.Name] = b
 	end
 	-- red "!" on DAILY when a reward is waiting

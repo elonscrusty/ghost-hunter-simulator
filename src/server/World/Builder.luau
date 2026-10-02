@@ -17,12 +17,21 @@
 	  Z 540          Brick wall + Gate_School
 	  Z 540..600     School courtyard: Elite station (X -28, Z 572), ghost bus, flagpole.
 	  Z 600..860     ZONE 3 SCHOOL building (open-topped, see School.luau), clock tower to Y ~104.
-	  Z 880 ........ brick wall at the far end.
+	  Z 880          Gate_Carnival
+	  Z 880..1220    ZONE 4 ABANDONED CARNIVAL (Carnival.luau)
+	  Z 1220..1560   ZONE 5 HAUNTED HOSPITAL (Hospital.luau)
+	  Z 1560..1920   ZONE 6 GHOST SHIP HARBOR (Harbor.luau)
+	  Z 1920..2280   ZONE 7 CURSED CASTLE (Castle.luau)
+	  Z 2280..2680   ZONE 8 SPIRIT REALM (SpiritRealm.luau); far wall at Z 2680.
+	  Every zone from the Cemetery on: gate wall at its MinZ (Boundary + Gates), crate station at
+	  (-28, MinZ + 32), Fast Travel arrival pad at Config.Layout.ZoneSpawns (kept free), main path
+	  along X = 0 to the next gate.
 
 	Every ghost area circle from Config.Layout.GhostAreas is registered as a keep-out, so no
 	prop taller than ~0.3 studs is placed inside one (flat road paint / cracks / rune lines only).
 	Instance tree:
-	  workspace.Map.{Boundary, Gates, Stations, EventArena, Neighborhood, Cemetery, School}
+	  workspace.Map.{Boundary, Gates, Stations, EventArena, Neighborhood, Cemetery, School, Carnival,
+	                 Hospital, Harbor, Castle, SpiritRealm}
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -37,6 +46,11 @@ local Arena = require(script.Parent.Arena)
 local Neighborhood = require(script.Parent.Neighborhood)
 local Cemetery = require(script.Parent.Cemetery)
 local School = require(script.Parent.School)
+local Carnival = require(script.Parent.Carnival)
+local Hospital = require(script.Parent.Hospital)
+local Harbor = require(script.Parent.Harbor)
+local Castle = require(script.Parent.Castle)
+local SpiritRealm = require(script.Parent.SpiritRealm)
 
 local Builder = {}
 
@@ -49,6 +63,12 @@ local function registerKeepOuts()
 	for _, gate in Kit.Gates(Config.Layout) do
 		Kit.AddRect(-30, gate.Z - 24, 30, gate.Z + 24)
 	end
+	-- Fast Travel arrival pads
+	for _, p in Kit.ZoneSpawns(Config.Layout) do
+		Kit.AddCircle(p.X, p.Z, 9)
+	end
+	-- main path along X = 0 through zones 4-8 (zones 1-3 register their own roads)
+	Kit.AddRect(-10, 880, 10, Config.Zones[#Config.Zones].MaxZ, true)
 end
 
 function Builder.Build()
@@ -70,6 +90,11 @@ function Builder.Build()
 	Neighborhood.Build(map)
 	Cemetery.Build(map)
 	School.Build(map)
+	Carnival.Build(map)
+	Hospital.Build(map)
+	Harbor.Build(map)
+	Castle.Build(map)
+	SpiritRealm.Build(map)
 
 	map.Parent = Workspace
 	local s = Kit.Stats
