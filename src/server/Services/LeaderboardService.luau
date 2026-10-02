@@ -98,7 +98,11 @@ local function render(rows: { Row })
 			local nameLabel = row:FindFirstChild("PlayerName") :: TextLabel?
 			local valueLabel = row:FindFirstChild("Value") :: TextLabel?
 			if nameLabel then
-				nameLabel.Text = if r then r.Name else "..."
+				-- VIP pass owners who are in this server show in gold with a crown
+				local online = r and Players:FindFirstChild(r.Name)
+				local vip = online ~= nil and online:IsA("Player") and online:GetAttribute("VIP") == true
+				nameLabel.Text = if r then (if vip then "👑 " else "") .. r.Name else "..."
+				nameLabel.TextColor3 = if vip then Color3.fromRGB(255, 215, 80) else Color3.fromRGB(255, 255, 255)
 			end
 			if valueLabel then
 				valueLabel.Text = if r then "💚 " .. Format.Short(r.Value) else ""

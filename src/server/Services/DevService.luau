@@ -88,6 +88,26 @@ function DevService.Run(player: Player, cmd: string, arg: any): string?
 	elseif cmd == "AutoAttack" then
 		PlayerInfo.SetPass(player, "AutoAttack", true)
 		HunterService.Refresh(player)
+	elseif cmd == "AllPasses" then
+		-- every game pass for this session only (testing; nothing is saved or bought)
+		for _, pass in Config.GamePasses do
+			PlayerInfo.SetPass(player, pass.Key, true)
+		end
+		local shop = (script.Parent :: any).ShopService
+		if shop then
+			local ok, mod = pcall(require, shop)
+			if ok and mod.ApplyPassLooks then
+				mod.ApplyPassLooks(player)
+			end
+		end
+		HunterService.Refresh(player)
+	elseif cmd == "ServerLuck" then
+		PlayerInfo.AddServerLuck(900)
+		for _, other in Players:GetPlayers() do
+			DataService.Changed(other)
+		end
+	elseif cmd == "Exclusive" then
+		HunterService.GrantExclusive(player)
 	elseif cmd == "Tutorial" then
 		d.Tutorial = 1
 		DataService.Changed(player)

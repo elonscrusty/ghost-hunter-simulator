@@ -73,7 +73,7 @@ Config.Rarities = {
 		Sound = "RevealLegendary",
 	},
 	Exclusive = {
-		Id = "Exclusive", Name = "EXCLUSIVE", Order = 8, Enabled = false,
+		Id = "Exclusive", Name = "EXCLUSIVE", Order = 8, Enabled = true,
 		Color = Color3.fromRGB(80, 255, 230), Color2 = Color3.fromRGB(255, 90, 230),
 		RevealPause = 2.0, ShakeIntensity = 0.8, Particles = 200, Darken = 0.5, CameraPunch = true, Announce = true,
 		Sound = "RevealLegendary",
@@ -1086,7 +1086,124 @@ Config.Hunters = {
 		Look = { Skin = C(250, 250, 255), Hair = C(255, 255, 255), HairStyle = "Spiky", Shirt = C(250, 250, 255), Pants = C(230, 230, 245), Shoes = C(255, 215, 90),
 			Hat = "Crystal", HatColor = C(255, 230, 140), Back = "Wings", BackColor = C(255, 255, 255), Tool = "Cannon", ToolColor = C(255, 255, 255), Beam = C(255, 250, 220), Aura = true },
 	},
+	-- EXCLUSIVE (Robux Exclusive Crate: one per area, 1.5x that area's Legendary)
+	ExclusiveNeighborhood = {
+		Id = "ExclusiveNeighborhood", Name = "Golden Rookie", Rarity = "Exclusive", Zone = "Neighborhood", Power = 60,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 240, 170), HairStyle = "Spiky", Shirt = C(255, 215, 90), Pants = C(255, 240, 170), Shoes = C(255, 215, 90),
+			Hat = "Cap", HatColor = C(255, 215, 90), Back = "Wings", BackColor = C(255, 240, 170), Tool = "Cannon", ToolColor = C(255, 215, 90), Beam = C(255, 240, 170), Aura = true },
+	},
+	ExclusiveCemetery = {
+		Id = "ExclusiveCemetery", Name = "Diamond Warden", Rarity = "Exclusive", Zone = "Cemetery", Power = 300,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(240, 250, 255), HairStyle = "Spiky", Shirt = C(190, 240, 255), Pants = C(240, 250, 255), Shoes = C(190, 240, 255),
+			Hat = "Hood", HatColor = C(190, 240, 255), Back = "Cape", BackColor = C(240, 250, 255), Tool = "Staff", ToolColor = C(190, 240, 255), Beam = C(240, 250, 255), Aura = true },
+	},
+	ExclusiveSchool = {
+		Id = "ExclusiveSchool", Name = "Platinum Professor", Rarity = "Exclusive", Zone = "School", Power = 1500,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(170, 180, 210), HairStyle = "Spiky", Shirt = C(225, 228, 240), Pants = C(170, 180, 210), Shoes = C(225, 228, 240),
+			Hat = "Mortarboard", HatColor = C(225, 228, 240), Back = "Wings", BackColor = C(170, 180, 210), Tool = "Projector", ToolColor = C(225, 228, 240), Beam = C(170, 180, 210), Aura = true },
+	},
+	ExclusiveCarnival = {
+		Id = "ExclusiveCarnival", Name = "Prismatic Ringmaster", Rarity = "Exclusive", Zone = "Carnival", Power = 7500,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(120, 240, 255), HairStyle = "Spiky", Shirt = C(255, 120, 220), Pants = C(120, 240, 255), Shoes = C(255, 120, 220),
+			Hat = "TopHat", HatColor = C(255, 120, 220), Back = "Cape", BackColor = C(120, 240, 255), Tool = "Wand", ToolColor = C(255, 120, 220), Beam = C(120, 240, 255), Aura = true },
+	},
+	ExclusiveHospital = {
+		Id = "ExclusiveHospital", Name = "Crystal Surgeon", Rarity = "Exclusive", Zone = "Hospital", Power = 37500,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(150, 220, 255), HairStyle = "Spiky", Shirt = C(200, 250, 255), Pants = C(150, 220, 255), Shoes = C(200, 250, 255),
+			Hat = "HeadMirror", HatColor = C(200, 250, 255), Back = "Wings", BackColor = C(150, 220, 255), Tool = "Cannon", ToolColor = C(200, 250, 255), Beam = C(150, 220, 255), Aura = true },
+	},
+	ExclusiveHarbor = {
+		Id = "ExclusiveHarbor", Name = "Sapphire Captain", Rarity = "Exclusive", Zone = "Harbor", Power = 188000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(160, 200, 255), HairStyle = "Spiky", Shirt = C(60, 110, 255), Pants = C(160, 200, 255), Shoes = C(60, 110, 255),
+			Hat = "Tricorn", HatColor = C(60, 110, 255), Back = "Cape", BackColor = C(160, 200, 255), Tool = "Cannon", ToolColor = C(60, 110, 255), Beam = C(160, 200, 255), Aura = true },
+	},
+	ExclusiveCastle = {
+		Id = "ExclusiveCastle", Name = "Ruby Champion", Rarity = "Exclusive", Zone = "Castle", Power = 938000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 180, 200), HairStyle = "Spiky", Shirt = C(230, 40, 80), Pants = C(255, 180, 200), Shoes = C(230, 40, 80),
+			Hat = "KnightHelm", HatColor = C(230, 40, 80), Back = "Wings", BackColor = C(255, 180, 200), Tool = "Sword", ToolColor = C(230, 40, 80), Beam = C(255, 180, 200), Aura = true },
+	},
+	ExclusiveSpiritRealm = {
+		Id = "ExclusiveSpiritRealm", Name = "Rainbow Celestial", Rarity = "Exclusive", Zone = "SpiritRealm", Power = 4800000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(120, 240, 255), HairStyle = "Spiky", Shirt = C(255, 140, 220), Pants = C(120, 240, 255), Shoes = C(255, 140, 220),
+			Hat = "Crystal", HatColor = C(255, 140, 220), Back = "Wings", BackColor = C(120, 240, 255), Tool = "Orb", ToolColor = C(255, 140, 220), Beam = C(120, 240, 255), Aura = true },
+	},
+	ExclusiveSwamp = {
+		Id = "ExclusiveSwamp", Name = "Emerald Shaman", Rarity = "Exclusive", Zone = "Swamp", Power = 24000000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(200, 255, 220), HairStyle = "Spiky", Shirt = C(60, 220, 130), Pants = C(200, 255, 220), Shoes = C(60, 220, 130),
+			Hat = "Wizard", HatColor = C(60, 220, 130), Back = "Orbs", BackColor = C(200, 255, 220), Tool = "Staff", ToolColor = C(60, 220, 130), Beam = C(200, 255, 220), Aura = true },
+	},
+	ExclusiveFrost = {
+		Id = "ExclusiveFrost", Name = "Diamond Yeti Rider", Rarity = "Exclusive", Zone = "Frost", Power = 120000000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 255, 255), HairStyle = "Spiky", Shirt = C(200, 240, 255), Pants = C(255, 255, 255), Shoes = C(200, 240, 255),
+			Hat = "Hood", HatColor = C(200, 240, 255), Back = "Cape", BackColor = C(255, 255, 255), Tool = "Cannon", ToolColor = C(200, 240, 255), Beam = C(255, 255, 255), Aura = true },
+	},
+	ExclusiveTomb = {
+		Id = "ExclusiveTomb", Name = "Golden Pharaoh", Rarity = "Exclusive", Zone = "Tomb", Power = 600000000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(70, 200, 220), HairStyle = "Spiky", Shirt = C(255, 210, 80), Pants = C(70, 200, 220), Shoes = C(255, 210, 80),
+			Hat = "Crown", HatColor = C(255, 210, 80), Back = "Wings", BackColor = C(70, 200, 220), Tool = "Staff", ToolColor = C(255, 210, 80), Beam = C(70, 200, 220), Aura = true },
+	},
+	ExclusiveToyFactory = {
+		Id = "ExclusiveToyFactory", Name = "Rainbow Teddy", Rarity = "Exclusive", Zone = "ToyFactory", Power = 3000000000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 240, 120), HairStyle = "Spiky", Shirt = C(255, 150, 210), Pants = C(255, 240, 120), Shoes = C(255, 150, 210),
+			Hat = "Beanie", HatColor = C(255, 150, 210), Back = "Balloons", BackColor = C(255, 240, 120), Tool = "Orb", ToolColor = C(255, 150, 210), Beam = C(255, 240, 120), Aura = true },
+	},
+	ExclusiveSunken = {
+		Id = "ExclusiveSunken", Name = "Pearl Admiral", Rarity = "Exclusive", Zone = "Sunken", Power = 15000000000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(200, 230, 255), HairStyle = "Spiky", Shirt = C(250, 245, 255), Pants = C(200, 230, 255), Shoes = C(250, 245, 255),
+			Hat = "Crown", HatColor = C(250, 245, 255), Back = "Orbs", BackColor = C(200, 230, 255), Tool = "Orb", ToolColor = C(250, 245, 255), Beam = C(200, 230, 255), Aura = true },
+	},
+	ExclusiveClockwork = {
+		Id = "ExclusiveClockwork", Name = "Chrome Chronomancer", Rarity = "Exclusive", Zone = "Clockwork", Power = 75000000000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(120, 240, 255), HairStyle = "Spiky", Shirt = C(200, 205, 220), Pants = C(120, 240, 255), Shoes = C(200, 205, 220),
+			Hat = "TopHat", HatColor = C(200, 205, 220), Back = "Wings", BackColor = C(120, 240, 255), Tool = "Orb", ToolColor = C(200, 205, 220), Beam = C(120, 240, 255), Aura = true },
+	},
+	ExclusiveInferno = {
+		Id = "ExclusiveInferno", Name = "Obsidian Phoenix", Rarity = "Exclusive", Zone = "Inferno", Power = 375000000000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 140, 60), HairStyle = "Spiky", Shirt = C(40, 30, 45), Pants = C(255, 140, 60), Shoes = C(40, 30, 45),
+			Hat = "Hood", HatColor = C(40, 30, 45), Back = "Wings", BackColor = C(255, 140, 60), Tool = "Cannon", ToolColor = C(40, 30, 45), Beam = C(255, 140, 60), Aura = true },
+	},
+	ExclusiveThrone = {
+		Id = "ExclusiveThrone", Name = "Prismatic King", Rarity = "Exclusive", Zone = "Throne", Power = 1880000000000,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(200, 140, 255), HairStyle = "Spiky", Shirt = C(255, 215, 90), Pants = C(200, 140, 255), Shoes = C(255, 215, 90),
+			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Wings", BackColor = C(200, 140, 255), Tool = "Orb", ToolColor = C(255, 215, 90), Beam = C(200, 140, 255), Aura = true },
+	},
 } :: { [string]: HunterDef }
+
+-- Exclusive Crate (Robux): you get the exclusive hunter of your furthest unlocked area
+Config.Exclusives = {
+	Neighborhood = "ExclusiveNeighborhood",
+	Cemetery = "ExclusiveCemetery",
+	School = "ExclusiveSchool",
+	Carnival = "ExclusiveCarnival",
+	Hospital = "ExclusiveHospital",
+	Harbor = "ExclusiveHarbor",
+	Castle = "ExclusiveCastle",
+	SpiritRealm = "ExclusiveSpiritRealm",
+	Swamp = "ExclusiveSwamp",
+	Frost = "ExclusiveFrost",
+	Tomb = "ExclusiveTomb",
+	ToyFactory = "ExclusiveToyFactory",
+	Sunken = "ExclusiveSunken",
+	Clockwork = "ExclusiveClockwork",
+	Inferno = "ExclusiveInferno",
+	Throne = "ExclusiveThrone",
+} :: { [string]: string }
 
 Config.StarterHunter = "RookieHunter"
 
@@ -1299,6 +1416,11 @@ Config.Crates = {
 			{ Hunter = "TheFinalHunter", Weight = 0.04 },
 		},
 	},
+	Exclusive = {
+		Id = "Exclusive", Name = "EXCLUSIVE CRATE", Zone = "Neighborhood", Price = 0,
+		Color = C(60, 40, 110), Trim = C(120, 240, 255), Style = "Spirit",
+		Pool = {}, -- granted by the Robux product (Config.Exclusives), never rolled
+	},
 } :: { [string]: CrateDef }
 
 -- Luck boost multiplies weights of these rarities (and above) by Boosts.Luck.Multiplier.
@@ -1428,20 +1550,31 @@ Config.Event = {
 --==================================================================
 -- SHOP (Robux). Fill in the IDs after creating products on the Creator Hub.
 --==================================================================
-export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string, Amount: number?, Boost: string?, Seconds: number?, ProductId: number?, PriceLabel: string }
-export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Blurb: string? }
+export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string, Amount: number?, Boost: string?, Seconds: number?, ProductId: number?, PriceLabel: string, Blurb: string? }
+export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Storage: number?, Blurb: string? }
 
 Config.Products = {
 	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = 3715910102, PriceLabel = "R$ 49" },
 	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 12000, ProductId = 3715909987, PriceLabel = "R$ 199" },
 	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 49" },
 	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 49" },
+	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", ProductId = nil, PriceLabel = "R$ 199", Blurb = "Opens your next locked area right now" },
+	{ Key = "ExclusiveCrate", Name = "EXCLUSIVE CRATE", Icon = "💎", Kind = "ExclusiveCrate", ProductId = nil, PriceLabel = "R$ 99", Blurb = "An EXCLUSIVE hunter for your best area" },
+	{ Key = "ServerLuck", Name = "SERVER LUCK 15 MIN", Icon = "🍀", Kind = "ServerLuck", Seconds = 900, ProductId = nil, PriceLabel = "R$ 149", Blurb = "2x crate luck for EVERYONE in the server" },
+	{ Key = "SummonEvent", Name = "SUMMON GIANT POLTERGEIST", Icon = "👻", Kind = "SummonEvent", ProductId = nil, PriceLabel = "R$ 99", Blurb = "Starts the boss event for the whole server" },
 } :: { ProductDef }
 -- Ecto product amounts scale with best zone (same table as Daily.ZoneMultiplier).
 Config.GamePasses = {
 	{ Key = "ExtraSlots", Name = "+2 HUNTER SLOTS", Icon = "🎒", PassId = 2007038280, PriceLabel = "R$ 149", Slots = 2 },
 	{ Key = "DoubleEcto", Name = "PERMANENT 2x ECTOPLASM", Icon = "💎", PassId = 2005844290, PriceLabel = "R$ 299", Multiplier = 2 },
 	{ Key = "AutoAttack", Name = "AUTO ATTACK", Icon = "🤖", PassId = 2007026293, PriceLabel = "R$ 199", Blurb = "Your crew picks the next ghost for you" },
+	{ Key = "LuckyHunter", Name = "LUCKY HUNTER", Icon = "🍀", PassId = nil, PriceLabel = "R$ 349", Multiplier = 1.5, Blurb = "Better crate luck forever (x1.5)" },
+	{ Key = "TripleOpen", Name = "TRIPLE OPEN", Icon = "📦", PassId = nil, PriceLabel = "R$ 199", Blurb = "Open 3 crates at once" },
+	{ Key = "SuperMagnet", Name = "SUPER MAGNET", Icon = "🧲", PassId = nil, PriceLabel = "R$ 149", Multiplier = 1.6, Blurb = "Grab Ectoplasm from much further away" },
+	{ Key = "VIP", Name = "VIP", Icon = "👑", PassId = nil, PriceLabel = "R$ 249", Multiplier = 1.1, Blurb = "VIP tag, gold name, +10% Ectoplasm" },
+	{ Key = "Storage", Name = "+50 HUNTER STORAGE", Icon = "🗃️", PassId = nil, PriceLabel = "R$ 99", Storage = 50, Blurb = "Keep 50 more hunters" },
+	{ Key = "RainbowBeams", Name = "RAINBOW BEAMS", Icon = "🌈", PassId = nil, PriceLabel = "R$ 149", Blurb = "Your crew fires rainbow beams (looks only)" },
+	{ Key = "SparkleTrail", Name = "SPARKLE TRAIL", Icon = "✨", PassId = nil, PriceLabel = "R$ 99", Blurb = "A sparkly trail follows you (looks only)" },
 } :: { PassDef }
 
 --==================================================================
@@ -1450,6 +1583,10 @@ Config.GamePasses = {
 -- With the pass + toggle ON, the server picks the nearest ghost in the zone you stand in.
 -- No extra damage, rewards, drops or pickup range.
 --==================================================================
+-- Robux extras
+Config.ServerLuck = { Multiplier = 2, MaxStackSeconds = 3600 } -- server-wide crate luck (product)
+Config.TripleOpen = { Count = 3, Pass = "TripleOpen" }
+
 Config.AutoAttack = {
 	Pass = "AutoAttack", -- key in Config.GamePasses
 	Range = 45, -- studs from the player

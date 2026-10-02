@@ -23,6 +23,7 @@ local player = Players.LocalPlayer
 local panel: Kit.Panel
 local list: ScrollingFrame
 local openButton: TextButton
+local tripleButton: TextButton
 local infoLabel: TextLabel
 local luckLabel: TextLabel
 local current: string? = nil
@@ -134,6 +135,59 @@ function refreshButton(crateId: string, d: any, luck: number)
 		infoLabel.Text = "Hunters jump out of crates! Better crates → stronger hunters."
 	end
 	luckLabel.Visible = luck > 1
+	local triple = d.Passes and d.Passes[Config.TripleOpen.Pass] == true
+	tripleButton.Visible = triple == true
+	openButton.Position = if triple then UDim2.new(0.5, -75, 1, -4) else UDim2.new(0.5, 0, 1, -4)
+	if triple then
+		Kit.SetButtonText(tripleButton, "OPEN x3  💚 " .. Format.Short(price * Config.TripleOpen.Count))
+	end
+end
+
+-- Plays the best of several results (Triple Open) and lists the rest as toasts.
+local function rarityOf(id: string): number
+	local h = Config.Hunters[id]
+	return if h then Config.Rarities[h.Rarity].Order else 0
+end
+
+local function playResults(crateId: string, first: any, again: (() -> ())?)
+	local all = { { Uid = first.Uid, Hunter = first.Hunter, IsNew = first.IsNew == true } }
+	for _, m in (first.More or {}) :: { any } do
+		table.insert(all, { Uid = m.Uid, Hunter = m.Hunter, IsNew = m.IsNew == true })
+	end
+	table.sort(all, function(a, b)
+		return rarityOf(a.Hunter) > rarityOf(b.Hunter)
+	end)
+	for _, r in all do
+		openedSignal:Fire({ Crate = crateId, Hunter = r.Hunter, Uid = r.Uid, IsNew = r.IsNew })
+	end
+	local best = all[1]
+	Reveal.Play({ Crate = crateId, Hunter = best.Hunter, Uid = best.Uid, IsNew = best.IsNew }, again)
+	for i = 2, #all do
+		local h = Config.Hunters[all[i].Hunter]
+		if h then
+			Kit.Toast("Also got: " .. Config.Rarities[h.Rarity].Name .. " " .. h.Name .. (if all[i].IsNew then " (NEW!)" else ""), "Good")
+		end
+	end
+end
+
+local function buyTriple()
+	local crateId = current
+	if busy or not crateId or Reveal.IsPlaying() then
+		return
+	end
+	if not nearStation(crateId) then
+		Kit.Toast("Walk to the crate first!", "Bad")
+		return
+	end
+	busy = true
+	local res = State.Request("OpenCrate", crateId, Config.TripleOpen.Count)
+	busy = false
+	if not res.ok then
+		Kit.Toast(res.err or "Couldn't open the crate", "Bad")
+		return
+	end
+	panel:Close()
+	playResults(crateId, res, nil)
 end
 
 local function buy()
@@ -240,9 +294,31 @@ function CratePanel.Init()
 	})
 	openButton.Name = "OpenButton"
 	panel.Primary = openButton
+	tripleButton = Kit.Button(panel.Body, {
+		Text = "OPEN x3",
+		Color = "Purple",
+		Size = UDim2.fromOffset(200, 50),
+		Position = UDim2.new(0.5, 185, 1, -4),
+		AnchorPoint = Vector2.new(0.5, 1),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = buyTriple,
+	})
+	tripleButton.Visible = false
 end
 
 function CratePanel.Start()
+	-- Robux Exclusive Crate: the server grants the hunter and tells us to play the reveal
+	State.OnFx("Exclusive", function(data: any)
+		if type(data) == "table" and type(data.Hunter) == "string" and Config.Hunters[data.Hunter] then
+			if panel.IsOpen then
+				panel:Close()
+			end
+			local res: Reveal.Result = { Crate = "Exclusive", Hunter = data.Hunter, Uid = tostring(data.Uid), IsNew = data.IsNew == true }
+			openedSignal:Fire(res)
+			Reveal.Play(res, nil)
+		end
+	end)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
 			refresh()

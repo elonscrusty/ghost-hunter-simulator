@@ -397,6 +397,11 @@ local function step(dt: number)
 				beam.CurveSize1 = -w * 1.1
 				beam.Width0 = 0.3 + 0.12 * math.sin(clock * 22 + m.Phase)
 				beam.Width1 = 0.7 + 0.25 * math.sin(clock * 17 + m.Phase)
+				-- RAINBOW BEAMS pass (cosmetic): hue cycles along the beam
+				if pl:GetAttribute("RainbowBeams") == true then
+					local h = (clock * 0.35 + m.Phase * 0.1) % 1
+					beam.Color = ColorSequence.new(Color3.fromHSV(h, 0.75, 1), Color3.fromHSV((h + 0.35) % 1, 0.75, 1))
+				end
 			elseif beam.Enabled then
 				beam.Enabled = false
 			end

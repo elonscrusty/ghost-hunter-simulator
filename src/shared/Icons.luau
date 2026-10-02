@@ -54,6 +54,17 @@ Icons.ForProduct = {
 	ExtraSlots = "pass_slots",
 	DoubleEcto = "pass_ecto2x",
 	AutoAttack = "pass_autoattack",
+	LuckyHunter = "pass_lucky",
+	TripleOpen = "pass_triple",
+	SuperMagnet = "pass_magnet",
+	VIP = "pass_vip",
+	Storage = "pass_storage",
+	RainbowBeams = "pass_rainbow",
+	SparkleTrail = "pass_trail",
+	SkipArea = "prod_skip_area",
+	ExclusiveCrate = "prod_exclusive_crate",
+	ServerLuck = "prod_server_luck",
+	SummonEvent = "prod_summon_event",
 } :: { [string]: string }
 
 -- crate id -> icon key
@@ -66,6 +77,15 @@ Icons.ForCrate = {
 	Sailor = "crate_sailor",
 	Royal = "crate_royal",
 	SpiritRealm = "crate_spirit",
+	Bog = "crate_swamp",
+	Frost = "crate_frost",
+	Tomb = "crate_tomb",
+	Toy = "crate_toy",
+	Sunken = "crate_sunken",
+	Clockwork = "crate_clock",
+	Inferno = "crate_inferno",
+	Throne = "crate_throne",
+	Exclusive = "crate_exclusive",
 } :: { [string]: string }
 
 function Icons.ForZone(zoneId: string): string

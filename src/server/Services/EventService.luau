@@ -119,6 +119,26 @@ local function runSafely()
 	end
 end
 
+-- Start an event now (DEV button / Summon product). While one is running the request is
+-- queued and starts shortly after the current one ends.
+local queued = 0
+local running = false
+
+local function runGuarded()
+	if running then
+		queued += 1
+		return
+	end
+	running = true
+	runSafely()
+	while queued > 0 do
+		queued -= 1
+		task.wait(8)
+		runSafely()
+	end
+	running = false
+end
+
 function EventService.Init()
 	-- late joiners see the current boss
 	DataService.Loaded:Connect(function(player)
@@ -132,15 +152,18 @@ function EventService.Start()
 	task.spawn(function()
 		task.wait(Config.Event.FirstDelay)
 		while true do
-			runSafely()
+			runGuarded()
 			task.wait(Config.Event.Interval + rng:NextNumber(-30, 30))
 		end
 	end)
 end
 
--- Studio/testing helper: start an event now (used by the admin command in Main).
 function EventService.TriggerNow()
-	task.spawn(runSafely)
+	task.spawn(runGuarded)
+end
+
+function EventService.IsBusy(): boolean
+	return running
 end
 
 return EventService

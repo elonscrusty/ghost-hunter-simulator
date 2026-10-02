@@ -281,7 +281,10 @@ local function tick()
 		elseif not nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
 			-- every area open: the goal becomes the full Hunter Index
 			local total, found = 0, 0
-			for id in Config.Hunters do
+			for id, h in Config.Hunters do
+				if h.Rarity == "Exclusive" then
+					continue -- Robux-only hunters are never a required goal
+				end
 				total += 1
 				if d.Discovered[id] then
 					found += 1

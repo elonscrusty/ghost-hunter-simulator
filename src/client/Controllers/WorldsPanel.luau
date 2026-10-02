@@ -122,7 +122,7 @@ function WorldsPanel.Init()
 		Kit.Stroke(f, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 		Kit.Gradient(f, z.Accent:Lerp(Theme.Panel3, 0.35), z.FogColor, 90)
 		Kit.Label(f, tostring(z.Order), { Size = UDim2.fromOffset(26, 26), Position = UDim2.fromOffset(6, 6), Style = "Heading", ZIndex = 64 })
-		-- optional uploaded zone badge (docs/ICON_PROMPTS.md) between the number and the lock
+		-- optional uploaded zone badge (icon-prompts/) between the number and the lock
 		local hasIcon = Icons.Get(Icons.ForZone(z.Id)) ~= nil
 		if hasIcon then
 			Kit.Icon(f, Icons.ForZone(z.Id), "", { Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0.5, 0, 0, 4), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 63 })

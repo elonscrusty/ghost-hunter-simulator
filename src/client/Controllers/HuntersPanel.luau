@@ -315,8 +315,9 @@ local function rebuild()
 	local slots = d.Slots or Config.Inventory.BaseSlots
 	equippedLabel.Text = "EQUIPPED " .. #d.Equipped .. "/" .. slots
 	powerLabel.Text = "⚡ " .. Format.Short(d.CrewPower or 0)
-	storageLabel.Text = "STORAGE " .. count .. "/" .. Config.Inventory.MaxHunters
-	storageLabel.TextColor3 = if count >= Config.Inventory.MaxHunters - 5 then Theme.Bad else Theme.Muted
+	local maxHunters = (State.Data and State.Data.MaxHunters) or Config.Inventory.MaxHunters
+	storageLabel.Text = "STORAGE " .. count .. "/" .. maxHunters
+	storageLabel.TextColor3 = if count >= maxHunters - 5 then Theme.Bad else Theme.Muted
 	if inspectUid and not d.Hunters[inspectUid] then
 		inspectUid = nil
 	end

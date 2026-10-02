@@ -20,7 +20,7 @@ Roblox collection simulator (Rojo + Luau). The owner (kcdrewcarter) plays on a p
 - Server authority: the client never decides currency, crate results, damage, pickups, zones, upgrades or purchases. Every Request handler validates its arguments.
 - All balance numbers and content live in `src/shared/Config.luau`; don't scatter values in scripts.
 - Keep it mobile-friendly: one loop per system (no per-ghost/per-orb connections), capped effects.
-- Shop: Robux currently buys Ectoplasm packs, boosts and passes. Ask the owner before changing what Robux can buy.
+- Shop (owner-approved): Robux buys Ectoplasm packs, boosts, passes (slots, 2x Ecto, Auto Attack, Lucky, Triple Open, Super Magnet, VIP, Storage, cosmetic beams/trail), Unlock Next Area, an Exclusive Crate (1.5x Legendary of your best area), Server Luck and Summon Event. Never sell Mythic/Secret hunters or big damage multipliers; ask the owner before adding new kinds of Robux items.
 
 ## Pending (owner's side)
 - Playtest in Studio (`docs/STUDIO_TESTS.md`); nothing has been run in Studio yet.

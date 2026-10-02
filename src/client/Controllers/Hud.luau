@@ -530,11 +530,16 @@ local function refreshBoosts()
 		return
 	end
 	local now = State.Now()
+	local chips: { [string]: any } = {}
 	for id, def in Config.Boosts :: any do
-		if type(def) ~= "table" then
-			continue
+		if type(def) == "table" then
+			chips[id] = { Icon = def.Icon, Name = def.Name, Expiry = d.Boosts[id] }
 		end
-		local expiry = d.Boosts[id]
+	end
+	-- server-wide luck someone bought (Robux): everyone sees it
+	chips.ServerLuck = { Icon = "🍀", Name = "SERVER LUCK", Expiry = d.ServerLuckUntil }
+	for id, def in chips do
+		local expiry = def.Expiry
 		local left = if expiry then expiry - now else 0
 		local l = boostLabels[id]
 		if left > 0 then
@@ -588,7 +593,23 @@ function Hud.Init()
 	buildBanners()
 end
 
+-- [VIP] chat tag for VIP pass owners (the server sets the player's "VIP" attribute)
+local function hookVipChat()
+	pcall(function()
+		TextChatService.OnIncomingMessage = function(message: TextChatMessage)
+			local props = Instance.new("TextChatMessageProperties")
+			local src = message.TextSource
+			local who = src and Players:GetPlayerByUserId(src.UserId)
+			if who and who:GetAttribute("VIP") == true then
+				props.PrefixText = '<font color="#FFD24A">[VIP]</font> ' .. message.PrefixText
+			end
+			return props
+		end
+	end)
+end
+
 function Hud.Start()
+	hookVipChat()
 	State.OnData(onData)
 	State.EctoChanged:Connect(function(new: number, old: number)
 		targetEcto = new

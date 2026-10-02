@@ -44,6 +44,27 @@ local function hunterList(zoneId: string): { Config.HunterDef }
 	return out
 end
 
+type Section = { Id: string, Name: string, Accent: Color3, List: { Config.HunterDef }, Unlocked: boolean }
+
+-- One section per area, then the Robux-only EXCLUSIVE hunters.
+local function sections(d: any): { Section }
+	local out: { Section } = {}
+	for _, z in Config.Zones do
+		table.insert(out, { Id = z.Id, Name = z.Name, Accent = z.Accent, List = hunterList(z.Id), Unlocked = d.Zones[z.Id] == true })
+	end
+	local ex = {}
+	for _, z in Config.Zones do
+		local id = Config.Exclusives[z.Id]
+		if id and Config.Hunters[id] then
+			table.insert(ex, Config.Hunters[id])
+		end
+	end
+	if #ex > 0 then
+		table.insert(out, { Id = "Exclusive", Name = "💎 EXCLUSIVE (ROBUX CRATE)", Accent = Config.Rarities.Exclusive.Color, List = ex, Unlocked = true })
+	end
+	return out
+end
+
 local function oddsOf(h: Config.HunterDef): number
 	local zone = Config.ZoneById[h.Zone]
 	local crate = Config.Crates[zone.Crate]
@@ -63,7 +84,7 @@ local function showDetail(h: Config.HunterDef, found: boolean)
 	end
 	detail.Visible = true
 	local rar = Config.Rarities[h.Rarity]
-	local crate = Config.Crates[(Config.ZoneById[h.Zone] :: Config.ZoneDef).Crate]
+	local crate = if h.Rarity == "Exclusive" then Config.Crates.Exclusive else Config.Crates[(Config.ZoneById[h.Zone] :: Config.ZoneDef).Crate]
 	if found then
 		local _, model = Portrait.Viewport(detailView, h.Id, false)
 		if model then
@@ -80,7 +101,7 @@ local function showDetail(h: Config.HunterDef, found: boolean)
 		detailBlurb.Text = "Not discovered yet. Keep opening crates!"
 	end
 	detailName.TextColor3 = rar.Color
-	detailInfo.Text = rar.Name .. "  •  ⚡ " .. (if found then Format.Commas(h.Power) else "?") .. "\n" .. crate.Name .. "  •  " .. Format.Percent(oddsOf(h))
+	detailInfo.Text = rar.Name .. "  •  ⚡ " .. (if found then Format.Commas(h.Power) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) • best unlocked area" else crate.Name .. "  •  " .. Format.Percent(oddsOf(h)))
 end
 
 local function rebuild()
@@ -89,8 +110,10 @@ local function rebuild()
 		return
 	end
 	local key = ""
-	for _, z in Config.Zones do
-		for _, h in hunterList(z.Id) do
+	local secs = sections(d)
+	for _, z in secs do
+		key ..= if z.Unlocked then "u" else "l"
+		for _, h in z.List do
 			key ..= (if d.Discovered[h.Id] then "1" else "0") .. (if newIds[h.Id] then "n" else "")
 		end
 	end
@@ -104,16 +127,18 @@ local function rebuild()
 		end
 	end
 	local total, found = 0, 0
-	for zi, z in Config.Zones do
-		local list = hunterList(z.Id)
+	for zi, z in secs do
+		local list = z.List
 		local zf = 0
 		for _, h in list do
 			if d.Discovered[h.Id] then
 				zf += 1
 			end
 		end
-		total += #list
-		found += zf
+		if z.Id ~= "Exclusive" then -- paid hunters don't count toward completion
+			total += #list
+			found += zf
+		end
 		local section: Frame = Kit.new("Frame", {
 			Size = UDim2.new(1, -6, 0, 0),
 			AutomaticSize = Enum.AutomaticSize.Y,
@@ -126,7 +151,7 @@ local function rebuild()
 		Kit.Corner(section, UDim.new(0, 12))
 		Kit.new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = section })
 		Kit.new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = section })
-		local unlocked = d.Zones[z.Id] == true
+		local unlocked = z.Unlocked
 		local complete = zf == #list
 		local header: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 62, Parent = section })
 		Kit.Label(header, (if unlocked then "" else "🔒 ") .. z.Name, { Size = UDim2.new(0.6, 0, 1, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })

@@ -91,7 +91,7 @@ function ShopPanel.Init()
 	end
 	local prodRow = section(1, "BOOSTS & ECTOPLASM")
 	for i, p in Config.Products do
-		local sub = if p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
+		local sub = if p.Blurb then p.Blurb elseif p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
 		local _, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
 			buy(p.Key)
 		end)

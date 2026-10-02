@@ -15,6 +15,7 @@ local Remotes = require(script.Parent.Remotes)
 local Fx = require(script.Parent.Fx)
 
 local HunterService = {}
+HunterService.GrantExclusive = nil :: any
 
 local rng = Random.new()
 local STATION_RANGE = 30
@@ -106,7 +107,7 @@ local function openCrate(player: Player, crateId: any): any
 	if not station or not Remotes.Near(player, station, STATION_RANGE) then
 		return Remotes.Fail("Walk to the crate first!")
 	end
-	if countOwned(d) >= Config.Inventory.MaxHunters then
+	if countOwned(d) >= PlayerInfo.MaxHunters(player) then
 		return Remotes.Fail("Hunter storage full! Release some hunters.")
 	end
 	local usedFree = false
@@ -143,7 +144,39 @@ function HunterService.Init()
 		s.CrewPower = HunterService.CrewPower(player)
 	end)
 
-	Remotes.Register("OpenCrate", "OpenCrate", openCrate)
+	-- (crateId, count?): count 3 only with the Triple Open pass; stops early when money or storage
+	-- runs out. Returns the first result plus `More` = the extra results.
+	Remotes.Register("OpenCrate", "OpenCrate", function(player, crateId, count)
+		local n = if count == Config.TripleOpen.Count and PlayerInfo.HasPass(player, Config.TripleOpen.Pass) then count else 1
+		local first = openCrate(player, crateId)
+		if not first.ok or n == 1 then
+			return first
+		end
+		local more = {}
+		for _ = 2, n do
+			local r = openCrate(player, crateId)
+			if not r.ok then
+				break
+			end
+			table.insert(more, { Uid = r.Uid, Hunter = r.Hunter, IsNew = r.IsNew })
+		end
+		first.More = more
+		return first
+	end)
+
+	-- Robux Exclusive Crate (granted by ShopService after a purchase)
+	HunterService.GrantExclusive = function(p: Player): (string?, string?, boolean)
+		local zone = Config.Zones[PlayerInfo.BestZone(p)]
+		local hunterId = zone and Config.Exclusives[zone.Id]
+		if not hunterId then
+			return nil, nil, false
+		end
+		local uid, isNew = HunterService.Add(p, hunterId)
+		HunterService.Refresh(p)
+		local def = Config.Hunters[hunterId]
+		Fx.All("Announce", { Text = string.format("%s got the EXCLUSIVE %s!", p.DisplayName, string.upper(def.Name)), Color = "Exclusive" })
+		return uid, hunterId, isNew
+	end
 
 	Remotes.Register("Equip", "Inventory", function(player, uid)
 		local d = DataService.Get(player)
@@ -201,7 +234,7 @@ function HunterService.Init()
 	-- Releases (deletes) unlocked, unequipped hunters for a small refund.
 	Remotes.Register("Release", "Inventory", function(player, uids)
 		local d = DataService.Get(player)
-		if not d or type(uids) ~= "table" or #uids == 0 or #uids > Config.Inventory.MaxHunters then
+		if not d or type(uids) ~= "table" or #uids == 0 or #uids > PlayerInfo.MaxHunters(player) then
 			return Remotes.Fail("Nothing selected")
 		end
 		local refund = 0

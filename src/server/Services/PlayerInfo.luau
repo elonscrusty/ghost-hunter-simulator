@@ -21,6 +21,18 @@ function PlayerInfo.HasPass(player: Player, key: string): boolean
 	return p ~= nil and p[key] == true
 end
 
+-- Server-wide luck (Robux product): os.time() expiry, shared by everyone in this server.
+local serverLuckUntil = 0
+
+function PlayerInfo.ServerLuckUntil(): number
+	return serverLuckUntil
+end
+
+function PlayerInfo.AddServerLuck(seconds: number)
+	local now = os.time()
+	serverLuckUntil = math.min(math.max(serverLuckUntil, now) + seconds, now + Config.ServerLuck.MaxStackSeconds)
+end
+
 function PlayerInfo.Forget(player: Player)
 	passes[player] = nil
 end
@@ -66,21 +78,46 @@ function PlayerInfo.EctoMultiplier(player: Player): number
 	if def and PlayerInfo.HasPass(player, "DoubleEcto") then
 		passMul = def.Multiplier or 1
 	end
+	local vip = passDef("VIP")
+	if vip and PlayerInfo.HasPass(player, "VIP") then
+		passMul *= vip.Multiplier or 1
+	end
 	return Rules.EctoMultiplier(bonus, PlayerInfo.BoostActive(d, "Ecto"), Config.Boosts.Ecto.Multiplier, passMul)
 end
 
 function PlayerInfo.LuckMultiplier(player: Player): number
 	local d = DataService.Get(player)
+	local m = 1
 	if d and PlayerInfo.BoostActive(d, "Luck") then
-		return Config.Boosts.Luck.Multiplier
+		m *= Config.Boosts.Luck.Multiplier
 	end
-	return 1
+	local lucky = passDef("LuckyHunter")
+	if lucky and PlayerInfo.HasPass(player, "LuckyHunter") then
+		m *= lucky.Multiplier or 1
+	end
+	if serverLuckUntil > os.time() then
+		m *= Config.ServerLuck.Multiplier
+	end
+	return m
+end
+
+function PlayerInfo.MaxHunters(player: Player): number
+	local def = passDef("Storage")
+	if def and PlayerInfo.HasPass(player, "Storage") then
+		return Config.Inventory.MaxHunters + (def.Storage or 0)
+	end
+	return Config.Inventory.MaxHunters
 end
 
 function PlayerInfo.PickupRadius(player: Player): number
 	local d = DataService.Get(player)
 	local lv = if d then d.Upgrades.PickupRadius or 1 else 1
-	return Rules.UpgradeValue(Config.Upgrades.PickupRadius.Levels, lv)
+	local r = Rules.UpgradeValue(Config.Upgrades.PickupRadius.Levels, lv)
+	local magnet = passDef("SuperMagnet")
+	if magnet and PlayerInfo.HasPass(player, "SuperMagnet") then
+		r *= magnet.Multiplier or 1
+	end
+	return r
 end
 
 function PlayerInfo.WalkSpeed(player: Player): number
@@ -115,6 +152,8 @@ function PlayerInfo.Init()
 		s.LuckMultiplier = PlayerInfo.LuckMultiplier(player)
 		s.PickupRadius = PlayerInfo.PickupRadius(player)
 		s.ZoneMultiplier = PlayerInfo.ZoneMultiplier(player)
+		s.MaxHunters = PlayerInfo.MaxHunters(player)
+		s.ServerLuckUntil = serverLuckUntil
 		local owned = {}
 		for _, p in Config.GamePasses do
 			owned[p.Key] = PlayerInfo.HasPass(player, p.Key)

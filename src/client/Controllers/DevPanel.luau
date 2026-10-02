@@ -62,6 +62,9 @@ local ACTIONS: { Action } = {
 	{ Text = "START EVENT", Cmd = "Event", Color = "Pink" },
 	{ Text = "RESET DAILY", Cmd = "ResetDaily", Color = "Purple" },
 	{ Text = "AUTO ATTACK PASS", Cmd = "AutoAttack", Color = "Purple" },
+	{ Text = "ALL GAME PASSES", Cmd = "AllPasses", Color = "Purple" },
+	{ Text = "SERVER LUCK 15M", Cmd = "ServerLuck", Color = "Green" },
+	{ Text = "EXCLUSIVE HUNTER", Cmd = "Exclusive", Color = "Teal" },
 	{ Text = "REPLAY TUTORIAL", Cmd = "Tutorial", Color = "Gray" },
 	{ Text = "💬 READ FEEDBACK", Cmd = "Inbox", Color = "Blue" },
 }
