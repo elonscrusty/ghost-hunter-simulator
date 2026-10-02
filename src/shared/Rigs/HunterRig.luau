@@ -470,11 +470,7 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		tpart(U.Block(Vector3.new(0.55, 0.65, 0.55), T(0, -0.3, -0.5), tc, model, { Transparency = 0.4 }))
 		muzzle = tpart(U.Ball(0.38, T(0, -0.3, -0.5), beam, model, NEON))
 		tipWorld = T(0, -0.3, -0.5)
-		local light = Instance.new("PointLight")
-		light.Color = beam
-		light.Range = 8
-		light.Brightness = 1.2
-		light.Parent = muzzle
+		-- no PointLight: a light on every moving crew flickers (the neon flame is enough)
 	elseif tool == "Staff" then
 		local up = CFrame.Angles(-0.1, 0, 0) -- pole stands nearly upright in the Attack pose
 		tpart(U.Cyl(3.0, 0.18, grip * up * CFrame.new(0, 0.55, 0) * U.AxisY, U.Shade(tc, 0.5), model))

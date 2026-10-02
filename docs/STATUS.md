@@ -36,6 +36,9 @@
 5. Game icon, thumbnails, description; then publish.
 
 ## Next (ideas)
+- **DEV button (owner request):** an owner-only in-game developer panel button (shown only to the
+  game owner / in Studio) with the test tools: give Ectoplasm, unlock all areas, give all
+  hunters, start the Giant Poltergeist, reset daily, toggle Auto Attack. Server-checked by UserId.
 - Index area-completion rewards; more events in later areas.
 
 ## Known limits / ideas for later

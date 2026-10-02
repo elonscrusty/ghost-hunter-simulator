@@ -238,12 +238,7 @@ function GhostRig.Build(ghostId: string): Model
 		-- lantern hanging from the right nub
 		cyl(0.2, 0.7, at(1.95, -0.75, -0.45) * U.AxisY, METAL, { Material = Enum.Material.Metal })
 		block(Vector3.new(0.65, 0.75, 0.65), at(1.95, -1.25, -0.45), Color3.fromRGB(210, 220, 230), { Transparency = 0.45 })
-		local flame = ball(0.45, at(1.95, -1.25, -0.45), glow, NEON)
-		local pl = Instance.new("PointLight")
-		pl.Color = glow
-		pl.Range = 8
-		pl.Brightness = 1
-		pl.Parent = flame
+		ball(0.45, at(1.95, -1.25, -0.45), glow, NEON) -- flame (no PointLight: moving lights flicker)
 		-- chain + weight from the left nub
 		cyl(0.12, 0.45, at(-1.85, -0.78, -0.25), METAL, { Material = Enum.Material.Metal })
 		cyl(0.12, 0.45, at(-1.88, -1.12, -0.25) * U.AxisZ, METAL, { Material = Enum.Material.Metal })
@@ -731,14 +726,9 @@ function GhostRig.Build(ghostId: string): Model
 	pe.RotSpeed = NumberRange.new(-30, 30)
 	pe.Parent = core
 
-	if def.Kind == "MiniBoss" or def.Kind == "Boss" or def.Kind == "Event" then
-		local light = Instance.new("PointLight")
-		light.Name = "BossLight"
-		light.Color = glow
-		light.Range = if isBoss then 16 else 14
-		light.Brightness = if isBoss then 1.8 else 1.5
-		light.Parent = core
-	end
+	-- No PointLights on ghosts: lights on moving, bobbing (and spawn-scaling) models flicker as
+	-- the engine re-sorts nearby lights every frame. The glow comes from the neon core, eyes and
+	-- the Aura emitter (stronger on bosses).
 
 	if def.Scale ~= 1 then
 		model:ScaleTo(def.Scale)
