@@ -21502,7 +21502,7 @@ local function buildTop(screen: ScreenGui)
 		if g then
 			g.Enabled = false
 		end
-		Kit.Icon(orb, "ecto", "", { Size = UDim2.fromScale(1.15, 1.15), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 4 })
+		Kit.Icon(orb, "ecto", "💚", { Size = UDim2.fromScale(1.15, 1.15), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 4 })
 	end
 	ectoLabel = Kit.Label(ectoPill, "0", { Size = UDim2.new(1, -46, 1, 0), Position = UDim2.fromOffset(40, 0), Color = Theme.Ecto, Style = "Currency", Fit = true })
 	-- crew power
@@ -21777,7 +21777,7 @@ local function buildSettings(screen: ScreenGui)
 	})
 	feedback.LayoutOrder = 2
 	local gear = Kit.Button(lowerRow, {
-		Text = if Icons.Get("menu_settings") then "" else "⚙",
+		Text = "",
 		Color = "Gray",
 		Size = UDim2.fromOffset(SMALL, SMALL),
 		TextStyle = "Heading",
@@ -21786,9 +21786,7 @@ local function buildSettings(screen: ScreenGui)
 		end,
 	})
 	gear.LayoutOrder = 3
-	if Icons.Get("menu_settings") then
-		Kit.Icon(gear, "menu_settings", "", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3 })
-	end
+	Kit.Icon(gear, "menu_settings", "⚙", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Heading", Stroke = 0, ZIndex = 3 })
 end
 
 -- AUTO ATTACK toggle: FREE for every player (no pass, no Robux).
@@ -26000,6 +25998,29 @@ function Kit.Icon(parent: Instance?, key: string?, emoji: string, p: LabelProps?
 		ZIndex = o.ZIndex or 1,
 		Parent = parent,
 	})
+	-- If the image can't load (asset still processing, or a place file that isn't the
+	-- published game, where Roblox blocks private assets) show the emoji instead of a blank.
+	if emoji ~= "" then
+		local fallback = Kit.Label(img, emoji, {
+			Size = UDim2.fromScale(1, 1),
+			Style = o.Style or "Icon",
+			TextSize = o.TextSize,
+			Stroke = o.Stroke or 0,
+			Color = o.Color,
+			ZIndex = o.ZIndex or 1,
+		})
+		fallback.Visible = false
+		img:GetPropertyChangedSignal("IsLoaded"):Connect(function()
+			if img.IsLoaded then
+				fallback.Visible = false
+			end
+		end)
+		task.delay(2, function()
+			if img.Parent and not img.IsLoaded then
+				fallback.Visible = true
+			end
+		end)
+	end
 	return img
 end
 

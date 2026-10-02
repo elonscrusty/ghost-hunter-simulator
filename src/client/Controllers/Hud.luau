@@ -151,7 +151,7 @@ local function buildTop(screen: ScreenGui)
 		if g then
 			g.Enabled = false
 		end
-		Kit.Icon(orb, "ecto", "", { Size = UDim2.fromScale(1.15, 1.15), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 4 })
+		Kit.Icon(orb, "ecto", "💚", { Size = UDim2.fromScale(1.15, 1.15), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 4 })
 	end
 	ectoLabel = Kit.Label(ectoPill, "0", { Size = UDim2.new(1, -46, 1, 0), Position = UDim2.fromOffset(40, 0), Color = Theme.Ecto, Style = "Currency", Fit = true })
 	-- crew power
@@ -426,7 +426,7 @@ local function buildSettings(screen: ScreenGui)
 	})
 	feedback.LayoutOrder = 2
 	local gear = Kit.Button(lowerRow, {
-		Text = if Icons.Get("menu_settings") then "" else "⚙",
+		Text = "",
 		Color = "Gray",
 		Size = UDim2.fromOffset(SMALL, SMALL),
 		TextStyle = "Heading",
@@ -435,9 +435,7 @@ local function buildSettings(screen: ScreenGui)
 		end,
 	})
 	gear.LayoutOrder = 3
-	if Icons.Get("menu_settings") then
-		Kit.Icon(gear, "menu_settings", "", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3 })
-	end
+	Kit.Icon(gear, "menu_settings", "⚙", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Heading", Stroke = 0, ZIndex = 3 })
 end
 
 -- AUTO ATTACK toggle: FREE for every player (no pass, no Robux).
