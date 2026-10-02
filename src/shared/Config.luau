@@ -61,13 +61,13 @@ Config.Rarities = {
 		Sound = "RevealLegendary",
 	},
 	Mythic = {
-		Id = "Mythic", Name = "MYTHIC", Order = 6, Enabled = false,
+		Id = "Mythic", Name = "MYTHIC", Order = 6, Enabled = true,
 		Color = Color3.fromRGB(255, 70, 110), Color2 = Color3.fromRGB(255, 160, 60),
 		RevealPause = 2.0, ShakeIntensity = 0.8, Particles = 200, Darken = 0.55, CameraPunch = true, Announce = true,
 		Sound = "RevealLegendary",
 	},
 	Secret = {
-		Id = "Secret", Name = "SECRET", Order = 7, Enabled = false,
+		Id = "Secret", Name = "SECRET", Order = 7, Enabled = true,
 		Color = Color3.fromRGB(30, 30, 40), Color2 = Color3.fromRGB(240, 240, 255),
 		RevealPause = 2.4, ShakeIntensity = 0.9, Particles = 220, Darken = 0.7, CameraPunch = true, Announce = true,
 		Sound = "RevealLegendary",
@@ -540,6 +540,103 @@ Config.Hunters = {
 		Look = { Skin = C(255, 230, 210), Hair = C(200, 230, 255), HairStyle = "Long", Shirt = C(240, 240, 255), Pants = C(70, 60, 160), Shoes = C(255, 220, 120),
 			Hat = "Crystal", HatColor = C(130, 240, 255), Back = "Wings", BackColor = C(150, 220, 255), Tool = "Orb", ToolColor = C(255, 230, 140), Beam = C(140, 240, 255), Aura = true },
 	},
+	-- MYTHIC + SECRET (one of each per area: very rare crate pulls)
+	MoonlightMedium = {
+		Id = "MoonlightMedium", Name = "Moonlight Medium", Rarity = "Mythic", Zone = "Neighborhood", Power = 100,
+		Blurb = "Talks to ghosts by moonlight. They talk back.",
+		Look = { Skin = C(235, 215, 255), Hair = C(200, 170, 255), HairStyle = "Long", Shirt = C(70, 40, 140), Pants = C(40, 25, 90), Shoes = C(255, 120, 200),
+			Hat = "Wizard", HatColor = C(90, 50, 180), Back = "Orbs", BackColor = C(255, 140, 220), Tool = "Orb", ToolColor = C(255, 230, 255), Beam = C(255, 140, 230), Aura = true },
+	},
+	NightWatcher = {
+		Id = "NightWatcher", Name = "The Night Watcher", Rarity = "Secret", Zone = "Neighborhood", Power = 240,
+		Blurb = "Nobody knows who they are. The ghosts do.",
+		Look = { Skin = C(60, 55, 75), Hair = C(20, 20, 25), HairStyle = "None", Shirt = C(20, 20, 30), Pants = C(15, 15, 20), Shoes = C(240, 240, 255),
+			Hat = "Hood", HatColor = C(15, 15, 25), Back = "Cape", BackColor = C(240, 240, 255), Tool = "Lantern", ToolColor = C(30, 30, 40), Beam = C(240, 240, 255), Aura = true },
+	},
+	GravelightOracle = {
+		Id = "GravelightOracle", Name = "Gravelight Oracle", Rarity = "Mythic", Zone = "Cemetery", Power = 500,
+		Blurb = "Reads the future in the glow of old candles.",
+		Look = { Skin = C(255, 230, 210), Hair = C(140, 255, 190), HairStyle = "Long", Shirt = C(30, 90, 70), Pants = C(20, 50, 45), Shoes = C(255, 120, 90),
+			Hat = "Crown", HatColor = C(120, 255, 180), Back = "Wings", BackColor = C(255, 140, 110), Tool = "Staff", ToolColor = C(255, 200, 120), Beam = C(255, 150, 120), Aura = true },
+	},
+	ReapersApprentice = {
+		Id = "ReapersApprentice", Name = "Reaper's Apprentice", Rarity = "Secret", Zone = "Cemetery", Power = 1200,
+		Blurb = "Borrowed the Reaper's lantern. Never gave it back.",
+		Look = { Skin = C(230, 230, 240), Hair = C(30, 30, 35), HairStyle = "Spiky", Shirt = C(25, 25, 30), Pants = C(20, 20, 25), Shoes = C(120, 255, 170),
+			Hat = "Hood", HatColor = C(25, 25, 30), Back = "Cape", BackColor = C(120, 255, 170), Tool = "Lantern", ToolColor = C(40, 40, 50), Beam = C(120, 255, 170), Aura = true },
+	},
+	SpiritValedictorian = {
+		Id = "SpiritValedictorian", Name = "Spirit Valedictorian", Rarity = "Mythic", Zone = "School", Power = 2500,
+		Blurb = "Top of the class in every subject, including Ghostology.",
+		Look = { Skin = C(250, 215, 180), Hair = C(255, 140, 60), HairStyle = "Puff", Shirt = C(255, 200, 60), Pants = C(60, 40, 120), Shoes = C(255, 90, 160),
+			Hat = "Mortarboard", HatColor = C(255, 200, 60), Back = "Wings", BackColor = C(255, 120, 200), Tool = "Projector", ToolColor = C(255, 220, 120), Beam = C(255, 120, 220), Aura = true },
+	},
+	TheSubstitute = {
+		Id = "TheSubstitute", Name = "The Substitute", Rarity = "Secret", Zone = "School", Power = 6000,
+		Blurb = "Shows up when nobody expects it. Ghosts get detention.",
+		Look = { Skin = C(200, 190, 210), Hair = C(240, 240, 250), HairStyle = "Short", Shirt = C(35, 30, 45), Pants = C(25, 20, 35), Shoes = C(190, 110, 255),
+			Hat = "Fedora", HatColor = C(25, 20, 35), Back = "Cape", BackColor = C(190, 110, 255), Tool = "Staff", ToolColor = C(60, 50, 80), Beam = C(200, 120, 255), Aura = true },
+	},
+	GrandIllusionist = {
+		Id = "GrandIllusionist", Name = "Grand Illusionist", Rarity = "Mythic", Zone = "Carnival", Power = 12500,
+		Blurb = "Saws ghosts in half. They're fine. Mostly.",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 60, 120), HairStyle = "Spiky", Shirt = C(255, 210, 60), Pants = C(200, 40, 70), Shoes = C(60, 90, 220),
+			Hat = "TopHat", HatColor = C(255, 210, 60), Back = "Balloons", BackColor = C(255, 90, 160), Tool = "Wand", ToolColor = C(255, 255, 255), Beam = C(255, 90, 170), Aura = true },
+	},
+	TheLastClown = {
+		Id = "TheLastClown", Name = "The Last Clown", Rarity = "Secret", Zone = "Carnival", Power = 30000,
+		Blurb = "When the carnival closed, they stayed. Honk.",
+		Look = { Skin = C(250, 250, 255), Hair = C(255, 60, 60), HairStyle = "Puff", Shirt = C(40, 30, 50), Pants = C(30, 25, 40), Shoes = C(255, 60, 60),
+			Hat = "Jester", HatColor = C(40, 30, 50), Back = "Cape", BackColor = C(255, 60, 60), Tool = "Megaphone", ToolColor = C(255, 60, 60), Beam = C(255, 80, 80), Aura = true },
+	},
+	ChiefOfSpiritMedicine = {
+		Id = "ChiefOfSpiritMedicine", Name = "Chief of Spirit Medicine", Rarity = "Mythic", Zone = "Hospital", Power = 62000,
+		Blurb = "Prescribes one beam, twice a day.",
+		Look = { Skin = C(240, 205, 170), Hair = C(230, 230, 240), HairStyle = "Bob", Shirt = C(250, 252, 255), Pants = C(110, 200, 255), Shoes = C(120, 255, 200),
+			Hat = "HeadMirror", HatColor = C(255, 215, 90), Back = "Wings", BackColor = C(150, 230, 255), Tool = "Cannon", ToolColor = C(250, 252, 255), Beam = C(110, 220, 255), Aura = true },
+	},
+	NightShiftNurse = {
+		Id = "NightShiftNurse", Name = "Night Shift Nurse", Rarity = "Secret", Zone = "Hospital", Power = 150000,
+		Blurb = "Works the 3 AM shift. The ghosts are scared of HER.",
+		Look = { Skin = C(225, 220, 235), Hair = C(30, 25, 40), HairStyle = "Long", Shirt = C(40, 35, 55), Pants = C(30, 25, 45), Shoes = C(120, 255, 200),
+			Hat = "NurseCap", HatColor = C(40, 35, 55), Back = "MedKit", BackColor = C(120, 255, 200), Tool = "Flashlight", ToolColor = C(40, 35, 55), Beam = C(120, 255, 200), Aura = true },
+	},
+	KrakenTamer = {
+		Id = "KrakenTamer", Name = "Kraken Tamer", Rarity = "Mythic", Zone = "Harbor", Power = 310000,
+		Blurb = "Their pet is very big and very wet.",
+		Look = { Skin = C(190, 140, 110), Hair = C(60, 200, 210), HairStyle = "Long", Shirt = C(20, 90, 110), Pants = C(30, 40, 80), Shoes = C(255, 200, 80),
+			Hat = "Tricorn", HatColor = C(20, 90, 110), Back = "LifeRing", BackColor = C(255, 200, 80), Tool = "Sword", ToolColor = C(90, 255, 220), Beam = C(90, 255, 220), Aura = true },
+	},
+	FlyingDutchman = {
+		Id = "FlyingDutchman", Name = "The Flying Dutchman", Rarity = "Secret", Zone = "Harbor", Power = 750000,
+		Blurb = "Captain of the ship that never docks.",
+		Look = { Skin = C(170, 230, 210), Hair = C(220, 255, 240), HairStyle = "Bob", Shirt = C(20, 50, 50), Pants = C(15, 35, 40), Shoes = C(100, 255, 200),
+			Hat = "Tricorn", HatColor = C(15, 35, 40), Back = "Cape", BackColor = C(100, 255, 200), Tool = "Spyglass", ToolColor = C(100, 255, 200), Beam = C(100, 255, 200), Aura = true },
+	},
+	PhantomMonarch = {
+		Id = "PhantomMonarch", Name = "Phantom Monarch", Rarity = "Mythic", Zone = "Castle", Power = 1550000,
+		Blurb = "Rules the castle now. The old king is NOT happy.",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 220, 120), HairStyle = "Long", Shirt = C(130, 30, 170), Pants = C(60, 20, 90), Shoes = C(255, 210, 80),
+			Hat = "Crown", HatColor = C(255, 210, 80), Back = "Cape", BackColor = C(200, 40, 70), Tool = "Staff", ToolColor = C(255, 210, 80), Beam = C(200, 110, 255), Aura = true },
+	},
+	HeadlessKnight = {
+		Id = "HeadlessKnight", Name = "The Headless Knight", Rarity = "Secret", Zone = "Castle", Power = 3800000,
+		Blurb = "Lost their head ages ago. Never lost a fight.",
+		Look = { Skin = C(180, 185, 200), Hair = C(20, 20, 25), HairStyle = "None", Shirt = C(30, 30, 40), Pants = C(110, 115, 130), Shoes = C(30, 30, 40),
+			Hat = "KnightHelm", HatColor = C(30, 30, 40), Back = "Shield", BackColor = C(120, 255, 170), Tool = "Sword", ToolColor = C(120, 255, 170), Beam = C(120, 255, 170), Aura = true },
+	},
+	AstralGuardian = {
+		Id = "AstralGuardian", Name = "Astral Guardian", Rarity = "Mythic", Zone = "SpiritRealm", Power = 8000000,
+		Blurb = "Guards the gate between every world at once.",
+		Look = { Skin = C(230, 220, 255), Hair = C(255, 240, 180), HairStyle = "Long", Shirt = C(60, 40, 160), Pants = C(30, 20, 90), Shoes = C(110, 240, 255),
+			Hat = "Crystal", HatColor = C(255, 220, 120), Back = "Wings", BackColor = C(110, 240, 255), Tool = "Staff", ToolColor = C(255, 220, 120), Beam = C(255, 200, 255), Aura = true },
+	},
+	GhostHunterZero = {
+		Id = "GhostHunterZero", Name = "Ghost Hunter Zero", Rarity = "Secret", Zone = "SpiritRealm", Power = 20000000,
+		Blurb = "The very first ghost hunter. Some say they ARE a ghost.",
+		Look = { Skin = C(245, 245, 255), Hair = C(250, 250, 255), HairStyle = "Spiky", Shirt = C(15, 15, 20), Pants = C(10, 10, 15), Shoes = C(250, 250, 255),
+			Hat = "Goggles", HatColor = C(250, 250, 255), Back = "Orbs", BackColor = C(250, 250, 255), Tool = "Cannon", ToolColor = C(250, 250, 255), Beam = C(250, 250, 255), Aura = true },
+	},
 } :: { [string]: HunterDef }
 
 Config.StarterHunter = "RookieHunter"
@@ -569,6 +666,8 @@ Config.Crates = {
 			{ Hunter = "ParanormalIntern", Weight = 28 },
 			{ Hunter = "GhostInvestigator", Weight = 10 },
 			{ Hunter = "SpectralSpecialist", Weight = 2 },
+			{ Hunter = "MoonlightMedium", Weight = 0.4 },
+			{ Hunter = "NightWatcher", Weight = 0.04 },
 		},
 	},
 	Haunted = {
@@ -579,6 +678,8 @@ Config.Crates = {
 			{ Hunter = "CryptInvestigator", Weight = 28 },
 			{ Hunter = "SpiritWarden", Weight = 10 },
 			{ Hunter = "PhantomExorcist", Weight = 2 },
+			{ Hunter = "GravelightOracle", Weight = 0.4 },
+			{ Hunter = "ReapersApprentice", Weight = 0.04 },
 		},
 	},
 	Elite = {
@@ -589,6 +690,8 @@ Config.Crates = {
 			{ Hunter = "ParanormalProfessor", Weight = 28 },
 			{ Hunter = "EliteContainmentAgent", Weight = 10 },
 			{ Hunter = "VoidHunter", Weight = 2 },
+			{ Hunter = "SpiritValedictorian", Weight = 0.4 },
+			{ Hunter = "TheSubstitute", Weight = 0.04 },
 		},
 	},
 	Carnival = {
@@ -599,6 +702,8 @@ Config.Crates = {
 			{ Hunter = "ParanormalPerformer", Weight = 28 },
 			{ Hunter = "SpectralRingmaster", Weight = 10 },
 			{ Hunter = "PhantomTamer", Weight = 2 },
+			{ Hunter = "GrandIllusionist", Weight = 0.4 },
+			{ Hunter = "TheLastClown", Weight = 0.04 },
 		},
 	},
 	Medical = {
@@ -609,6 +714,8 @@ Config.Crates = {
 			{ Hunter = "SpiritMedic", Weight = 28 },
 			{ Hunter = "ParanormalDoctor", Weight = 10 },
 			{ Hunter = "SpectralSurgeon", Weight = 2 },
+			{ Hunter = "ChiefOfSpiritMedicine", Weight = 0.4 },
+			{ Hunter = "NightShiftNurse", Weight = 0.04 },
 		},
 	},
 	Sailor = {
@@ -619,6 +726,8 @@ Config.Crates = {
 			{ Hunter = "ParanormalSailor", Weight = 28 },
 			{ Hunter = "SpectralPirateHunter", Weight = 10 },
 			{ Hunter = "GhostCaptainHunter", Weight = 2 },
+			{ Hunter = "KrakenTamer", Weight = 0.4 },
+			{ Hunter = "FlyingDutchman", Weight = 0.04 },
 		},
 	},
 	Royal = {
@@ -629,6 +738,8 @@ Config.Crates = {
 			{ Hunter = "SpiritKnight", Weight = 28 },
 			{ Hunter = "RoyalExorcist", Weight = 10 },
 			{ Hunter = "PhantomChampion", Weight = 2 },
+			{ Hunter = "PhantomMonarch", Weight = 0.4 },
+			{ Hunter = "HeadlessKnight", Weight = 0.04 },
 		},
 	},
 	SpiritRealm = {
@@ -639,6 +750,8 @@ Config.Crates = {
 			{ Hunter = "SpiritWalker", Weight = 28 },
 			{ Hunter = "VoidInvestigator", Weight = 10 },
 			{ Hunter = "CelestialGhostHunter", Weight = 2 },
+			{ Hunter = "AstralGuardian", Weight = 0.4 },
+			{ Hunter = "GhostHunterZero", Weight = 0.04 },
 		},
 	},
 } :: { [string]: CrateDef }
@@ -822,6 +935,13 @@ Config.Feedback = {
 	PerServer = 5, -- messages per player per server
 }
 
+-- Spawn leaderboard (all-time Ectoplasm, OrderedDataStore)
+Config.Leaderboard = {
+	DataStoreName = "GhostHunterTopEcto_v1",
+	Rows = 10,
+	RefreshSeconds = 120,
+}
+
 Config.Data = {
 	AutosaveSeconds = 90,
 	Retries = 5,
@@ -869,6 +989,8 @@ Config.Layout = {
 		SpiritRealm = Vector3.new(26, 3, 2312),
 	},
 	UpgradeStation = Vector3.new(28, 0, 28),
+	-- TOP GHOST HUNTERS board beside the spawn plaza, turned toward the plaza
+	Leaderboard = { Position = Vector3.new(42, 0, 4), Yaw = math.rad(72) },
 	EventArena = { Center = Vector3.new(95, 0, 110), Radius = 32 },
 	GhostAreas = {
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(0, 0, 70), Radius = 34, Count = 7 },

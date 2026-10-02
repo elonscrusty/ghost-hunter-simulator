@@ -4,6 +4,7 @@
 -- a 2-column block in the top-left on phones, clear of the thumbstick), settings, the
 -- AUTO ATTACK toggle (pass owners only), toasts, announcements and zone banners.
 local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -104,14 +105,22 @@ local function floatText(text: string, color: Color3)
 end
 
 local function buildTop(screen: ScreenGui)
-	-- Ectoplasm pill
+	-- Ectoplasm + power: two same-size pills side by side, centred in the top bar row
+	local top = Kit.TopBar()
+	local row: Frame = Kit.new("Frame", {
+		Name = "Counters",
+		Size = UDim2.fromOffset(190 * 2 + 14, 40),
+		Position = UDim2.new(0.5, 0, 0, 6),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundTransparency = 1,
+		Parent = top,
+	})
 	ectoPill = Kit.new("Frame", {
 		Name = "Ecto",
 		Size = UDim2.fromOffset(190, 40),
-		Position = UDim2.new(0.5, 10, 0, 8),
-		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromOffset(0, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
-		Parent = screen,
+		Parent = row,
 	})
 	Kit.Corner(ectoPill, UDim.new(1, 0))
 	Kit.Stroke(ectoPill, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
@@ -147,24 +156,23 @@ local function buildTop(screen: ScreenGui)
 	ectoLabel = Kit.Label(ectoPill, "0", { Size = UDim2.new(1, -46, 1, 0), Position = UDim2.fromOffset(40, 0), Color = Theme.Ecto, Style = "Currency", Fit = true })
 	-- crew power
 	local power: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(170, 22),
-		Position = UDim2.new(0.5, 10, 0, 52),
-		AnchorPoint = Vector2.new(0.5, 0),
-		BackgroundColor3 = Theme.Bg,
-		BackgroundTransparency = 0.25,
-		Parent = screen,
+		Name = "Power",
+		Size = UDim2.fromOffset(190, 40),
+		Position = UDim2.new(1, 0, 0, 0),
+		AnchorPoint = Vector2.new(1, 0),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Parent = row,
 	})
 	Kit.Corner(power, UDim.new(1, 0))
-	local powerIcon = Icons.Get("power") ~= nil
-	if powerIcon then
-		Kit.Icon(power, "power", "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 3 })
-	end
-	powerPrefix = if powerIcon then "" else "⚡ "
-	powerLabel = Kit.Label(power, powerPrefix .. "0 POWER", { Size = UDim2.new(1, if powerIcon then -30 else -12, 1, 0), Position = UDim2.fromOffset(if powerIcon then 26 else 6, 0), Color = Theme.Gold, Style = "Small", Fit = true })
+	Kit.Stroke(power, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(power, Theme.Panel2, Theme.Bg, 90)
+	Kit.Icon(power, "power", "⚡", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 4 })
+	powerPrefix = ""
+	powerLabel = Kit.Label(power, "0 POWER", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(42, 0), Color = Theme.Gold, Style = "Heading", Fit = true })
 	-- boosts (only while active)
 	boostHolder = Kit.new("Frame", {
 		Size = UDim2.fromOffset(340, 22),
-		Position = UDim2.new(0.5, 10, 0, 78),
+		Position = UDim2.new(0.5, 0, 0, 4),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
 		Parent = screen,
@@ -188,17 +196,39 @@ local menuScale: UIScale
 -- One vertical column down the left edge. Buttons are as big as CELL_MAX allows; on short
 -- screens (phone landscape) the whole column shrinks so it fits between the top bar and the
 -- bottom edge (it starts under the top-left Roblox buttons).
+-- Bottom edge of the Roblox chat window in logical px (0 when chat is off), so the menu column
+-- starts below it instead of hiding behind it.
+local function chatBottom(): number
+	local ok, bottom = pcall(function()
+		local cfg = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+		if not cfg or not cfg.Enabled then
+			return 0
+		end
+		local pos = (cfg :: any).AbsolutePosition :: Vector2
+		local size = (cfg :: any).AbsoluteSize :: Vector2
+		return pos.Y + size.Y
+	end)
+	if not ok then
+		-- older engines: assume the default top-left window (~40% of the screen)
+		return 0.42 * Kit.LogicalSize().Y * Kit.UIScale()
+	end
+	-- screen px from the top of the device → logical px below our inset
+	local inset = Kit.Screen().AbsolutePosition.Y
+	return math.max(0, (bottom - inset) / Kit.UIScale())
+end
+
 local function layoutMenu()
 	local n = #MENU
 	local full = CELL_MAX * n + GAP * (n - 1)
 	local logical = Kit.LogicalSize()
 	local compact = Kit.IsCompact()
-	local top = if compact then 56 else 0
+	local below = chatBottom()
+	local top = math.max(if compact then 56 else 0, if below > 0 then below + 8 else 0)
 	local room = logical.Y - top - 12
 	local fit = math.clamp(room / full, CELL_MIN / CELL_MAX, 1)
 	menuScale.Scale = fit
 	menu.Size = UDim2.fromOffset(CELL_MAX, full)
-	if compact or full * fit > logical.Y - 120 then
+	if compact or top > 0 or full * fit > logical.Y - 120 then
 		menu.Position = UDim2.fromOffset(8, top)
 		menu.AnchorPoint = Vector2.zero
 	else
@@ -249,6 +279,20 @@ local function buildMenu(screen: ScreenGui)
 	Kit.Label(dailyBadge, "!", { Style = "Small", ZIndex = 11 })
 	layoutMenu()
 	Kit.ScaleChanged:Connect(layoutMenu)
+	-- a smaller chat window leaves more room for the menu; follow it if it moves or resizes
+	task.spawn(function()
+		local cfg = TextChatService:WaitForChild("ChatWindowConfiguration", 10)
+		if cfg then
+			pcall(function()
+				(cfg :: any).HeightScale = 0.7
+			end)
+			pcall(function()
+				cfg:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutMenu)
+				cfg:GetPropertyChangedSignal("AbsolutePosition"):Connect(layoutMenu)
+			end)
+			layoutMenu()
+		end
+	end)
 end
 
 -- Settings panel (gear, top right)
@@ -467,7 +511,7 @@ function Hud.Announce(text: string, c1: Color3?, c2: Color3?)
 	g.Color = ColorSequence.new(c1 or Theme.Gold, c2 or Color3.fromRGB(255, 120, 40))
 	-- below the boss bar / goal chip so event warnings never stack on top of each other
 	announceFrame.Visible = true
-	Kit.Tween(announceFrame, 0.3, { Position = UDim2.new(0.5, 0, 0, 174) }, Enum.EasingStyle.Back)
+	Kit.Tween(announceFrame, 0.3, { Position = UDim2.new(0.5, 0, 0, 100) }, Enum.EasingStyle.Back)
 	task.delay(4, function()
 		if announceToken == my then
 			Kit.Tween(announceFrame, 0.3, { Position = UDim2.new(0.5, 0, 0, -60) })

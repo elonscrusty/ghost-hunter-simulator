@@ -260,6 +260,7 @@ end
 --------------------------------------------------------------------------------
 local screen: ScreenGui? = nil
 local overlay: ScreenGui? = nil
+local topBar: ScreenGui? = nil
 local currentScale = 1
 local scaleChanged = Signal.new()
 Kit.ScaleChanged = scaleChanged -- (scale)
@@ -278,7 +279,7 @@ end
 
 local function applyScale()
 	currentScale = computeScale()
-	for _, gui in { screen, overlay } do
+	for _, gui in { screen, overlay, topBar } do
 		local sc = gui and gui:FindFirstChildOfClass("UIScale")
 		if sc then
 			sc.Scale = currentScale
@@ -316,6 +317,18 @@ function Kit.Screen(): ScreenGui
 		applyScale()
 	end
 	return screen :: ScreenGui
+end
+
+-- Top-bar screen: same scale as the HUD but laid out from the very top of the device (the
+-- free middle of the Roblox top bar), for the Ectoplasm + power counters.
+function Kit.TopBar(): ScreenGui
+	Kit.Screen()
+	if not topBar then
+		local g = makeScreen("GHTop", 11)
+		g.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+		topBar = g
+	end
+	return topBar :: ScreenGui
 end
 
 function Kit.Overlay(): ScreenGui

@@ -162,7 +162,7 @@ function Boss.Init()
 	frame = Kit.new("Frame", {
 		Name = "BossBar",
 		Size = UDim2.fromOffset(420, 62),
-		Position = UDim2.new(0.5, 10, 0, 104),
+		Position = UDim2.new(0.5, 0, 0, 30),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
@@ -216,7 +216,7 @@ function Boss.Init()
 		Color = "Pink",
 		Size = UDim2.fromOffset(96, 30),
 		TextStyle = "Small",
-		Position = UDim2.new(0.5, 10, 0, 104),
+		Position = UDim2.new(0.5, 0, 0, 30),
 		AnchorPoint = Vector2.new(0.5, 0),
 		ZIndex = 30,
 		OnClick = function()

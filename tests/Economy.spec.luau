@@ -1,9 +1,12 @@
 -- Sanity checks on Config balance: early game must be fast, later zones must be goals.
 local Config = require("./_Config")
 local T = {}
+-- the 4 base hunters of a zone (Common..Legendary), weakest first
 local function zoneHunters(zone)
 	local out = {}
-	for id, h in Config.Hunters do if h.Zone == zone then table.insert(out, h) end end
+	for id, h in Config.Hunters do
+		if h.Zone == zone and Config.Rarities[h.Rarity].Order <= 5 then table.insert(out, h) end
+	end
 	table.sort(out, function(a, b) return a.Power < b.Power end)
 	return out
 end
@@ -140,6 +143,28 @@ T.next_zone_ghosts_pay_more = function()
 		end
 		local a, b = weakest(Config.Zones[i - 1].Id), weakest(Config.Zones[i].Id)
 		assert(avg(b.Reward) > avg(a.Reward) * 3, Config.Zones[i].Id .. " weakest ghost doesn't pay enough more")
+	end
+end
+T.each_zone_has_one_mythic_and_one_secret = function()
+	for _, z in Config.Zones do
+		local leg, myth, sec = nil, nil, nil
+		for _, h in Config.Hunters do
+			if h.Zone == z.Id then
+				if h.Rarity == "Legendary" then leg = h end
+				if h.Rarity == "Mythic" then assert(not myth, z.Id .. " two mythics"); myth = h end
+				if h.Rarity == "Secret" then assert(not sec, z.Id .. " two secrets"); sec = h end
+			end
+		end
+		assert(leg and myth and sec, z.Id .. " needs a legendary, mythic and secret")
+		assert(myth.Power > leg.Power and sec.Power > myth.Power, z.Id .. " rarity power order")
+		-- chase rewards: under 1% together
+		local crate = Config.Crates[z.Crate]
+		local total, rare = 0, 0
+		for _, e in crate.Pool do
+			total += e.Weight
+			if e.Hunter == myth.Id or e.Hunter == sec.Id then rare += e.Weight end
+		end
+		assert(rare / total < 0.01, z.Id .. " mythic/secret too common")
 	end
 end
 return T

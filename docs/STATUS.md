@@ -23,6 +23,13 @@
     lights/emitters; material pass on zones 1-3 (fewer neon parts).
   - 🛠 DEV button (owner/Studio only, server-checked): Ectoplasm, unlock areas, all hunters,
     max upgrades, start event, reset daily, Auto Attack pass, replay tutorial.
+  - MYTHIC and SECRET rarities: one of each per area (48 hunters), 0.4% / 0.04% crate odds,
+    full reveal drama + server announcement.
+  - 💬 FEEDBACK (button above ⚙ and in Settings): bug reports / ideas, text-filtered, stored in
+    a DataStore inbox; the owner reads them in the DEV panel (💬 READ FEEDBACK).
+  - TOP GHOST HUNTERS leaderboard beside spawn (all-time Ectoplasm, refreshes every 2 min).
+  - Ectoplasm + Power counters side by side, centred in the top bar; menu column starts below
+    the Roblox chat window.
   - Image icon slots (`src/shared/Icons.luau`) + ChatGPT prompts (`docs/ICON_PROMPTS.md`).
 - Checks: strict type check clean, 35 unit tests (rules, formatting, economy incl. 8-zone curve
   and layout), Rojo build, headless world/rig smoke test (`bash tools/worldsim.sh`).

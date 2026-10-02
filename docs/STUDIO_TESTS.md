@@ -72,6 +72,13 @@ The 🛠 DEV button (top right, next to ⚙) has all test tools. Chat commands a
 - [ ] Rejoin: all unlocked areas, hunters and upgrades are still there.
 - [ ] Device emulator (phone landscape): walk around in the Harbor and the Spirit Realm for a minute, watch for stutter.
 
+## J. Latest additions
+- [ ] Top of the screen: Ectoplasm and POWER pills side by side, same size, centred in the top bar.
+- [ ] With the chat window open, the left menu starts below it (nothing hidden behind chat).
+- [ ] Beside spawn: TOP GHOST HUNTERS board (fills in after ~10 s; in Studio without API access it lists the players in your test).
+- [ ] 💬 button (above ⚙): pick BUG or IDEA, type, SEND → "Thanks!". Sending again within a minute says wait. 🛠 DEV → 💬 READ FEEDBACK shows it (Studio: this session only unless API access is on).
+- [ ] Crate panels list 6 hunters: the new MYTHIC (0.4%) and SECRET (0.04%). `/hunters` then INDEX: 6 per area, "x / 48".
+
 ## H. Saving
 - [ ] Stop while holding Ectoplasm and hunters; Play again: same numbers.
 - [ ] Output window: no red errors. (A yellow DataStore warning is expected if API access is off.)

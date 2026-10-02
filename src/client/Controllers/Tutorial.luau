@@ -419,7 +419,7 @@ function Tutorial.Init()
 	end)
 	goalChip = Kit.new("Frame", {
 		Size = UDim2.fromOffset(360, 24),
-		Position = UDim2.new(0.5, 10, 0, 104),
+		Position = UDim2.new(0.5, 0, 0, 30),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Theme.Bg,
 		BackgroundTransparency = 0.2,

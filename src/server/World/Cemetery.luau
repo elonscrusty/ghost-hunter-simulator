@@ -179,7 +179,7 @@ function Cemetery.Build(map: Instance)
 		for gz = 272, 532, 12 do
 			local x = gx + rng:NextNumber(-2, 2)
 			local z = gz + rng:NextNumber(-2, 2)
-			if rng:NextNumber() < 0.45 and Kit.IsFree(x, z, 3.2) then
+			if rng:NextNumber() < 0.45 and Kit.IsFree(x, z, 4.2) then -- the dirt mound reaches ~4 studs
 				gravestone(f, x, z)
 			end
 		end
