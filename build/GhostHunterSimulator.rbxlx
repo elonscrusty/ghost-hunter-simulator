@@ -1571,14 +1571,14 @@ export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string
 export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Storage: number?, Blurb: string? }
 
 Config.Products = {
-	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = 3715910102, PriceLabel = "R$ 49" },
+	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = 3715910102, PriceLabel = "R$ 149" },
 	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 12000, ProductId = 3715909987, PriceLabel = "R$ 199" },
-	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 49" },
-	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 49" },
-	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", Amount = 12000, ProductId = nil, PriceLabel = "R$ 199", Blurb = "Opens your next locked area right now" },
-	{ Key = "ExclusiveCrate", Name = "EXCLUSIVE CRATE", Icon = "💎", Kind = "ExclusiveCrate", ProductId = nil, PriceLabel = "R$ 99", Blurb = "An EXCLUSIVE hunter for your best area" },
-	{ Key = "ServerLuck", Name = "SERVER LUCK 15 MIN", Icon = "🍀", Kind = "ServerLuck", Seconds = 900, ProductId = nil, PriceLabel = "R$ 149", Blurb = "2x crate luck for EVERYONE in the server" },
-	{ Key = "SummonEvent", Name = "SUMMON GIANT POLTERGEIST", Icon = "👻", Kind = "SummonEvent", ProductId = nil, PriceLabel = "R$ 99", Blurb = "Starts the boss event for the whole server" },
+	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 199" },
+	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 149" },
+	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", Amount = 12000, ProductId = 3715915055, PriceLabel = "R$ 199", Blurb = "Opens your next locked area right now" },
+	{ Key = "ExclusiveCrate", Name = "EXCLUSIVE CRATE", Icon = "💎", Kind = "ExclusiveCrate", ProductId = 3715915093, PriceLabel = "R$ 199", Blurb = "An EXCLUSIVE hunter for your best area" },
+	{ Key = "ServerLuck", Name = "SERVER LUCK 15 MIN", Icon = "🍀", Kind = "ServerLuck", Seconds = 900, ProductId = 3715915133, PriceLabel = "R$ 149", Blurb = "2x crate luck for EVERYONE in the server" },
+	{ Key = "SummonEvent", Name = "SUMMON GIANT POLTERGEIST", Icon = "👻", Kind = "SummonEvent", ProductId = 3715915181, PriceLabel = "R$ 299", Blurb = "Starts the boss event for the whole server" },
 } :: { ProductDef }
 -- Ecto product amounts scale with best zone (same table as Daily.ZoneMultiplier).
 Config.GamePasses = {
@@ -23537,6 +23537,7 @@ return Reveal
               <string name="Source"><![CDATA[--!strict
 -- SHOP: Robux products (Ectoplasm packs, boosts) and game passes. Items without an id in
 -- Config show "SOON". Purchases are prompted and granted by the server only.
+local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -23574,6 +23575,34 @@ local function card(parent: Instance, order: number, iconKey: string?, icon: str
 		OnClick = onBuy,
 	})
 	return b, subLabel
+end
+
+-- Live Robux prices: Roblox "managed pricing" can change them, so ask Roblox once per item
+-- and show what it says (the Config PriceLabel is only the fallback).
+local priceButtons: { [string]: TextButton } = {}
+local function fetchPrices()
+	local function fetch(key: string, id: number, kind: Enum.InfoType)
+		local ok, info = pcall(function()
+			return MarketplaceService:GetProductInfo(id, kind)
+		end)
+		local b = priceButtons[key]
+		if ok and type(info) == "table" and type(info.PriceInRobux) == "number" and b then
+			local d = State.Data
+			if not (d and d.Passes and d.Passes[key]) then
+				Kit.SetButtonText(b, "R$ " .. info.PriceInRobux)
+			end
+		end
+	end
+	for _, p in Config.Products do
+		if p.ProductId then
+			task.spawn(fetch, p.Key, p.ProductId, Enum.InfoType.Product)
+		end
+	end
+	for _, pass in Config.GamePasses do
+		if pass.PassId then
+			task.spawn(fetch, pass.Key, pass.PassId, Enum.InfoType.GamePass)
+		end
+	end
 end
 
 local function buy(key: string)
@@ -23628,12 +23657,13 @@ function ShopPanel.Init()
 	local prodRow = section(1, "BOOSTS & ECTOPLASM")
 	for i, p in Config.Products do
 		local sub = if p.Blurb then p.Blurb elseif p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
-		local _, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
+		local prodButton, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
 			buy(p.Key)
 		end)
 		if p.Kind == "Ecto" then
 			ectoLabels[p.Key] = subLabel
 		end
+		priceButtons[p.Key] = prodButton
 	end
 	local passRow = section(3, "GAME PASSES (FOREVER)")
 	for i, pass in Config.GamePasses do
@@ -23642,6 +23672,7 @@ function ShopPanel.Init()
 			buy(pass.Key)
 		end)
 		passButtons[pass.Key] = b
+		priceButtons[pass.Key] = b
 	end
 	Kit.Label(scroll, "Ectoplasm packs grow with the furthest area you've unlocked. Auto Attack only picks targets for you: same damage, same rewards.", { Size = UDim2.new(1, -10, 0, 36), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 62, Stroke = 0 }).LayoutOrder = 5
 	Hud.RegisterPanel("Shop", function()
@@ -23651,6 +23682,14 @@ end
 
 function ShopPanel.Start()
 	panel.OnOpen:Connect(refresh)
+	-- prices: once when the shop first opens, then every few minutes while it's opened again
+	local lastFetch = -math.huge
+	panel.OnOpen:Connect(function()
+		if os.clock() - lastFetch > 300 then
+			lastFetch = os.clock()
+			fetchPrices()
+		end
+	end)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
 			refresh()

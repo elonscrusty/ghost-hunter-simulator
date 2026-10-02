@@ -1,6 +1,7 @@
 --!strict
 -- SHOP: Robux products (Ectoplasm packs, boosts) and game passes. Items without an id in
 -- Config show "SOON". Purchases are prompted and granted by the server only.
+local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -38,6 +39,34 @@ local function card(parent: Instance, order: number, iconKey: string?, icon: str
 		OnClick = onBuy,
 	})
 	return b, subLabel
+end
+
+-- Live Robux prices: Roblox "managed pricing" can change them, so ask Roblox once per item
+-- and show what it says (the Config PriceLabel is only the fallback).
+local priceButtons: { [string]: TextButton } = {}
+local function fetchPrices()
+	local function fetch(key: string, id: number, kind: Enum.InfoType)
+		local ok, info = pcall(function()
+			return MarketplaceService:GetProductInfo(id, kind)
+		end)
+		local b = priceButtons[key]
+		if ok and type(info) == "table" and type(info.PriceInRobux) == "number" and b then
+			local d = State.Data
+			if not (d and d.Passes and d.Passes[key]) then
+				Kit.SetButtonText(b, "R$ " .. info.PriceInRobux)
+			end
+		end
+	end
+	for _, p in Config.Products do
+		if p.ProductId then
+			task.spawn(fetch, p.Key, p.ProductId, Enum.InfoType.Product)
+		end
+	end
+	for _, pass in Config.GamePasses do
+		if pass.PassId then
+			task.spawn(fetch, pass.Key, pass.PassId, Enum.InfoType.GamePass)
+		end
+	end
 end
 
 local function buy(key: string)
@@ -92,12 +121,13 @@ function ShopPanel.Init()
 	local prodRow = section(1, "BOOSTS & ECTOPLASM")
 	for i, p in Config.Products do
 		local sub = if p.Blurb then p.Blurb elseif p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
-		local _, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
+		local prodButton, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
 			buy(p.Key)
 		end)
 		if p.Kind == "Ecto" then
 			ectoLabels[p.Key] = subLabel
 		end
+		priceButtons[p.Key] = prodButton
 	end
 	local passRow = section(3, "GAME PASSES (FOREVER)")
 	for i, pass in Config.GamePasses do
@@ -106,6 +136,7 @@ function ShopPanel.Init()
 			buy(pass.Key)
 		end)
 		passButtons[pass.Key] = b
+		priceButtons[pass.Key] = b
 	end
 	Kit.Label(scroll, "Ectoplasm packs grow with the furthest area you've unlocked. Auto Attack only picks targets for you: same damage, same rewards.", { Size = UDim2.new(1, -10, 0, 36), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 62, Stroke = 0 }).LayoutOrder = 5
 	Hud.RegisterPanel("Shop", function()
@@ -115,6 +146,14 @@ end
 
 function ShopPanel.Start()
 	panel.OnOpen:Connect(refresh)
+	-- prices: once when the shop first opens, then every few minutes while it's opened again
+	local lastFetch = -math.huge
+	panel.OnOpen:Connect(function()
+		if os.clock() - lastFetch > 300 then
+			lastFetch = os.clock()
+			fetchPrices()
+		end
+	end)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
 			refresh()
