@@ -71,6 +71,10 @@ check(newer.SkipTokens == 3, "skip tokens kept")
 check(newer.Zones.Swamp == true, "late areas kept")
 check(newer.Upgrades.PickupRadius == #Config.Upgrades.PickupRadius.Levels, "out-of-range upgrade clamped to max, not reset")
 
+-- a new-format save re-saved by an OLDER server (rolling update) has SkipTokens parked in Extra
+local hopped = migrate({ Ecto = 5, Extra = { SkipTokens = 4 } })
+check(hopped.SkipTokens == 4 and hopped.Extra.SkipTokens == nil, "skip tokens restored from Extra after an old server")
+
 -- garbage / missing data never crashes and gives a fresh profile
 local blank = migrate(nil)
 check(blank.Ecto == 0 and blank.Zones.Neighborhood == true, "empty save -> fresh profile")

@@ -78,7 +78,12 @@ function GlobalEventService.SetEcto2x(on: boolean): string?
 	end
 	local s = store :: DataStore
 	local ok, err = pcall(function()
-		s:SetAsync(G.Key, new)
+		-- the stamp always grows past the saved one (and this server's), so servers whose clocks
+		-- differ by a few seconds never ignore a quick ON -> OFF as "older"
+		s:UpdateAsync(G.Key, function(old: any)
+			new.T = math.max(new.T, sanitize(old).T + 1, current.T + 1)
+			return new
+		end)
 	end)
 	if not ok then
 		return "Couldn't save the event state: " .. tostring(err)

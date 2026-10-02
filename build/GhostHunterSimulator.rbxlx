@@ -1958,6 +1958,9 @@ Icons.ForProduct = {
 	ExclusiveCrate = "prod_exclusive_crate",
 	ServerLuck = "prod_server_luck",
 	SummonEvent = "prod_summon_event",
+	PermanentSkip = "pass_permskip",
+	AutoOpen = "pass_autoopen",
+	SingleSkip = "prod_singleskip",
 } :: { [string]: string }
 
 -- crate id -> icon key
@@ -5652,6 +5655,10 @@ local function migrate(raw: any): Data
 		for k, v in raw.Extra do
 			if d.Extra[k] == nil and (d :: any)[k] == nil then
 				d.Extra[k] = v
+			elseif raw[k] == nil and k ~= "Extra" and type(v) == type((d :: any)[k]) then
+				-- a field this version knows was parked in Extra by an older server (e.g. a
+				-- player hopped to a not-yet-updated server): restore it instead of dropping it
+				(d :: any)[k] = v
 			end
 		end
 	end
@@ -5685,6 +5692,10 @@ local function migrate(raw: any): Data
 	if type(d.Ecto) ~= "number" or d.Ecto ~= d.Ecto then
 		d.Ecto = 0
 	end
+	if d.SkipTokens ~= d.SkipTokens or d.SkipTokens < 0 then
+		d.SkipTokens = 0
+	end
+	d.SkipTokens = math.floor(d.SkipTokens)
 	d.Zones[Config.Zones[1].Id] = true
 	-- hunters whose definition was removed are parked in Orphans (restored if the id returns)
 	for uid, h in d.Orphans do
@@ -7433,7 +7444,12 @@ function GlobalEventService.SetEcto2x(on: boolean): string?
 	end
 	local s = store :: DataStore
 	local ok, err = pcall(function()
-		s:SetAsync(G.Key, new)
+		-- the stamp always grows past the saved one (and this server's), so servers whose clocks
+		-- differ by a few seconds never ignore a quick ON -> OFF as "older"
+		s:UpdateAsync(G.Key, function(old: any)
+			new.T = math.max(new.T, sanitize(old).T + 1, current.T + 1)
+			return new
+		end)
 	end)
 	if not ok then
 		return "Couldn't save the event state: " .. tostring(err)
@@ -7507,6 +7523,8 @@ local Fx = require(script.Parent.Fx)
 local HunterService = {}
 -- player -> token of their running Auto Open loop (a new token stops the old loop)
 local autoOpen: { [Player]: {} } = {}
+-- player -> os.clock() before which their Auto Open may not open again (OFF/ON spam can't speed it up)
+local autoNext: { [Player]: number } = {}
 HunterService.GrantExclusive = nil :: any
 
 local rng = Random.new()
@@ -7694,7 +7712,13 @@ function HunterService.Init()
 		autoOpen[player] = token
 		player:SetAttribute("AutoOpen", crateId)
 		task.spawn(function()
+			local waitLeft = (autoNext[player] or 0) - os.clock()
+			if waitLeft > 0 then
+				task.wait(waitLeft)
+			end
 			while autoOpen[player] == token and player.Parent do
+				local interval = if PlayerInfo.HasPermanentSkip(player) then Config.AutoOpen.FastInterval else Config.AutoOpen.Interval
+				autoNext[player] = os.clock() + interval
 				local r = openCrate(player, crateId)
 				if autoOpen[player] ~= token then
 					break
@@ -7706,7 +7730,7 @@ function HunterService.Init()
 					break
 				end
 				Fx.To(player, "AutoOpened", { Crate = crateId, Hunter = r.Hunter, Uid = r.Uid, IsNew = r.IsNew })
-				task.wait(if PlayerInfo.HasPermanentSkip(player) then Config.AutoOpen.FastInterval else Config.AutoOpen.Interval)
+				task.wait(interval)
 			end
 		end)
 		return { ok = true, On = true }
@@ -7832,6 +7856,7 @@ end
 function HunterService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		autoOpen[player] = nil -- stops their Auto Open loop
+		autoNext[player] = nil
 		PlayerInfo.Forget(player)
 	end)
 end
@@ -8594,7 +8619,8 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 	elseif p.Kind == "Boost" and p.Boost and p.Seconds then
 		PlayerInfo.AddBoost(d, p.Boost, p.Seconds)
 	elseif p.Kind == "CrateSkip" then
-		d.SkipTokens = math.min((d.SkipTokens or 0) + 1, Config.CrateSkip.MaxTokens)
+		-- never cap here: this skip is already paid for (the cap is enforced before prompting)
+		d.SkipTokens = (d.SkipTokens or 0) + 1
 		Fx.To(player, "SkipGranted", {})
 	elseif p.Kind == "SkipArea" then
 		local z = nextLockedZone(d)
@@ -8757,6 +8783,9 @@ function ShopService.Init()
 				local d = DataService.Get(player)
 				if p.Kind == "CrateSkip" and PlayerInfo.HasPermanentSkip(player) then
 					return Remotes.Fail("You already have Permanent Crate Skip!")
+				end
+				if p.Kind == "CrateSkip" and d and (d.SkipTokens or 0) >= Config.CrateSkip.MaxTokens then
+					return Remotes.Fail("You already have the most skips you can hold!")
 				end
 				if p.Kind == "SkipArea" and d and not nextLockedZone(d) then
 					return Remotes.Fail("Every area is already unlocked!")
@@ -21978,6 +22007,18 @@ function Hud.Init()
 	buildSettings(screen)
 	buildAuto(screen)
 	buildBanners()
+	-- TopStack lives in the top-bar ScreenGui (drawn above the HUD screen), so hide it while a
+	-- panel is open (it would cover the panel's title) or the HUD is hidden (crate reveal)
+	local stack = Hud.TopStack
+	if stack then
+		local function syncStack()
+			stack.Visible = screen.Enabled and Kit.CurrentPanel() == nil
+		end
+		screen:GetPropertyChangedSignal("Enabled"):Connect(syncStack)
+		Kit.PanelOpened:Connect(function()
+			task.defer(syncStack)
+		end)
+	end
 end
 
 -- [VIP] chat tag for VIP pass owners (the server sets the player's "VIP" attribute)
@@ -23838,6 +23879,8 @@ function Reveal.Close()
 	if not playing then
 		return
 	end
+	-- a skip bought for THIS reveal that arrives later is kept as a token, not spent on the next one
+	pendingSkip = false
 	teardownStage()
 	if cc then
 		cc.Brightness = 0
@@ -26132,7 +26175,9 @@ end
 --   * its text never renders smaller than MIN_TEXT_PX real pixels
 local MIN_TEXT_PX = 10
 type TextInfo = { Base: number, Stroke: number, Min: boolean }
-local fitted: { [TextLabel]: TextInfo } = setmetatable({} :: any, { __mode = "k" })
+-- strong keys (a weak-keyed Instance table can lose labels that still exist); entries are
+-- removed when the label is destroyed
+local fitted: { [TextLabel]: TextInfo } = {}
 
 local function applyFit(l: TextLabel, info: TextInfo)
 	local size = info.Base
@@ -26148,6 +26193,11 @@ end
 
 function Kit.FitText(l: TextLabel, base: number, stroke: number, minSize: boolean)
 	local info: TextInfo = { Base = base, Stroke = stroke, Min = minSize }
+	if fitted[l] == nil then
+		l.Destroying:Connect(function()
+			fitted[l] = nil
+		end)
+	end
 	fitted[l] = info
 	applyFit(l, info)
 end

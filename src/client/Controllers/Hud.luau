@@ -656,6 +656,18 @@ function Hud.Init()
 	buildSettings(screen)
 	buildAuto(screen)
 	buildBanners()
+	-- TopStack lives in the top-bar ScreenGui (drawn above the HUD screen), so hide it while a
+	-- panel is open (it would cover the panel's title) or the HUD is hidden (crate reveal)
+	local stack = Hud.TopStack
+	if stack then
+		local function syncStack()
+			stack.Visible = screen.Enabled and Kit.CurrentPanel() == nil
+		end
+		screen:GetPropertyChangedSignal("Enabled"):Connect(syncStack)
+		Kit.PanelOpened:Connect(function()
+			task.defer(syncStack)
+		end)
+	end
 end
 
 -- [VIP] chat tag for VIP pass owners (the server sets the player's "VIP" attribute)

@@ -110,6 +110,10 @@ local function migrate(raw: any): Data
 		for k, v in raw.Extra do
 			if d.Extra[k] == nil and (d :: any)[k] == nil then
 				d.Extra[k] = v
+			elseif raw[k] == nil and k ~= "Extra" and type(v) == type((d :: any)[k]) then
+				-- a field this version knows was parked in Extra by an older server (e.g. a
+				-- player hopped to a not-yet-updated server): restore it instead of dropping it
+				(d :: any)[k] = v
 			end
 		end
 	end
@@ -143,6 +147,10 @@ local function migrate(raw: any): Data
 	if type(d.Ecto) ~= "number" or d.Ecto ~= d.Ecto then
 		d.Ecto = 0
 	end
+	if d.SkipTokens ~= d.SkipTokens or d.SkipTokens < 0 then
+		d.SkipTokens = 0
+	end
+	d.SkipTokens = math.floor(d.SkipTokens)
 	d.Zones[Config.Zones[1].Id] = true
 	-- hunters whose definition was removed are parked in Orphans (restored if the id returns)
 	for uid, h in d.Orphans do

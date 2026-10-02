@@ -41,7 +41,8 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 	elseif p.Kind == "Boost" and p.Boost and p.Seconds then
 		PlayerInfo.AddBoost(d, p.Boost, p.Seconds)
 	elseif p.Kind == "CrateSkip" then
-		d.SkipTokens = math.min((d.SkipTokens or 0) + 1, Config.CrateSkip.MaxTokens)
+		-- never cap here: this skip is already paid for (the cap is enforced before prompting)
+		d.SkipTokens = (d.SkipTokens or 0) + 1
 		Fx.To(player, "SkipGranted", {})
 	elseif p.Kind == "SkipArea" then
 		local z = nextLockedZone(d)
@@ -204,6 +205,9 @@ function ShopService.Init()
 				local d = DataService.Get(player)
 				if p.Kind == "CrateSkip" and PlayerInfo.HasPermanentSkip(player) then
 					return Remotes.Fail("You already have Permanent Crate Skip!")
+				end
+				if p.Kind == "CrateSkip" and d and (d.SkipTokens or 0) >= Config.CrateSkip.MaxTokens then
+					return Remotes.Fail("You already have the most skips you can hold!")
 				end
 				if p.Kind == "SkipArea" and d and not nextLockedZone(d) then
 					return Remotes.Fail("Every area is already unlocked!")

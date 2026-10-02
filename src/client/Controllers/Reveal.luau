@@ -481,6 +481,8 @@ function Reveal.Close()
 	if not playing then
 		return
 	end
+	-- a skip bought for THIS reveal that arrives later is kept as a token, not spent on the next one
+	pendingSkip = false
 	teardownStage()
 	if cc then
 		cc.Brightness = 0

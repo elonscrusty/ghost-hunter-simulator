@@ -17,6 +17,8 @@ local Fx = require(script.Parent.Fx)
 local HunterService = {}
 -- player -> token of their running Auto Open loop (a new token stops the old loop)
 local autoOpen: { [Player]: {} } = {}
+-- player -> os.clock() before which their Auto Open may not open again (OFF/ON spam can't speed it up)
+local autoNext: { [Player]: number } = {}
 HunterService.GrantExclusive = nil :: any
 
 local rng = Random.new()
@@ -204,7 +206,13 @@ function HunterService.Init()
 		autoOpen[player] = token
 		player:SetAttribute("AutoOpen", crateId)
 		task.spawn(function()
+			local waitLeft = (autoNext[player] or 0) - os.clock()
+			if waitLeft > 0 then
+				task.wait(waitLeft)
+			end
 			while autoOpen[player] == token and player.Parent do
+				local interval = if PlayerInfo.HasPermanentSkip(player) then Config.AutoOpen.FastInterval else Config.AutoOpen.Interval
+				autoNext[player] = os.clock() + interval
 				local r = openCrate(player, crateId)
 				if autoOpen[player] ~= token then
 					break
@@ -216,7 +224,7 @@ function HunterService.Init()
 					break
 				end
 				Fx.To(player, "AutoOpened", { Crate = crateId, Hunter = r.Hunter, Uid = r.Uid, IsNew = r.IsNew })
-				task.wait(if PlayerInfo.HasPermanentSkip(player) then Config.AutoOpen.FastInterval else Config.AutoOpen.Interval)
+				task.wait(interval)
 			end
 		end)
 		return { ok = true, On = true }
@@ -342,6 +350,7 @@ end
 function HunterService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		autoOpen[player] = nil -- stops their Auto Open loop
+		autoNext[player] = nil
 		PlayerInfo.Forget(player)
 	end)
 end

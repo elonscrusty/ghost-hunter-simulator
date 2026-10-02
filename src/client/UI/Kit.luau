@@ -358,7 +358,9 @@ end
 --   * its text never renders smaller than MIN_TEXT_PX real pixels
 local MIN_TEXT_PX = 10
 type TextInfo = { Base: number, Stroke: number, Min: boolean }
-local fitted: { [TextLabel]: TextInfo } = setmetatable({} :: any, { __mode = "k" })
+-- strong keys (a weak-keyed Instance table can lose labels that still exist); entries are
+-- removed when the label is destroyed
+local fitted: { [TextLabel]: TextInfo } = {}
 
 local function applyFit(l: TextLabel, info: TextInfo)
 	local size = info.Base
@@ -374,6 +376,11 @@ end
 
 function Kit.FitText(l: TextLabel, base: number, stroke: number, minSize: boolean)
 	local info: TextInfo = { Base = base, Stroke = stroke, Min = minSize }
+	if fitted[l] == nil then
+		l.Destroying:Connect(function()
+			fitted[l] = nil
+		end)
+	end
 	fitted[l] = info
 	applyFit(l, info)
 end
