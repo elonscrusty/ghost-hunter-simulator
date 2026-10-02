@@ -35,6 +35,8 @@ local warnAt = 0
 local endsAt = 0
 local bossUid = 0
 local arenaPos = Config.Layout.EventArena.Center
+local dismissed = false -- the player closed the event bar for this event (a small pill reopens it)
+local reopen: TextButton
 
 local function setBeacon(on: boolean)
 	if on and not beacon then
@@ -68,6 +70,10 @@ local function setBeacon(on: boolean)
 end
 
 local function show(on: boolean)
+	reopen.Visible = on and dismissed
+	if on and dismissed then
+		on = false
+	end
 	if on == frame.Visible then
 		return
 	end
@@ -96,6 +102,7 @@ local function onBoss(data: any)
 	end
 	if data.State == "Warning" then
 		state = "Warning"
+		dismissed = false -- every new event shows its bar again
 		warnAt = data.At or 0
 		Hud.Announce("⚠️ GIANT POLTERGEIST INCOMING!", Color3.fromRGB(255, 120, 230), Color3.fromRGB(255, 200, 60))
 		Sound.Play("BossAppear")
@@ -131,6 +138,7 @@ local function onBoss(data: any)
 		end
 	elseif data.State == "Defeated" then
 		state = "Idle"
+		dismissed = false
 		Sound.Boss(false)
 		setBeacon(false)
 		show(false)
@@ -141,6 +149,7 @@ local function onBoss(data: any)
 		end
 	elseif data.State == "Escaped" then
 		state = "Idle"
+		dismissed = false
 		Sound.Boss(false)
 		setBeacon(false)
 		show(false)
@@ -187,6 +196,35 @@ function Boss.Init()
 		end,
 	})
 	goButton.Visible = false
+	-- ✕ closes the event bar (the event keeps running; the boss's own label still shows)
+	Kit.Button(frame, {
+		Text = "✕",
+		Color = "Red",
+		Size = UDim2.fromOffset(30, 30),
+		TextStyle = "Body",
+		Position = UDim2.new(1, 8, 0, -8),
+		AnchorPoint = Vector2.new(1, 0),
+		ZIndex = 34,
+		OnClick = function()
+			dismissed = true
+			show(false)
+		end,
+	})
+	-- small pill to bring it back while the event is still on
+	reopen = Kit.Button(screen, {
+		Text = "👑 EVENT",
+		Color = "Pink",
+		Size = UDim2.fromOffset(96, 30),
+		TextStyle = "Small",
+		Position = UDim2.new(0.5, 10, 0, 104),
+		AnchorPoint = Vector2.new(0.5, 0),
+		ZIndex = 30,
+		OnClick = function()
+			dismissed = false
+			show(true)
+		end,
+	})
+	reopen.Visible = false
 end
 
 Boss.PointRequested = Signal.new()

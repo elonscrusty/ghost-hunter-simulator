@@ -37,6 +37,7 @@ local targetEcto = 0
 local bannerLabel: TextLabel
 local bannerSub: TextLabel
 local announceFrame: Frame
+local announceToken = 0
 
 function Hud.RegisterPanel(name: string, open: () -> ())
 	openers[name] = open
@@ -383,8 +384,22 @@ local function buildBanners()
 	Kit.Corner(announceFrame, UDim.new(0, 12))
 	Kit.Stroke(announceFrame, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(announceFrame, Theme.Gold, Color3.fromRGB(255, 120, 40), 0)
-	local l = Kit.Label(announceFrame, "", { Size = UDim2.new(1, -20, 1, 0), Position = UDim2.fromOffset(10, 0), Style = "Body", Fit = true, ZIndex = 76 })
+	local l = Kit.Label(announceFrame, "", { Size = UDim2.new(1, -44, 1, 0), Position = UDim2.fromOffset(10, 0), Style = "Body", Fit = true, ZIndex = 76 })
 	l.Name = "Text"
+	-- ✕ (or tapping the bar anywhere) dismisses the announcement right away
+	local function dismiss()
+		announceToken += 1
+		local my = announceToken
+		Kit.Tween(announceFrame, 0.2, { Position = UDim2.new(0.5, 0, 0, -60) })
+		task.delay(0.2, function()
+			if announceToken == my then
+				announceFrame.Visible = false
+			end
+		end)
+	end
+	local tap: TextButton = Kit.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 77, Parent = announceFrame })
+	tap.Activated:Connect(dismiss)
+	Kit.Label(announceFrame, "✕", { Size = UDim2.fromOffset(28, 28), Position = UDim2.new(1, -6, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Style = "Body", ZIndex = 78 })
 end
 
 local bannerToken = 0
@@ -419,7 +434,6 @@ function Hud.Banner(title: string, sub: string?, color: Color3?)
 	end)
 end
 
-local announceToken = 0
 -- Sliding top announcement (legendary hatches, boss events).
 function Hud.Announce(text: string, c1: Color3?, c2: Color3?)
 	announceToken += 1
