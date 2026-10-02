@@ -19,7 +19,7 @@ orbs, beams, UI) and asks via validated, rate-limited requests.
 | `Signal.luau` | In-process events that pass tables by reference (never use BindableEvents for tables: they deep-copy them and turn Player keys into strings). |
 | `Sounds.luau` | Sound ids by key (see AUDIO.md). |
 | `Rigs/HunterRig.luau` | Chibi hunter builder (anchored Root at the feet, Motor6D limbs) + procedural poses Idle/Run/Attack/Celebrate. `BuildStatic` for portraits. |
-| `Icons.luau` | Optional uploaded image ids per UI icon (emoji fallback); prompts in `docs/ICON_PROMPTS.md`. |
+| `Icons.luau` | Optional uploaded image ids per UI icon (emoji fallback); prompts in `icon-prompts/`. |
 | `Rigs/GhostRig.luau` | Ghost visual builder (built on each client): anchored `Core` + welded visuals, 25 styles (bosses get a stronger aura). The server only replicates an invisible hitbox per ghost. |
 | `Rigs/CrateRig.luau` | Crate with Motor6D lid and padlocks, Glow slab, Burst attachment. |
 

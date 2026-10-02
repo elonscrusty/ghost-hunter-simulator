@@ -30,7 +30,7 @@
   - TOP GHOST HUNTERS leaderboard beside spawn (all-time Ectoplasm, refreshes every 2 min).
   - Ectoplasm + Power counters side by side, centred in the top bar; menu column starts below
     the Roblox chat window.
-  - Image icon slots (`src/shared/Icons.luau`) + ChatGPT prompts (`docs/ICON_PROMPTS.md`).
+  - Image icon slots (`src/shared/Icons.luau`) + ChatGPT prompts (`icon-prompts/`).
 - Checks: strict type check clean, 35 unit tests (rules, formatting, economy incl. 8-zone curve
   and layout), Rojo build, headless world/rig smoke test (`bash tools/worldsim.sh`).
 - Economy simulation (`tests/EconSim.luau`, realistic solo player, median):
@@ -41,7 +41,7 @@
 1. Playtest in Studio: [STUDIO_TESTS.md](STUDIO_TESTS.md) (nothing has been run in Studio yet).
 2. Shop ids are in (4 products + 3 passes). On launch day: make the game public and put the 3 passes on sale (149 / 299 / 199).
 3. Pick music and nicer sound effects ([AUDIO.md](AUDIO.md)); placeholders play meanwhile.
-4. Optional: make icons with ChatGPT ([ICON_PROMPTS.md](ICON_PROMPTS.md)), upload them and send Claude the ids.
+4. Optional: make icons with ChatGPT ([icon-prompts/](../icon-prompts/)), upload them and send Claude the ids.
 5. Game icon, thumbnails, description; then publish.
 
 ## Next (ideas)

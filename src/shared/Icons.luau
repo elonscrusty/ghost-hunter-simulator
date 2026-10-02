@@ -1,6 +1,6 @@
 --!strict
 -- Image icons (uploaded Roblox image ids). Until an id is filled in, the UI shows the emoji
--- it always had. Prompts to make these with an image generator: docs/ICON_PROMPTS.md.
+-- it always had. Prompts to make these with an image generator: icon-prompts/.
 -- Fill in as "rbxassetid://123456789".
 local Icons = {}
 
