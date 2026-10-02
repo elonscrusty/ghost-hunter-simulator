@@ -38,6 +38,7 @@ local order = {
 	"GatePanel",
 	"WorldsPanel",
 	"DevPanel",
+	"FeedbackPanel",
 	"Boss",
 	"Ambience",
 	"Tutorial",

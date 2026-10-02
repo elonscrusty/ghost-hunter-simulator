@@ -253,7 +253,7 @@ end
 
 -- Settings panel (gear, top right)
 local function buildSettings(screen: ScreenGui)
-	local panel = Kit.Panel("Settings", "SETTINGS", Vector2.new(400, 290), "Gray")
+	local panel = Kit.Panel("Settings", "SETTINGS", Vector2.new(400, 350), "Gray")
 	local list: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = panel.Body, ZIndex = 61 })
 	Kit.new("UIListLayout", { Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Parent = list })
 	local toggles = {
@@ -281,6 +281,17 @@ local function buildSettings(screen: ScreenGui)
 		})
 		buttons[t.Key] = b
 	end
+	Kit.Button(list, {
+		Text = "💬 SEND FEEDBACK / REPORT A BUG",
+		Color = "Blue",
+		Size = UDim2.fromOffset(320, 44),
+		TextStyle = "Small",
+		ZIndex = 62,
+		OnClick = function()
+			panel:Close()
+			Hud.Open("Feedback")
+		end,
+	})
 	State.OnData(function(d)
 		for _, t in toggles do
 			local on = d.Settings[t.Key] == true
@@ -301,6 +312,18 @@ local function buildSettings(screen: ScreenGui)
 		TextStyle = "Heading",
 		OnClick = function()
 			panel:Toggle()
+		end,
+	})
+	-- 💬 feedback, right above the gear (also in Settings)
+	Kit.Button(screen, {
+		Text = "💬",
+		Color = "Blue",
+		Size = UDim2.fromOffset(44, 44),
+		Position = UDim2.new(1, -10, 0.5, -100),
+		AnchorPoint = Vector2.new(1, 0.5),
+		TextStyle = "Heading",
+		OnClick = function()
+			Hud.Open("Feedback")
 		end,
 	})
 	if Icons.Get("menu_settings") then

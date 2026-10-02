@@ -812,6 +812,16 @@ Config.RateLimits = {
 -- creator (or the owner of the creator group) and anyone in Studio always get it.
 Config.DevUserIds = {} :: { number }
 
+-- Player feedback (FEEDBACK button in Settings; read in the DEV panel)
+Config.Feedback = {
+	DataStoreName = "GhostHunterFeedback_v1",
+	InboxSize = 300, -- newest kept
+	MinLength = 8,
+	MaxLength = 500,
+	Cooldown = 60, -- seconds between messages per player
+	PerServer = 5, -- messages per player per server
+}
+
 Config.Data = {
 	AutosaveSeconds = 90,
 	Retries = 5,

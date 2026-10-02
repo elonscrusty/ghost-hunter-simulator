@@ -36,6 +36,7 @@ local order = {
 	"ShopService",
 	"StationService",
 	"DevService",
+	"FeedbackService",
 }
 local loaded: { [string]: any } = {}
 for _, name in order do
