@@ -85,6 +85,12 @@ T.event_share = function()
 	eq(Rules.EventShare(1, 100, 2, 0.35, 2.5), 0.35)
 	eq(Rules.EventShare(100, 100, 5, 0.35, 2.5), 2.5)
 end
+T.boss_damage_share = function()
+	eq(Rules.DamageShare(100, 100), 1) -- solo: the whole reward
+	eq(Rules.DamageShare(25, 100), 0.25) -- did 25% of the damage: 25% of the reward
+	eq(Rules.DamageShare(0, 100), 0)
+	eq(Rules.DamageShare(5, 0), 0)
+end
 T.limiter = function()
 	local l = Rules.NewLimiter(2, 1)
 	assert(Rules.Allow(l, "p", 0)); assert(Rules.Allow(l, "p", 0.1)); assert(not Rules.Allow(l, "p", 0.2))

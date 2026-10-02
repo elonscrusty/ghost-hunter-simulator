@@ -285,11 +285,23 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 			end
 		end
 		local minShare = g.Max * math.min(Config.Combat.ContributorShare, 0.5 / math.max(helpers, 1))
+		-- bosses (MiniBoss / Boss): the reward is split by damage, so each helper gets the
+		-- percentage of the reward that matches the percentage of the damage they dealt
+		local isBoss = g.Def.Kind ~= "Normal"
+		local totalDmg = 0
 		for player, dmg in g.Damage do
-			if player.Parent and (player == killer or dmg >= minShare) then
+			if player.Parent then
+				totalDmg += dmg
+			end
+		end
+		for player, dmg in g.Damage do
+			if player.Parent and (player == killer or dmg >= minShare or (isBoss and dmg > 0)) then
 				local d = DataService.Get(player)
 				if d then
 					local base = g.Def.Reward -- fixed per ghost type
+					if isBoss then
+						base *= Rules.DamageShare(dmg, totalDmg)
+					end
 					local total = math.max(1, math.floor(base * PlayerInfo.EctoMultiplier(player) + 0.5))
 					DropService.Spawn(player, pos, total, g.Def.Drops, nil)
 					d.Stats.Ghosts += 1

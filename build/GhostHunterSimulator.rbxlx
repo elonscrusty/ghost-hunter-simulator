@@ -2218,6 +2218,15 @@ function Rules.EventShare(damage: number, totalDamage: number, participants: num
 	return math.clamp((damage / totalDamage) * participants, minShare, maxShare)
 end
 
+-- Boss reward split: each helper's fraction of the boss reward = their share of all the
+-- damage dealt (shares add up to 1, so the boss pays out its reward once in total).
+function Rules.DamageShare(damage: number, totalDamage: number): number
+	if totalDamage <= 0 or damage <= 0 then
+		return 0
+	end
+	return math.clamp(damage / totalDamage, 0, 1)
+end
+
 -- Ectoplasm multiplier from upgrades and boosts.
 function Rules.EctoMultiplier(bonus: number, boostActive: boolean, boostMul: number, passMul: number): number
 	return (1 + bonus) * (if boostActive then boostMul else 1) * passMul
@@ -7163,11 +7172,23 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 			end
 		end
 		local minShare = g.Max * math.min(Config.Combat.ContributorShare, 0.5 / math.max(helpers, 1))
+		-- bosses (MiniBoss / Boss): the reward is split by damage, so each helper gets the
+		-- percentage of the reward that matches the percentage of the damage they dealt
+		local isBoss = g.Def.Kind ~= "Normal"
+		local totalDmg = 0
 		for player, dmg in g.Damage do
-			if player.Parent and (player == killer or dmg >= minShare) then
+			if player.Parent then
+				totalDmg += dmg
+			end
+		end
+		for player, dmg in g.Damage do
+			if player.Parent and (player == killer or dmg >= minShare or (isBoss and dmg > 0)) then
 				local d = DataService.Get(player)
 				if d then
 					local base = g.Def.Reward -- fixed per ghost type
+					if isBoss then
+						base *= Rules.DamageShare(dmg, totalDmg)
+					end
 					local total = math.max(1, math.floor(base * PlayerInfo.EctoMultiplier(player) + 0.5))
 					DropService.Spawn(player, pos, total, g.Def.Drops, nil)
 					d.Stats.Ghosts += 1
@@ -23074,6 +23095,31 @@ return IndexPanel
           </Item>
           <Item class="ModuleScript" referent="81">
             <Properties>
+              <string name="Name">LikeReminder</string>
+              <string name="Source"><![CDATA[--!strict
+-- A friendly reminder to like the game, shown once per session after a while of play.
+-- No reward (Roblox doesn't allow rewards for likes) and nothing blocks the screen.
+local Theme = require(script.Parent.Parent.UI.Theme)
+local Hud = require(script.Parent.Hud)
+
+local LikeReminder = {}
+
+local FIRST_AFTER = 10 * 60 -- seconds of play before the reminder
+
+function LikeReminder.Init() end
+
+function LikeReminder.Start()
+	task.delay(FIRST_AFTER, function()
+		Hud.Banner("HAVING FUN? 👻", "Tap 👍 on the game page to help Ghost Hunters grow!", Theme.Ecto)
+	end)
+end
+
+return LikeReminder
+]]></string>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="82">
+            <Properties>
               <string name="Name">Orbs</string>
               <string name="Source"><![CDATA[--!strict
 -- Ectoplasm orbs (visual only; the server owns values and decides pickups).
@@ -23432,7 +23478,7 @@ return Orbs
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="83">
             <Properties>
               <string name="Name">Reveal</string>
               <string name="Source"><![CDATA[--!strict
@@ -24211,7 +24257,7 @@ return Reveal
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">ShopPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -24384,7 +24430,7 @@ return ShopPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">Sound</string>
               <string name="Source"><![CDATA[--!strict
@@ -24502,7 +24548,7 @@ return Sound
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">Targeting</string>
               <string name="Source"><![CDATA[--!strict
@@ -24779,7 +24825,7 @@ return Targeting
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">Tutorial</string>
               <string name="Source"><![CDATA[--!strict
@@ -25303,7 +25349,7 @@ return Tutorial
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="87">
+          <Item class="ModuleScript" referent="88">
             <Properties>
               <string name="Name">UpgradesPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -25464,7 +25510,7 @@ return UpgradesPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="88">
+          <Item class="ModuleScript" referent="89">
             <Properties>
               <string name="Name">WorldsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -25634,7 +25680,7 @@ return WorldsPanel
             </Properties>
           </Item>
         </Item>
-        <Item class="LocalScript" referent="89">
+        <Item class="LocalScript" referent="90">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -25679,6 +25725,7 @@ local order = {
 	"DevPanel",
 	"FeedbackPanel",
 	"EventPopup",
+	"LikeReminder",
 	"Boss",
 	"Ambience",
 	"Tutorial",
@@ -25699,7 +25746,7 @@ end
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="90">
+        <Item class="ModuleScript" referent="91">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -25847,11 +25894,11 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="91">
+        <Item class="Folder" referent="92">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="92">
+          <Item class="ModuleScript" referent="93">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!strict
@@ -26623,7 +26670,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="93">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">Portrait</string>
               <string name="Source"><![CDATA[--!strict
@@ -27007,7 +27054,7 @@ return Portrait
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="94">
+          <Item class="ModuleScript" referent="95">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -27088,7 +27135,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="95">
+          <Item class="ModuleScript" referent="96">
             <Properties>
               <string name="Name">WorldLabel</string>
               <string name="Source"><![CDATA[--!strict
@@ -27261,7 +27308,7 @@ return WorldLabel
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="96">
+  <Item class="Workspace" referent="97">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

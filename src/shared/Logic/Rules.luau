@@ -146,6 +146,15 @@ function Rules.EventShare(damage: number, totalDamage: number, participants: num
 	return math.clamp((damage / totalDamage) * participants, minShare, maxShare)
 end
 
+-- Boss reward split: each helper's fraction of the boss reward = their share of all the
+-- damage dealt (shares add up to 1, so the boss pays out its reward once in total).
+function Rules.DamageShare(damage: number, totalDamage: number): number
+	if totalDamage <= 0 or damage <= 0 then
+		return 0
+	end
+	return math.clamp(damage / totalDamage, 0, 1)
+end
+
 -- Ectoplasm multiplier from upgrades and boosts.
 function Rules.EctoMultiplier(bonus: number, boostActive: boolean, boostMul: number, passMul: number): number
 	return (1 + bonus) * (if boostActive then boostMul else 1) * passMul
