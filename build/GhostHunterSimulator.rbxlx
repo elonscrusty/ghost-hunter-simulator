@@ -5547,6 +5547,13 @@ for _, name in order do
 end
 
 -- Developer tools (DEV button + chat commands) live in Services/DevService.
+
+-- One fixed text size per world sign (see World/TextFit): run after every service has built
+-- its signs and boards.
+pcall(function()
+	local n = require(script.Parent.World.TextFit).Apply(workspace)
+	print(string.format("[Main] fixed text sizes on %d world labels", n))
+end)
 ]]></string>
         </Properties>
       </Item>
@@ -17266,6 +17273,135 @@ return Swamp
         </Item>
         <Item class="ModuleScript" referent="58">
           <Properties>
+            <string name="Name">TextFit</string>
+            <string name="Source"><![CDATA[--!strict
+-- MOBILE TEXT FIX (signs): every world sign used TextScaled, so each of the ~230 signs drew its
+-- words at its own pixel size (often huge, with big emoji). Phones keep every letter shape they
+-- draw in one shared glyph cache; with hundreds of different sizes in view it overflows and
+-- letters (in signs AND menus) flicker or vanish depending on where the camera points.
+-- This pass gives every TextScaled label in the world ONE size from a short fixed list that
+-- still fits its box, so the whole map only uses a handful of text sizes.
+local TextFit = {}
+
+-- the only sizes world signs use (px on the SurfaceGui canvas)
+TextFit.Sizes = { 14, 20, 28, 40, 56, 80 }
+
+local FACE_AXES: { [string]: { string } } = {
+	Front = { "X", "Y" },
+	Back = { "X", "Y" },
+	Top = { "X", "Z" },
+	Bottom = { "X", "Z" },
+	Left = { "Z", "Y" },
+	Right = { "Z", "Y" },
+}
+
+-- Estimated width of a line in "em" (multiples of the text size), a little generous so text fits.
+function TextFit.LineEm(line: string, wide: boolean): number
+	local em = 0
+	for _, cp in utf8.codes(line) do
+		if cp == 32 then
+			em += 0.32
+		elseif cp > 0x2000 then
+			em += 1.15 -- emoji and symbols
+		elseif (cp >= 65 and cp <= 90) or (cp >= 48 and cp <= 57) then
+			em += 0.66
+		else
+			em += 0.54
+		end
+	end
+	return if wide then em * 1.1 else em
+end
+
+-- Largest size from Sizes whose text fits w x h px (smallest size if nothing fits).
+function TextFit.Pick(text: string, w: number, h: number, wide: boolean): number
+	local lines = string.split(text, "\n")
+	local maxEm = 0.5
+	for _, l in lines do
+		maxEm = math.max(maxEm, TextFit.LineEm(l, wide))
+	end
+	local best = TextFit.Sizes[1]
+	for _, s in TextFit.Sizes do
+		if maxEm * s <= w * 0.94 and #lines * s * 1.18 <= h * 0.94 then
+			best = s
+		end
+	end
+	return best
+end
+
+-- Pixel size of a GuiObject inside a SurfaceGui (nil if it isn't in one / not placed yet).
+local function pxSize(obj: Instance): Vector2?
+	if obj:IsA("SurfaceGui") then
+		local part = obj.Adornee or obj.Parent
+		if not part or not part:IsA("BasePart") then
+			return nil
+		end
+		if obj.SizingMode == Enum.SurfaceGuiSizingMode.FixedSize then
+			return obj.CanvasSize
+		end
+		local axes = FACE_AXES[obj.Face.Name]
+		local size = (part :: BasePart).Size
+		local pps = obj.PixelsPerStud
+		return Vector2.new((size :: any)[axes[1]] * pps, (size :: any)[axes[2]] * pps)
+	end
+	if obj:IsA("GuiObject") then
+		local parent = obj.Parent
+		local p = if parent then pxSize(parent) else nil
+		if not p then
+			return nil
+		end
+		local s = obj.Size
+		return Vector2.new(p.X * s.X.Scale + s.X.Offset, p.Y * s.Y.Scale + s.Y.Offset)
+	end
+	return nil
+end
+
+local function fit(l: TextLabel)
+	if not l.TextScaled or not l:FindFirstAncestorOfClass("SurfaceGui") then
+		return
+	end
+	local px = pxSize(l)
+	if not px or px.X <= 0 or px.Y <= 0 then
+		return
+	end
+	local wide = l.Font == Enum.Font.GothamBlack or l.Font == Enum.Font.GothamBold
+	local size = TextFit.Pick(l.Text, px.X, px.Y, wide)
+	l.TextScaled = false
+	l.TextSize = size
+	l.TextWrapped = false
+	l.TextTruncate = Enum.TextTruncate.AtEnd -- names that change later never spill out of the box
+	local st = l:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Thickness = if size <= 20 then 1 elseif size <= 40 then 2 else 3
+	end
+end
+
+-- Fixes every TextScaled label under `root` once, then any added later.
+function TextFit.Apply(root: Instance): number
+	local n = 0
+	for _, d in root:GetDescendants() do
+		if d:IsA("TextLabel") and d.TextScaled then
+			fit(d)
+			if not d.TextScaled then
+				n += 1
+			end
+		end
+	end
+	pcall(function()
+		root.DescendantAdded:Connect(function(d)
+			if d:IsA("TextLabel") then
+				task.defer(fit, d) -- after the builder has parented and filled it
+			end
+		end)
+	end)
+	return n
+end
+
+return TextFit
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="59">
+          <Properties>
             <string name="Name">Throne</string>
             <string name="Source"><![CDATA[--!strict
 -- ZONE 16: The Ghost King's Throne (Z 5200..5560), the final area. A floating royal palace in
@@ -17667,7 +17803,7 @@ return Throne
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">Tomb</string>
             <string name="Source"><![CDATA[--!strict
@@ -18123,7 +18259,7 @@ return Tomb
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="61">
           <Properties>
             <string name="Name">ToyFactory</string>
             <string name="Source"><![CDATA[--!strict
@@ -18678,18 +18814,18 @@ return ToyFactory
       </Item>
     </Item>
   </Item>
-  <Item class="SoundService" referent="61">
+  <Item class="SoundService" referent="62">
     <Properties>
       <string name="Name">SoundService</string>
     </Properties>
   </Item>
-  <Item class="StarterGui" referent="62">
+  <Item class="StarterGui" referent="63">
     <Properties>
       <string name="Name">StarterGui</string>
       <token name="ScreenOrientation">2</token>
     </Properties>
   </Item>
-  <Item class="StarterPlayer" referent="63">
+  <Item class="StarterPlayer" referent="64">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">60</float>
@@ -18699,19 +18835,19 @@ return ToyFactory
       <float name="CharacterWalkSpeed">16</float>
       <bool name="LoadCharacterAppearance">true</bool>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="64">
+    <Item class="StarterPlayerScripts" referent="65">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="65">
+      <Item class="Folder" referent="66">
         <Properties>
           <string name="Name">GHClient</string>
         </Properties>
-        <Item class="Folder" referent="66">
+        <Item class="Folder" referent="67">
           <Properties>
             <string name="Name">Controllers</string>
           </Properties>
-          <Item class="ModuleScript" referent="67">
+          <Item class="ModuleScript" referent="68">
             <Properties>
               <string name="Name">Ambience</string>
               <string name="Source"><![CDATA[--!strict
@@ -19010,7 +19146,7 @@ return Ambience
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="68">
+          <Item class="ModuleScript" referent="69">
             <Properties>
               <string name="Name">Boss</string>
               <string name="Source"><![CDATA[--!strict
@@ -19263,7 +19399,7 @@ return Boss
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="69">
+          <Item class="ModuleScript" referent="70">
             <Properties>
               <string name="Name">CratePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -19759,7 +19895,7 @@ return CratePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="70">
+          <Item class="ModuleScript" referent="71">
             <Properties>
               <string name="Name">Crew</string>
               <string name="Source"><![CDATA[--!strict
@@ -19866,6 +20002,7 @@ local function addTag(m: Member, isLocal: boolean)
 		Size = Theme.World.CrewTag,
 		Offset = Vector3.new(0, m.Rig.Height + 0.7, 0),
 		MaxDistance = if isLocal then Theme.World.CrewMaxDistance else Theme.World.CrewMaxDistance * 0.6,
+		AlwaysOnTop = true, -- never cut by walls / the hunter's own body
 	})
 	WorldLabel.Text(gui, string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name, { Style = "Tiny", Color = rar.Color })
 	-- rare+ hunters stand on a soft rarity-coloured disc
@@ -20231,7 +20368,7 @@ return Crew
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="72">
             <Properties>
               <string name="Name">DailyPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -20420,7 +20557,7 @@ return DailyPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="73">
             <Properties>
               <string name="Name">DevPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -20589,7 +20726,7 @@ return DevPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="73">
+          <Item class="ModuleScript" referent="74">
             <Properties>
               <string name="Name">Effects</string>
               <string name="Source"><![CDATA[--!strict
@@ -20736,7 +20873,7 @@ return Effects
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="74">
+          <Item class="ModuleScript" referent="75">
             <Properties>
               <string name="Name">EventPopup</string>
               <string name="Source"><![CDATA[--!strict
@@ -20810,7 +20947,7 @@ return EventPopup
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="76">
             <Properties>
               <string name="Name">FeedbackPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -20930,7 +21067,7 @@ return FeedbackPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="77">
             <Properties>
               <string name="Name">GatePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -21054,7 +21191,7 @@ return GatePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">Ghosts</string>
               <string name="Source"><![CDATA[--!strict
@@ -21176,7 +21313,9 @@ local function styleLabel(e: Entry)
 	spiritText(e)
 	WorldLabel.Resize(e.Gui, labelSize(e))
 	e.Gui.MaxDistance = maxDistance(e)
-	e.Gui.AlwaysOnTop = e.Selected
+	-- always drawn on top: a world-depth label got cut by the ghost's own body and nearby walls
+	-- at some camera angles (words "clipping through the wall"); MaxDistance still hides far ones
+	e.Gui.AlwaysOnTop = true
 	WorldLabel.SetTextStyle(e.SpiritText, if e.Selected then "Small" else "Tiny")
 	e.Bar.Size = UDim2.fromScale(0.9, if e.Selected then 0.5 else 0.42)
 	local st = e.Bar:FindFirstChildOfClass("UIStroke")
@@ -21534,7 +21673,7 @@ return Ghosts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -22284,7 +22423,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">HuntersPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -22906,7 +23045,7 @@ return HuntersPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">IndexPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -23224,7 +23363,7 @@ return IndexPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="82">
             <Properties>
               <string name="Name">LikeReminder</string>
               <string name="Source"><![CDATA[--!strict
@@ -23249,7 +23388,7 @@ return LikeReminder
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="83">
             <Properties>
               <string name="Name">Orbs</string>
               <string name="Source"><![CDATA[--!strict
@@ -23609,7 +23748,7 @@ return Orbs
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">Reveal</string>
               <string name="Source"><![CDATA[--!strict
@@ -24388,7 +24527,7 @@ return Reveal
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">ShopPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -24561,7 +24700,7 @@ return ShopPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">Sound</string>
               <string name="Source"><![CDATA[--!strict
@@ -24679,7 +24818,7 @@ return Sound
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">Targeting</string>
               <string name="Source"><![CDATA[--!strict
@@ -24956,7 +25095,7 @@ return Targeting
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="87">
+          <Item class="ModuleScript" referent="88">
             <Properties>
               <string name="Name">Tutorial</string>
               <string name="Source"><![CDATA[--!strict
@@ -25480,7 +25619,7 @@ return Tutorial
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="88">
+          <Item class="ModuleScript" referent="89">
             <Properties>
               <string name="Name">UpgradesPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -25641,7 +25780,7 @@ return UpgradesPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="89">
+          <Item class="ModuleScript" referent="90">
             <Properties>
               <string name="Name">WorldsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -25811,7 +25950,7 @@ return WorldsPanel
             </Properties>
           </Item>
         </Item>
-        <Item class="LocalScript" referent="90">
+        <Item class="LocalScript" referent="91">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -25877,7 +26016,7 @@ end
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="91">
+        <Item class="ModuleScript" referent="92">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -26025,11 +26164,11 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="92">
+        <Item class="Folder" referent="93">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="93">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!strict
@@ -26778,7 +26917,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="94">
+          <Item class="ModuleScript" referent="95">
             <Properties>
               <string name="Name">Portrait</string>
               <string name="Source"><![CDATA[--!strict
@@ -27162,7 +27301,7 @@ return Portrait
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="95">
+          <Item class="ModuleScript" referent="96">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -27243,7 +27382,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="96">
+          <Item class="ModuleScript" referent="97">
             <Properties>
               <string name="Name">WorldLabel</string>
               <string name="Source"><![CDATA[--!strict
@@ -27425,7 +27564,7 @@ return WorldLabel
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="97">
+  <Item class="Workspace" referent="98">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

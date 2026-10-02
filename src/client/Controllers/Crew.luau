@@ -102,6 +102,7 @@ local function addTag(m: Member, isLocal: boolean)
 		Size = Theme.World.CrewTag,
 		Offset = Vector3.new(0, m.Rig.Height + 0.7, 0),
 		MaxDistance = if isLocal then Theme.World.CrewMaxDistance else Theme.World.CrewMaxDistance * 0.6,
+		AlwaysOnTop = true, -- never cut by walls / the hunter's own body
 	})
 	WorldLabel.Text(gui, string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name, { Style = "Tiny", Color = rar.Color })
 	-- rare+ hunters stand on a soft rarity-coloured disc

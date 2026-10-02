@@ -793,6 +793,7 @@ local ENUM_ITEMS: { [string]: { string } } = {
 	SurfaceType = { "Smooth", "Glue", "Weld", "Studs", "Inlet", "Universal", "Hinge", "Motor", "SteppingMotor", "SmoothNoOutlines" },
 	ParticleEmitterShape = { "Box", "Sphere", "Cylinder", "Disc" },
 	SurfaceGuiSizingMode = { "FixedSize", "PixelsPerStud" },
+	TextTruncate = { "None", "AtEnd", "SplitWord" },
 	Font = { "Legacy", "Arial", "ArialBold", "SourceSans", "SourceSansBold", "SourceSansSemibold", "SourceSansLight", "SourceSansItalic", "Bodoni", "Garamond", "Cartoon", "Code", "Highway", "SciFi", "Arcade", "Fantasy", "Antique", "Gotham", "GothamMedium", "GothamBold", "GothamBlack", "AmaticSC", "Bangers", "Creepster", "DenkOne", "Fondamento", "FredokaOne", "GrenzeGotisch", "IndieFlower", "JosefinSans", "Jura", "Kalam", "LuckiestGuy", "Merriweather", "Michroma", "Nunito", "Oswald", "PatrickHand", "PermanentMarker", "Roboto", "RobotoCondensed", "RobotoMono", "Sarpanch", "SpecialElite", "TitilliumWeb", "Ubuntu", "BuilderSans", "BuilderSansMedium", "BuilderSansBold", "BuilderSansExtraBold", "Arimo", "ArimoBold" },
 }
 local EImt = { __type = "EnumItem" }
@@ -934,7 +935,7 @@ class("GuiObject", "GuiBase2d", {
 class("TextLabel", "GuiObject", {
 	Font = "Enum.Font", FontFace = "any", Text = "string", TextColor3 = "Color3", TextScaled = "boolean", TextSize = "number",
 	TextWrapped = "boolean", TextStrokeTransparency = "number", TextStrokeColor3 = "Color3", TextTransparency = "number",
-	TextXAlignment = "any", TextYAlignment = "any", RichText = "boolean", LineHeight = "number", MaxVisibleGraphemes = "number",
+	TextXAlignment = "any", TextYAlignment = "any", RichText = "boolean", LineHeight = "number", MaxVisibleGraphemes = "number", TextTruncate = "Enum.TextTruncate",
 }, { Text = "Label" })
 class("Frame", "GuiObject", { Style = "any" }, {})
 class("UIComponent", "Instance", {}, {}, false)
@@ -1290,6 +1291,16 @@ function M.FindFirstChildWhichIsA(o, c: string, recursive: boolean?)
 		if isA(S[ch].Class, c) then
 			return ch
 		end
+	end
+	return nil
+end
+function M.FindFirstAncestorOfClass(o, c: string)
+	local cur = S[o].Parent
+	while cur do
+		if S[cur].Class == c then
+			return cur
+		end
+		cur = S[cur].Parent
 	end
 	return nil
 end

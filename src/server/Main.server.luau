@@ -66,3 +66,10 @@ for _, name in order do
 end
 
 -- Developer tools (DEV button + chat commands) live in Services/DevService.
+
+-- One fixed text size per world sign (see World/TextFit): run after every service has built
+-- its signs and boards.
+pcall(function()
+	local n = require(script.Parent.World.TextFit).Apply(workspace)
+	print(string.format("[Main] fixed text sizes on %d world labels", n))
+end)

@@ -117,7 +117,9 @@ local function styleLabel(e: Entry)
 	spiritText(e)
 	WorldLabel.Resize(e.Gui, labelSize(e))
 	e.Gui.MaxDistance = maxDistance(e)
-	e.Gui.AlwaysOnTop = e.Selected
+	-- always drawn on top: a world-depth label got cut by the ghost's own body and nearby walls
+	-- at some camera angles (words "clipping through the wall"); MaxDistance still hides far ones
+	e.Gui.AlwaysOnTop = true
 	WorldLabel.SetTextStyle(e.SpiritText, if e.Selected then "Small" else "Tiny")
 	e.Bar.Size = UDim2.fromScale(0.9, if e.Selected then 0.5 else 0.42)
 	local st = e.Bar:FindFirstChildOfClass("UIStroke")
