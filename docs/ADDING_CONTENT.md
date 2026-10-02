@@ -3,19 +3,21 @@
 Everything lives in `src/shared/Config.luau`. After any change run `bash tools/check.sh`
 (the economy spec checks references) and `cd tests && luau EconSim.luau` to see the new pacing.
 
-## A new zone (e.g. Zone 4)
-1. **Config.Zones**: add `{ Id = "Factory", Name = "HAUNTED FACTORY", Order = 4, Cost = ..., Crate = "Factory", Ambient, FogColor, Accent, MinZ = 880, MaxZ = 1200 }`.
+## A new zone (e.g. Zone 9)
+1. **Config.Zones**: add `{ Id = "Factory", Name = "HAUNTED FACTORY", Order = 9, Cost = ..., Crate = "Factory", Ambient, FogColor, Accent, MinZ = 2680, MaxZ = 3020 }`.
 2. **Config.Ghosts**: 3 ghosts with `Zone = "Factory"` (and a `Style`; add the style to
    `Rigs/GhostRig.luau` or reuse an existing one).
 3. **Config.Hunters**: 4 hunters with `Zone = "Factory"` and a `Look` (any combination of the
    existing hair/hat/back/tool styles works).
 4. **Config.Crates**: a `Factory` crate with the 4 hunters and weights.
-5. **Config.Layout**: a gate `Factory = { Z = 880, Width = 34 }`, a crate station position,
-   and `GhostAreas` entries for the new ghosts.
-6. **Config.Daily.ZoneMultiplier**: add a 4th multiplier.
-7. **World**: add `src/server/World/Factory.luau` (copy the pattern of `Cemetery.luau`), call it
-   from `Builder.luau`, move the far boundary wall past the new zone, and add the gate in
-   `Gates.luau` (it loops over `Config.Layout.Gates`).
+5. **Config.Layout**: a gate `Factory = { Z = 2680, Width = 34 }`, a crate station at
+   `(-28, 0, MinZ + 32)`, a Fast Travel point in `ZoneSpawns` at `(26, 3, MinZ + 32)`, and
+   `GhostAreas` entries for the new ghosts.
+6. **Config.Daily.ZoneMultiplier**: add a 9th multiplier.
+7. **World**: add `src/server/World/Factory.luau` (copy the pattern of `Carnival.luau`: own ground
+   slab and side walls), call it from `Builder.luau`, and add wall/gate colours in `Boundary.luau`
+   (`WALLS`) and `Gates.luau` (`THEMES`). The far end wall follows the last zone automatically.
+8. Run `bash tools/check.sh`, `bash tools/worldsim.sh` and `cd tests && luau EconSim.luau`.
 
 Nothing else needs code changes: gates, prompts, odds boards, panels, index, tutorial goal chip,
 zone lighting and the zone guard all read Config.

@@ -1,7 +1,8 @@
 # Architecture
 
 Rojo maps `src/shared` → `ReplicatedStorage.GH`, `src/server` → `ServerScriptService.GHServer`,
-`src/client` → `StarterPlayerScripts.GHClient`. Streaming is off (the map is ~4k parts).
+`src/client` → `StarterPlayerScripts.GHClient`. Streaming is off: client code holds direct references to gates, stations and ghost hitboxes.
+Instead, far ghost visuals are parked by the client (see Ghosts) and lights/emitters are budgeted.
 
 ## Rule of thumb
 The **server decides everything that matters** (currency, crate results, damage, pickups,
@@ -18,7 +19,8 @@ orbs, beams, UI) and asks via validated, rate-limited requests.
 | `Signal.luau` | In-process events that pass tables by reference (never use BindableEvents for tables: they deep-copy them and turn Player keys into strings). |
 | `Sounds.luau` | Sound ids by key (see AUDIO.md). |
 | `Rigs/HunterRig.luau` | Chibi hunter builder (anchored Root at the feet, Motor6D limbs) + procedural poses Idle/Run/Attack/Celebrate. `BuildStatic` for portraits. |
-| `Rigs/GhostRig.luau` | Ghost visual builder (built on each client): anchored `Core` + welded visuals, 10 styles. The server only replicates an invisible hitbox per ghost. |
+| `Icons.luau` | Optional uploaded image ids per UI icon (emoji fallback); prompts in `docs/ICON_PROMPTS.md`. |
+| `Rigs/GhostRig.luau` | Ghost visual builder (built on each client): anchored `Core` + welded visuals, 25 styles (bosses get a stronger aura). The server only replicates an invisible hitbox per ghost. |
 | `Rigs/CrateRig.luau` | Crate with Motor6D lid and padlocks, Glow slab, Burst attachment. |
 
 ## Server (`src/server`)
@@ -34,17 +36,17 @@ GhostService, ProgressService, EventService, ShopService, StationService.
 | `HunterService` | Crates (server roll, zone + distance + storage + price checks, free-crate tokens), equip/unequip/equip best/lock/release. Publishes `Crew` and `CrewPower` player attributes. Starter hunter. |
 | `GhostService` | Spawns ghosts (one invisible hitbox part each) per `Config.Layout.GhostAreas`, wander segments (attributes `From/To/T0/Dur`, server time), manual targeting (`SelectTarget`, click/tap once), 0.25 s damage tick, kills, personal drops for contributors (bar drops when many crews help), respawns. **Auto Attack**: `AutoAttack` request (pass-checked), session toggle, picks the nearest ghost in the player's current zone; free players never get automatic targets. |
 | `DropService` | Per-player orb records; one 0.15 s loop collects orbs inside each player's radius and credits them. |
-| `ProgressService` | Zone unlocks (order, cost, distance), keeps players out of zones they don't own, upgrades, daily reward, settings, tutorial step, walk speed, player collision group. |
+| `ProgressService` | Zone unlocks (order, cost, distance), Fast Travel (`Travel`: owned zones only, 3 s cooldown, lands on `Config.Layout.ZoneSpawns`), keeps players out of zones they don't own, upgrades, daily reward, settings, tutorial step, walk speed, player collision group. |
 | `EventService` | Giant Poltergeist loop: warning → spawn (Spirit scales with crews) → timer → rewards by damage share / escape. |
 | `ShopService` | `ProcessReceipt` (idempotent, saves before granting), game pass checks, purchase prompts. |
 | `StationService` | Display crates, odds boards (SurfaceGui), ProximityPrompts on stations and gates. |
-| `World/*` | Procedural map: lighting, boundaries, gates, stations, arena, three zones, props. |
+| `World/*` | Procedural map: lighting, boundaries, gates, stations, arena, eight zones (one file each), props. |
 
 ### Remotes
 | Name | Direction | Payload |
 |---|---|---|
 | `SelectTarget` | C→S | ghost uid (0/nil = clear) |
-| `Request` (RemoteFunction) | C→S | `(action, ...)` → `{ ok, err?, ... }`. Actions: OpenCrate, Equip, Unequip, EquipBest, Lock, Release, UnlockZone, BuyUpgrade, ClaimDaily, Setting, Tutorial, Buy, AutoAttack |
+| `Request` (RemoteFunction) | C→S | `(action, ...)` → `{ ok, err?, ... }`. Actions: OpenCrate, Equip, Unequip, EquipBest, Lock, Release, UnlockZone, Travel, BuyUpgrade, ClaimDaily, Setting, Tutorial, Buy, AutoAttack |
 | `Sync` | S→C | profile snapshot + derived values (CrewPower, Slots, EctoMultiplier, LuckMultiplier, PickupRadius, ZoneMultiplier, Passes, DailyInfo, ServerTime) |
 | `Ecto` | S→C | current Ectoplasm |
 | `Drops` | S→C | `(origin, {{id, landPos, value}, ...}, retiredIds)` |
@@ -61,26 +63,26 @@ Purchases{receipt ids}`. Version = `Config.DataSchemaVersion`.
 `Main.client.luau` inits then starts controllers in order. `State.luau` mirrors the snapshot and
 wraps `Request`. UI kit in `UI/`: `Theme` (colours, typography scale `Theme.Type`, screen
 scaling rules, world-label sizes), `Kit` (fixed-size text styles, buttons, responsive panels
-that shrink to the screen, toasts), `WorldLabel` (device-scaled BillboardGuis with MaxDistance),
+that shrink to the screen, toasts), `WorldLabel` (device-scaled BillboardGuis with MaxDistance that ease slightly smaller with distance, never bigger),
 `Portrait` (2D faces for grids, 3D viewport portraits).
 
 ### Responsive UI
 One UIScale per ScreenGui: landscape `clamp(viewportHeight / 520, 0.55, 1)`, portrait
 `clamp(viewportWidth / 600, 0.55, 1)`. Desktop/laptop/tablet = 1.0; phones ≈ 0.72-0.83. Layouts
 are in logical px; panels cap to the logical screen and scroll/wrap inside (grids use
-UIGridLayout). Short screens (< 650 logical px) get the compact HUD (2×3 menu block top-left,
-clear of the thumbstick). No TextScaled anywhere: text sizes come from `Theme.Type`. The game
+UIGridLayout). Short screens (< 650 logical px) get the compact HUD (menu column starts under
+the top-left Roblox buttons). No TextScaled anywhere: text sizes come from `Theme.Type`. The game
 is locked to landscape (`StarterGui.ScreenOrientation = LandscapeSensor`).
 
 | Controller | What |
 |---|---|
-| `Ghosts` | Builds each ghost's visual rig locally, moves hitbox + visual along the server segment (one loop, BulkMoveTo), bob/sway/face camera, compact Spirit labels (MaxDistance), selected state (bigger bar + numbers + ground ring), hit shake, spawn-in, POOF. |
+| `Ghosts` | Builds each ghost's visual rig locally (parks visuals > 330 studs from the camera), moves hitbox + visual along the server segment (one loop, BulkMoveTo), bob/sway/face camera, compact Spirit labels (MaxDistance), selected state (bigger bar + numbers + ground ring), hit shake, spawn-in, POOF. |
 | `Targeting` | Click / tap (TouchTap) / gamepad X (+ keyboard F) selection with a forgiving screen-space fallback (nearest ghost to the tap, ties go to the nearer one), hover outline, selection highlight; `LocalTarget()` lets your crew react before the server confirms. |
 | `Crew` | Every player's hunters: follow formation, run to a ring around the target, beams, celebrate; ground raycasts staggered; far crews hidden. |
 | `Orbs` | Ectoplasm orbs: arc, bounce, hover, predicted magnet + server-confirmed pickup, pickup ring, streak pitch. Pooled parts, one loop. |
 | `Reveal` | Crate cinematic (stage far from the map, scripted camera, rarity-scaled), result card with EQUIP / AGAIN / OK, SKIP. |
-| `Hud` | Compact HUD: Ectoplasm counter (count-up), crew power, active boosts, responsive menu, settings, AUTO ATTACK toggle (pass owners), banners, announcements. |
-| `CratePanel`, `HuntersPanel`, `IndexPanel`, `UpgradesPanel`, `ShopPanel`, `DailyPanel`, `GatePanel` | Menus. |
+| `Hud` | Compact HUD: Ectoplasm counter (count-up), crew power, active boosts, one-column menu (shrinks to fit short screens), settings, AUTO ATTACK toggle (pass owners), banners, announcements. |
+| `CratePanel`, `HuntersPanel`, `IndexPanel`, `UpgradesPanel`, `ShopPanel`, `DailyPanel`, `GatePanel`, `WorldsPanel` (Fast Travel) | Menus. |
 | `Boss` | Event warning, beacon, boss bar, timer, banners, "SHOW ME" trail. |
 | `Ambience` | Zone lighting blend, floating props, flickering lights, spinning display crates, gates (local open/close + unlock sequence), prompts → panels. |
 | `Tutorial` | Guided first steps with ground breadcrumbs and a bouncing arrow; NEXT GOAL chip afterwards. |
@@ -91,4 +93,6 @@ is locked to landscape (`StarterGui.ScreenOrientation = LandscapeSensor`).
   (0.15 s); one client RenderStepped each for ghosts, crews, orbs, ambience.
 - Ghost positions are computed from segments, never streamed per frame.
 - Effects are capped (24 live emitters); sounds de-duplicated within 35 ms; orbs pooled.
-- Map: ~4.1k parts, 37 lights, 14 emitters (see World/Builder output).
+- Map: 8 zones; budgets in `World/Kit.luau` (80 lights, 34 emitters, 80 floating, 20 flicker);
+  `bash tools/worldsim.sh` builds the map headlessly and prints counts per zone.
+- Ghost spawn points keep `HitboxDiameter × scale × 1.4` studs from other ghosts of the same area.

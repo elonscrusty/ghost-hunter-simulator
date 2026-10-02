@@ -1,37 +1,42 @@
 # Status
 
-**Version 1.1: manual targeting + Auto Attack pass + mobile UI pass. Not yet run in Roblox Studio.**
+**Version 1.2: 8-zone expansion. Not yet run in Roblox Studio.**
 
 ## Done
-- All launch systems: 3 zones + gates, 9 ghosts + Giant Poltergeist event, 12 hunters, 3 crates
-  with rarity-scaled opening cinematic, inventory, index, upgrades, daily rewards, shop
-  (products/passes), settings, tutorial + next-goal guidance, saving with session locks.
-- v1.1:
-  - Free players click/tap a ghost once; the crew kills it and comes home. No automatic targets.
-  - AUTO ATTACK game pass (server-verified) + HUD toggle (default OFF each session): the crew
-    picks the nearest ghost in your area. Same damage, rewards and pickup radius.
-  - Mobile: device-scaled, distance-limited world labels; selected ghost gets a bigger bar,
-    numbers and a ground ring; forgiving tap targeting; crew reacts to taps instantly.
-  - Smaller typography scale everywhere; responsive panels (fit any screen, scroll/wrap);
-    compact HUD (2×3 menu on phones, clear of the thumbstick); landscape lock.
-  - Less neon: world, rigs and bloom toned down.
-  - Server hardening from a code review: starter hunter / boss payout bug (BindableEvent table
-    copies) fixed, per-session save locks, no parallel saves, receipts confirmed only after a
-    real save, safe startup/tick loops, ghosts replicate as one hitbox part.
-- Checks: strict type check clean, unit tests (rules, formatting, economy sanity), Rojo build.
-- Economy simulation (`tests/EconSim.luau`, 300 runs, realistic solo player):
-  first crate < 1 min · Cemetery ~9 min · first Haunted crate ~11 min · School ~50 min ·
-  first Elite crate ~55 min · Neighborhood index ~5 min · full index ~1.5-3 h.
+- All launch systems: zones + gates, ghosts + Giant Poltergeist event, hunters, crates with a
+  rarity-scaled opening cinematic, inventory, index, upgrades, daily rewards, shop, settings,
+  tutorial + next-goal guidance, saving with session locks.
+- v1.1: click/tap once to send your crew (no free auto-attack); AUTO ATTACK game pass; mobile
+  world labels; responsive compact UI; less neon; server hardening.
+- v1.2 (expansion):
+  - 8 connected areas: Haunted Neighborhood → Cemetery → Haunted School (new back exit) →
+    Abandoned Carnival → Haunted Hospital → Ghost Ship Harbor → Cursed Castle → Spirit Realm.
+  - 24 ghosts (3 per area, the last one a boss; Spirit Overlord is the endgame boss) + event.
+  - 32 hunters (4 per area), 8 crates (same crate system, fancier per area), new hats/tools/backs.
+  - Rebalanced curve (Config only): each area's Rare beats the previous Legendary; the previous
+    Legendary still beats the new Common. Upgrades go to level 8.
+  - WORLDS menu (Fast Travel, server-checked, owned areas only); one-column menu, bigger buttons.
+  - Hunter Index for 8 areas with "x / 32 DISCOVERED • %".
+  - World labels never grow with distance (ease slightly smaller, then hide); bosses get bigger
+    labels; spirit value always shown.
+  - Mobile performance: far ghost visuals parked, ghosts spread out (no stacking), budgets for
+    lights/emitters; material pass on zones 1-3 (fewer neon parts).
+  - Image icon slots (`src/shared/Icons.luau`) + ChatGPT prompts (`docs/ICON_PROMPTS.md`).
+- Checks: strict type check clean, 35 unit tests (rules, formatting, economy incl. 8-zone curve
+  and layout), Rojo build, headless world/rig smoke test (`bash tools/worldsim.sh`).
+- Economy simulation (`tests/EconSim.luau`, realistic solo player, median):
+  first crate 1 min · Cemetery 9 min · School 52 min · Carnival 2.7 h · Hospital 4.6 h ·
+  Harbor 8.3 h · Castle 11 h · Spirit Realm 15 h.
 
 ## Owner to do
 1. Playtest in Studio: [STUDIO_TESTS.md](STUDIO_TESTS.md) (nothing has been run in Studio yet).
 2. Create the 4 developer products + 3 passes (incl. Auto Attack) and send Claude the ids ([PUBLISHING.md](PUBLISHING.md) step 5). Until then the shop shows "SOON".
 3. Pick music and nicer sound effects ([AUDIO.md](AUDIO.md)); placeholders play meanwhile.
-4. Game icon, thumbnails, description; then publish.
+4. Optional: make icons with ChatGPT ([ICON_PROMPTS.md](ICON_PROMPTS.md)), upload them and send Claude the ids.
+5. Game icon, thumbnails, description; then publish.
 
-## Next (planned)
-- Zones 4-8 with new ghosts, hunters and crates, rebalance for 8 zones, Fast Travel (waiting
-  for the owner's zone themes, otherwise Claude designs them).
+## Next (ideas)
+- Index area-completion rewards; more events in later areas.
 
 ## Known limits / ideas for later
 - Hunters walk in straight lines (no pathfinding), so they can pass through props; that's

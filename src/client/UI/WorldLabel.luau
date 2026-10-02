@@ -25,7 +25,9 @@ export type Props = {
 
 local guis: { [BillboardGui]: Vector2 } = setmetatable({} :: any, { __mode = "k" })
 local texts: { [TextLabel]: number } = setmetatable({} :: any, { __mode = "k" })
-local textGui: { [TextLabel]: BillboardGui } = setmetatable({} :: any, { __mode = "k" })
+-- weak values too: guiTexts holds the labels strongly, so a strong gui value here would form a
+-- cycle that keeps every destroyed ghost label alive
+local textGui: { [TextLabel]: BillboardGui } = setmetatable({} :: any, { __mode = "kv" })
 local factors: { [BillboardGui]: number } = setmetatable({} :: any, { __mode = "k" })
 local guiTexts: { [BillboardGui]: { TextLabel } } = setmetatable({} :: any, { __mode = "k" })
 

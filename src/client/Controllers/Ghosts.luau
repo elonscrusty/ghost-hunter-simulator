@@ -276,7 +276,8 @@ local function add(model: Instance)
 		vis:ScaleTo(def.Scale * 0.2)
 		local conn
 		conn = s.Changed:Connect(function(v)
-			if e.Dying or not vis.Parent then
+			-- (vis.Parent is nil while culled: keep growing so it isn't stuck small on return)
+			if e.Dying or not model.Parent then
 				conn:Disconnect()
 				return
 			end
@@ -365,7 +366,10 @@ local function step()
 		local base = e.From:Lerp(e.To, smooth(a))
 		local camDist = (base - camPos).Magnitude
 		if e.Culled then
-			if camDist > CULL_IN then
+			if camDist > CULL_IN and not e.Selected then
+				-- keep the position fresh for readers (Targeting fallback, Crew, Boss)
+				e.Pos = base
+				e.Base = base
 				continue
 			end
 			e.Culled = false
@@ -375,6 +379,8 @@ local function step()
 			e.Culled = true
 			e.Vis.Parent = nil
 			e.Gui.Enabled = false
+			e.Pos = base
+			e.Base = base
 			continue
 		end
 		WorldLabel.SetDistance(e.Gui, camDist)
