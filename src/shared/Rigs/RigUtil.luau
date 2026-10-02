@@ -83,6 +83,14 @@ end
 RigUtil.AxisY = CFrame.Angles(0, 0, math.pi / 2) -- cylinder stands upright (disc lies flat)
 RigUtil.AxisZ = CFrame.Angles(0, math.pi / 2, 0) -- cylinder points forward/back (disc faces -Z)
 
+-- Rotation that stands a cube on one corner (a cheap faceted gem or crystal tip).
+RigUtil.VertexUp = CFrame.Angles(0, 0, math.atan(math.sqrt(2))) * CFrame.Angles(0, math.pi / 4, 0)
+
+-- Frame for a Cylinder running from `a` to `b` (give it length (b - a).Magnitude).
+function RigUtil.Between(a: Vector3, b: Vector3): CFrame
+	return CFrame.lookAt((a + b) / 2, b) * RigUtil.AxisZ
+end
+
 -- A frame at `pos` whose front (-Z) looks along `normal` (used to stick things onto round surfaces).
 function RigUtil.Facing(pos: Vector3, normal: Vector3): CFrame
 	return CFrame.lookAt(pos, pos + normal.Unit)

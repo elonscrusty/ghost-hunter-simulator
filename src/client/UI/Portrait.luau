@@ -18,7 +18,38 @@ Portrait.ToolIcon = {
 	Lantern = "🏮",
 	Staff = "🪄",
 	Projector = "📡",
+	Megaphone = "📣",
+	Wand = "✨",
+	Orb = "🔮",
+	Spyglass = "🔭",
+	Sword = "⚔️",
 } :: { [string]: string }
+
+local GOLD = Color3.fromRGB(255, 205, 60)
+local RED = Color3.fromRGB(230, 50, 70)
+local NAVY = Color3.fromRGB(35, 50, 120)
+local WHITE = Color3.new(1, 1, 1)
+
+local function shade(c: Color3, f: number): Color3
+	return Color3.new(c.R * f, c.G * f, c.B * f)
+end
+
+-- plain (optionally rounded) rectangle, anchored at its centre
+local function rect(parent: Instance, size: UDim2, pos: UDim2, color: Color3, z: number, radius: number?): Frame
+	local f: Frame = Kit.new("Frame", {
+		Size = size,
+		Position = pos,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+		ZIndex = z,
+		Parent = parent,
+	})
+	if radius then
+		Kit.Corner(f, UDim.new(radius, 0))
+	end
+	return f
+end
 
 local function circle(parent: Instance, size: UDim2, pos: UDim2, color: Color3, z: number): Frame
 	local f: Frame = Kit.new("Frame", {
@@ -55,6 +86,42 @@ function Portrait.Face(parent: GuiObject, hunterId: string, silhouette: boolean?
 		local w = circle(holder, UDim2.fromScale(0.95, 0.45), UDim2.fromScale(0.5, 0.82), col(L.BackColor or L.Shirt), z - 0)
 		w.ZIndex = z
 		body.ZIndex = z + 1
+	elseif L.Back == "Shield" or L.Back == "LifeRing" or L.Back == "MedKit" then
+		-- peeking out from behind a shoulder
+		local bc = L.BackColor or L.Shirt
+		body.ZIndex = z + 1
+		if L.Back == "Shield" then
+			local sh = circle(holder, UDim2.fromScale(0.36, 0.38), UDim2.fromScale(0.84, 0.76), col(bc), z)
+			Kit.Stroke(sh, 2, col(Color3.fromRGB(150, 155, 170)))
+			rect(sh, UDim2.fromScale(0.16, 0.7), UDim2.fromScale(0.5, 0.5), col(GOLD), z)
+			rect(sh, UDim2.fromScale(0.7, 0.16), UDim2.fromScale(0.5, 0.45), col(GOLD), z)
+		elseif L.Back == "LifeRing" then
+			local lr = circle(holder, UDim2.fromScale(0.34, 0.34), UDim2.fromScale(0.16, 0.74), col(bc), z)
+			lr.BackgroundTransparency = 1
+			Kit.Stroke(lr, 5, col(bc))
+			local inner = circle(lr, UDim2.fromScale(0.62, 0.62), UDim2.fromScale(0.5, 0.5), col(WHITE), z)
+			inner.BackgroundTransparency = 1
+			Kit.Stroke(inner, 1.5, col(WHITE))
+		else
+			local mk = rect(holder, UDim2.fromScale(0.3, 0.26), UDim2.fromScale(0.84, 0.72), col(bc), z, 0.2)
+			Kit.Stroke(mk, 1.5, col(shade(bc, 0.7)))
+			rect(mk, UDim2.fromScale(0.5, 0.16), UDim2.fromScale(0.5, 0.4), col(RED), z)
+			rect(mk, UDim2.fromScale(0.16, 0.5), UDim2.fromScale(0.5, 0.4), col(RED), z)
+		end
+	elseif L.Back == "Balloons" then
+		local cols = { L.BackColor or L.Shirt, Color3.fromRGB(255, 90, 110), Color3.fromRGB(255, 215, 70) }
+		local spots = { Vector2.new(0.12, 0.3), Vector2.new(0.88, 0.22), Vector2.new(0.72, 0.1) }
+		for i, p in spots do
+			rect(holder, UDim2.fromScale(0.012, 0.3), UDim2.fromScale(p.X, p.Y + 0.27), col(WHITE), z) -- string
+			circle(holder, UDim2.fromScale(0.2, 0.24), UDim2.fromScale(p.X, p.Y), col(cols[i]), z + 1)
+		end
+	elseif L.Back == "Orbs" then
+		for _, p in { Vector2.new(0.1, 0.62), Vector2.new(0.92, 0.42), Vector2.new(0.12, 0.2) } do
+			local o = circle(holder, UDim2.fromScale(0.13, 0.13), UDim2.fromScale(p.X, p.Y), col(L.BackColor or L.Shirt), z + 1)
+			if not silhouette then
+				Kit.Stroke(o, 2, WHITE)
+			end
+		end
 	end
 	-- head
 	local head = circle(holder, UDim2.fromScale(0.64, 0.6), UDim2.fromScale(0.5, 0.46), col(L.Skin), z + 2)
@@ -91,6 +158,83 @@ function Portrait.Face(parent: GuiObject, hunterId: string, silhouette: boolean?
 		elseif L.Hat == "Hood" then
 			local hood = circle(holder, UDim2.fromScale(0.82, 0.74), UDim2.fromScale(0.5, 0.44), hc, z + 1)
 			hood.ZIndex = z + 1
+		elseif L.Hat == "TopHat" then
+			local base = L.HatColor or L.Shirt
+			local bandC = if base.R + base.G + base.B > 1.6 then shade(base, 0.35) else GOLD
+			rect(head, UDim2.fromScale(0.62, 0.42), UDim2.fromScale(0.5, -0.08), hc, z + 4, 0.08)
+			rect(head, UDim2.fromScale(0.64, 0.09), UDim2.fromScale(0.5, 0.06), col(bandC), z + 5)
+			rect(head, UDim2.fromScale(1.15, 0.1), UDim2.fromScale(0.5, 0.14), hc, z + 5, 1)
+		elseif L.Hat == "Jester" then
+			local alt = col(GOLD)
+			circle(head, UDim2.fromScale(1.04, 0.5), UDim2.fromScale(0.5, 0.1), hc, z + 4)
+			for _, s in { -1, 1 } do
+				local pt = rect(head, UDim2.fromScale(0.3, 0.42), UDim2.fromScale(0.5 + 0.36 * s, -0.04), if s < 0 then hc else alt, z + 4, 0.5)
+				pt.Rotation = 40 * s
+				circle(head, UDim2.fromScale(0.15, 0.16), UDim2.fromScale(0.5 + 0.6 * s, -0.2), if s < 0 then alt else hc, z + 5) -- bell
+			end
+		elseif L.Hat == "NurseCap" then
+			local cap = rect(head, UDim2.fromScale(0.62, 0.24), UDim2.fromScale(0.5, 0.02), hc, z + 4, 0.2)
+			Kit.Stroke(cap, 1.5, col(Color3.fromRGB(200, 205, 215)))
+			rect(head, UDim2.fromScale(0.16, 0.05), UDim2.fromScale(0.5, 0.02), col(RED), z + 5)
+			rect(head, UDim2.fromScale(0.05, 0.17), UDim2.fromScale(0.5, 0.02), col(RED), z + 5)
+		elseif L.Hat == "HeadMirror" then
+			rect(head, UDim2.fromScale(1.04, 0.07), UDim2.fromScale(0.5, 0.25), col(shade(L.HatColor or L.Shirt, 0.45)), z + 4)
+			local m = circle(head, UDim2.fromScale(0.3, 0.32), UDim2.fromScale(0.66, 0.2), hc, z + 5)
+			Kit.Stroke(m, 2, col(Color3.fromRGB(120, 125, 140)))
+			circle(m, UDim2.fromScale(0.3, 0.3), UDim2.fromScale(0.5, 0.5), col(Color3.fromRGB(40, 40, 55)), z + 6)
+		elseif L.Hat == "SailorCap" then
+			local cap = rect(head, UDim2.fromScale(0.66, 0.3), UDim2.fromScale(0.5, -0.04), hc, z + 4, 0.3)
+			Kit.Stroke(cap, 1.5, col(Color3.fromRGB(190, 200, 215)))
+			rect(head, UDim2.fromScale(0.86, 0.12), UDim2.fromScale(0.5, 0.1), hc, z + 5, 1)
+			rect(head, UDim2.fromScale(0.86, 0.04), UDim2.fromScale(0.5, 0.1), col(NAVY), z + 6)
+		elseif L.Hat == "Bandana" then
+			circle(head, UDim2.fromScale(1.04, 0.5), UDim2.fromScale(0.5, 0.1), hc, z + 4)
+			circle(head, UDim2.fromScale(0.2, 0.2), UDim2.fromScale(0.96, 0.24), hc, z + 4) -- knot
+			local tail = rect(head, UDim2.fromScale(0.1, 0.26), UDim2.fromScale(1.02, 0.4), hc, z + 3, 0.4)
+			tail.Rotation = -20
+			for _, p in { Vector2.new(0.3, 0.02), Vector2.new(0.55, 0.14), Vector2.new(0.74, -0.02) } do
+				circle(head, UDim2.fromScale(0.08, 0.08), UDim2.fromScale(p.X, p.Y), col(WHITE), z + 5)
+			end
+		elseif L.Hat == "Tricorn" then
+			circle(head, UDim2.fromScale(0.72, 0.42), UDim2.fromScale(0.5, -0.02), hc, z + 4)
+			local brim = rect(head, UDim2.fromScale(1.25, 0.2), UDim2.fromScale(0.5, 0.12), hc, z + 5, 0.5)
+			Kit.Stroke(brim, 2, col(GOLD))
+			for _, s in { -1, 1 } do
+				local corner = rect(head, UDim2.fromScale(0.26, 0.28), UDim2.fromScale(0.5 + 0.56 * s, 0.03), hc, z + 5, 0.15)
+				corner.Rotation = 45
+			end
+		elseif L.Hat == "KnightHelm" then
+			-- plume behind, helm over the top and sides, a visor slit, face open
+			local plumeC = L.Shirt
+			circle(head, UDim2.fromScale(0.22, 0.36), UDim2.fromScale(0.5, -0.12), col(plumeC), z + 3)
+			local helm = circle(head, UDim2.fromScale(1.14, 0.62), UDim2.fromScale(0.5, 0.14), hc, z + 4)
+			Kit.Stroke(helm, 2, col(shade(L.HatColor or L.Shirt, 0.6)))
+			for _, x in { 0.06, 0.94 } do
+				rect(head, UDim2.fromScale(0.16, 0.42), UDim2.fromScale(x, 0.55), hc, z + 4, 0.4) -- cheek guards
+			end
+			rect(head, UDim2.fromScale(0.56, 0.05), UDim2.fromScale(0.5, 0.22), col(Color3.fromRGB(30, 25, 40)), z + 5)
+		elseif L.Hat == "Wizard" then
+			local cone = rect(head, UDim2.fromScale(0.38, 0.4), UDim2.fromScale(0.5, 0.0), hc, z + 4)
+			cone.Rotation = 45
+			rect(head, UDim2.fromScale(1.2, 0.14), UDim2.fromScale(0.5, 0.22), hc, z + 5, 1)
+			local star = rect(head, UDim2.fromScale(0.1, 0.1), UDim2.fromScale(0.56, -0.02), col(GOLD), z + 5)
+			star.Rotation = 45
+		elseif L.Hat == "Crown" then
+			rect(head, UDim2.fromScale(0.62, 0.16), UDim2.fromScale(0.5, 0.04), hc, z + 4)
+			for i = -1, 1 do
+				local pt = rect(head, UDim2.fromScale(0.14, 0.15), UDim2.fromScale(0.5 + i * 0.22, -0.06), hc, z + 4)
+				pt.Rotation = 45
+			end
+			circle(head, UDim2.fromScale(0.1, 0.1), UDim2.fromScale(0.5, 0.04), col(RED), z + 5)
+		elseif L.Hat == "Crystal" then
+			for i = -2, 2 do
+				local s = if i == 0 then 0.17 else 0.11
+				local g = rect(head, UDim2.fromScale(s, s * 1.07), UDim2.fromScale(0.5 + i * 0.2, -0.04 + math.abs(i) * 0.05), hc, z + 4)
+				g.Rotation = 45
+				if not silhouette then
+					Kit.Stroke(g, 1.5, WHITE)
+				end
+			end
 		else
 			local cap = circle(head, UDim2.fromScale(1.0, 0.5), UDim2.fromScale(0.5, 0.08), hc, z + 4)
 			if L.Hat == "Cap" or L.Hat == "Fedora" then

@@ -55,7 +55,7 @@ end
 function Props.Tree(parent: Instance, pos: Vector3, height: number, canopy: Color3?)
 	local col = canopy or Kit.Pick(Props.Colors.Canopy)
 	local rng = Kit.Rng
-	Kit.Cyl(parent, height, 1.8, CFrame.new(pos + Vector3.new(0, height / 2, 0)), C(120, 75, 50), { Solid = true, Shadow = true })
+	Kit.Cyl(parent, height, 1.8, CFrame.new(pos + Vector3.new(0, height / 2, 0)), C(120, 75, 50), { Mat = Enum.Material.Wood, Solid = true, Shadow = true })
 	local top = pos + Vector3.new(0, height, 0)
 	local s = height * 0.55
 	Kit.Ball(parent, s, top, col, { Shadow = true })
@@ -77,7 +77,7 @@ function Props.TwistedTree(parent: Instance, pos: Vector3, height: number)
 	end
 	for i = 1, 3 do
 		local w = 3.2 - i * 0.7
-		Props.Beam(parent, pts[i], pts[i + 1], w, w, trunk, { Solid = i == 1, Shadow = true })
+		Props.Beam(parent, pts[i], pts[i + 1], w, w, trunk, { Mat = Enum.Material.Wood, Solid = i == 1, Shadow = true })
 	end
 	local leaf = { C(170, 90, 255), C(110, 255, 160), C(255, 120, 200) }
 	for b = 1, 3 do
@@ -85,7 +85,7 @@ function Props.TwistedTree(parent: Instance, pos: Vector3, height: number)
 		local ang = b * 2.1 + rng:NextNumber(-0.4, 0.4)
 		local len = height * rng:NextNumber(0.22, 0.32)
 		local tip = from + Vector3.new(math.cos(ang) * len, len * 0.6, math.sin(ang) * len)
-		Props.Beam(parent, from, tip, 0.9, 0.9, trunk)
+		Props.Beam(parent, from, tip, 0.9, 0.9, trunk, { Mat = Enum.Material.Wood })
 		Kit.Ball(parent, rng:NextNumber(3.5, 5.5), tip, Kit.Vivid(Kit.Pick(leaf)), { Transp = 0.1 })
 	end
 	Kit.AddCircle(pos.X, pos.Z, 3)
@@ -94,11 +94,12 @@ end
 -- Street lamp: pole, arm and a glowing globe.
 function Props.StreetLamp(parent: Instance, pos: Vector3, color: Color3, withLight: boolean)
 	local pole = C(60, 45, 90)
-	Kit.Cyl(parent, 13, 0.8, CFrame.new(pos + Vector3.new(0, 6.5, 0)), pole)
-	Kit.Cyl(parent, 0.8, 1.8, CFrame.new(pos + Vector3.new(0, 0.4, 0)), pole)
-	Kit.Box(parent, pos + Vector3.new(-0.3, 12.6, -0.3), pos + Vector3.new(0.3, 13.2, 0.3), pole)
+	local metal: Kit.Opts = { Mat = Enum.Material.Metal }
+	Kit.Cyl(parent, 13, 0.8, CFrame.new(pos + Vector3.new(0, 6.5, 0)), pole, metal)
+	Kit.Cyl(parent, 0.8, 1.8, CFrame.new(pos + Vector3.new(0, 0.4, 0)), pole, metal)
+	Kit.Box(parent, pos + Vector3.new(-0.3, 12.6, -0.3), pos + Vector3.new(0.3, 13.2, 0.3), pole, metal)
 	local globe = Kit.Ball(parent, 2.4, pos + Vector3.new(0, 14, 0), color, { Mat = NEON })
-	Kit.Cyl(parent, 0.5, 2.8, CFrame.new(pos + Vector3.new(0, 15.3, 0)), pole)
+	Kit.Cyl(parent, 0.5, 2.8, CFrame.new(pos + Vector3.new(0, 15.3, 0)), pole, metal)
 	if withLight then
 		Kit.Light(globe, color, 22, 1.6)
 	end
@@ -107,7 +108,7 @@ end
 -- Little post lantern (cemetery paths).
 function Props.Lantern(parent: Instance, pos: Vector3, color: Color3, withLight: boolean, flicker: boolean?)
 	local iron = C(50, 40, 70)
-	Kit.Box(parent, pos + Vector3.new(-0.3, 0, -0.3), pos + Vector3.new(0.3, 7, 0.3), iron)
+	Kit.Box(parent, pos + Vector3.new(-0.3, 0, -0.3), pos + Vector3.new(0.3, 7, 0.3), iron, { Mat = Enum.Material.Metal })
 	local glow = Kit.Box(parent, pos + Vector3.new(-0.8, 7, -0.8), pos + Vector3.new(0.8, 9, 0.8), color, { Mat = NEON })
 	Kit.Wedge(parent, Vector3.new(2.2, 1, 1.1), CFrame.new(pos + Vector3.new(0, 9.5, -0.55)), iron)
 	Kit.Wedge(parent, Vector3.new(2.2, 1, 1.1), CFrame.new(pos + Vector3.new(0, 9.5, 0.55)) * CFrame.Angles(0, math.pi, 0), iron)
@@ -128,7 +129,8 @@ function Props.Mushrooms(parent: Instance, pos: Vector3)
 	end
 end
 
--- Fence run from a to b (ground points). style: "picket" (crooked white) or "iron" (dark with mint tips).
+-- Fence run from a to b (ground points). style: "picket" (crooked white wood) or "iron" (dark
+-- metal with mint tips).
 function Props.Fence(parent: Instance, a: Vector3, b: Vector3, style: string)
 	local rng = Kit.Rng
 	local d = b - a
@@ -141,18 +143,19 @@ function Props.Fence(parent: Instance, a: Vector3, b: Vector3, style: string)
 	local iron = style == "iron"
 	local col = if iron then C(55, 45, 80) else C(250, 240, 255)
 	local h = if iron then 6 else 3.6
+	local mat: Kit.Opts = { Mat = if iron then Enum.Material.Metal else Enum.Material.Wood }
 	local step = if iron then 2 else 1.6
 	local rails = { h * 0.3, h * 0.75 }
 	for _, ry in rails do
 		local mid = a + d / 2 + Vector3.new(0, ry, 0)
-		Kit.Part(parent, Vector3.new(0.3, 0.3, len), CFrame.new(mid) * CFrame.Angles(0, yaw, 0), col)
+		Kit.Part(parent, Vector3.new(0.3, 0.3, len), CFrame.new(mid) * CFrame.Angles(0, yaw, 0), col, mat)
 	end
 	local n = math.floor(len / step)
 	for i = 0, n do
 		local p = a + dir * (i * step) + Vector3.new(0, h / 2, 0)
 		local tilt = if iron then 0 else rng:NextNumber(-0.14, 0.14)
 		local cf = CFrame.new(p) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(tilt * 0.3, 0, tilt)
-		Kit.Part(parent, Vector3.new(if iron then 0.35 else 0.25, h, if iron then 0.35 else 0.9), cf, col)
+		Kit.Part(parent, Vector3.new(if iron then 0.35 else 0.25, h, if iron then 0.35 else 0.9), cf, col, mat)
 		if iron and i % 3 == 0 then
 			Kit.Ball(parent, 0.7, p + Vector3.new(0, h / 2 + 0.3, 0), Kit.Vivid(C(120, 255, 170)))
 		end
@@ -183,10 +186,11 @@ function Props.Car(parent: Instance, pos: Vector3, fx: number, fz: number, color
 	local axle = if math.abs(fx) > math.abs(fz) then "Z" else "X"
 	for _, sx in { -1, 1 } do
 		for _, sz in { -1, 1 } do
-			Kit.CylFlat(m, 1.2, 3.4, (base * CFrame.new(sx * 3.5, 1.7, sz * 4.4)).Position, axle, C(40, 35, 55))
+			Kit.CylFlat(m, 1.2, 3.4, (base * CFrame.new(sx * 3.5, 1.7, sz * 4.4)).Position, axle, C(40, 35, 55), { Mat = Enum.Material.Rubber })
 		end
 		Kit.Part(m, Vector3.new(1.4, 1, 0.3), base * CFrame.new(sx * 2.6, 3, -7.05), C(255, 250, 200), { Mat = NEON })
-		Kit.Part(m, Vector3.new(1.2, 0.8, 0.3), base * CFrame.new(sx * 2.7, 3, 7.05), C(255, 60, 90), { Mat = NEON })
+		-- tail lights: glossy painted red (headlights are the only glow on a car)
+		Kit.Part(m, Vector3.new(1.2, 0.8, 0.3), base * CFrame.new(sx * 2.7, 3, 7.05), Kit.Vivid(C(230, 40, 70)), { Refl = 0.3 })
 	end
 	Kit.AddCircle(pos.X, pos.Z, 8)
 end

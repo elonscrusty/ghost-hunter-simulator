@@ -2,8 +2,10 @@
 -- ZONE 1: Haunted Neighborhood (Z -60..260). Spawn plaza + Ghost Hunter HQ at the south end,
 -- a main road along X = 0 to the Cemetery gate, a cross street at Z 110..124 leading east to
 -- the event arena, and candy-coloured houses placed on a grid wherever the keep-out map allows.
--- Glow is reserved for windows, street lamps, car lights and the HQ antenna; plaza rings,
--- chevrons, bands, doors and tanks are solid candy colours.
+-- Palette: bright grass, warm houses, orange accents, purple paranormal touches, ectoplasm
+-- green. Glow is reserved for the front windows, street lamps, car headlights and the HQ
+-- antenna; side windows, plaza rings, chevrons, bands, doors and tanks are solid colours.
+-- Materials: Asphalt roads, Concrete sidewalks, Slate roof shingles, Brick chimneys, Wood posts.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Kit = require(script.Parent.Kit)
@@ -16,8 +18,8 @@ local V = Vector3.new
 local NEON = Enum.Material.Neon
 
 local WALLS = {
-	C(255, 170, 200), C(170, 220, 255), C(255, 225, 140), C(190, 255, 190), C(215, 180, 255),
-	C(255, 190, 140), C(150, 240, 225), C(255, 150, 150),
+	C(255, 175, 190), C(255, 214, 168), C(255, 225, 140), C(250, 236, 200), C(215, 180, 255),
+	C(255, 190, 140), C(240, 200, 150), C(255, 155, 135),
 }
 local ROOFS = { C(120, 60, 170), C(60, 120, 190), C(200, 70, 110), C(70, 150, 110), C(230, 110, 50), C(90, 70, 160) }
 local WINDOWS = { C(255, 235, 120), C(150, 255, 140), C(205, 140, 255), C(255, 200, 90) }
@@ -27,9 +29,11 @@ local TRIM = C(255, 250, 245)
 --==================================================================
 -- HOUSE
 --==================================================================
-local function window(m: Instance, cf: CFrame, glow: Color3)
-	Kit.Part(m, V(4, 4, 0.3), cf, TRIM)
-	Kit.Part(m, V(3.2, 3.2, 0.3), cf * CFrame.new(0, 0, -0.12), glow, { Mat = NEON })
+-- Front windows glow; side windows (lit = false) are warm painted glass.
+local function window(m: Instance, cf: CFrame, glow: Color3, lit: boolean?)
+	Kit.Part(m, V(4, 4, 0.3), cf, TRIM, { Mat = Enum.Material.Wood })
+	local glass: Kit.Opts = if lit == false then { Refl = 0.2 } else { Mat = NEON }
+	Kit.Part(m, V(3.2, 3.2, 0.3), cf * CFrame.new(0, 0, -0.12), if lit == false then Kit.Vivid(glow) else glow, glass)
 end
 
 local function house(parent: Instance, cx: number, cz: number, fx: number, fz: number)
@@ -54,11 +58,11 @@ local function house(parent: Instance, cx: number, cz: number, fx: number, fz: n
 	-- gable roof: two wedges meeting at the ridge (ridge along local X)
 	local half = D / 2 + 1.5
 	Kit.Part(m, V(W + 2.4, 0.6, D + 3.4), base * CFrame.new(0, H + 0.3, 0), TRIM)
-	Kit.Wedge(m, V(W + 2, RH, half), base * CFrame.new(0, H + 0.6 + RH / 2, -half / 2), roof, { Solid = true, Shadow = true })
-	Kit.Wedge(m, V(W + 2, RH, half), base * CFrame.new(0, H + 0.6 + RH / 2, half / 2) * CFrame.Angles(0, math.pi, 0), roof, { Solid = true, Shadow = true })
+	Kit.Wedge(m, V(W + 2, RH, half), base * CFrame.new(0, H + 0.6 + RH / 2, -half / 2), roof, { Mat = Enum.Material.Slate, Solid = true, Shadow = true })
+	Kit.Wedge(m, V(W + 2, RH, half), base * CFrame.new(0, H + 0.6 + RH / 2, half / 2) * CFrame.Angles(0, math.pi, 0), roof, { Mat = Enum.Material.Slate, Solid = true, Shadow = true })
 	-- chimney poking through the back slope
 	local chX = (if rng:NextNumber() < 0.5 then -1 else 1) * W * 0.28
-	Kit.Part(m, V(2.4, RH + 2.5, 2.4), base * CFrame.new(chX, H + (RH + 2.5) / 2 + 0.6, D * 0.22), C(190, 110, 100), { Shadow = true })
+	Kit.Part(m, V(2.4, RH + 2.5, 2.4), base * CFrame.new(chX, H + (RH + 2.5) / 2 + 0.6, D * 0.22), C(190, 110, 100), { Mat = Enum.Material.Brick, Shadow = true })
 	Kit.Part(m, V(3, 0.6, 3), base * CFrame.new(chX, H + RH + 3.4, D * 0.22), C(90, 70, 110))
 	if rng:NextNumber() < 0.25 then
 		-- a puff of ectoplasm smoke
@@ -76,7 +80,7 @@ local function house(parent: Instance, cx: number, cz: number, fx: number, fz: n
 	end
 	-- side windows
 	for _, sx in { -1, 1 } do
-		window(m, base * CFrame.new(sx * (W / 2 + 0.15), H * 0.5, 0) * CFrame.Angles(0, -sx * math.pi / 2, 0), glow)
+		window(m, base * CFrame.new(sx * (W / 2 + 0.15), H * 0.5, 0) * CFrame.Angles(0, -sx * math.pi / 2, 0), glow, false)
 	end
 	-- door
 	Kit.Part(m, V(5, 8, 0.3), base * CFrame.new(0, 4.6, -D / 2 - 0.1), TRIM)
@@ -88,7 +92,7 @@ local function house(parent: Instance, cx: number, cz: number, fx: number, fz: n
 	local porchTop = if twoStory then 9.5 else 9.2
 	Kit.Part(m, V(pw + 0.6, 0.5, 5.6), base * CFrame.new(0, porchTop + 0.25, -D / 2 - 2.8), roof)
 	for _, sx in { -1, 1 } do
-		Kit.Part(m, V(0.6, porchTop - 0.8, 0.6), base * CFrame.new(sx * (pw / 2 - 0.4), 0.8 + (porchTop - 0.8) / 2, -D / 2 - 5), TRIM)
+		Kit.Part(m, V(0.6, porchTop - 0.8, 0.6), base * CFrame.new(sx * (pw / 2 - 0.4), 0.8 + (porchTop - 0.8) / 2, -D / 2 - 5), TRIM, { Mat = Enum.Material.Wood })
 	end
 	if rng:NextNumber() < 0.55 then
 		local p = base * CFrame.new(pw * 0.32, 0.8, -D / 2 - 3.2)
@@ -112,7 +116,7 @@ local function house(parent: Instance, cx: number, cz: number, fx: number, fz: n
 	elseif free(-W / 2 + 1, yard + 1, 1.5) then
 		-- mailbox
 		local mp = base * CFrame.new(-W / 2 + 1, 0, yard + 1)
-		Kit.Part(m, V(0.5, 3.4, 0.5), mp * CFrame.new(0, 1.7, 0), C(110, 80, 60))
+		Kit.Part(m, V(0.5, 3.4, 0.5), mp * CFrame.new(0, 1.7, 0), C(110, 80, 60), { Mat = Enum.Material.Wood })
 		Kit.Part(m, V(1.4, 1.3, 2.2), mp * CFrame.new(0, 3.9, 0), Kit.Pick(DOORS))
 		Kit.Part(m, V(0.15, 1.2, 0.4), mp * CFrame.new(0.8, 4.4, 0.6), C(255, 70, 90))
 	end
@@ -185,7 +189,7 @@ local function plaza(f: Instance)
 	end
 	-- signpost straight ahead of spawn
 	local post = V(sx, 0, sz + 19)
-	Kit.Box(f, post - V(0.4, 0, 0.4), post + V(0.4, 11, 0.4), C(110, 80, 60))
+	Kit.Box(f, post - V(0.4, 0, 0.4), post + V(0.4, 11, 0.4), C(110, 80, 60), { Mat = Enum.Material.Wood })
 	local boards = {
 		{ Y = 10, Off = 0, Text = "👻 GHOSTS AHEAD", Col = C(150, 255, 140) },
 		-- the player faces +Z, so -X is on their right
@@ -199,8 +203,8 @@ end
 
 local function hq(f: Instance)
 	local purple, dark = C(120, 75, 210), C(60, 40, 110)
-	Kit.Box(f, V(-24, 0, -58), V(24, 16, -40), purple, { Solid = true, Name = "HQ" })
-	Kit.Box(f, V(-26, 16, -60), V(26, 17.5, -38), dark, { Solid = true })
+	Kit.Box(f, V(-24, 0, -58), V(24, 16, -40), purple, { Mat = Enum.Material.Concrete, Solid = true, Name = "HQ" })
+	Kit.Box(f, V(-26, 16, -60), V(26, 17.5, -38), dark, { Mat = Enum.Material.Slate, Solid = true })
 	Kit.Ball(f, 18, V(0, 17.5, -50), C(190, 160, 255), { Shadow = true })
 	Kit.Box(f, V(-24.3, 5.6, -39.9), V(24.3, 6.4, -39.6), Kit.Vivid(C(150, 255, 140)))
 	Kit.Box(f, V(-24.3, 15, -39.9), V(24.3, 15.6, -39.6), Kit.Vivid(C(255, 150, 60)))
@@ -217,7 +221,7 @@ local function hq(f: Instance)
 	Kit.Part(f, V(33.5, 7.5, 0.5), signCF * CFrame.new(0, 0, 0.6), Kit.Vivid(C(150, 255, 140)))
 	Kit.Sign(sign, Enum.NormalId.Front, "GHOST HUNTER HQ", C(255, 230, 90))
 	-- antenna + dish
-	Kit.Cyl(f, 18, 0.8, CFrame.new(16, 26.5, -50), C(200, 200, 220))
+	Kit.Cyl(f, 18, 0.8, CFrame.new(16, 26.5, -50), C(200, 200, 220), { Mat = Enum.Material.Metal })
 	local orb = Kit.Ball(f, 2.6, V(16, 36, -50), C(255, 90, 160), { Mat = NEON })
 	Kit.Light(orb, C(255, 120, 190), 30, 1.2)
 	Kit.Cyl(f, 0.8, 9, CFrame.new(-16, 21, -50) * CFrame.Angles(math.rad(35), 0, 0), C(230, 230, 245))
@@ -225,9 +229,9 @@ local function hq(f: Instance)
 	-- containment tanks with captured ghosts
 	for _, s in { -1, 1 } do
 		local x = s * 30
-		Kit.Cyl(f, 1, 9, CFrame.new(x, 0.5, -46), dark, { Solid = true })
+		Kit.Cyl(f, 1, 9, CFrame.new(x, 0.5, -46), dark, { Mat = Enum.Material.Metal, Solid = true })
 		local tank = Kit.Cyl(f, 12, 8, CFrame.new(x, 7, -46), Kit.Vivid(C(130, 255, 170)), { Transp = 0.55, Refl = 0.2 })
-		Kit.Cyl(f, 1, 9, CFrame.new(x, 13.5, -46), dark)
+		Kit.Cyl(f, 1, 9, CFrame.new(x, 13.5, -46), dark, { Mat = Enum.Material.Metal })
 		Kit.Ball(f, 3.6, V(x, 7.5, -46), C(240, 245, 255))
 		Kit.Emitter(tank, C(150, 255, 180), 2, 2, 0.5)
 	end
@@ -238,15 +242,16 @@ end
 -- ROADS
 --==================================================================
 local function roads(f: Instance)
-	local asphalt = C(80, 65, 110)
+	local asphalt = C(72, 64, 92)
 	local walk = C(200, 185, 230)
 	-- main road X -10..10 from HQ to the gate
-	Kit.Box(f, V(-10, -0.4, -36), V(10, 0.1, 260), asphalt, { Solid = true, Name = "MainRoad" })
+	local pave: Kit.Opts = { Mat = Enum.Material.Concrete, Solid = true }
+	Kit.Box(f, V(-10, -0.4, -36), V(10, 0.1, 260), asphalt, { Mat = Enum.Material.Asphalt, Solid = true, Name = "MainRoad" })
 	for z = 34, 250, 12 do
 		Kit.Box(f, V(-0.4, 0.1, z), V(0.4, 0.14, z + 6), C(255, 210, 80))
 	end
 	-- cross street toward the arena
-	Kit.Box(f, V(-136, -0.4, 110), V(63, 0.06, 124), asphalt, { Solid = true, Name = "CrossStreet" })
+	Kit.Box(f, V(-136, -0.4, 110), V(63, 0.06, 124), asphalt, { Mat = Enum.Material.Asphalt, Solid = true, Name = "CrossStreet" })
 	for x = -130, 55, 12 do
 		if x < -16 or x > 14 then
 			Kit.Box(f, V(x, 0.06, 116.6), V(x + 6, 0.1, 117.4), C(255, 210, 80))
@@ -254,10 +259,10 @@ local function roads(f: Instance)
 	end
 	-- sidewalks
 	for _, s in { -1, 1 } do
-		Kit.Box(f, V(s * 10, -0.4, 26), V(s * 14, 0.22, 106), walk, { Solid = true })
-		Kit.Box(f, V(s * 10, -0.4, 128), V(s * 14, 0.22, 257), walk, { Solid = true })
-		Kit.Box(f, V(-136, -0.4, if s < 0 then 106 else 124), V(-14, 0.22, if s < 0 then 110 else 128), walk, { Solid = true })
-		Kit.Box(f, V(14, -0.4, if s < 0 then 106 else 124), V(61, 0.22, if s < 0 then 110 else 128), walk, { Solid = true })
+		Kit.Box(f, V(s * 10, -0.4, 26), V(s * 14, 0.22, 106), walk, pave)
+		Kit.Box(f, V(s * 10, -0.4, 128), V(s * 14, 0.22, 257), walk, pave)
+		Kit.Box(f, V(-136, -0.4, if s < 0 then 106 else 124), V(-14, 0.22, if s < 0 then 110 else 128), walk, pave)
+		Kit.Box(f, V(14, -0.4, if s < 0 then 106 else 124), V(61, 0.22, if s < 0 then 110 else 128), walk, pave)
 	end
 	Kit.AddRect(-14, -36, 14, 260, true)
 	Kit.AddRect(-136, 106, 63, 128, true)

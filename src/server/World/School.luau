@@ -7,11 +7,16 @@
 --     Central hallway X -16..16, Z 601..761 (ghost areas at Z 640 and 700).
 --     Library   X -99..-18, Z 601..648   | Cafeteria X 18..99, Z 601..648
 --     Class 1-A X -99..-18, Z 650..761   | Class 1-B X 18..99, Z 650..761 (ghost areas at X ±62, Z 690)
---     Gym       X -99..99,  Z 763..859 (Headmaster area at Z 805), bleachers along the back wall.
+--     Gym       X -99..99,  Z 763..859 (Headmaster area at Z 805), bleachers along the back wall
+--               in two halves either side of the back exit.
 --   Doorways: hallway→library/cafeteria 14 wide, hallway→classes 20 wide, library/cafeteria→class
---   14 wide, classes→gym 16 wide, hallway→gym 32 wide.
---   Glow is kept to windows, sconces, desk lamps, the bell, slime puddles, bus headlights and
---   the jack-o'-lanterns along the path; bands, rings, lines, frames and trims are painted.
+--   14 wide, classes→gym 16 wide, hallway→gym 32 wide, gym→back exit 28 wide (X -14..14, Z 860,
+--   12 tall under an "EXIT → CARNIVAL" sign), then a flat path to Gate_Carnival at Z 880.
+--   The strips X 105..136 beside the building stay walkable from the courtyard to the back.
+--   Palette: warm brick exterior, cream inner walls and trims, school-blue roofs/ledges, purple
+--   spectral accents, green ectoplasm. Glow is kept to the front windows, sconces, desk lamps,
+--   the bell, slime puddles, bus headlights and the jack-o'-lanterns along the path; bands,
+--   rings, lines, frames, trims and side windows are painted.
 
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
@@ -23,10 +28,13 @@ local V = Vector3.new
 local NEON = Enum.Material.Neon
 
 local H = 16
-local EXT = C(255, 195, 140)
-local TRIMC = C(130, 80, 210)
+local EXT = C(190, 98, 76) -- warm brick
+local CREAM = C(245, 232, 205)
+local BLUE = C(70, 112, 190) -- school blue
+local TRIMC = C(70, 105, 185)
 local WHITE = C(255, 250, 245)
 local SOLID: Kit.Opts = { Solid = true, Shadow = true }
+local BRICK: Kit.Opts = { Mat = Enum.Material.Brick, Solid = true, Shadow = true }
 
 type Opening = { c: number, w: number, h: number? }
 
@@ -37,42 +45,44 @@ local function sortOpenings(list: { Opening })
 end
 
 -- Wall along X at fixed z (thickness 2), from x1 to x2, with doorway openings.
-local function wallX(parent: Instance, z: number, x1: number, x2: number, color: Color3, openings: { Opening })
+local function wallX(parent: Instance, z: number, x1: number, x2: number, color: Color3, openings: { Opening }, opts: Kit.Opts?)
+	local wo = opts or SOLID
 	sortOpenings(openings)
 	local cur = x1
 	for _, o in openings do
 		local a, b = o.c - o.w / 2, o.c + o.w / 2
 		if a > cur then
-			Kit.Box(parent, V(cur, 0, z - 1), V(a, H, z + 1), color, SOLID)
+			Kit.Box(parent, V(cur, 0, z - 1), V(a, H, z + 1), color, wo)
 		end
 		local oh = o.h
 		if oh and oh < H then
-			Kit.Box(parent, V(a, oh, z - 1), V(b, H, z + 1), color, SOLID)
+			Kit.Box(parent, V(a, oh, z - 1), V(b, H, z + 1), color, wo)
 		end
 		cur = b
 	end
 	if x2 > cur then
-		Kit.Box(parent, V(cur, 0, z - 1), V(x2, H, z + 1), color, SOLID)
+		Kit.Box(parent, V(cur, 0, z - 1), V(x2, H, z + 1), color, wo)
 	end
 end
 
 -- Wall along Z at fixed x (thickness 2), from z1 to z2, with doorway openings.
-local function wallZ(parent: Instance, x: number, z1: number, z2: number, color: Color3, openings: { Opening })
+local function wallZ(parent: Instance, x: number, z1: number, z2: number, color: Color3, openings: { Opening }, opts: Kit.Opts?)
+	local wo = opts or SOLID
 	sortOpenings(openings)
 	local cur = z1
 	for _, o in openings do
 		local a, b = o.c - o.w / 2, o.c + o.w / 2
 		if a > cur then
-			Kit.Box(parent, V(x - 1, 0, cur), V(x + 1, H, a), color, SOLID)
+			Kit.Box(parent, V(x - 1, 0, cur), V(x + 1, H, a), color, wo)
 		end
 		local oh = o.h
 		if oh and oh < H then
-			Kit.Box(parent, V(x - 1, oh, a), V(x + 1, H, b), color, SOLID)
+			Kit.Box(parent, V(x - 1, oh, a), V(x + 1, H, b), color, wo)
 		end
 		cur = b
 	end
 	if z2 > cur then
-		Kit.Box(parent, V(x - 1, 0, cur), V(x + 1, H, z2), color, SOLID)
+		Kit.Box(parent, V(x - 1, 0, cur), V(x + 1, H, z2), color, wo)
 	end
 end
 
@@ -99,7 +109,7 @@ end
 local function shell(f: Instance)
 	-- floors (top Y 0.15)
 	Kit.Box(f, V(-101, -0.5, 599), V(101, 0.1, 861), C(110, 90, 150), { Solid = true, Name = "SchoolFloor" })
-	local tiles = { C(235, 225, 250), C(150, 110, 220) }
+	local tiles = { C(240, 230, 210), C(95, 135, 205) }
 	for i = 0, 3 do
 		for j = 0, 19 do
 			local x0, z0 = -16 + i * 8, 601 + j * 8
@@ -113,37 +123,39 @@ local function shell(f: Instance)
 	Kit.Box(f, V(-99, 0.05, 763), V(99, 0.15, 859), C(235, 160, 90), { Mat = Enum.Material.WoodPlanks, Solid = true, Name = "GymFloor" })
 
 	-- exterior walls
-	wallX(f, 600, -101, 101, EXT, { { c = 0, w = 20 } })
-	wallX(f, 860, -101, 101, EXT, {})
-	wallZ(f, -100, 601, 859, EXT, {})
-	wallZ(f, 100, 601, 859, EXT, {})
+	wallX(f, 600, -101, 101, EXT, { { c = 0, w = 20 } }, BRICK)
+	-- back exit out of the gym toward Gate_Carnival (X -14..14, 12 tall)
+	wallX(f, 860, -101, 101, EXT, { { c = 0, w = 28, h = 12 } }, BRICK)
+	wallZ(f, -100, 601, 859, EXT, {}, BRICK)
+	wallZ(f, 100, 601, 859, EXT, {}, BRICK)
 	-- hallway walls
-	local hall = C(190, 170, 240)
+	local hall = CREAM
 	wallZ(f, -17, 601, 761, hall, { { c = 624, w = 14, h = 12 }, { c = 690, w = 20, h = 13 } })
 	wallZ(f, 17, 601, 761, hall, { { c = 624, w = 14, h = 12 }, { c = 690, w = 20, h = 13 } })
 	-- front rooms / classrooms divider and the gym wall
-	local inner = C(170, 225, 210)
+	local inner = C(120, 160, 215)
 	wallX(f, 649, -99, -18, inner, { { c = -60, w = 14, h = 12 } })
 	wallX(f, 649, 18, 99, inner, { { c = 60, w = 14, h = 12 } })
-	wallX(f, 762, -99, 99, C(255, 170, 120), { { c = 0, w = 32 }, { c = -60, w = 16, h = 13 }, { c = 60, w = 16, h = 13 } })
+	wallX(f, 762, -99, 99, C(235, 215, 180), { { c = 0, w = 32 }, { c = -60, w = 16, h = 13 }, { c = 60, w = 16, h = 13 } })
 
 	-- parapet on the exterior walls + partial roof ledges (no roof over the interior)
-	local rim = C(120, 70, 190)
-	Kit.Box(f, V(-102, H, 598), V(102, H + 2, 602), rim, SOLID)
-	Kit.Box(f, V(-102, H, 858), V(102, H + 2, 862), rim, SOLID)
-	Kit.Box(f, V(-102, H, 598), V(-98, H + 2, 862), rim, SOLID)
-	Kit.Box(f, V(98, H, 598), V(102, H + 2, 862), rim, SOLID)
-	local ledge = C(150, 100, 220)
+	local rim: Kit.Opts = { Mat = Enum.Material.Concrete, Solid = true, Shadow = true }
+	Kit.Box(f, V(-102, H, 598), V(102, H + 2, 602), CREAM, rim)
+	Kit.Box(f, V(-102, H, 858), V(102, H + 2, 862), CREAM, rim)
+	Kit.Box(f, V(-102, H, 598), V(-98, H + 2, 862), CREAM, rim)
+	Kit.Box(f, V(98, H, 598), V(102, H + 2, 862), CREAM, rim)
+	local ledge = BLUE
 	Kit.Box(f, V(-98, H + 0.5, 602), V(98, H + 1.5, 607), ledge)
 	Kit.Box(f, V(-98, H + 0.5, 853), V(98, H + 1.5, 858), ledge)
 	Kit.Box(f, V(-98, H + 0.5, 602), V(-93, H + 1.5, 858), ledge)
 	Kit.Box(f, V(93, H + 0.5, 602), V(98, H + 1.5, 858), ledge)
 	-- sloped eaves on the outside
-	local eave = C(110, 60, 180)
-	Kit.Wedge(f, V(208, 3, 4), faced(V(0, H + 0.5, 596), 0, -1), eave, { Shadow = true })
-	Kit.Wedge(f, V(208, 3, 4), faced(V(0, H + 0.5, 864), 0, 1), eave, { Shadow = true })
-	Kit.Wedge(f, V(268, 3, 4), faced(V(-104, H + 0.5, 730), -1, 0), eave, { Shadow = true })
-	Kit.Wedge(f, V(268, 3, 4), faced(V(104, H + 0.5, 730), 1, 0), eave, { Shadow = true })
+	local eave = C(55, 85, 150)
+	local eaveOpts: Kit.Opts = { Mat = Enum.Material.Slate, Shadow = true }
+	Kit.Wedge(f, V(208, 3, 4), faced(V(0, H + 0.5, 596), 0, -1), eave, eaveOpts)
+	Kit.Wedge(f, V(208, 3, 4), faced(V(0, H + 0.5, 864), 0, 1), eave, eaveOpts)
+	Kit.Wedge(f, V(268, 3, 4), faced(V(-104, H + 0.5, 730), -1, 0), eave, eaveOpts)
+	Kit.Wedge(f, V(268, 3, 4), faced(V(104, H + 0.5, 730), 1, 0), eave, eaveOpts)
 	-- painted band along the front
 	Kit.Box(f, V(-101.2, 14, 598.7), V(101.2, 14.6, 598.9), Kit.Vivid(C(150, 255, 140)))
 
@@ -151,16 +163,16 @@ local function shell(f: Instance)
 	local turretRing, turretTop = Kit.Vivid(C(200, 130, 255)), Kit.Vivid(C(150, 255, 140))
 	for _, x in { -100, 100 } do
 		for _, z in { 600, 860 } do
-			Kit.Cyl(f, 24, 10, CFrame.new(x, 12, z), C(240, 170, 120), SOLID)
+			Kit.Cyl(f, 24, 10, CFrame.new(x, 12, z), EXT:Lerp(C(255, 255, 255), 0.08), BRICK)
 			Kit.Cyl(f, 1, 10.6, CFrame.new(x, 14.3, z), turretRing)
-			Kit.Cyl(f, 2, 11.5, CFrame.new(x, 25, z), TRIMC)
-			Kit.Cyl(f, 3, 8, CFrame.new(x, 27.5, z), TRIMC)
-			Kit.Cyl(f, 3, 4.5, CFrame.new(x, 30.5, z), TRIMC)
+			Kit.Cyl(f, 2, 11.5, CFrame.new(x, 25, z), CREAM, { Mat = Enum.Material.Concrete })
+			Kit.Cyl(f, 3, 8, CFrame.new(x, 27.5, z), TRIMC, { Mat = Enum.Material.Slate })
+			Kit.Cyl(f, 3, 4.5, CFrame.new(x, 30.5, z), TRIMC, { Mat = Enum.Material.Slate })
 			Kit.Ball(f, 2.6, V(x, 33, z), turretTop)
 		end
 	end
 
-	-- facade windows and side windows (glowing)
+	-- facade windows glow (ghostly); side windows are warm painted glass
 	for _, x in { -88, -70, -50, -30, 30, 50, 70, 88 } do
 		Kit.Box(f, V(x - 3, 4.5, 598.75), V(x + 3, 12.5, 599), WHITE)
 		Kit.Box(f, V(x - 2.4, 5, 598.6), V(x + 2.4, 12, 598.85), Kit.Pick({ C(255, 230, 120), C(150, 255, 140), C(210, 150, 255) }), { Mat = NEON })
@@ -168,7 +180,7 @@ local function shell(f: Instance)
 	for _, s in { -1, 1 } do
 		for _, z in { 625, 690, 735, 790, 830 } do
 			Kit.Box(f, V(s * 101, 4.5, z - 3), V(s * 101.25, 12.5, z + 3), WHITE)
-			Kit.Box(f, V(s * 101.15, 5, z - 2.4), V(s * 101.4, 12, z + 2.4), Kit.Pick({ C(255, 230, 120), C(150, 255, 140), C(210, 150, 255) }), { Mat = NEON })
+			Kit.Box(f, V(s * 101.15, 5, z - 2.4), V(s * 101.4, 12, z + 2.4), Kit.Vivid(Kit.Pick({ C(255, 225, 130), C(160, 235, 150), C(200, 160, 245) })), { Refl = 0.2 })
 		end
 	end
 	-- entrance steps
@@ -179,13 +191,13 @@ end
 -- CLOCK TOWER (over the entrance)
 --==================================================================
 local function clockTower(f: Instance)
-	local body = C(165, 115, 235)
+	local body = EXT:Lerp(C(0, 0, 0), 0.05)
 	local mint, orange = Kit.Vivid(C(150, 255, 140)), Kit.Vivid(C(255, 160, 60))
 	for _, s in { -1, 1 } do
-		Kit.Box(f, V(s * 10, 0, 594), V(s * 14, 22, 606), body, SOLID)
+		Kit.Box(f, V(s * 10, 0, 594), V(s * 14, 22, 606), body, BRICK)
 		Kit.Box(f, V(s * 9.8, 0, 593.8), V(s * 10.3, 22, 594.3), mint)
 	end
-	Kit.Box(f, V(-14, 22, 594), V(14, 62, 606), body, { Solid = true, Shadow = true, Name = "ClockTower" })
+	Kit.Box(f, V(-14, 22, 594), V(14, 62, 606), body, { Mat = Enum.Material.Brick, Solid = true, Shadow = true, Name = "ClockTower" })
 	Kit.Box(f, V(-14.3, 22, 593.7), V(14.3, 23, 606.3), mint)
 	Kit.Box(f, V(-14.3, 61, 593.7), V(14.3, 62, 606.3), orange)
 	-- SPOOKY HIGH sign
@@ -208,14 +220,14 @@ local function clockTower(f: Instance)
 	-- bell loft
 	for _, x in { -12.5, 12.5 } do
 		for _, z in { 595.5, 604.5 } do
-			Kit.Box(f, V(x - 1.5, 62, z - 1.5), V(x + 1.5, 74, z + 1.5), body, SOLID)
+			Kit.Box(f, V(x - 1.5, 62, z - 1.5), V(x + 1.5, 74, z + 1.5), CREAM, { Mat = Enum.Material.Concrete, Solid = true, Shadow = true })
 		end
 	end
 	local bell = Kit.Ball(f, 7, V(0, 68, 600), C(255, 200, 70))
 	Kit.Ball(f, 3, V(0, 64.8, 600), C(150, 255, 140), { Mat = NEON })
 	Kit.Light(bell, C(170, 255, 160), 30, 1.4)
 	Kit.Box(f, V(-15.5, 74, 592.5), V(15.5, 76, 607.5), TRIMC, SOLID)
-	gable(f, CFrame.new(0, 76, 600), 31, 15, 14, C(110, 60, 180))
+	gable(f, CFrame.new(0, 76, 600), 31, 15, 14, C(55, 85, 150))
 	Kit.Cyl(f, 12, 1.2, CFrame.new(0, 96, 600), C(240, 220, 120))
 	Kit.Ball(f, 3.2, V(0, 103, 600), Kit.Vivid(C(200, 120, 255)))
 end
@@ -233,7 +245,7 @@ local function hallway(f: Instance)
 			local z0 = r[1]
 			while z0 + 3 <= r[2] do
 				n += 1
-				Kit.Box(f, V(s * 16, 0.15, z0), V(s * 14.5, 8.5, z0 + 3), lockerCols[(n % #lockerCols) + 1], { Solid = true })
+				Kit.Box(f, V(s * 16, 0.15, z0), V(s * 14.5, 8.5, z0 + 3), lockerCols[(n % #lockerCols) + 1], { Mat = Enum.Material.Metal, Solid = true })
 				if n % 7 == 0 then
 					Kit.Box(f, V(s * 14.5, 1, z0 + 0.4), V(s * 14.35, 8, z0 + 2.6), slimed) -- slimed locker door
 				end
@@ -421,17 +433,36 @@ local function gym(f: Instance)
 		Kit.Disc(f, s * 95.4, 805, 10.3, 3.6, 0.3, hoop)
 		Kit.Cyl(f, 2, 3.2, CFrame.new(s * 95.4, 9.1, 805), WHITE, { Transp = 0.5 })
 	end
-	-- bleachers along the back wall
-	local cols = { C(170, 110, 255), C(255, 160, 70), C(110, 230, 170), C(255, 120, 170) }
+	-- bleachers along the back wall, split either side of the back exit (X -15..15 open)
+	local cols = { C(95, 135, 205), C(235, 150, 70), C(240, 225, 195), C(150, 100, 220) }
 	for i = 0, 3 do
-		Kit.Box(f, V(-60, 0.15, 842 + i * 4), V(60, 1.6 * (i + 1) + 0.15, 859), cols[i + 1], SOLID)
+		for _, s in { -1, 1 } do
+			Kit.Box(f, V(s * 15, 0.15, 842 + i * 4), V(s * 60, 1.6 * (i + 1) + 0.15, 859), cols[i + 1], { Mat = Enum.Material.WoodPlanks, Solid = true, Shadow = true })
+		end
 	end
-	for k = 0, 5 do
-		local i = k % 4
-		Props.Pumpkin(f, V(-50 + k * 20, 1.6 * (i + 1) + 0.15, 844 + i * 4), 2.6, 0, -1)
+	for k, px in { -50, -36, -22, 22, 36, 50 } do
+		local i = (k - 1) % 4
+		Props.Pumpkin(f, V(px, 1.6 * (i + 1) + 0.15, 844 + i * 4), 2.6, 0, -1)
 	end
-	-- scoreboard
-	local sbCF = CFrame.new(0, 12.5, 858.5)
+	-- back exit: cream door frame, EXIT sign on the lintel, path to Gate_Carnival
+	for _, s in { -1, 1 } do
+		Kit.Box(f, V(s * 14 - 0.6, 0, 858.6), V(s * 14 + 0.6, 12.6, 861.4), CREAM, { Mat = Enum.Material.Concrete })
+	end
+	Kit.Box(f, V(-14.6, 12, 858.6), V(14.6, 12.6, 861.4), CREAM, { Mat = Enum.Material.Concrete })
+	local exitSign = Kit.Part(f, V(24, 3, 0.4), CFrame.new(0, 14.2, 858.7), C(30, 60, 45))
+	Kit.Part(f, V(25, 3.6, 0.2), CFrame.new(0, 14.2, 858.95), Kit.Vivid(C(150, 255, 140)))
+	Kit.Sign(exitSign, Enum.NormalId.Front, "EXIT → CARNIVAL 🎡", C(170, 255, 160), { Stroke = C(20, 50, 30) })
+	local backSign = Kit.Part(f, V(24, 3, 0.4), CFrame.new(0, 14.2, 861.3) * CFrame.Angles(0, math.pi, 0), C(30, 60, 45))
+	Kit.Sign(backSign, Enum.NormalId.Front, "SPOOKY HIGH 🏫", C(255, 220, 120), { Stroke = C(20, 50, 30) })
+	Kit.Box(f, V(-12, 0, 861), V(12, 0.05, 877), C(175, 165, 190), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "ExitPath" })
+	local guide = Kit.Vivid(C(150, 255, 140))
+	for _, s in { -1, 1 } do
+		Kit.Box(f, V(s * 12 - 0.3, 0.05, 862), V(s * 12 + 0.3, 0.1, 876), guide)
+	end
+	Props.Pumpkin(f, V(-15.5, 0, 865), 2.6, 1, 0)
+	Props.Pumpkin(f, V(15.5, 0, 865), 2.6, -1, 0)
+	-- scoreboard (on the back wall over the west bleachers)
+	local sbCF = CFrame.new(-40, 12.5, 858.5)
 	local sb = Kit.Part(f, V(26, 6, 0.6), sbCF, C(30, 20, 50))
 	Kit.Part(f, V(27.4, 7.4, 0.3), sbCF * CFrame.new(0, 0, 0.35), Kit.Vivid(C(150, 255, 140)))
 	Kit.Sign(sb, Enum.NormalId.Front, "HOME 0  •  GHOSTS 999", C(255, 210, 80), { Font = Enum.Font.GothamBlack })
@@ -454,6 +485,7 @@ local function courtyard(f: Instance)
 	Kit.Box(f, V(-10, -0.4, 540), V(10, 0.1, 592), C(190, 175, 215), { Mat = Enum.Material.Cobblestone, Solid = true })
 	Kit.AddRect(-12, 540, 12, 600, true)
 	Kit.AddRect(-104, 592, 104, 864)
+	Kit.AddRect(-18, 860, 18, 880, true) -- back exit path to Gate_Carnival
 	-- ghost bus
 	local yellow = C(255, 205, 50)
 	Kit.Box(f, V(55, 1.5, 566), V(85, 10.5, 578), yellow, SOLID)

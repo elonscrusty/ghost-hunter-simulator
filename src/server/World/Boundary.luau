@@ -77,7 +77,7 @@ function Boundary.Build(map: Instance)
 	-- Ground (top surface Y = 0), wider than the play area so the walls sit on grass.
 	Kit.Box(f, V(-190, -4, -100), V(190, 0, 260), C(105, 195, 100), { Mat = Enum.Material.Grass, Solid = true, Name = "Ground_Neighborhood" })
 	Kit.Box(f, V(-190, -4, 260), V(190, 0, 540), C(80, 160, 120), { Mat = Enum.Material.Grass, Solid = true, Name = "Ground_Cemetery" })
-	Kit.Box(f, V(-190, -4, 540), V(190, 0, 920), C(115, 195, 110), { Mat = Enum.Material.Grass, Solid = true, Name = "Ground_School" })
+	Kit.Box(f, V(-190, -4, 540), V(190, 0, 880), C(115, 195, 110), { Mat = Enum.Material.Grass, Solid = true, Name = "Ground_School" })
 
 	-- Neighborhood: hedges (sides + behind spawn)
 	hedgeRun(f, V(-W, 0, -66), V(-HW, 14, 260))

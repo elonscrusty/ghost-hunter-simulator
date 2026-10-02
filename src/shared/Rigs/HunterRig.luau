@@ -10,8 +10,8 @@
 -- Joints sit at the waist (Root->Torso), neck, shoulders and hips, so Motor6D.Transform
 -- rotates each bone around its joint.
 -- Neon is limited to the tool emitter (the part holding the Tip attachment) plus at most one
--- small light (helmet lamp, antenna bulb or a small halo); visors, goggles, badges, tanks,
--- wings and screens are solid vivid colours.
+-- small light (helmet lamp, antenna bulb, a small halo, the Crystal circlet's gems or the
+-- small Orbs back); visors, goggles, badges, tanks, wings, hats and screens are solid vivid colours.
 
 local Config = require(script.Parent.Parent.Config)
 local U = require(script.Parent.RigUtil)
@@ -51,8 +51,12 @@ local WHITE = Color3.fromRGB(255, 255, 255)
 local EYE = Color3.fromRGB(25, 20, 35)
 local MOUTH = Color3.fromRGB(110, 35, 50)
 local METAL = Color3.fromRGB(90, 95, 115)
+local GOLD = Color3.fromRGB(255, 205, 60)
+local NAVY = Color3.fromRGB(35, 50, 120)
+local RED = Color3.fromRGB(230, 50, 70)
 
 local NEON = { Material = Enum.Material.Neon }
+local METAL_MAT = { Material = Enum.Material.Metal }
 
 local function buildInternal(hunterId: string): (Rig, DecoMap)
 	local def = Config.Hunters[hunterId]
@@ -93,6 +97,19 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 	end
 	local function wedge(b: BasePart, size: Vector3, lcf: CFrame, color: Color3, opts: U.Opts?): BasePart
 		return add(b, U.Wedge(size, b.CFrame * lcf, color, model, opts))
+	end
+	-- straight rod between two bone-local points
+	local function rod(b: BasePart, p0: Vector3, p1: Vector3, d: number, color: Color3, opts: U.Opts?): BasePart
+		return cyl(b, (p1 - p0).Magnitude, d, U.Between(p0, p1), color, opts)
+	end
+	-- stepped cone standing on bone-local `base` (along its +Y); returns the tip frame
+	local function cone(b: BasePart, base: CFrame, d: number, h: number, tiers: number, c1: Color3, c2: Color3?): CFrame
+		local th = h / tiers
+		for i = 0, tiers - 1 do
+			local c = if c2 and i % 2 == 1 then c2 else c1
+			cyl(b, th * 1.05, d * (tiers - i) / tiers, base * CFrame.new(0, th * (i + 0.5), 0) * U.AxisY, c)
+		end
+		return base * CFrame.new(0, h, 0)
 	end
 
 	------------------------------------------------------------------ skeleton
@@ -142,7 +159,13 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 	wedge(head, Vector3.new(0.1, 0.26, 0.26), CFrame.new(0, -0.34, -0.88) * CFrame.Angles(-0.35, 0, 0) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, MOUTH)
 
 	------------------------------------------------------------------ hair
-	local covered = hat == "Hood" or hat == "Helmet" or hat == "Beanie"
+	local covered = hat == "Hood"
+		or hat == "Helmet"
+		or hat == "Beanie"
+		or hat == "KnightHelm"
+		or hat == "Bandana"
+		or hat == "Jester"
+		or hat == "SailorCap"
 	local style = look.HairStyle
 	local hairTop = 1.25
 	local hairColor = look.Hair
@@ -205,6 +228,100 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		end
 	elseif hat == "Halo" then
 		cyl(head, 0.1, 1.3, CFrame.new(0, hairTop + 0.4, 0.1) * CFrame.Angles(0.15, 0, 0) * U.AxisY, hatColor, { Material = Enum.Material.Neon, Transparency = 0.2 })
+	elseif hat == "TopHat" then
+		local bandC = if hatColor.R + hatColor.G + hatColor.B > 1.6 then U.Shade(hatColor, 0.35) else GOLD
+		local hcf = CFrame.new(0, 0.82 + lift, 0.08) * CFrame.Angles(-0.05, 0, 0.06)
+		cyl(head, 0.1, 2.2, hcf * U.AxisY, hatColor) -- brim
+		cyl(head, 1.0, 1.4, hcf * CFrame.new(0, 0.52, 0) * U.AxisY, hatColor)
+		cyl(head, 0.24, 1.44, hcf * CFrame.new(0, 0.2, 0) * U.AxisY, bandC)
+	elseif hat == "Jester" then
+		local alt = U.Vivid(GOLD)
+		ball(head, 2.06, CFrame.new(0, 0.42, 0.12), hatColor)
+		for _, s in { -1, 1 } do
+			local base = CFrame.new(0.5 * s, 1.05, 0.15) * CFrame.Angles(0, 0, -0.95 * s)
+			local tipCf = cone(head, base, 0.75, 1.0, 3, if s < 0 then hatColor else alt)
+			ball(head, 0.3, tipCf, if s < 0 then alt else hatColor) -- bell
+		end
+	elseif hat == "NurseCap" then
+		local ncf = CFrame.new(0, hairTop - 0.12, -0.15) * CFrame.Angles(-0.35, 0, 0)
+		block(head, Vector3.new(1.25, 0.45, 0.55), ncf, hatColor)
+		block(head, Vector3.new(1.3, 0.12, 0.6), ncf * CFrame.new(0, -0.2, 0), U.Shade(hatColor, 0.9)) -- folded band
+		block(head, Vector3.new(0.34, 0.1, 0.04), ncf * CFrame.new(0, 0.02, -0.29), RED)
+		block(head, Vector3.new(0.1, 0.34, 0.04), ncf * CFrame.new(0, 0.02, -0.29), RED)
+	elseif hat == "HeadMirror" then
+		cyl(head, 0.14, 2.08, CFrame.new(0, 0.62, 0.05) * U.AxisY, U.Shade(hatColor, 0.45)) -- head band
+		local n = Vector3.new(0.3, 0.3, -1).Unit
+		local pos = Vector3.new(0.36, 0.75, -0.98)
+		cyl(head, 0.08, 0.75, U.DiscFacing(pos, n), hatColor, { Material = Enum.Material.Metal, Reflectance = 0.4 })
+		cyl(head, 0.1, 0.16, U.DiscFacing(pos + n * 0.01, n), EYE)
+	elseif hat == "SailorCap" then
+		local scf = CFrame.new(0.05, 1.0 + lift, 0.12) * CFrame.Angles(0.1, 0, -0.12)
+		cyl(head, 0.5, 1.7, scf * CFrame.new(0, 0.28, 0) * U.AxisY, hatColor)
+		cyl(head, 0.24, 2.0, scf * U.AxisY, hatColor) -- turned-up brim
+		cyl(head, 0.07, 2.03, scf * CFrame.new(0, 0.05, 0) * U.AxisY, NAVY)
+	elseif hat == "Bandana" then
+		local c = Vector3.new(0, 0.4, 0.14)
+		ball(head, 2.08, CFrame.new(c), hatColor)
+		for _, d in { Vector3.new(-0.45, 0.55, -0.7), Vector3.new(0.4, 0.75, -0.5), Vector3.new(0.05, 0.95, 0.3) } do
+			ball(head, 0.2, CFrame.new(c + d.Unit * 1.02), WHITE) -- polka dots
+		end
+		local knotC = U.Shade(hatColor, 0.85)
+		ball(head, 0.38, CFrame.new(0.1, 0.35, 1.12), knotC)
+		block(head, Vector3.new(0.22, 0.6, 0.08), CFrame.new(-0.05, 0.0, 1.18) * CFrame.Angles(0.2, 0, 0.3), knotC)
+		block(head, Vector3.new(0.22, 0.55, 0.08), CFrame.new(0.25, 0.02, 1.16) * CFrame.Angles(0.2, 0, -0.25), knotC)
+	elseif hat == "Tricorn" then
+		local tcf = CFrame.new(0, 0.95 + lift, 0.1)
+		cyl(head, 0.6, 1.55, tcf * CFrame.new(0, 0.25, 0) * U.AxisY, hatColor)
+		for i = 0, 2 do
+			local side = tcf * CFrame.Angles(0, math.pi / 3 + i * 2 * math.pi / 3, 0) * CFrame.new(0, 0.15, -0.68) * CFrame.Angles(-0.4, 0, 0)
+			block(head, Vector3.new(2.3, 0.5, 0.1), side, hatColor)
+			block(head, Vector3.new(2.3, 0.08, 0.14), side * CFrame.new(0, 0.26, 0), GOLD, METAL_MAT) -- gold trim
+		end
+	elseif hat == "KnightHelm" then
+		-- open-faced helm: covers the top, back and sides; the face shows through
+		local steel = hatColor
+		ball(head, 2.2, CFrame.new(0, 0.3, 0.32), steel, METAL_MAT)
+		cyl(head, 0.16, 2.26, CFrame.new(0, 0.3, 0.32), U.Shade(steel, 0.8), METAL_MAT) -- crest ridge
+		local n = Vector3.new(0, 0.45, -0.9).Unit
+		local vcf = U.Facing(Vector3.new(0, 0.3, 0.32) + n * 1.12, n)
+		block(head, Vector3.new(1.5, 0.42, 0.12), vcf, steel, METAL_MAT) -- raised visor
+		block(head, Vector3.new(1.1, 0.08, 0.05), vcf * CFrame.new(0, 0, -0.07), EYE) -- visor slit
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.14, 0.75, 0.6), CFrame.new(0.9 * s, -0.2, -0.35), steel, METAL_MAT) -- cheek guard
+		end
+		local plume = U.Vivid(look.Shirt)
+		ball(head, 0.42, CFrame.new(0, 1.48, 0.05), plume)
+		wedge(head, Vector3.new(0.22, 0.75, 0.9), CFrame.new(0, 1.6, 0.55) * CFrame.Angles(0.3, 0, 0), plume)
+	elseif hat == "Wizard" then
+		local wcf = CFrame.new(0, 0.85 + lift, 0.12) * CFrame.Angles(-0.12, 0, 0.1)
+		cyl(head, 0.1, 2.5, wcf * U.AxisY, hatColor) -- brim
+		cyl(head, 0.2, 1.6, wcf * CFrame.new(0, 0.12, 0) * U.AxisY, GOLD) -- band
+		local tipCf = cone(head, wcf * CFrame.new(0, 0.05, 0), 1.55, 1.45, 4, hatColor)
+		ball(head, 0.24, tipCf, GOLD)
+		local star = wcf * CFrame.new(0.1, 0.55, -0.62) * CFrame.Angles(-0.12, 0, 0)
+		block(head, Vector3.new(0.24, 0.24, 0.05), star, GOLD)
+		block(head, Vector3.new(0.24, 0.24, 0.05), star * CFrame.Angles(0, 0, math.pi / 4), GOLD)
+	elseif hat == "Crown" then
+		local ccf = CFrame.new(0, hairTop - 0.05, 0.1)
+		cyl(head, 0.42, 1.35, ccf * U.AxisY, hatColor, METAL_MAT)
+		for i = 0, 4 do
+			wedge(head, Vector3.new(0.32, 0.42, 0.22), ccf * CFrame.Angles(0, i * 2 * math.pi / 5, 0) * CFrame.new(0, 0.4, -0.56), hatColor, METAL_MAT)
+		end
+		ball(head, 0.26, ccf * CFrame.new(0, 0, -0.68), RED, { Reflectance = 0.3 }) -- front gem
+	elseif hat == "Crystal" then
+		-- floating circlet of small glowing crystals; the centre one is a tall point
+		local y = hairTop + 0.15
+		local glowOpts = { Material = Enum.Material.Neon, Transparency = 0.1 }
+		for i = -2, 2 do
+			local p = CFrame.new(0, 0, 0.12) * CFrame.Angles(0, i * 0.55, 0) * CFrame.new(0, y - math.abs(i) * 0.12, -0.72)
+			if i == 0 then
+				block(head, Vector3.new(0.3, 0.5, 0.3), p * CFrame.Angles(0, math.pi / 4, 0), U.Vivid(hatColor), { Reflectance = 0.3 })
+				block(head, Vector3.new(0.3, 0.3, 0.3), p * CFrame.new(0, 0.25, 0) * U.VertexUp, hatColor, glowOpts)
+			else
+				local sz = 0.28 - math.abs(i) * 0.03
+				block(head, Vector3.new(sz, sz, sz), p * U.VertexUp, hatColor, glowOpts)
+			end
+		end
 	end
 
 	------------------------------------------------------------------ body accent / aura
@@ -260,6 +377,40 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		block(torso, Vector3.new(0.7, 0.8, 0.4), CFrame.new(0, 0, 0.62), backColor)
 		cyl(torso, 1.8, 0.1, CFrame.new(0.25, 1.1, 0.75) * U.AxisY, METAL, { Material = Enum.Material.Metal })
 		ball(torso, 0.32, CFrame.new(0.25, 2.0, 0.75), look.Beam, NEON)
+	elseif back == "Balloons" then
+		local anchor = Vector3.new(0.3, 0.3, 0.7)
+		local cols = { backColor, Color3.fromRGB(255, 90, 110), Color3.fromRGB(255, 215, 70) }
+		local spots = { Vector3.new(-1.1, 2.2, 0.9), Vector3.new(0.2, 2.6, 1.2), Vector3.new(1.15, 2.05, 0.85) }
+		for i, p in spots do
+			rod(torso, anchor, p - Vector3.new(0, 0.4, 0), 0.05, WHITE)
+			ball(torso, 0.85, CFrame.new(p), U.Vivid(cols[i]))
+		end
+	elseif back == "MedKit" then
+		block(torso, Vector3.new(1.05, 0.85, 0.5), CFrame.new(0, 0.05, 0.66), backColor)
+		block(torso, Vector3.new(0.5, 0.15, 0.06), CFrame.new(0, 0.05, 0.93), RED)
+		block(torso, Vector3.new(0.15, 0.5, 0.06), CFrame.new(0, 0.05, 0.93), RED)
+		cyl(torso, 0.5, 0.1, CFrame.new(0, 0.53, 0.66), METAL, METAL_MAT) -- handle
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.18, 0.12, 0.9), CFrame.new(0.38 * s, 0.56, 0.05), U.Shade(backColor, 0.7)) -- shoulder strap
+		end
+	elseif back == "LifeRing" then
+		local c = CFrame.new(0, 0.05, 0.7)
+		for i = 0, 7 do
+			block(torso, Vector3.new(0.24, 0.44, 0.24), c * CFrame.Angles(0, 0, i * math.pi / 4) * CFrame.new(0.5, 0, 0), if i % 2 == 0 then backColor else WHITE)
+		end
+	elseif back == "Shield" then
+		local scf = CFrame.new(0, 0, 0.62) * CFrame.Angles(0, 0, 0.2)
+		cyl(torso, 0.12, 1.45, scf * U.AxisZ, METAL, METAL_MAT) -- rim
+		cyl(torso, 0.14, 1.3, scf * CFrame.new(0, 0, 0.03) * U.AxisZ, backColor)
+		block(torso, Vector3.new(0.18, 1.05, 0.05), scf * CFrame.new(0, 0, 0.11), GOLD)
+		block(torso, Vector3.new(1.05, 0.18, 0.05), scf * CFrame.new(0, 0.1, 0.11), GOLD)
+		ball(torso, 0.3, scf * CFrame.new(0, 0, 0.1), GOLD, METAL_MAT) -- boss
+	elseif back == "Orbs" then
+		-- three small spirit orbs floating behind the shoulders
+		for _, p in { Vector3.new(-1.1, 0.8, 0.5), Vector3.new(1.25, 1.25, 0.55), Vector3.new(-1.3, 1.95, 0.5) } do
+			ball(torso, 0.55, CFrame.new(p), backColor, { Transparency = 0.65, Shadow = false })
+			ball(torso, 0.3, CFrame.new(p), backColor, NEON)
+		end
 	end
 
 	------------------------------------------------------------------ tool (right hand)
@@ -336,6 +487,40 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		tpart(U.Cyl(0.12, 0.65, T(0, 0.75, -0.1), U.Shade(tc, 0.45), model))
 		tpart(U.Cyl(0.12, 0.65, T(0, 0.75, -0.65), U.Shade(tc, 0.45), model))
 		tipWorld = T(0, 0.15, -1.1)
+	elseif tool == "Megaphone" then
+		tpart(U.Block(Vector3.new(0.2, 0.42, 0.26), T(0, -0.05, -0.15), U.Shade(tc, 0.5), model)) -- grip
+		tpart(U.Cyl(0.55, 0.36, T(0, 0.22, -0.35) * U.AxisZ, tc, model))
+		tpart(U.Cyl(0.35, 0.58, T(0, 0.22, -0.78) * U.AxisZ, WHITE, model))
+		tpart(U.Cyl(0.3, 0.82, T(0, 0.22, -1.08) * U.AxisZ, tc, model)) -- bell
+		muzzle = tpart(U.Cyl(0.06, 0.74, T(0, 0.22, -1.24) * U.AxisZ, beam, model, NEON))
+		tipWorld = T(0, 0.22, -1.3)
+	elseif tool == "Wand" then
+		tpart(U.Cyl(1.15, 0.13, T(0, 0.05, -0.55) * U.AxisZ, tc, model))
+		tpart(U.Cyl(0.22, 0.15, T(0, 0.05, -1.05) * U.AxisZ, WHITE, model)) -- tip cap
+		muzzle = tpart(U.Block(Vector3.new(0.24, 0.24, 0.24), T(0, 0.05, -1.28) * U.VertexUp, beam, model, NEON)) -- sparkle
+		tipWorld = T(0, 0.05, -1.32)
+	elseif tool == "Orb" then
+		tpart(U.Cyl(0.2, 0.55, T(0, 0.15, -0.45) * U.AxisY, tc, model, METAL_MAT)) -- stand
+		tpart(U.Ball(0.82, T(0, 0.55, -0.45), U.Vivid(beam), model, { Transparency = 0.45, Reflectance = 0.2, Shadow = false })) -- glass
+		muzzle = tpart(U.Ball(0.42, T(0, 0.55, -0.45), beam, model, NEON))
+		tipWorld = T(0, 0.55, -0.86)
+	elseif tool == "Spyglass" then
+		tpart(U.Cyl(0.4, 0.24, T(0, 0.08, 0.05) * U.AxisZ, U.Shade(tc, 0.6), model, METAL_MAT)) -- eyepiece
+		tpart(U.Cyl(0.5, 0.3, T(0, 0.08, -0.38) * U.AxisZ, tc, model, METAL_MAT))
+		tpart(U.Cyl(0.7, 0.38, T(0, 0.08, -0.95) * U.AxisZ, Color3.fromRGB(95, 62, 40), model)) -- leather tube
+		tpart(U.Cyl(0.1, 0.46, T(0, 0.08, -1.3) * U.AxisZ, tc, model, METAL_MAT)) -- rim
+		muzzle = tpart(U.Cyl(0.04, 0.34, T(0, 0.08, -1.36) * U.AxisZ, beam, model, NEON)) -- lens
+		tipWorld = T(0, 0.08, -1.4)
+	elseif tool == "Sword" then
+		local hilt = Color3.fromRGB(90, 60, 45)
+		tpart(U.Cyl(0.45, 0.17, T(0, 0, 0.12) * U.AxisZ, hilt, model))
+		tpart(U.Ball(0.24, T(0, 0, 0.38), GOLD, model, METAL_MAT)) -- pommel
+		tpart(U.Block(Vector3.new(0.85, 0.14, 0.16), T(0, 0, -0.14), GOLD, model, METAL_MAT)) -- crossguard
+		tpart(U.Block(Vector3.new(0.08, 0.3, 1.3), T(0, 0, -0.87), tc, model, METAL_MAT)) -- blade
+		tpart(U.Wedge(Vector3.new(0.08, 0.15, 0.35), T(0, 0.075, -1.695), tc, model, METAL_MAT)) -- point (upper half)
+		tpart(U.Wedge(Vector3.new(0.08, 0.15, 0.35), T(0, -0.075, -1.695) * CFrame.Angles(0, 0, math.pi), tc, model, METAL_MAT))
+		muzzle = tpart(U.Block(Vector3.new(0.1, 0.07, 1.1), T(0, 0, -0.85), beam, model, NEON)) -- glowing fuller
+		tipWorld = T(0, 0, -1.85)
 	else -- Flashlight (default)
 		tpart(U.Cyl(1.2, 0.36, T(0, 0, -0.3) * U.AxisZ, U.Shade(tc, 0.7), model))
 		tpart(U.Cyl(0.38, 0.62, T(0, 0, -1.05) * U.AxisZ, tc, model))

@@ -32,7 +32,7 @@ local function bleachers(parent: Instance, cx: number, z0: number, outward: numb
 	for i = 0, 2 do
 		local zA = z0 + outward * (i * 3.5)
 		local zB = z0 + outward * 11
-		Kit.Box(parent, V(cx - 14, 0, zA), V(cx + 14, 1.6 * (i + 1), zB), cols[i + 1], { Solid = true })
+		Kit.Box(parent, V(cx - 14, 0, zA), V(cx + 14, 1.6 * (i + 1), zB), cols[i + 1], { Mat = Enum.Material.WoodPlanks, Solid = true })
 	end
 	-- pumpkin audience on the steps
 	for i = 0, 2 do
@@ -77,7 +77,7 @@ function Arena.Build(map: Instance)
 			if i % 2 == 0 then
 				Props.Pumpkin(m, V(px, 0, pz), 3.4, cx - px, cz - pz, true)
 			else
-				Kit.Box(m, V(px - 0.6, 0, pz - 0.6), V(px + 0.6, 4, pz + 0.6), C(60, 40, 90))
+				Kit.Box(m, V(px - 0.6, 0, pz - 0.6), V(px + 0.6, 4, pz + 0.6), C(60, 40, 90), { Mat = Enum.Material.Metal })
 				Kit.Ball(m, 2, V(px, 5, pz), C(150, 255, 140), { Mat = NEON })
 			end
 		end
@@ -89,7 +89,7 @@ function Arena.Build(map: Instance)
 	local ax = cx - r - 5
 	for _, sz in { -1, 1 } do
 		local pz = cz + 7 + sz * 13
-		Kit.Box(m, V(ax - 1.2, 0, pz - 1.2), V(ax + 1.2, 22, pz + 1.2), C(110, 70, 200), { Solid = true })
+		Kit.Box(m, V(ax - 1.2, 0, pz - 1.2), V(ax + 1.2, 22, pz + 1.2), C(110, 70, 200), { Mat = Enum.Material.Slate, Solid = true })
 		Kit.Ball(m, 3, V(ax, 23, pz), Kit.Vivid(C(255, 150, 60)))
 	end
 	local signCF = CFrame.new(ax, 19, cz + 7) * CFrame.Angles(0, Kit.FaceYaw(-1, 0), 0)
@@ -106,11 +106,15 @@ function Arena.Build(map: Instance)
 	-- lights on two tall poles at the edge
 	for _, sz in { -1, 1 } do
 		local p = V(cx + r * 0.75, 0, cz + sz * (r + 9))
-		Kit.Cyl(m, 26, 1, CFrame.new(p + V(0, 13, 0)), C(60, 40, 90))
+		Kit.Cyl(m, 26, 1, CFrame.new(p + V(0, 13, 0)), C(60, 40, 90), { Mat = Enum.Material.Metal })
 		local lamp = Kit.Ball(m, 3, p + V(0, 27, 0), C(255, 160, 230), { Mat = NEON })
 		Kit.Light(lamp, C(255, 170, 230), 40, 1.4)
 	end
-	Kit.Emitter(field, C(200, 140, 255), 2, 9, 0.3)
+	-- low, faint haze (a big bright cloud here washed out the rune circle)
+	local haze = Kit.Emitter(field, C(200, 140, 255), 1.5, 6, 0.3)
+	if haze then
+		haze.LightEmission = 0.25
+	end
 
 	Kit.AddCircle(cx, cz, r + 6)
 	m.PrimaryPart = field

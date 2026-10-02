@@ -1,9 +1,10 @@
 --!strict
 -- ZONE 2: Cemetery (Z 260..540). Cobblestone path along X = 0 from gate to gate, a giant
 -- mausoleum in the north-west corner (tall dome + glowing spire orb, visible from spawn),
--- small crypts, rows of oversized pastel gravestones, twisted trees, lanterns, neon cracks,
--- candy mushrooms, iron fences and slow purple fog. Glow is kept to the lanterns, candles,
--- crypt doorways, the spire orb and the small ectoplasm cracks.
+-- small crypts, rows of oversized slate gravestones, twisted trees, lanterns, neon cracks,
+-- candy mushrooms, iron fences and slow purple fog. Palette: dark green, stone gray, muted
+-- purple, warm lantern orange, ectoplasm green. Glow is kept to the lanterns, candles, crypt
+-- doorways, the spire orb and the small ectoplasm cracks.
 
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
@@ -14,7 +15,7 @@ local C = Color3.fromRGB
 local V = Vector3.new
 local NEON = Enum.Material.Neon
 
-local STONES = { C(190, 180, 230), C(170, 220, 210), C(210, 200, 215), C(180, 200, 240), C(230, 190, 220) }
+local STONES = { C(158, 156, 170), C(140, 146, 150), C(175, 170, 182), C(150, 145, 168), C(128, 136, 138) }
 local EPITAPHS = { "RIP", "BRB", "BOO", "LOL", "GG", "AFK", "R.I.P.\nIN PEACE", "BE BACK\nSOON", "NOT\nHERE" }
 
 -- Gable roof with the ridge along local X (slopes toward local ±Z), bottom at local y = 0.
@@ -26,7 +27,7 @@ end
 
 local function mausoleum(f: Instance)
 	local m = Kit.Model(f, "Mausoleum")
-	local stone, light, roof = C(215, 205, 240), C(240, 235, 255), C(110, 80, 180)
+	local stone, light, roof = C(178, 174, 190), C(214, 210, 220), C(92, 74, 128)
 	local glow = C(120, 255, 170)
 	local mint = Kit.Vivid(glow) -- solid trims in the glow colour
 	-- stepped platform
@@ -37,11 +38,11 @@ local function mausoleum(f: Instance)
 	-- portico columns
 	for i = 0, 4 do
 		local z = 483.5 + i * 5.75
-		Kit.Cyl(m, 22, 2.6, CFrame.new(-85.5, 13.4, z), light, { Solid = true, Shadow = true })
+		Kit.Cyl(m, 22, 2.6, CFrame.new(-85.5, 13.4, z), light, { Mat = Enum.Material.Marble, Solid = true, Shadow = true })
 		Kit.Box(m, V(-87, 2.4, z - 1.6), V(-84, 3.2, z + 1.6), light)
 	end
 	-- entablature + cornice
-	Kit.Box(m, V(-119, 24.4, 480), V(-83, 27, 510), light, { Solid = true })
+	Kit.Box(m, V(-119, 24.4, 480), V(-83, 27, 510), light, { Mat = Enum.Material.Marble, Solid = true })
 	Kit.Box(m, V(-83.3, 25, 483), V(-82.9, 26.4, 507), mint)
 	-- pediment roof (triangle face toward +X)
 	gable(m, CFrame.new(-101, 27, 495), 37, 31, 9, roof)
@@ -54,9 +55,9 @@ local function mausoleum(f: Instance)
 	local plate = Kit.Part(m, V(18, 2.4, 0.4), plateCF, C(60, 40, 100))
 	Kit.Sign(plate, Enum.NormalId.Front, "REST IN PURPLE", C(150, 255, 170))
 	-- drum + dome + spire (tall: visible from spawn)
-	Kit.Cyl(m, 12, 15, CFrame.new(-104, 36, 495), light, { Solid = true, Shadow = true })
+	Kit.Cyl(m, 12, 15, CFrame.new(-104, 36, 495), light, { Mat = Enum.Material.Marble, Solid = true, Shadow = true })
 	Kit.Cyl(m, 1, 16.5, CFrame.new(-104, 42.2, 495), mint)
-	Kit.Ball(m, 15, V(-104, 42.5, 495), C(150, 110, 230), { Shadow = true })
+	Kit.Ball(m, 15, V(-104, 42.5, 495), C(112, 92, 150), { Mat = Enum.Material.Slate, Shadow = true })
 	Kit.Cyl(m, 14, 1.4, CFrame.new(-104, 56, 495), C(240, 220, 120))
 	local orb = Kit.Ball(m, 4.5, V(-104, 64, 495), glow, { Mat = NEON })
 	Kit.Light(orb, glow, 40, 1.5)
@@ -64,7 +65,7 @@ local function mausoleum(f: Instance)
 	-- corner obelisks
 	for _, x in { -121, -79 } do
 		for _, z in { 476, 514 } do
-			Kit.Box(m, V(x - 1.2, 0, z - 1.2), V(x + 1.2, 12, z + 1.2), light, { Solid = true })
+			Kit.Box(m, V(x - 1.2, 0, z - 1.2), V(x + 1.2, 12, z + 1.2), light, { Mat = Enum.Material.Slate, Solid = true })
 			Kit.Wedge(m, V(2.4, 2, 1.2), CFrame.new(x, 13, z - 0.6), light)
 			Kit.Wedge(m, V(2.4, 2, 1.2), CFrame.new(x, 13, z + 0.6) * CFrame.Angles(0, math.pi, 0), light)
 			Kit.Ball(m, 1.6, V(x, 14.6, z), mint)
@@ -81,15 +82,16 @@ local function crypt(f: Instance, cx: number, cz: number, fx: number, fz: number
 	local m = Kit.Model(f, "Crypt")
 	local base = CFrame.new(cx, 0, cz) * CFrame.Angles(0, Kit.FaceYaw(fx, fz), 0)
 	local stone = Kit.Pick(STONES)
-	Kit.Part(m, V(15, 1, 13), base * CFrame.new(0, 0.5, 0), C(140, 130, 170), { Mat = Enum.Material.Slate, Solid = true })
+	Kit.Part(m, V(15, 1, 13), base * CFrame.new(0, 0.5, 0), C(120, 122, 130), { Mat = Enum.Material.Slate, Solid = true })
 	Kit.Part(m, V(12, 10, 10), base * CFrame.new(0, 6, 0), stone, { Mat = Enum.Material.Slate, Solid = true, Shadow = true })
 	-- roof ridge runs front-to-back (local Z) so the triangle faces the front
-	gable(m, base * CFrame.new(0, 11, 0) * CFrame.Angles(0, math.pi / 2, 0), 12, 14, 5, C(120, 90, 190))
+	gable(m, base * CFrame.new(0, 11, 0) * CFrame.Angles(0, math.pi / 2, 0), 12, 14, 5, C(96, 78, 132))
 	local glow = Kit.Pick({ C(120, 255, 170), C(200, 130, 255) })
 	local door = Kit.Part(m, V(4.4, 7, 0.4), base * CFrame.new(0, 4.5, -5.1), glow, { Mat = NEON, Transp = 0.15 })
-	Kit.Part(m, V(5.6, 8.2, 0.3), base * CFrame.new(0, 4.6, -5.05), C(240, 235, 255))
-	Kit.Part(m, V(1, 3.6, 0.6), base * CFrame.new(0, 13.5, -6.3), C(240, 235, 255))
-	Kit.Part(m, V(2.6, 1, 0.6), base * CFrame.new(0, 14.2, -6.3), C(240, 235, 255))
+	local trim: Kit.Opts = { Mat = Enum.Material.Marble }
+	Kit.Part(m, V(5.6, 8.2, 0.3), base * CFrame.new(0, 4.6, -5.05), C(214, 210, 220), trim)
+	Kit.Part(m, V(1, 3.6, 0.6), base * CFrame.new(0, 13.5, -6.3), C(214, 210, 220), trim)
+	Kit.Part(m, V(2.6, 1, 0.6), base * CFrame.new(0, 14.2, -6.3), C(214, 210, 220), trim)
 	if flicker then
 		Kit.Light(door, glow, 16, 1.4, true)
 	end
@@ -108,19 +110,19 @@ local function gravestone(f: Instance, x: number, z: number)
 	local kind = rng:NextInteger(1, 6)
 	if kind == 6 then
 		-- cross
-		Kit.Part(f, V(1.4, h + 2, 1), base * CFrame.new(0, (h + 2) / 2, 0), col, { Solid = true })
-		Kit.Part(f, V(w * 0.8, 1.2, 1), base * CFrame.new(0, h * 0.75 + 0.6, 0), col)
+		Kit.Part(f, V(1.4, h + 2, 1), base * CFrame.new(0, (h + 2) / 2, 0), col, { Mat = Enum.Material.Slate, Solid = true })
+		Kit.Part(f, V(w * 0.8, 1.2, 1), base * CFrame.new(0, h * 0.75 + 0.6, 0), col, { Mat = Enum.Material.Slate })
 	else
-		local slab = Kit.Part(f, V(w, h, 1.2), base * CFrame.new(0, h / 2, 0), col, { Solid = true, Shadow = true })
-		Kit.Part(f, V(1.2, w, w), base * CFrame.new(0, h, 0) * CFrame.Angles(0, math.pi / 2, 0), col, { Shape = Enum.PartType.Cylinder })
+		local slab = Kit.Part(f, V(w, h, 1.2), base * CFrame.new(0, h / 2, 0), col, { Mat = Enum.Material.Slate, Solid = true, Shadow = true })
+		Kit.Part(f, V(1.2, w, w), base * CFrame.new(0, h, 0) * CFrame.Angles(0, math.pi / 2, 0), col, { Mat = Enum.Material.Slate, Shape = Enum.PartType.Cylinder })
 		if kind <= 2 then
-			Kit.Sign(slab, Enum.NormalId.Front, Kit.Pick(EPITAPHS), C(110, 70, 170), { Stroke = C(255, 255, 255), Font = Enum.Font.GothamBlack })
+			Kit.Sign(slab, Enum.NormalId.Front, Kit.Pick(EPITAPHS), C(90, 60, 130), { Stroke = C(235, 235, 240), Font = Enum.Font.GothamBlack })
 		elseif kind == 3 then
 			Kit.Part(f, V(w * 0.5, 0.3, 0.2), base * CFrame.new(0, h * 0.55, -0.65), Kit.Vivid(C(120, 255, 170)))
 		end
 	end
 	-- little dirt mound in front
-	Kit.Part(f, V(w + 0.6, 0.4, 3.4), base * CFrame.new(0, 0.1, -2.4), C(120, 95, 130))
+	Kit.Part(f, V(w + 0.6, 0.4, 3.4), base * CFrame.new(0, 0.1, -2.4), C(92, 78, 70), { Mat = Enum.Material.Ground })
 	Kit.AddCircle(x, z, 2.5)
 end
 
@@ -129,8 +131,8 @@ function Cemetery.Build(map: Instance)
 	local rng = Kit.Rng
 
 	-- main path + branch to the mausoleum
-	Kit.Box(f, V(-8, -0.4, 260), V(8, 0.1, 540), C(165, 150, 190), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "Path" })
-	Kit.Box(f, V(-80, -0.4, 490), V(-8, 0.08, 500), C(165, 150, 190), { Mat = Enum.Material.Cobblestone, Solid = true })
+	Kit.Box(f, V(-8, -0.4, 260), V(8, 0.1, 540), C(150, 146, 158), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "Path" })
+	Kit.Box(f, V(-80, -0.4, 490), V(-8, 0.08, 500), C(150, 146, 158), { Mat = Enum.Material.Cobblestone, Solid = true })
 	local edging = Kit.Vivid(C(120, 255, 170))
 	for z = 270, 530, 20 do
 		for _, s in { -1, 1 } do
@@ -153,7 +155,8 @@ function Cemetery.Build(map: Instance)
 			local x = s * 10.5
 			if Kit.IsFree(x, z, 1, true) then
 				lit += 1
-				Props.Lantern(f, V(x, 0, z), if s < 0 then C(140, 255, 170) else C(200, 140, 255), lit % 3 == 1 and lit <= 10)
+				-- warm orange lanterns on the left, ectoplasm green on the right
+				Props.Lantern(f, V(x, 0, z), if s < 0 then C(255, 170, 80) else C(140, 255, 170), lit % 3 == 1 and lit <= 10)
 				Kit.AddCircle(x, z, 1.5)
 			end
 		end
