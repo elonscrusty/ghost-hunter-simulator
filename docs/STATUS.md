@@ -39,7 +39,7 @@
 
 ## Owner to do
 1. Playtest in Studio: [STUDIO_TESTS.md](STUDIO_TESTS.md) (nothing has been run in Studio yet).
-2. Create the 4 developer products + 3 passes (incl. Auto Attack) and send Claude the ids ([PUBLISHING.md](PUBLISHING.md) step 5). Until then the shop shows "SOON".
+2. Shop ids are in (4 products + 3 passes). On launch day: make the game public and put the 3 passes on sale (149 / 299 / 199).
 3. Pick music and nicer sound effects ([AUDIO.md](AUDIO.md)); placeholders play meanwhile.
 4. Optional: make icons with ChatGPT ([ICON_PROMPTS.md](ICON_PROMPTS.md)), upload them and send Claude the ids.
 5. Game icon, thumbnails, description; then publish.
