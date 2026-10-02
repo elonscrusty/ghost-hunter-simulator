@@ -1575,7 +1575,7 @@ Config.Products = {
 	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 12000, ProductId = 3715909987, PriceLabel = "R$ 199" },
 	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 49" },
 	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 49" },
-	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", ProductId = nil, PriceLabel = "R$ 199", Blurb = "Opens your next locked area right now" },
+	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", Amount = 12000, ProductId = nil, PriceLabel = "R$ 199", Blurb = "Opens your next locked area right now" },
 	{ Key = "ExclusiveCrate", Name = "EXCLUSIVE CRATE", Icon = "💎", Kind = "ExclusiveCrate", ProductId = nil, PriceLabel = "R$ 99", Blurb = "An EXCLUSIVE hunter for your best area" },
 	{ Key = "ServerLuck", Name = "SERVER LUCK 15 MIN", Icon = "🍀", Kind = "ServerLuck", Seconds = 900, ProductId = nil, PriceLabel = "R$ 149", Blurb = "2x crate luck for EVERYONE in the server" },
 	{ Key = "SummonEvent", Name = "SUMMON GIANT POLTERGEIST", Icon = "👻", Kind = "SummonEvent", ProductId = nil, PriceLabel = "R$ 99", Blurb = "Starts the boss event for the whole server" },
@@ -1877,6 +1877,34 @@ Icons.Images = {
 	crate_sailor = "rbxassetid://89395681412353",
 	crate_royal = "rbxassetid://109906150288392",
 	crate_spirit = "rbxassetid://119576764620364",
+	pass_lucky = "rbxassetid://103371053439761",
+	pass_triple = "rbxassetid://132615388115540",
+	pass_magnet = "rbxassetid://81446885451577",
+	pass_vip = "rbxassetid://109454873320281",
+	pass_storage = "rbxassetid://71346557862972",
+	pass_rainbow = "rbxassetid://78785426323971",
+	pass_trail = "rbxassetid://125533246361742",
+	prod_skip_area = "rbxassetid://127875955780964",
+	prod_exclusive_crate = "rbxassetid://129820612053146",
+	prod_server_luck = "rbxassetid://112653054458293",
+	prod_summon_event = "rbxassetid://138523085431067",
+	zone_swamp = "rbxassetid://74627746786803",
+	zone_frost = "rbxassetid://104917464524216",
+	zone_tomb = "rbxassetid://118834990826697",
+	zone_toyfactory = "rbxassetid://135682620798565",
+	zone_sunken = "rbxassetid://132688241050624",
+	zone_clockwork = "rbxassetid://79409356844090",
+	zone_inferno = "rbxassetid://134443302381366",
+	zone_throne = "rbxassetid://115102923793233",
+	crate_swamp = "rbxassetid://97390932291893",
+	crate_frost = "rbxassetid://130609388149781",
+	crate_tomb = "rbxassetid://75613624704097",
+	crate_toy = "rbxassetid://130101785717560",
+	crate_sunken = "rbxassetid://129584966936667",
+	crate_clock = "rbxassetid://134418542919641",
+	crate_inferno = "rbxassetid://139448320964013",
+	crate_throne = "rbxassetid://120485989017113",
+	crate_exclusive = "rbxassetid://100579734342964",
 } :: { [string]: string? }
 
 -- Which icon key each piece of content uses.
@@ -6127,7 +6155,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): string?
 			count += 1
 		end
 		for id in Config.Hunters do
-			if count >= Config.Inventory.MaxHunters then
+			if count >= PlayerInfo.MaxHunters(player) then
 				break
 			end
 			HunterService.Add(player, id)
@@ -6562,7 +6590,10 @@ function EventService.Start()
 	task.spawn(function()
 		task.wait(Config.Event.FirstDelay)
 		while true do
-			runGuarded()
+			-- a summoned event may already be running: skip this slot instead of queueing a second one
+			if not running then
+				runGuarded()
+			end
 			task.wait(Config.Event.Interval + rng:NextNumber(-30, 30))
 		end
 	end)
@@ -7456,6 +7487,10 @@ function HunterService.Init()
 			return nil, nil, false
 		end
 		local uid, isNew = HunterService.Add(p, hunterId)
+		local d = DataService.Get(p)
+		if uid and d and d.Hunters[uid] then
+			d.Hunters[uid].Locked = true -- paid hunter: protect it from an accidental release
+		end
 		HunterService.Refresh(p)
 		local def = Config.Hunters[hunterId]
 		Fx.All("Announce", { Text = string.format("%s got the EXCLUSIVE %s!", p.DisplayName, string.upper(def.Name)), Color = "Exclusive" })
@@ -8313,7 +8348,7 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 			Fx.To(player, "ZoneUnlocked", { Zone = z.Id })
 		else
 			-- everything was already open (bought twice quickly): pay out a big Ectoplasm pack instead
-			DataService.AddEcto(player, 12000 * PlayerInfo.ZoneMultiplier(player))
+			DataService.AddEcto(player, (p.Amount or 0) * PlayerInfo.ZoneMultiplier(player))
 		end
 	elseif p.Kind == "ExclusiveCrate" then
 		local uid, hunterId, isNew = HunterService.GrantExclusive(player)
@@ -8480,6 +8515,9 @@ function ShopService.Init()
 				if p.Kind == "ServerLuck" and PlayerInfo.ServerLuckUntil() - os.time() + (p.Seconds or 0) > Config.ServerLuck.MaxStackSeconds then
 					return Remotes.Fail("Server luck is already maxed!")
 				end
+				if p.Kind == "SummonEvent" and EventService.IsBusy() then
+					return Remotes.Fail("The Giant Poltergeist is already here!")
+				end
 				if p.Kind == "Boost" and p.Boost and p.Seconds then
 					-- boosts stack up to a cap; don't sell time that would be thrown away
 					local left = if d then (d.Boosts[p.Boost] or 0) - os.time() else 0
@@ -8640,6 +8678,9 @@ function StationService.Init() end
 
 function StationService.Start()
 	for crateId, crate in Config.Crates do
+		if not Config.Layout.CrateStations[crateId] then
+			continue -- no station (Exclusive Crate is Robux-only)
+		end
 		local station = find({ "Map", "Stations", "CrateStation_" .. crateId })
 		if not station then
 			warn("[Stations] missing CrateStation_" .. crateId)

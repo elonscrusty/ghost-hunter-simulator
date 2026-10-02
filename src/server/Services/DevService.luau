@@ -68,7 +68,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): string?
 			count += 1
 		end
 		for id in Config.Hunters do
-			if count >= Config.Inventory.MaxHunters then
+			if count >= PlayerInfo.MaxHunters(player) then
 				break
 			end
 			HunterService.Add(player, id)

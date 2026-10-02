@@ -106,6 +106,9 @@ function StationService.Init() end
 
 function StationService.Start()
 	for crateId, crate in Config.Crates do
+		if not Config.Layout.CrateStations[crateId] then
+			continue -- no station (Exclusive Crate is Robux-only)
+		end
 		local station = find({ "Map", "Stations", "CrateStation_" .. crateId })
 		if not station then
 			warn("[Stations] missing CrateStation_" .. crateId)

@@ -152,7 +152,10 @@ function EventService.Start()
 	task.spawn(function()
 		task.wait(Config.Event.FirstDelay)
 		while true do
-			runGuarded()
+			-- a summoned event may already be running: skip this slot instead of queueing a second one
+			if not running then
+				runGuarded()
+			end
 			task.wait(Config.Event.Interval + rng:NextNumber(-30, 30))
 		end
 	end)

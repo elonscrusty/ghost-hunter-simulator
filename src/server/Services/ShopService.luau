@@ -47,7 +47,7 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 			Fx.To(player, "ZoneUnlocked", { Zone = z.Id })
 		else
 			-- everything was already open (bought twice quickly): pay out a big Ectoplasm pack instead
-			DataService.AddEcto(player, 12000 * PlayerInfo.ZoneMultiplier(player))
+			DataService.AddEcto(player, (p.Amount or 0) * PlayerInfo.ZoneMultiplier(player))
 		end
 	elseif p.Kind == "ExclusiveCrate" then
 		local uid, hunterId, isNew = HunterService.GrantExclusive(player)
@@ -213,6 +213,9 @@ function ShopService.Init()
 				end
 				if p.Kind == "ServerLuck" and PlayerInfo.ServerLuckUntil() - os.time() + (p.Seconds or 0) > Config.ServerLuck.MaxStackSeconds then
 					return Remotes.Fail("Server luck is already maxed!")
+				end
+				if p.Kind == "SummonEvent" and EventService.IsBusy() then
+					return Remotes.Fail("The Giant Poltergeist is already here!")
 				end
 				if p.Kind == "Boost" and p.Boost and p.Seconds then
 					-- boosts stack up to a cap; don't sell time that would be thrown away

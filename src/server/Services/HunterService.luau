@@ -172,6 +172,10 @@ function HunterService.Init()
 			return nil, nil, false
 		end
 		local uid, isNew = HunterService.Add(p, hunterId)
+		local d = DataService.Get(p)
+		if uid and d and d.Hunters[uid] then
+			d.Hunters[uid].Locked = true -- paid hunter: protect it from an accidental release
+		end
 		HunterService.Refresh(p)
 		local def = Config.Hunters[hunterId]
 		Fx.All("Announce", { Text = string.format("%s got the EXCLUSIVE %s!", p.DisplayName, string.upper(def.Name)), Color = "Exclusive" })
