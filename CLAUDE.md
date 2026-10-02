@@ -11,7 +11,7 @@ Roblox collection simulator (Rojo + Luau). The owner (kcdrewcarter) plays on a p
 - Push to the branch the session gives you. No PRs unless asked. Commit messages end with the attribution lines the session provides. Never put model names in commits or code.
 
 ## Commands
-- `bash tools/check.sh`: strict type check (must stay at 0 diagnostics), unit tests, Rojo build. Run before every commit. `--quick` skips the build.
+- `bash tools/check.sh`: strict type check (must stay at 0 diagnostics), unit tests, headless world/rig smoke test (`tools/worldsim.sh`: builds the whole map and every rig under a mock runtime; checks ghost areas, spawn pads, the main route, budgets), Rojo build. Run before every commit. `--quick` skips the build.
 - `cd tests && luau EconSim.luau` (after check.sh, which generates `tests/_Config.luau`): economy simulation; re-run after changing prices, rewards, Spirit or power.
 - Tools install at session start (`tools/setup_env.sh` → `/tmp/gh-tools`, luau-lsp pinned to 1.53.0).
 - Unit tests: `tests/*.spec.luau`, registered in `tests/run.luau`. The CLI has no Roblox types, so testable rules stay pure in `src/shared/Logic/`.

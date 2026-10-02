@@ -26,7 +26,18 @@ local WALLS: { [string]: WallLook } = {
 	SpiritRealm = { Wall = C(60, 50, 95), Cap = C(90, 80, 140), Ball = C(110, 230, 255), Band = C(170, 100, 255), Pumpkins = false },
 }
 
-local function invisible(parent: Instance, a: Vector3, b: Vector3)
+local invisible: (Instance, Vector3, Vector3) -> ()
+function invisible(parent: Instance, a: Vector3, b: Vector3)
+	-- Roblox caps a part at 2048 studs per axis: split long walls along Z into pieces
+	local lo, hi = a:Min(b), a:Max(b)
+	if hi.Z - lo.Z > 1000 then
+		local n = math.ceil((hi.Z - lo.Z) / 1000)
+		local step = (hi.Z - lo.Z) / n
+		for i = 0, n - 1 do
+			invisible(parent, Vector3.new(lo.X, lo.Y, lo.Z + i * step), Vector3.new(hi.X, hi.Y, lo.Z + (i + 1) * step))
+		end
+		return
+	end
 	local p = Kit.Box(parent, a, b, C(255, 255, 255), { Transp = 1, Solid = true, Name = "InvisibleWall", Shadow = false })
 	p.CanQuery = false -- never block taps / ground raycasts
 end
