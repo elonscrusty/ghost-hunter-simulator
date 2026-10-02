@@ -16091,6 +16091,7 @@ return SpiritRealm
 -- corner jack-o'-lanterns and a couple of gadget lights.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
 
@@ -16208,7 +16209,21 @@ local function upgradeStation(folder: Instance, pos: Vector3)
 		local icf = CFrame.new(back + dir * 0.8, 7.8, z + (i - 2) * 6) * CFrame.Angles(0, yaw, 0)
 		local icon = Kit.Part(m, V(4.4, 4.4, 0.4), icf, C(60, 40, 110))
 		Kit.Part(m, V(5, 5, 0.3), icf * CFrame.new(0, 0, 0.3), Kit.Vivid(color))
-		Kit.Sign(icon, Enum.NormalId.Front, up.Icon, WHITE)
+		-- the uploaded upgrade icon (same picture as the Upgrades menu); emoji only without one
+		local image = Icons.Get(Icons.ForUpgrade[upId])
+		if image then
+			local g = Kit.Gui(icon, Enum.NormalId.Front)
+			local img = Instance.new("ImageLabel")
+			img.Name = "UpgradeIcon"
+			img.BackgroundTransparency = 1
+			img.Image = image
+			img.ScaleType = Enum.ScaleType.Fit
+			img.Size = UDim2.fromScale(0.9, 0.9)
+			img.Position = UDim2.fromScale(0.05, 0.05)
+			img.Parent = g
+		else
+			Kit.Sign(icon, Enum.NormalId.Front, up.Icon, WHITE)
+		end
 	end
 	-- gadgets on the bench (potion vials are solid candy colours; the orange status light glows)
 	Kit.CylFlat(m, 4.5, 1.6, V(bx, 5, z - 4.5), "Z", C(255, 120, 200))

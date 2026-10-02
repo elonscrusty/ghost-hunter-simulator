@@ -937,6 +937,7 @@ class("TextLabel", "GuiObject", {
 	TextWrapped = "boolean", TextStrokeTransparency = "number", TextStrokeColor3 = "Color3", TextTransparency = "number",
 	TextXAlignment = "any", TextYAlignment = "any", RichText = "boolean", LineHeight = "number", MaxVisibleGraphemes = "number", TextTruncate = "Enum.TextTruncate",
 }, { Text = "Label" })
+class("ImageLabel", "GuiObject", { Image = "string", ScaleType = "any", ImageColor3 = "Color3", ImageTransparency = "number" }, { Image = "" })
 class("Frame", "GuiObject", { Style = "any" }, {})
 class("UIComponent", "Instance", {}, {}, false)
 class("UIStroke", "UIComponent", { Color = "Color3", Thickness = "number", Transparency = "number", ApplyStrokeMode = "any", LineJoinMode = "any", Enabled = "boolean" }, { Thickness = 1, Enabled = true })
