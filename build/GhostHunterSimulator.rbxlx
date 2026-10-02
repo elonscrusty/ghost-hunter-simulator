@@ -7716,7 +7716,7 @@ local function render(rows: { Row })
 				nameLabel.TextColor3 = if vip then Color3.fromRGB(255, 215, 80) else Color3.fromRGB(255, 255, 255)
 			end
 			if valueLabel then
-				valueLabel.Text = if r then "💚 " .. Format.Short(r.Value) else ""
+				valueLabel.Text = if r then Format.Short(r.Value) else ""
 			end
 		end
 	end
@@ -8650,7 +8650,7 @@ local function buildOddsBoard(board: BasePart, crate: Config.CrateDef)
 	grad.Rotation = 90
 	grad.Parent = bg
 	label(bg, crate.Name, UDim2.fromScale(0.94, 0.13), UDim2.fromScale(0.03, 0.03), crate.Trim)
-	label(bg, "💚 " .. Format.Commas(crate.Price) .. " ECTOPLASM", UDim2.fromScale(0.8, 0.09), UDim2.fromScale(0.1, 0.17), Color3.fromRGB(150, 255, 150))
+	label(bg, Format.Short(crate.Price) .. " ECTOPLASM", UDim2.fromScale(0.8, 0.09), UDim2.fromScale(0.1, 0.17), Color3.fromRGB(150, 255, 150))
 	local odds = Rules.Odds(crate.Pool :: any, rarityOrder, 1, Config.LuckAffectsFromOrder)
 	for i, e in crate.Pool do
 		local def = Config.Hunters[e.Hunter]
@@ -20313,7 +20313,7 @@ local function refresh()
 		return
 	end
 	panel.Title.Text = "UNLOCK " .. zone.Name .. "?"
-	costLabel.Text = "💚 " .. Format.Commas(zone.Cost) .. " ECTOPLASM"
+	Kit.EctoText(costLabel, "💚 " .. Format.Short(zone.Cost) .. " ECTOPLASM")
 	local frac = math.clamp(d.Ecto / math.max(zone.Cost, 1), 0, 1)
 	Kit.Tween(fill, 0.25, { Size = UDim2.fromScale(math.max(frac, 0.03), 1) })
 	progressLabel.Text = Format.Short(math.min(d.Ecto, zone.Cost)) .. " / " .. Format.Short(zone.Cost)
@@ -20354,7 +20354,8 @@ function GatePanel.Init()
 	for _, p in { "👻 NEW GHOSTS", "📦 NEW CRATE", "🔦 BETTER HUNTERS", "💚 HIGHER REWARDS" } do
 		local f: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Panel3, ZIndex = 62, Parent = perks })
 		Kit.Corner(f, UDim.new(0, 10))
-		Kit.Label(f, p, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Style = "Body", Fit = true, ZIndex = 63 })
+		local pl = Kit.Label(f, p, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Style = "Body", Fit = true, ZIndex = 63 })
+		Kit.EctoText(pl, p)
 	end
 	unlockButton = Kit.Button(body, {
 		Text = "UNLOCK!",
@@ -20893,6 +20894,7 @@ return Ghosts
 -- AUTO ATTACK toggle (pass owners only), toasts, announcements and zone banners.
 local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
+local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -21084,43 +21086,53 @@ local menuScale: UIScale
 -- One vertical column down the left edge. Buttons are as big as CELL_MAX allows; on short
 -- screens (phone landscape) the whole column shrinks so it fits between the top bar and the
 -- bottom edge (it starts under the top-left Roblox buttons).
--- Bottom edge of the Roblox chat window in logical px (0 when chat is off), so the menu column
--- starts below it instead of hiding behind it.
-local function chatBottom(): number
-	local ok, bottom = pcall(function()
-		local cfg = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
-		if not cfg or not cfg.Enabled then
-			return 0
-		end
-		local pos = (cfg :: any).AbsolutePosition :: Vector2
-		local size = (cfg :: any).AbsoluteSize :: Vector2
-		return pos.Y + size.Y
-	end)
-	if not ok then
-		-- older engines: assume the default top-left window (~40% of the screen)
-		return 0.42 * Kit.LogicalSize().Y * Kit.UIScale()
+local menuGrid: UIGridLayout
+local chatBottomCache = 0
+
+-- Desktop only: bottom of the Roblox chat window (logical px below our inset), read once after
+-- joining and on resizes, so the menu starts under it. Phones keep chat collapsed behind its
+-- top-bar button, and following the chat window live made the menu jump around.
+local function readChatBottom()
+	chatBottomCache = 0
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		return
 	end
-	-- screen px from the top of the device → logical px below our inset
-	local inset = Kit.Screen().AbsolutePosition.Y
-	return math.max(0, (bottom - inset) / Kit.UIScale())
+	pcall(function()
+		local cfg = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+		if cfg and cfg.Enabled then
+			local pos = (cfg :: any).AbsolutePosition :: Vector2
+			local size = (cfg :: any).AbsoluteSize :: Vector2
+			local inset = Kit.Screen().AbsolutePosition.Y
+			chatBottomCache = math.max(0, (pos.Y + size.Y - inset) / Kit.UIScale())
+		end
+	end)
 end
 
+-- One column of big buttons; if that would need to shrink below CELL_MIN, two columns of three.
 local function layoutMenu()
 	local n = #MENU
-	local full = CELL_MAX * n + GAP * (n - 1)
 	local logical = Kit.LogicalSize()
-	local compact = Kit.IsCompact()
-	local below = chatBottom()
-	local top = math.max(if compact then 56 else 0, if below > 0 then below + 8 else 0)
-	local room = logical.Y - top - 12
-	local fit = math.clamp(room / full, CELL_MIN / CELL_MAX, 1)
+	local top = if chatBottomCache > 0 then chatBottomCache + 8 else 4
+	local room = logical.Y - top - 10
+	local rows = n
+	local full = CELL_MAX * rows + GAP * (rows - 1)
+	local fit = room / full
+	local cols = 1
+	if fit < CELL_MIN / CELL_MAX then
+		cols = 2
+		rows = math.ceil(n / 2)
+		full = CELL_MAX * rows + GAP * (rows - 1)
+		fit = room / full
+	end
+	fit = math.clamp(fit, 0.5, 1)
+	menuGrid.FillDirectionMaxCells = rows
 	menuScale.Scale = fit
-	menu.Size = UDim2.fromOffset(CELL_MAX, full)
-	if compact or top > 0 or full * fit > logical.Y - 120 then
+	menu.Size = UDim2.fromOffset(CELL_MAX * cols + GAP * (cols - 1), full)
+	if top > 4 or full * fit > logical.Y - 120 then
 		menu.Position = UDim2.fromOffset(8, top)
 		menu.AnchorPoint = Vector2.zero
 	else
-		menu.Position = UDim2.new(0, 10, 0.5, 0)
+		menu.Position = UDim2.new(0, 8, 0.5, 0)
 		menu.AnchorPoint = Vector2.new(0, 0.5)
 	end
 end
@@ -21132,8 +21144,9 @@ local function buildMenu(screen: ScreenGui)
 		Parent = screen,
 	})
 	menuScale = Kit.new("UIScale", { Parent = menu })
-	Kit.new("UIListLayout", {
-		Padding = UDim.new(0, GAP),
+	menuGrid = Kit.new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(CELL_MAX, CELL_MAX),
+		CellPadding = UDim2.fromOffset(GAP, GAP),
 		FillDirection = Enum.FillDirection.Vertical,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = menu,
@@ -21166,20 +21179,14 @@ local function buildMenu(screen: ScreenGui)
 	Kit.Stroke(dailyBadge, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Label(dailyBadge, "!", { Style = "Small", ZIndex = 11 })
 	layoutMenu()
-	Kit.ScaleChanged:Connect(layoutMenu)
-	-- a smaller chat window leaves more room for the menu; follow it if it moves or resizes
-	task.spawn(function()
-		local cfg = TextChatService:WaitForChild("ChatWindowConfiguration", 10)
-		if cfg then
-			pcall(function()
-				(cfg :: any).HeightScale = 0.7
-			end)
-			pcall(function()
-				cfg:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutMenu)
-				cfg:GetPropertyChangedSignal("AbsolutePosition"):Connect(layoutMenu)
-			end)
-			layoutMenu()
-		end
+	-- desktop: start under the chat window (read after it has appeared; again on resizes)
+	task.delay(3, function()
+		readChatBottom()
+		layoutMenu()
+	end)
+	Kit.ScaleChanged:Connect(function()
+		readChatBottom()
+		layoutMenu()
 	end)
 end
 
@@ -25181,6 +25188,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 
+local TextService = game:GetService("TextService")
 local Theme = require(script.Parent.Theme)
 local Signal = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Signal)
 local Icons = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Icons)
@@ -25393,6 +25401,7 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 		ZIndex = b.ZIndex + 1,
 	})
 	label.Name = "Label"
+	Kit.EctoText(label, text)
 	local scale = Kit.new("UIScale", { Parent = b })
 	b.MouseEnter:Connect(function()
 		Kit.Tween(scale, 0.12, { Scale = 1.05 })
@@ -25420,10 +25429,60 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	return b
 end
 
+-- Sets a label's text; "💚" in it is drawn as the uploaded Ectoplasm icon (Icons "ecto") placed
+-- just before the text instead of the heart emoji. Works for centre / left aligned labels.
+function Kit.EctoText(l: TextLabel, text: string)
+	local image = Icons.Get("ecto")
+	local icon = l:FindFirstChild("EctoIcon") :: ImageLabel?
+	if not image or not text:find("💚", 1, true) then
+		l.Text = text
+		if icon then
+			icon.Visible = false
+		end
+		local pad = l:FindFirstChild("EctoPad") :: UIPadding?
+		if pad then
+			pad.PaddingLeft = UDim.new(0, 0)
+		end
+		return
+	end
+	local clean = text:gsub("%+?💚%s*", function(m: string): string
+		return if m:sub(1, 1) == "+" then "+" else ""
+	end)
+	l.Text = clean
+	local size = l.TextSize
+	local w = size + 4
+	if not icon then
+		icon = Kit.new("ImageLabel", {
+			Name = "EctoIcon",
+			BackgroundTransparency = 1,
+			Image = image,
+			ScaleType = Enum.ScaleType.Fit,
+			ZIndex = l.ZIndex + 1,
+			Parent = l,
+		})
+	end
+	local ic = icon :: ImageLabel
+	ic.Visible = true
+	ic.Size = UDim2.fromOffset(w, w)
+	if l.TextXAlignment == Enum.TextXAlignment.Center then
+		local tw = TextService:GetTextSize(clean, size, l.Font, Vector2.new(4000, 4000)).X
+		ic.AnchorPoint = Vector2.new(1, 0.5)
+		ic.Position = UDim2.new(0.5, -tw / 2 - 1, 0.5, 0)
+	else
+		local pad = l:FindFirstChild("EctoPad") :: UIPadding?
+		if not pad then
+			pad = Kit.new("UIPadding", { Name = "EctoPad", Parent = l })
+		end
+		(pad :: UIPadding).PaddingLeft = UDim.new(0, w + 3)
+		ic.AnchorPoint = Vector2.new(0, 0.5)
+		ic.Position = UDim2.new(0, -(w + 3), 0.5, 0)
+	end
+end
+
 function Kit.SetButtonText(b: TextButton, text: string)
 	local l = b:FindFirstChild("Label") :: TextLabel?
 	if l then
-		l.Text = text
+		Kit.EctoText(l, text)
 	end
 end
 

@@ -78,7 +78,7 @@ local function buildOddsBoard(board: BasePart, crate: Config.CrateDef)
 	grad.Rotation = 90
 	grad.Parent = bg
 	label(bg, crate.Name, UDim2.fromScale(0.94, 0.13), UDim2.fromScale(0.03, 0.03), crate.Trim)
-	label(bg, "💚 " .. Format.Commas(crate.Price) .. " ECTOPLASM", UDim2.fromScale(0.8, 0.09), UDim2.fromScale(0.1, 0.17), Color3.fromRGB(150, 255, 150))
+	label(bg, Format.Short(crate.Price) .. " ECTOPLASM", UDim2.fromScale(0.8, 0.09), UDim2.fromScale(0.1, 0.17), Color3.fromRGB(150, 255, 150))
 	local odds = Rules.Odds(crate.Pool :: any, rarityOrder, 1, Config.LuckAffectsFromOrder)
 	for i, e in crate.Pool do
 		local def = Config.Hunters[e.Hunter]

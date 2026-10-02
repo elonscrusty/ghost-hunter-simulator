@@ -105,7 +105,7 @@ local function render(rows: { Row })
 				nameLabel.TextColor3 = if vip then Color3.fromRGB(255, 215, 80) else Color3.fromRGB(255, 255, 255)
 			end
 			if valueLabel then
-				valueLabel.Text = if r then "💚 " .. Format.Short(r.Value) else ""
+				valueLabel.Text = if r then Format.Short(r.Value) else ""
 			end
 		end
 	end

@@ -5,6 +5,7 @@
 -- AUTO ATTACK toggle (pass owners only), toasts, announcements and zone banners.
 local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
+local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -196,43 +197,53 @@ local menuScale: UIScale
 -- One vertical column down the left edge. Buttons are as big as CELL_MAX allows; on short
 -- screens (phone landscape) the whole column shrinks so it fits between the top bar and the
 -- bottom edge (it starts under the top-left Roblox buttons).
--- Bottom edge of the Roblox chat window in logical px (0 when chat is off), so the menu column
--- starts below it instead of hiding behind it.
-local function chatBottom(): number
-	local ok, bottom = pcall(function()
-		local cfg = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
-		if not cfg or not cfg.Enabled then
-			return 0
-		end
-		local pos = (cfg :: any).AbsolutePosition :: Vector2
-		local size = (cfg :: any).AbsoluteSize :: Vector2
-		return pos.Y + size.Y
-	end)
-	if not ok then
-		-- older engines: assume the default top-left window (~40% of the screen)
-		return 0.42 * Kit.LogicalSize().Y * Kit.UIScale()
+local menuGrid: UIGridLayout
+local chatBottomCache = 0
+
+-- Desktop only: bottom of the Roblox chat window (logical px below our inset), read once after
+-- joining and on resizes, so the menu starts under it. Phones keep chat collapsed behind its
+-- top-bar button, and following the chat window live made the menu jump around.
+local function readChatBottom()
+	chatBottomCache = 0
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		return
 	end
-	-- screen px from the top of the device → logical px below our inset
-	local inset = Kit.Screen().AbsolutePosition.Y
-	return math.max(0, (bottom - inset) / Kit.UIScale())
+	pcall(function()
+		local cfg = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+		if cfg and cfg.Enabled then
+			local pos = (cfg :: any).AbsolutePosition :: Vector2
+			local size = (cfg :: any).AbsoluteSize :: Vector2
+			local inset = Kit.Screen().AbsolutePosition.Y
+			chatBottomCache = math.max(0, (pos.Y + size.Y - inset) / Kit.UIScale())
+		end
+	end)
 end
 
+-- One column of big buttons; if that would need to shrink below CELL_MIN, two columns of three.
 local function layoutMenu()
 	local n = #MENU
-	local full = CELL_MAX * n + GAP * (n - 1)
 	local logical = Kit.LogicalSize()
-	local compact = Kit.IsCompact()
-	local below = chatBottom()
-	local top = math.max(if compact then 56 else 0, if below > 0 then below + 8 else 0)
-	local room = logical.Y - top - 12
-	local fit = math.clamp(room / full, CELL_MIN / CELL_MAX, 1)
+	local top = if chatBottomCache > 0 then chatBottomCache + 8 else 4
+	local room = logical.Y - top - 10
+	local rows = n
+	local full = CELL_MAX * rows + GAP * (rows - 1)
+	local fit = room / full
+	local cols = 1
+	if fit < CELL_MIN / CELL_MAX then
+		cols = 2
+		rows = math.ceil(n / 2)
+		full = CELL_MAX * rows + GAP * (rows - 1)
+		fit = room / full
+	end
+	fit = math.clamp(fit, 0.5, 1)
+	menuGrid.FillDirectionMaxCells = rows
 	menuScale.Scale = fit
-	menu.Size = UDim2.fromOffset(CELL_MAX, full)
-	if compact or top > 0 or full * fit > logical.Y - 120 then
+	menu.Size = UDim2.fromOffset(CELL_MAX * cols + GAP * (cols - 1), full)
+	if top > 4 or full * fit > logical.Y - 120 then
 		menu.Position = UDim2.fromOffset(8, top)
 		menu.AnchorPoint = Vector2.zero
 	else
-		menu.Position = UDim2.new(0, 10, 0.5, 0)
+		menu.Position = UDim2.new(0, 8, 0.5, 0)
 		menu.AnchorPoint = Vector2.new(0, 0.5)
 	end
 end
@@ -244,8 +255,9 @@ local function buildMenu(screen: ScreenGui)
 		Parent = screen,
 	})
 	menuScale = Kit.new("UIScale", { Parent = menu })
-	Kit.new("UIListLayout", {
-		Padding = UDim.new(0, GAP),
+	menuGrid = Kit.new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(CELL_MAX, CELL_MAX),
+		CellPadding = UDim2.fromOffset(GAP, GAP),
 		FillDirection = Enum.FillDirection.Vertical,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = menu,
@@ -278,20 +290,14 @@ local function buildMenu(screen: ScreenGui)
 	Kit.Stroke(dailyBadge, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Label(dailyBadge, "!", { Style = "Small", ZIndex = 11 })
 	layoutMenu()
-	Kit.ScaleChanged:Connect(layoutMenu)
-	-- a smaller chat window leaves more room for the menu; follow it if it moves or resizes
-	task.spawn(function()
-		local cfg = TextChatService:WaitForChild("ChatWindowConfiguration", 10)
-		if cfg then
-			pcall(function()
-				(cfg :: any).HeightScale = 0.7
-			end)
-			pcall(function()
-				cfg:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutMenu)
-				cfg:GetPropertyChangedSignal("AbsolutePosition"):Connect(layoutMenu)
-			end)
-			layoutMenu()
-		end
+	-- desktop: start under the chat window (read after it has appeared; again on resizes)
+	task.delay(3, function()
+		readChatBottom()
+		layoutMenu()
+	end)
+	Kit.ScaleChanged:Connect(function()
+		readChatBottom()
+		layoutMenu()
 	end)
 end
 

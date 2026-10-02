@@ -28,7 +28,7 @@ local function refresh()
 		return
 	end
 	panel.Title.Text = "UNLOCK " .. zone.Name .. "?"
-	costLabel.Text = "💚 " .. Format.Commas(zone.Cost) .. " ECTOPLASM"
+	Kit.EctoText(costLabel, "💚 " .. Format.Short(zone.Cost) .. " ECTOPLASM")
 	local frac = math.clamp(d.Ecto / math.max(zone.Cost, 1), 0, 1)
 	Kit.Tween(fill, 0.25, { Size = UDim2.fromScale(math.max(frac, 0.03), 1) })
 	progressLabel.Text = Format.Short(math.min(d.Ecto, zone.Cost)) .. " / " .. Format.Short(zone.Cost)
@@ -69,7 +69,8 @@ function GatePanel.Init()
 	for _, p in { "👻 NEW GHOSTS", "📦 NEW CRATE", "🔦 BETTER HUNTERS", "💚 HIGHER REWARDS" } do
 		local f: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Panel3, ZIndex = 62, Parent = perks })
 		Kit.Corner(f, UDim.new(0, 10))
-		Kit.Label(f, p, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Style = "Body", Fit = true, ZIndex = 63 })
+		local pl = Kit.Label(f, p, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Style = "Body", Fit = true, ZIndex = 63 })
+		Kit.EctoText(pl, p)
 	end
 	unlockButton = Kit.Button(body, {
 		Text = "UNLOCK!",

@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 
+local TextService = game:GetService("TextService")
 local Theme = require(script.Parent.Theme)
 local Signal = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Signal)
 local Icons = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Icons)
@@ -221,6 +222,7 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 		ZIndex = b.ZIndex + 1,
 	})
 	label.Name = "Label"
+	Kit.EctoText(label, text)
 	local scale = Kit.new("UIScale", { Parent = b })
 	b.MouseEnter:Connect(function()
 		Kit.Tween(scale, 0.12, { Scale = 1.05 })
@@ -248,10 +250,60 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	return b
 end
 
+-- Sets a label's text; "💚" in it is drawn as the uploaded Ectoplasm icon (Icons "ecto") placed
+-- just before the text instead of the heart emoji. Works for centre / left aligned labels.
+function Kit.EctoText(l: TextLabel, text: string)
+	local image = Icons.Get("ecto")
+	local icon = l:FindFirstChild("EctoIcon") :: ImageLabel?
+	if not image or not text:find("💚", 1, true) then
+		l.Text = text
+		if icon then
+			icon.Visible = false
+		end
+		local pad = l:FindFirstChild("EctoPad") :: UIPadding?
+		if pad then
+			pad.PaddingLeft = UDim.new(0, 0)
+		end
+		return
+	end
+	local clean = text:gsub("%+?💚%s*", function(m: string): string
+		return if m:sub(1, 1) == "+" then "+" else ""
+	end)
+	l.Text = clean
+	local size = l.TextSize
+	local w = size + 4
+	if not icon then
+		icon = Kit.new("ImageLabel", {
+			Name = "EctoIcon",
+			BackgroundTransparency = 1,
+			Image = image,
+			ScaleType = Enum.ScaleType.Fit,
+			ZIndex = l.ZIndex + 1,
+			Parent = l,
+		})
+	end
+	local ic = icon :: ImageLabel
+	ic.Visible = true
+	ic.Size = UDim2.fromOffset(w, w)
+	if l.TextXAlignment == Enum.TextXAlignment.Center then
+		local tw = TextService:GetTextSize(clean, size, l.Font, Vector2.new(4000, 4000)).X
+		ic.AnchorPoint = Vector2.new(1, 0.5)
+		ic.Position = UDim2.new(0.5, -tw / 2 - 1, 0.5, 0)
+	else
+		local pad = l:FindFirstChild("EctoPad") :: UIPadding?
+		if not pad then
+			pad = Kit.new("UIPadding", { Name = "EctoPad", Parent = l })
+		end
+		(pad :: UIPadding).PaddingLeft = UDim.new(0, w + 3)
+		ic.AnchorPoint = Vector2.new(0, 0.5)
+		ic.Position = UDim2.new(0, -(w + 3), 0.5, 0)
+	end
+end
+
 function Kit.SetButtonText(b: TextButton, text: string)
 	local l = b:FindFirstChild("Label") :: TextLabel?
 	if l then
-		l.Text = text
+		Kit.EctoText(l, text)
 	end
 end
 
