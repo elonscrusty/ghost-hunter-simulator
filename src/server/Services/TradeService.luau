@@ -119,6 +119,9 @@ local function checkSide(p: Player, uids: { string }, receive: number): string?
 	if not d then
 		return p.DisplayName .. " is still loading"
 	end
+	if p:GetAttribute("InTower") then
+		return "Can't trade inside the Boss Tower"
+	end
 	for _, uid in uids do
 		local h = d.Hunters[uid]
 		if not h then
@@ -191,6 +194,38 @@ local function editPending(userId: number, id: string, add: boolean): boolean
 		end)
 	end)
 	return ok
+end
+
+-- Clears this player's pending trade ids once a save that contains them has really landed
+-- (while the pending id exists, a later join could re-apply the trade after TradesApplied has
+-- forgotten it, so never leave it behind longer than needed). Only for the given live profile;
+-- if the player leaves first, the next join's recovery settles the ids.
+local function clearWhenSaved(player: Player, data: any, ids: { string })
+	if #ids == 0 then
+		return
+	end
+	task.spawn(function()
+		DataService.WaitFor(player, 60)
+		for _ = 1, 10 do
+			if DataService.Get(player) ~= data then
+				return
+			end
+			if DataService.SaveNow(player) then
+				-- the trade is in the saved profile now: keep retrying the cleanup (even after
+				-- the player leaves) so a stale pending id can't outlive TradesApplied's memory
+				local userId = player.UserId
+				for _, id in ids do
+					local wait = 5
+					while not editPending(userId, id, false) do
+						task.wait(wait)
+						wait = math.min(wait * 2, 300)
+					end
+				end
+				return
+			end
+			task.wait(30)
+		end
+	end)
 end
 
 -- Writes the committed record once. Returns true if the record is committed in the store
@@ -273,6 +308,23 @@ local function commit(s: Session)
 		close(s, "Couldn't reach the trade server. Nothing was traded.")
 		return
 	end
+	-- someone left (or started leaving) while the pending ids were written: their next join may
+	-- already have read a pending list WITHOUT this id, so the trade must never commit now
+	if DataService.Get(a) ~= dA or DataService.Get(b) ~= dB then
+		local st = store
+		if st then
+			pcall(function()
+				(st :: DataStore):UpdateAsync("t_" .. rec.Id, function(old: any)
+					return if old == nil then { Id = rec.Id, State = "aborted" } else nil
+				end)
+			end)
+		end
+		task.spawn(editPending, a.UserId, s.Id, false)
+		task.spawn(editPending, b.UserId, s.Id, false)
+		s.Committing = false
+		close(s, "A player left. Nothing was traded.")
+		return
+	end
 	if not writeRecord(rec) then
 		task.spawn(editPending, a.UserId, s.Id, false)
 		task.spawn(editPending, b.UserId, s.Id, false)
@@ -287,27 +339,15 @@ local function commit(s: Session)
 	releaseBusy(s)
 	for _, p in { a, b } do
 		if p.Parent then
+			HunterService.EnsureEquipped(p) -- traded away the whole crew: equip the best left
 			HunterService.Refresh(p)
 		end
 	end
 	close(s, nil)
-	-- 4: save both; clear the pending ids only once BOTH saves really landed
-	local saved = { [a] = false, [b] = false }
-	local waiting = 2
-	for _, p in { a, b } do
-		task.spawn(function()
-			saved[p] = DataService.SaveNow(p)
-			waiting -= 1
-		end)
-	end
-	local t0 = os.clock()
-	while waiting > 0 and os.clock() - t0 < 60 do
-		task.wait(0.2)
-	end
-	if saved[a] and saved[b] then
-		editPending(a.UserId, s.Id, false)
-		editPending(b.UserId, s.Id, false)
-	end
+	-- 4: save each side; clear a side's pending id as soon as THAT side's save really landed
+	-- (each side recovers on its own, so one failed save must not leave the other id behind)
+	clearWhenSaved(a, dA, { s.Id })
+	clearWhenSaved(b, dB, { s.Id })
 end
 
 -- Join-time recovery: finish this player's side of any committed trade a crash interrupted.
@@ -317,13 +357,30 @@ local function recover(player: Player, d: any)
 		return
 	end
 	local ds = st :: DataStore
-	local ok, list = pcall(function()
-		return ds:GetAsync("p_" .. player.UserId)
-	end)
-	if not ok or type(list) ~= "table" then
-		return
+	-- reads retry; if a trade's state stays unknown the player is sent back (no data is written):
+	-- playing on with hunters they may already have traded away would let them be traded twice
+	local function get(key: string): (boolean, any)
+		for attempt = 1, 3 do
+			local ok, v = pcall(function()
+				return ds:GetAsync(key)
+			end)
+			if ok then
+				return true, v
+			end
+			if attempt < 3 then
+				task.wait(attempt)
+			end
+		end
+		return false, nil
 	end
-	for _, id in list do
+	local unsettled = false
+	local recovered: { string } = {}
+	local ok, list = get("p_" .. player.UserId)
+	if not ok then
+		unsettled = true
+		list = nil
+	end
+	for _, id in if type(list) == "table" then list else {} do
 		if type(id) ~= "string" then
 			continue
 		end
@@ -331,13 +388,14 @@ local function recover(player: Player, d: any)
 			task.spawn(editPending, player.UserId, id, false) -- already applied and saved
 			continue
 		end
-		local okRec, rec = pcall(function()
-			return ds:GetAsync("t_" .. id)
-		end)
-		if okRec and type(rec) == "table" and rec.State == "committed" and (rec.A == player.UserId or rec.B == player.UserId) then
+		local okRec, rec = get("t_" .. id)
+		if not okRec then
+			unsettled = true
+		elseif type(rec) == "table" and rec.State == "committed" and (rec.A == player.UserId or rec.B == player.UserId) then
 			applySide(d, rec :: any, player.UserId)
+			table.insert(recovered, id)
 			warn("[Trade] recovered trade " .. id .. " for " .. player.UserId)
-		elseif okRec and rec == nil then
+		elseif rec == nil then
 			-- the record may still be on its way: settle it first. An "aborted" marker is only
 			-- written into an EMPTY key, so the trade either committed (apply it) or never will.
 			pcall(function()
@@ -350,13 +408,23 @@ local function recover(player: Player, d: any)
 			end)
 			if ok2 and type(cur) == "table" and cur.State == "committed" and (cur.A == player.UserId or cur.B == player.UserId) then
 				applySide(d, cur :: any, player.UserId)
+				table.insert(recovered, id)
 			elseif ok2 and type(cur) == "table" and cur.State == "aborted" then
 				task.spawn(editPending, player.UserId, id, false)
+			else
+				unsettled = true -- could still commit on the other server
 			end
-		elseif okRec and type(rec) == "table" and rec.State == "aborted" then
+		elseif type(rec) == "table" and rec.State == "aborted" then
 			task.spawn(editPending, player.UserId, id, false) -- never committed: nothing to do
 		end
 	end
+	if unsettled then
+		warn("[Trade] couldn't settle pending trades for " .. player.UserId .. "; asking the player to rejoin")
+		player:Kick("Couldn't finish loading your trades. Please rejoin in a moment - your progress is safe.")
+		return
+	end
+	-- the recovered ids stay pending until a save that contains them lands
+	clearWhenSaved(player, d, recovered)
 end
 
 function TradeService.InTrade(player: Player): boolean
@@ -385,6 +453,10 @@ function TradeService.Init()
 		end
 		if player:GetAttribute("InTower") or target:GetAttribute("InTower") then
 			return Remotes.Fail("Can't trade inside the Boss Tower")
+		end
+		local pending = requests[target]
+		if pending and pending.From.Parent and os.clock() < pending.Expires then
+			return Remotes.Fail("They already have a trade request")
 		end
 		requests[target] = { From = player, Expires = os.clock() + T.RequestSeconds }
 		Fx.To(target, "TradeRequest", { From = player.DisplayName, FromId = player.UserId, Seconds = T.RequestSeconds })

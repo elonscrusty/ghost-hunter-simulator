@@ -16,6 +16,7 @@ local PetService = require(script.Parent.PetService)
 local CrewService = require(script.Parent.CrewService)
 local GlobalEventService = require(script.Parent.GlobalEventService)
 local RarePetEventService = require(script.Parent.RarePetEventService)
+local TradeService = require(script.Parent.TradeService)
 local Remotes = require(script.Parent.Remotes)
 
 local DevService = {}
@@ -111,8 +112,17 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		end
 	elseif cmd == "ResetProgress" then
 		-- the dev's OWN progress only (back to a new player); purchases/passes are kept
+		if TradeService.InTrade(player) then
+			return "Finish or cancel your trade first"
+		end
 		if not DataService.ResetProgress(player) then
 			return "Couldn't reset"
+		end
+		-- a new profile starts with the starter hunter equipped (normally given on join)
+		local fresh = DataService.Get(player)
+		local uid = HunterService.Add(player, Config.StarterHunter)
+		if fresh and uid then
+			fresh.Equipped = { uid }
 		end
 		HunterService.Refresh(player)
 		player:LoadCharacter() -- back to spawn (the old area may be locked now)

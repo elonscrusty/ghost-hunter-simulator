@@ -2739,13 +2739,17 @@ end
 
 -- Splits an integer pool by weights so the parts always add up to the pool: everyone gets the
 -- floor of their exact share, then leftover units go to the largest fractional remainders
--- (ties: bigger weight, then earlier index). Zero / negative / NaN weights get nothing.
+-- (ties: bigger weight, then earlier index). Zero / negative / NaN / infinite weights get nothing.
+local function goodWeight(w: number): boolean
+	return w == w and w > 0 and w < math.huge
+end
+
 function Rules.SplitPool(pool: number, weights: { number }): { number }
-	pool = if pool == pool then math.max(0, math.floor(pool)) else 0
+	pool = if pool == pool and pool < math.huge then math.max(0, math.floor(pool)) else 0
 	local out = table.create(#weights, 0)
 	local total = 0
 	for _, w in weights do
-		if w == w and w > 0 then
+		if goodWeight(w) then
 			total += w
 		end
 	end
@@ -2755,7 +2759,7 @@ function Rules.SplitPool(pool: number, weights: { number }): { number }
 	local rems = {}
 	local given = 0
 	for i, w in weights do
-		if w == w and w > 0 then
+		if goodWeight(w) then
 			local exact = pool * w / total
 			local base = math.floor(exact)
 			out[i] = base
@@ -2786,13 +2790,13 @@ end
 function Rules.PoolMembers(weights: { number }, minShare: number): number
 	local total = 0
 	for _, w in weights do
-		if w == w and w > 0 then
+		if goodWeight(w) then
 			total += w
 		end
 	end
 	local n = 0
 	for _, w in weights do
-		if w == w and w > 0 and w >= total * minShare then
+		if goodWeight(w) and w >= total * minShare then
 			n += 1
 		end
 	end
@@ -2820,7 +2824,7 @@ end
 
 -- Damage that really counts: never more than the Spirit the ghost had left (no overkill).
 function Rules.Effective(damage: number, spiritLeft: number): number
-	if damage ~= damage or damage <= 0 or spiritLeft <= 0 then
+	if damage ~= damage or damage <= 0 or spiritLeft ~= spiritLeft or spiritLeft <= 0 then
 		return 0
 	end
 	return math.min(damage, spiritLeft)
@@ -6611,7 +6615,12 @@ end
 local function regenTick(dt: number)
 	local now = os.clock()
 	for player, list in health do
+		local d = DataService.Get(player)
 		for uid, e in list do
+			if not d or not d.Hunters[uid] then
+				list[uid] = nil -- traded / merged / sold away: forget its session HP
+				continue
+			end
 			local max = CrewService.MaxHP(player, uid)
 			if e.HP > max then
 				e.HP = max
@@ -7036,6 +7045,10 @@ type Profile = {
 	SyncQueued: boolean,
 	JoinedAt: number,
 	Seq: number, -- save counter: an older snapshot can never overwrite a newer one
+	-- _sess/_seq of the stored profile when we loaded it: if the stored profile later carries
+	-- another session's stamp, a newer session (lock takeover) has written it and we never may
+	LoadedSess: any,
+	LoadedSeq: any,
 }
 
 local profiles: { [Player]: Profile } = {}
@@ -7134,6 +7147,9 @@ local function loadProfile(player: Player, p: Profile): Data?
 			return nil
 		end
 		if not locked then
+			if type(result) == "table" then
+				p.LoadedSess, p.LoadedSeq = result._sess, result._seq
+			end
 			return migrate(result)
 		end
 		-- Another session still holds the lock (player just hopped). Wait for it to save.
@@ -7154,6 +7170,9 @@ local function loadProfile(player: Player, p: Profile): Data?
 			return old
 		end)
 	end)
+	if ok and not corrupt and type(result) == "table" then
+		p.LoadedSess, p.LoadedSeq = result._sess, result._seq
+	end
 	return if ok and not corrupt then migrate(result) else nil
 end
 
@@ -7168,6 +7187,7 @@ local function saveP(p: Profile, release: boolean): boolean
 	if p.Leaving and not release then
 		return false -- only the final, releasing save runs for a leaving player
 	end
+	inflight += 1 -- counted while waiting too, so BindToClose never stops before this save runs
 	if p.Saving then
 		-- wait for the running write; after that go ahead anyway: the save counter (_seq) makes
 		-- sure an older snapshot can never land on top of a newer one, so the final save of a
@@ -7178,7 +7198,6 @@ local function saveP(p: Profile, release: boolean): boolean
 		end
 	end
 	p.Saving = true
-	inflight += 1
 	local ds = store :: DataStore
 	p.Data.Stats.Seconds += math.floor(os.clock() - p.JoinedAt)
 	p.JoinedAt = os.clock()
@@ -7196,6 +7215,12 @@ local function saveP(p: Profile, release: boolean): boolean
 		return ds:UpdateAsync(p.Key, function(old: any)
 			if type(old) == "table" and lockFresh(old._lock, p.Session) then
 				-- another session owns this profile now: never overwrite its newer data
+				aborted = true
+				return nil
+			end
+			if type(old) == "table" and old._sess ~= p.Session and (old._sess ~= p.LoadedSess or old._seq ~= p.LoadedSeq) then
+				-- another session saved this profile after we loaded it (it took over our lock
+				-- and may have released it since): our snapshot is older, never write it
 				aborted = true
 				return nil
 			end
@@ -7223,6 +7248,15 @@ local function saveP(p: Profile, release: boolean): boolean
 	inflight -= 1
 	if ok and aborted then
 		warn("[Data] save skipped for " .. p.Key .. ": another session owns the profile")
+		-- this server can never save this profile again: send the player to the newer session
+		-- instead of letting them play on with progress that can't be kept
+		if not p.Leaving then
+			p.Leaving = true
+			local player = Players:GetPlayerByUserId(tonumber(string.sub(p.Key, 3)) or 0)
+			if player and profiles[player] == p then
+				player:Kick("Your Ghost Hunter data was opened on another server. Please rejoin - your saved progress is safe.")
+			end
+		end
 	end
 	return ok and not aborted
 end
@@ -7404,6 +7438,8 @@ local function onPlayerAdded(player: Player)
 		SyncQueued = false,
 		JoinedAt = os.clock(),
 		Seq = 0,
+		LoadedSess = nil,
+		LoadedSeq = nil,
 	}
 	profiles[player] = p
 	-- rejoined this same server while the previous session was still saving: wait for it
@@ -7553,6 +7589,7 @@ local PetService = require(script.Parent.PetService)
 local CrewService = require(script.Parent.CrewService)
 local GlobalEventService = require(script.Parent.GlobalEventService)
 local RarePetEventService = require(script.Parent.RarePetEventService)
+local TradeService = require(script.Parent.TradeService)
 local Remotes = require(script.Parent.Remotes)
 
 local DevService = {}
@@ -7648,8 +7685,17 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		end
 	elseif cmd == "ResetProgress" then
 		-- the dev's OWN progress only (back to a new player); purchases/passes are kept
+		if TradeService.InTrade(player) then
+			return "Finish or cancel your trade first"
+		end
 		if not DataService.ResetProgress(player) then
 			return "Couldn't reset"
+		end
+		-- a new profile starts with the starter hunter equipped (normally given on join)
+		local fresh = DataService.Get(player)
+		local uid = HunterService.Add(player, Config.StarterHunter)
+		if fresh and uid then
+			fresh.Equipped = { uid }
 		end
 		HunterService.Refresh(player)
 		player:LoadCharacter() -- back to spawn (the old area may be locked now)
@@ -8124,6 +8170,9 @@ function FeedbackService.Init()
 		if type(text) ~= "string" then
 			return Remotes.Fail("Write something first")
 		end
+		if #text > fb.MaxLength * 4 then
+			return Remotes.Fail("That's too long") -- don't run pattern work on huge strings
+		end
 		local clean = text:gsub("%c", " "):gsub("^%s+", ""):gsub("%s+$", "")
 		if #clean < fb.MinLength then
 			return Remotes.Fail("Tell us a bit more (" .. fb.MinLength .. "+ letters)")
@@ -8152,7 +8201,12 @@ function FeedbackService.Init()
 			Zone = zoneOf(player),
 			Version = Config.Version,
 		}
-		if not save(entry) then
+		local saved = save(entry)
+		if not player.Parent then
+			lastSent[player] = nil -- left while the filter/save yielded: don't keep their entries
+			return { ok = saved }
+		end
+		if not saved then
 			lastSent[player] = nil
 			return Remotes.Fail("Couldn't send right now, try again later")
 		end
@@ -9006,7 +9060,8 @@ function GlobalEventService.Start()
 		end
 	end)
 	if not IS_STUDIO then
-		pcall(function()
+		-- SubscribeAsync yields: never hold up the Start of the services after this one
+		task.spawn(pcall, function()
 			MessagingService:SubscribeAsync(G.Topic, function(msg)
 				apply(sanitize(msg.Data), true)
 			end)
@@ -9086,6 +9141,9 @@ local busy: { [Player]: { [string]: string } } = {}
 function HunterService.SetBusy(player: Player, uid: string, reason: string?)
 	local b = busy[player]
 	if not b then
+		if reason == nil or not player.Parent then
+			return -- nothing to clear / player already left (never re-create their entry)
+		end
 		b = {}
 		busy[player] = b
 	end
@@ -9182,6 +9240,13 @@ local function ensureEquipped(player: Player, d: DataService.Data)
 	-- lost the extra-slots pass: keep only as many equipped as there are slots
 	while #d.Equipped > PlayerInfo.Slots(player) do
 		table.remove(d.Equipped)
+	end
+end
+
+function HunterService.EnsureEquipped(player: Player)
+	local d = DataService.Get(player)
+	if d then
+		ensureEquipped(player, d)
 	end
 end
 
@@ -9817,16 +9882,17 @@ function PetService.Init()
 		if not egg then
 			return Remotes.Fail("Unknown egg")
 		end
-		-- buy at the hatchery (pavilion around X 48..68, Z 66..88), like crates at their station
-		if not Remotes.Near(player, Vector3.new(58, 0, 77), 45) then
-			return Remotes.Fail("Walk to the Pet Hatchery first!")
-		end
 		local done = d.PendingHatch[requestId]
 		if done then
 			if done.Egg ~= eggId then
 				return Remotes.Fail("Unknown egg")
 			end
 			return { ok = true, Egg = done.Egg, Pet = done.Pet, Uid = done.Uid, Shards = d.Shards }
+		end
+		-- buy at the hatchery (pavilion around X 48..68, Z 66..88), like crates at their station
+		-- (checked after the retry lookup, so a retry of a hatch that already went through succeeds)
+		if not Remotes.Near(player, Vector3.new(58, 0, 77), 45) then
+			return Remotes.Fail("Walk to the Pet Hatchery first!")
 		end
 		-- a double tap (two different ids) can't buy twice by accident
 		local now = os.clock()
@@ -10160,6 +10226,9 @@ function PlayerInfo.Init()
 		s.Slots = PlayerInfo.Slots(player)
 		s.EctoMultiplier = PlayerInfo.EctoMultiplier(player)
 		s.LuckMultiplier = PlayerInfo.LuckMultiplier(player)
+		-- luck without the timed boost (pass, Server Luck): the crate panel adds the boost itself
+		local dd = DataService.Get(player)
+		s.LuckOther = s.LuckMultiplier / (if dd and PlayerInfo.BoostActive(dd, "Luck") then Config.Boosts.Luck.Multiplier else 1)
 		s.PickupRadius = PlayerInfo.PickupRadius(player)
 		s.ZoneMultiplier = PlayerInfo.ZoneMultiplier(player)
 		s.MaxHunters = PlayerInfo.MaxHunters(player)
@@ -10900,7 +10969,7 @@ function Remotes.Init()
 			return { ok = false, err = "Something went wrong" }
 		end
 		-- only requests that did something count as activity (rejected spam doesn't)
-		if result == true or (type(result) == "table" and result.ok == true) then
+		if player.Parent and (result == true or (type(result) == "table" and result.ok == true)) then
 			lastAction[player] = os.clock()
 		end
 		if type(result) ~= "table" then
@@ -10969,13 +11038,13 @@ local SAFE_MAX_Y = -2 -- root must be above this (lowest walkable floor top is ~
 local RESCUE_COOLDOWN = 2 -- seconds; lets the teleport replicate before checking again
 local TOAST = "Whoops! You fell out of the world - put you back safely."
 
-type Track = { LastSafe: CFrame?, SafeAt: number, RescuedAt: number }
+type Track = { LastSafe: CFrame?, SafeInTower: boolean, SafeAt: number, RescuedAt: number }
 local tracks: { [Player]: Track } = {}
 
 local function track(player: Player): Track
 	local t = tracks[player]
 	if not t then
-		t = { LastSafe = nil, SafeAt = 0, RescuedAt = 0 }
+		t = { LastSafe = nil, SafeInTower = false, SafeAt = 0, RescuedAt = 0 }
 		tracks[player] = t
 	end
 	return t
@@ -11015,7 +11084,8 @@ local function rescue(player: Player, character: Model, root: BasePart, t: Track
 			source = "TowerSafe"
 		end
 	end
-	if not target and t.LastSafe then
+	-- a spot saved inside a tower room never counts on the main map (and vice versa)
+	if not target and t.LastSafe and t.SafeInTower == (player:GetAttribute("InTower") == true) then
 		local cf = (t.LastSafe :: CFrame) + Vector3.new(0, 3, 0)
 		if groundBelow(cf.Position, character) then
 			target = cf
@@ -11073,6 +11143,7 @@ local function check(player: Player, now: number)
 		local flat = Vector3.new(look.X, 0, look.Z)
 		local pos = root.Position
 		t.LastSafe = if flat.Magnitude > 0.01 then CFrame.lookAt(pos, pos + flat.Unit) else CFrame.new(pos)
+		t.SafeInTower = player:GetAttribute("InTower") == true
 		t.SafeAt = now
 	end
 end
@@ -11616,6 +11687,7 @@ local TowerService = {}
 
 local TC = Config.Tower
 local TICK = 0.25
+local STARTING_LIMIT = 15 -- seconds a run may sit in "Starting" before the watchdog ends it
 local SLOT_X, SLOT_Z, SLOT_STEP, SLOTS_PER_ROW = 1400, -600, 300, 4
 
 type Earned = { Ecto: number, Shards: number }
@@ -11724,7 +11796,13 @@ local function clearPlayer(player: Player)
 	player:SetAttribute("TowerRoom", nil)
 	player:SetAttribute("TowerSafe", nil)
 	if player.Parent then
-		HunterService.Refresh(player)
+		-- a failed refresh (player half-way out) must not abort the run cleanup that called us
+		local ok, err = pcall(function()
+			HunterService.Refresh(player)
+		end)
+		if not ok then
+			warn("[Tower] refresh failed: " .. tostring(err))
+		end
 	end
 end
 
@@ -11771,6 +11849,11 @@ function cleanup(run: Run)
 		return
 	end
 	run.Phase = "Ended"
+	-- free the slot first so an error below can never leak it
+	if slots[run.Slot] == run then
+		slots[run.Slot] = nil
+	end
+	runs[run.Id] = nil
 	for _, p in memberList(run) do
 		run.Members[p] = nil
 		if memberOf[p] == run then
@@ -11783,16 +11866,20 @@ function cleanup(run: Run)
 	local g = run.Boss
 	run.Boss = nil
 	if g and g.Alive then
-		GhostService.Remove(g, nil, false)
+		local ok, err = pcall(function()
+			GhostService.Remove(g, nil, false)
+		end)
+		if not ok then
+			warn("[Tower] boss removal failed: " .. tostring(err))
+		end
 	end
-	if run.Model then
-		run.Model:Destroy()
-		run.Model = nil
+	local model = run.Model
+	run.Model = nil
+	if model then
+		pcall(function()
+			model:Destroy()
+		end)
 	end
-	if slots[run.Slot] == run then
-		slots[run.Slot] = nil
-	end
-	runs[run.Id] = nil
 end
 
 -- Ends the run for everyone: each member goes back to the spawn with a message.
@@ -11817,6 +11904,7 @@ local function startRoom(run: Run, n: number)
 	run.Room = n
 	run.Votes = {}
 	run.Phase = "Starting"
+	run.EndsAt = serverNow() + STARTING_LIMIT -- watchdog: tickRun ends a run stuck here
 	TowerRoom.SetRoom(model, n)
 	local chest = model:FindFirstChild("Chest")
 	if chest then
@@ -12002,6 +12090,10 @@ local function blocked(player: Player): string?
 	if player:GetAttribute("InTower") == true or memberOf[player] then
 		return "You're already in the tower!"
 	end
+	-- lazy require: TradeService loads after TowerService
+	if require(script.Parent.TradeService).InTrade(player) then
+		return "Finish your trade first!"
+	end
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not hum or hum.Health <= 0 then
@@ -12037,7 +12129,7 @@ local function startRun(party: { Player }, first: number, dev: boolean): string?
 		Earned = {},
 		Best = 0,
 		Model = nil,
-		EndsAt = 0,
+		EndsAt = serverNow() + STARTING_LIMIT,
 		Dev = dev,
 	}
 	nextId += 1
@@ -12160,6 +12252,12 @@ local function runLobby(l: Lobby)
 			end
 		end
 		startRun(party, first, false)
+		-- anyone who didn't get in (tower full, door stuck, teleport failed) leaves the pad UI
+		for _, p in party do
+			if p.Parent and not memberOf[p] then
+				Fx.To(p, "Tower", { State = "PadCancel" })
+			end
+		end
 	end
 end
 
@@ -12255,7 +12353,16 @@ local function tickRun(run: Run, t: number)
 			leave(run, p, "", false)
 		end
 	end
-	if run.Phase == "Fight" then
+	if next(run.Members) == nil then
+		cleanup(run) -- safety: an empty run (e.g. a leave that errored half-way) frees its slot
+		return
+	end
+	if run.Phase == "Starting" then
+		-- rooms start synchronously; a run still "Starting" this long hit an error mid-start
+		if t >= run.EndsAt then
+			endRun(run, "Something went wrong in the tower. Your rewards are safe!")
+		end
+	elseif run.Phase == "Fight" then
 		-- wipe: nobody has a hunter that can fight
 		local anyActive = false
 		for p in run.Members do
@@ -12542,6 +12649,9 @@ local function checkSide(p: Player, uids: { string }, receive: number): string?
 	if not d then
 		return p.DisplayName .. " is still loading"
 	end
+	if p:GetAttribute("InTower") then
+		return "Can't trade inside the Boss Tower"
+	end
 	for _, uid in uids do
 		local h = d.Hunters[uid]
 		if not h then
@@ -12614,6 +12724,38 @@ local function editPending(userId: number, id: string, add: boolean): boolean
 		end)
 	end)
 	return ok
+end
+
+-- Clears this player's pending trade ids once a save that contains them has really landed
+-- (while the pending id exists, a later join could re-apply the trade after TradesApplied has
+-- forgotten it, so never leave it behind longer than needed). Only for the given live profile;
+-- if the player leaves first, the next join's recovery settles the ids.
+local function clearWhenSaved(player: Player, data: any, ids: { string })
+	if #ids == 0 then
+		return
+	end
+	task.spawn(function()
+		DataService.WaitFor(player, 60)
+		for _ = 1, 10 do
+			if DataService.Get(player) ~= data then
+				return
+			end
+			if DataService.SaveNow(player) then
+				-- the trade is in the saved profile now: keep retrying the cleanup (even after
+				-- the player leaves) so a stale pending id can't outlive TradesApplied's memory
+				local userId = player.UserId
+				for _, id in ids do
+					local wait = 5
+					while not editPending(userId, id, false) do
+						task.wait(wait)
+						wait = math.min(wait * 2, 300)
+					end
+				end
+				return
+			end
+			task.wait(30)
+		end
+	end)
 end
 
 -- Writes the committed record once. Returns true if the record is committed in the store
@@ -12696,6 +12838,23 @@ local function commit(s: Session)
 		close(s, "Couldn't reach the trade server. Nothing was traded.")
 		return
 	end
+	-- someone left (or started leaving) while the pending ids were written: their next join may
+	-- already have read a pending list WITHOUT this id, so the trade must never commit now
+	if DataService.Get(a) ~= dA or DataService.Get(b) ~= dB then
+		local st = store
+		if st then
+			pcall(function()
+				(st :: DataStore):UpdateAsync("t_" .. rec.Id, function(old: any)
+					return if old == nil then { Id = rec.Id, State = "aborted" } else nil
+				end)
+			end)
+		end
+		task.spawn(editPending, a.UserId, s.Id, false)
+		task.spawn(editPending, b.UserId, s.Id, false)
+		s.Committing = false
+		close(s, "A player left. Nothing was traded.")
+		return
+	end
 	if not writeRecord(rec) then
 		task.spawn(editPending, a.UserId, s.Id, false)
 		task.spawn(editPending, b.UserId, s.Id, false)
@@ -12710,27 +12869,15 @@ local function commit(s: Session)
 	releaseBusy(s)
 	for _, p in { a, b } do
 		if p.Parent then
+			HunterService.EnsureEquipped(p) -- traded away the whole crew: equip the best left
 			HunterService.Refresh(p)
 		end
 	end
 	close(s, nil)
-	-- 4: save both; clear the pending ids only once BOTH saves really landed
-	local saved = { [a] = false, [b] = false }
-	local waiting = 2
-	for _, p in { a, b } do
-		task.spawn(function()
-			saved[p] = DataService.SaveNow(p)
-			waiting -= 1
-		end)
-	end
-	local t0 = os.clock()
-	while waiting > 0 and os.clock() - t0 < 60 do
-		task.wait(0.2)
-	end
-	if saved[a] and saved[b] then
-		editPending(a.UserId, s.Id, false)
-		editPending(b.UserId, s.Id, false)
-	end
+	-- 4: save each side; clear a side's pending id as soon as THAT side's save really landed
+	-- (each side recovers on its own, so one failed save must not leave the other id behind)
+	clearWhenSaved(a, dA, { s.Id })
+	clearWhenSaved(b, dB, { s.Id })
 end
 
 -- Join-time recovery: finish this player's side of any committed trade a crash interrupted.
@@ -12740,13 +12887,30 @@ local function recover(player: Player, d: any)
 		return
 	end
 	local ds = st :: DataStore
-	local ok, list = pcall(function()
-		return ds:GetAsync("p_" .. player.UserId)
-	end)
-	if not ok or type(list) ~= "table" then
-		return
+	-- reads retry; if a trade's state stays unknown the player is sent back (no data is written):
+	-- playing on with hunters they may already have traded away would let them be traded twice
+	local function get(key: string): (boolean, any)
+		for attempt = 1, 3 do
+			local ok, v = pcall(function()
+				return ds:GetAsync(key)
+			end)
+			if ok then
+				return true, v
+			end
+			if attempt < 3 then
+				task.wait(attempt)
+			end
+		end
+		return false, nil
 	end
-	for _, id in list do
+	local unsettled = false
+	local recovered: { string } = {}
+	local ok, list = get("p_" .. player.UserId)
+	if not ok then
+		unsettled = true
+		list = nil
+	end
+	for _, id in if type(list) == "table" then list else {} do
 		if type(id) ~= "string" then
 			continue
 		end
@@ -12754,13 +12918,14 @@ local function recover(player: Player, d: any)
 			task.spawn(editPending, player.UserId, id, false) -- already applied and saved
 			continue
 		end
-		local okRec, rec = pcall(function()
-			return ds:GetAsync("t_" .. id)
-		end)
-		if okRec and type(rec) == "table" and rec.State == "committed" and (rec.A == player.UserId or rec.B == player.UserId) then
+		local okRec, rec = get("t_" .. id)
+		if not okRec then
+			unsettled = true
+		elseif type(rec) == "table" and rec.State == "committed" and (rec.A == player.UserId or rec.B == player.UserId) then
 			applySide(d, rec :: any, player.UserId)
+			table.insert(recovered, id)
 			warn("[Trade] recovered trade " .. id .. " for " .. player.UserId)
-		elseif okRec and rec == nil then
+		elseif rec == nil then
 			-- the record may still be on its way: settle it first. An "aborted" marker is only
 			-- written into an EMPTY key, so the trade either committed (apply it) or never will.
 			pcall(function()
@@ -12773,13 +12938,23 @@ local function recover(player: Player, d: any)
 			end)
 			if ok2 and type(cur) == "table" and cur.State == "committed" and (cur.A == player.UserId or cur.B == player.UserId) then
 				applySide(d, cur :: any, player.UserId)
+				table.insert(recovered, id)
 			elseif ok2 and type(cur) == "table" and cur.State == "aborted" then
 				task.spawn(editPending, player.UserId, id, false)
+			else
+				unsettled = true -- could still commit on the other server
 			end
-		elseif okRec and type(rec) == "table" and rec.State == "aborted" then
+		elseif type(rec) == "table" and rec.State == "aborted" then
 			task.spawn(editPending, player.UserId, id, false) -- never committed: nothing to do
 		end
 	end
+	if unsettled then
+		warn("[Trade] couldn't settle pending trades for " .. player.UserId .. "; asking the player to rejoin")
+		player:Kick("Couldn't finish loading your trades. Please rejoin in a moment - your progress is safe.")
+		return
+	end
+	-- the recovered ids stay pending until a save that contains them lands
+	clearWhenSaved(player, d, recovered)
 end
 
 function TradeService.InTrade(player: Player): boolean
@@ -12808,6 +12983,10 @@ function TradeService.Init()
 		end
 		if player:GetAttribute("InTower") or target:GetAttribute("InTower") then
 			return Remotes.Fail("Can't trade inside the Boss Tower")
+		end
+		local pending = requests[target]
+		if pending and pending.From.Parent and os.clock() < pending.Expires then
+			return Remotes.Fail("They already have a trade request")
 		end
 		requests[target] = { From = player, Expires = os.clock() + T.RequestSeconds }
 		Fx.To(target, "TradeRequest", { From = player.DisplayName, FromId = player.UserId, Seconds = T.RequestSeconds })
@@ -17330,9 +17509,10 @@ local function lobby(f: Instance)
 	Kit.AddRect(44, 1335, 49, 1343)
 	plant(f, 45, 1276)
 	plant(f, -30, 1349)
-	-- big painted cross on the floor under the ghosts (flat) + a puddle
-	Kit.Box(f, V(-5, 0.16, 1285), V(5, 0.19, 1325), C(255, 205, 210))
-	Kit.Box(f, V(-20, 0.16, 1300), V(20, 0.19, 1310), C(255, 205, 210))
+	-- big painted cross on the floor under the ghosts (flat, a hair above the guide lines so they
+	-- don't z-fight) + a puddle
+	Kit.Box(f, V(-5, 0.16, 1285), V(5, 0.22, 1325), C(255, 205, 210))
+	Kit.Box(f, V(-20, 0.16, 1300), V(20, 0.22, 1310), C(255, 205, 210))
 	puddle(f, 12, 1318, 6)
 	floater(f, V(1.6, 2.2, 0.2), V(-44, 9, 1311), C(205, 170, 120), "FloatingClipboard")
 	floater(f, V(1.6, 2.2, 0.2), V(42, 9, 1316), C(205, 170, 120), "FloatingClipboard")
@@ -20626,7 +20806,7 @@ local function chest(parent: Instance, x: number, z: number, fx: number, fz: num
 	local base = CFrame.new(x, 0, z) * CFrame.Angles(0, Kit.FaceYaw(fx, fz), 0)
 	local gold = Kit.Vivid(GOLD)
 	Kit.Part(m, V(6, 3.4, 4), base * CFrame.new(0, 1.7, 0), WOODC, { Mat = WOOD, Solid = true })
-	Kit.Part(m, V(6.3, 0.6, 4.3), base * CFrame.new(0, 3.1, 0), gold, GOLD_M)
+	Kit.Part(m, V(6.3, 0.5, 4.3), base * CFrame.new(0, 3.05, 0), gold, GOLD_M) -- top below the box top (no z-fight)
 	Kit.Part(m, V(6, 0.6, 4), base * CFrame.new(0, 4.6, 2.6) * CFrame.Angles(-1.1, 0, 0), WOODC, { Mat = WOOD })
 	Kit.Part(m, V(0.8, 1.2, 0.3), base * CFrame.new(0, 2.6, -2.1), gold, GOLD_M)
 	-- coin pile spilling out the front + a couple of gems
@@ -23669,7 +23849,8 @@ local function refresh()
 	crateIcon.Image = img or ""
 	crateIcon.Visible = img ~= nil
 	-- the luck boost ends on the server clock even if no new snapshot arrives
-	local luck = if (d.Boosts.Luck or 0) > State.Now() then Config.Boosts.Luck.Multiplier else 1
+	-- (LuckOther = the Lucky Hunter pass and Server Luck, so the shown odds match the real roll)
+	local luck = (tonumber(d.LuckOther) or 1) * (if (d.Boosts.Luck or 0) > State.Now() then Config.Boosts.Luck.Multiplier else 1)
 	if d.LuckyOpens and (d.LuckyOpens[crateId] or 0) > 0 then
 		luck *= Config.LuckyOpens.Multiplier
 	end
@@ -23912,14 +24093,15 @@ function CratePanel.Init()
 		Parent = panel.Root,
 	})
 	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -400, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
-	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
+	-- below the LUCKY / AUTO OPEN buttons (y 8-42): it used to sit half under them
+	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 46), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
-	legendLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 52), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62, Fit = true })
+	legendLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 64), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62, Fit = true })
 	legendLabel.RichText = true
 	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
 	list = Kit.new("ScrollingFrame", {
-		Size = UDim2.new(1, 0, 1, -136),
-		Position = UDim2.fromOffset(0, 72),
+		Size = UDim2.new(1, 0, 1, -146),
+		Position = UDim2.fromOffset(0, 84),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,
@@ -25875,7 +26057,7 @@ function EventPopup.Init()
 	local body = panel.Body
 	-- solid colour, no UIGradient: on phones the gradient-filled 56 px "2X" lost its "2" and
 	-- flickered (seen in a player recording)
-	Kit.Label(body, "2X", { Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 12), Color = Theme.Ecto, Style = "Banner", TextSize = 48, ZIndex = 62, Stroke = 3 })
+	Kit.Label(body, "2X", { Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 12), Color = Theme.Ecto, Style = "Banner", ZIndex = 62, Stroke = 3 })
 	Kit.Label(body, "Earn DOUBLE Ectoplasm from ghosts while the event is active!", { Size = UDim2.new(1, -20, 0, 48), Position = UDim2.fromOffset(10, 80), Style = "Body", ZIndex = 62 })
 	local ok = Kit.Button(body, {
 		Text = "LET'S HUNT!",
@@ -26454,8 +26636,13 @@ local function add(model: Instance)
 		updateSpirit(e, (model:GetAttribute("Spirit") :: number?) or 0)
 	end)
 	model.AncestryChanged:Connect(function()
-		if not model:IsDescendantOf(workspace) and entries[uid] == e then
-			entries[uid] = nil
+		if not model:IsDescendantOf(workspace) then
+			if entries[uid] == e then
+				entries[uid] = nil
+			end
+			-- a culled rig is parked outside the model, so the model's Destroy wouldn't take it
+			e.Dying = true
+			e.Vis:Destroy()
 		end
 	end)
 	-- spawn-in: grow from nothing (the event boss gets its own dramatic entrance)
@@ -26826,7 +27013,9 @@ local function petCard(order: number, pet: Config.PetDef, chance: number)
 	Kit.Icon(pic, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 40, Stroke = 0, ZIndex = 64 })
 	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 92), ZIndex = 64, Style = "Body", Fit = true })
 	Kit.Label(card, r and r.Name or string.upper(pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 113), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
-	Kit.Label(card, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(0.6, -8, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Ecto, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
+	-- two short lines (a one-line "+25% POWER for all hunters" was cut to "+25% PO…" here)
+	local bonus = string.gsub(PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), " for all hunters", "")
+	Kit.Label(card, bonus, { Size = UDim2.new(0.6, -8, 0, 28), Position = UDim2.new(0, 8, 1, -32), ZIndex = 64, Color = Theme.Ecto, Align = Enum.TextXAlignment.Left, Style = "Tiny", Wrap = true })
 	Kit.Label(card, pct(chance), { Size = UDim2.new(0.4, 0, 0, 24), Position = UDim2.new(1, -8, 1, -29), AnchorPoint = Vector2.new(1, 0), ZIndex = 64, Align = Enum.TextXAlignment.Right, Style = "Heading", Fit = true })
 end
 
@@ -27208,12 +27397,14 @@ local function buildTop(screen: ScreenGui)
 	local _ = screen
 	boostHolder = Kit.new("Frame", {
 		Size = UDim2.fromOffset(340, 22),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		LayoutOrder = 3,
 		Visible = false,
 		Parent = stack,
 	})
-	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Parent = boostHolder })
+	-- 3+ active boosts wrap onto a second row instead of spilling past the stack's sides
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Wraps = true, Parent = boostHolder })
 end
 
 -- HUD layout
@@ -28991,15 +29182,16 @@ function IndexPanel.Init()
 			AutoButtonColor = false,
 			BackgroundColor3 = Theme.Bg,
 			Font = Theme.Body,
-			TextScaled = true,
 			TextColor3 = Theme.Text,
+			TextTruncate = Enum.TextTruncate.AtEnd,
 			LayoutOrder = i,
 			ZIndex = 63,
 			Parent = tabRow,
 		})
+		-- fixed size from the type scale (TextScaled made odd sizes that broke text on phones)
+		Kit.FitText(b :: any, Theme.Type.Small, 0, true)
 		Kit.Corner(b, UDim.new(1, 0))
 		Kit.Stroke(b, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
-		Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), Parent = b })
 		b.Activated:Connect(function()
 			Kit.Play("Click")
 			setTab(t)
@@ -29071,15 +29263,16 @@ function IndexPanel.Init()
 			AutoButtonColor = false,
 			BackgroundColor3 = Theme.Bg,
 			Font = Theme.Body,
-			TextScaled = true,
 			TextColor3 = Theme.Text,
+			TextTruncate = Enum.TextTruncate.AtEnd,
 			LayoutOrder = t,
 			ZIndex = 66,
 			Parent = tierRow,
 		})
+		Kit.FitText(b :: any, Theme.Type.Tiny, 0, true)
 		Kit.Corner(b, UDim.new(1, 0))
 		Kit.Stroke(b, 1.5, Config.Tiers[t].Color, Enum.ApplyStrokeMode.Border)
-		Kit.new("UIPadding", { PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 3), Parent = b })
+		Kit.new("UIPadding", { PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2), Parent = b })
 		b.Activated:Connect(function()
 			Kit.Play("Click")
 			detailTier = t
@@ -29883,7 +30076,9 @@ function PetFollowers.Start()
 			for _, pet in e.Pets do
 				local bob = math.sin(t * 2.2 + pet.Slot * 1.7) * 0.25
 				local target = base * CFrame.new(SLOTS[pet.Slot] + Vector3.new(0, bob, 0))
-				local cur = if pet.Cur then pet.Cur:Lerp(target, alpha) else target
+				-- snap after a teleport / respawn instead of streaking across the map
+				local prev = pet.Cur
+				local cur = if prev and (prev.Position - target.Position).Magnitude < 40 then prev:Lerp(target, alpha) else target
 				pet.Cur = cur
 				for _, pc in pet.Pieces do
 					table.insert(parts, pc.Part)
@@ -30820,12 +31015,16 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 				Size = UDim2.fromOffset(118, 44),
 				ZIndex = 12,
 				OnClick = function()
+					if not b.Active then
+						return -- already equipped / request in flight (double tap)
+					end
+					b.Active = false
 					local r = if free then State.Request("Equip", res.Uid) else State.Request("EquipBest")
 					if r.ok then
 						Kit.SetButtonText(b, "EQUIPPED ✅")
 						b:SetAttribute("Color", "Gray")
-						b.Active = false
 					else
+						b.Active = true
 						Kit.Toast(r.err or "Couldn't equip", "Bad")
 					end
 				end,
@@ -31117,7 +31316,7 @@ end
 -- Shared ending: legendary title slam, camera slides left, the result card, auto-close.
 local function finish(g: ScreenGui, skip: TextButton, cam: Camera, camCF: CFrame, rarity: Config.RarityDef, card: () -> ())
 	if rarity.Order >= 5 and not skipping then
-		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", TextSize = 54, ZIndex = 8, Stroke = 4 })
+		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", ZIndex = 8, Stroke = 4 })
 		-- solid colour (a UIGradient on big text dropped letters on phones)
 		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
 		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
@@ -31825,7 +32024,9 @@ function Targeting.Select(uid: number)
 	showHighlight(uid)
 	Sound.Play("Select")
 	Effects.Ring(e.Pos, e.Def.Glow, 4 * e.Def.Scale, 0.35)
-	if Targeting.Current() ~= uid then
+	-- re-tapping the current ghost still tells the server while Auto Attack is on, so the pick
+	-- becomes manual and turning Auto Attack off keeps it
+	if Targeting.Current() ~= uid or player:GetAttribute("AutoAttack") == true then
 		selectRemote:FireServer(uid)
 	end
 	selectedSignal:Fire(uid)
@@ -33392,7 +33593,7 @@ function Tutorial.Init()
 	})
 	Kit.Corner(promptFrame, UDim.new(0, 14))
 	Kit.new("UIScale", { Parent = promptFrame })
-	promptLabel = Kit.Label(promptFrame, "", { Size = UDim2.new(1, -70, 0, 28), Position = UDim2.fromOffset(12, 4), Color = Theme.Ecto, Style = "Heading", TextSize = 22, Fit = true, ZIndex = 41 })
+	promptLabel = Kit.Label(promptFrame, "", { Size = UDim2.new(1, -70, 0, 28), Position = UDim2.fromOffset(12, 4), Color = Theme.Ecto, Style = "Heading", Fit = true, ZIndex = 41 })
 	promptSub = Kit.Label(promptFrame, "", { Size = UDim2.new(1, -70, 0, 20), Position = UDim2.fromOffset(12, 32), Color = Theme.Text, Style = "Small", Fit = true, ZIndex = 41 })
 	Kit.Button(promptFrame, {
 		Text = "SKIP",
@@ -34323,11 +34524,24 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	b.MouseLeave:Connect(function()
 		Kit.Tween(scale, 0.12, { Scale = 1 })
 	end)
+	-- release is watched globally: a finger that drags off the button (e.g. to scroll a list)
+	-- never fires MouseButton1Up on it, which used to leave the button stuck shrunk
+	local pressConn: RBXScriptConnection? = nil
 	b.MouseButton1Down:Connect(function()
 		Kit.Tween(scale, 0.06, { Scale = 0.93 })
-	end)
-	b.MouseButton1Up:Connect(function()
-		Kit.Tween(scale, 0.15, { Scale = 1 }, Enum.EasingStyle.Back)
+		if pressConn then
+			pressConn:Disconnect()
+		end
+		pressConn = UserInputService.InputEnded:Connect(function(input)
+			local t = input.UserInputType
+			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch or input.KeyCode == Enum.KeyCode.ButtonA then
+				if pressConn then
+					pressConn:Disconnect()
+					pressConn = nil
+				end
+				Kit.Tween(scale, 0.15, { Scale = 1 }, Enum.EasingStyle.Back)
+			end
+		end)
 	end)
 	b.Activated:Connect(function()
 		play("Click")
@@ -34630,6 +34844,11 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 	local bc = Theme.Buttons[color or "Purple"] or Theme.Buttons.Purple
 	Kit.Gradient(banner, bc[1], bc[2], 90)
 	local titleLabel = Kit.Label(banner, title, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 63, Style = "Title", Fit = true })
+	-- panels that retitle themselves (crate / egg names, "UNLOCK CEMETERY?") get a banner that
+	-- fits the new title instead of cutting it off with "…"
+	titleLabel:GetPropertyChangedSignal("Text"):Connect(function()
+		banner.Size = UDim2.new(0, math.clamp(#titleLabel.Text * 15 + 60, 200, 420), 0, 44)
+	end)
 	local body: Frame = Kit.new("Frame", {
 		Name = "Body",
 		Size = UDim2.new(1, -28, 1, -50),

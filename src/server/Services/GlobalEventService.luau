@@ -142,7 +142,8 @@ function GlobalEventService.Start()
 		end
 	end)
 	if not IS_STUDIO then
-		pcall(function()
+		-- SubscribeAsync yields: never hold up the Start of the services after this one
+		task.spawn(pcall, function()
 			MessagingService:SubscribeAsync(G.Topic, function(msg)
 				apply(sanitize(msg.Data), true)
 			end)

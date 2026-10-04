@@ -216,13 +216,17 @@ end
 
 -- Splits an integer pool by weights so the parts always add up to the pool: everyone gets the
 -- floor of their exact share, then leftover units go to the largest fractional remainders
--- (ties: bigger weight, then earlier index). Zero / negative / NaN weights get nothing.
+-- (ties: bigger weight, then earlier index). Zero / negative / NaN / infinite weights get nothing.
+local function goodWeight(w: number): boolean
+	return w == w and w > 0 and w < math.huge
+end
+
 function Rules.SplitPool(pool: number, weights: { number }): { number }
-	pool = if pool == pool then math.max(0, math.floor(pool)) else 0
+	pool = if pool == pool and pool < math.huge then math.max(0, math.floor(pool)) else 0
 	local out = table.create(#weights, 0)
 	local total = 0
 	for _, w in weights do
-		if w == w and w > 0 then
+		if goodWeight(w) then
 			total += w
 		end
 	end
@@ -232,7 +236,7 @@ function Rules.SplitPool(pool: number, weights: { number }): { number }
 	local rems = {}
 	local given = 0
 	for i, w in weights do
-		if w == w and w > 0 then
+		if goodWeight(w) then
 			local exact = pool * w / total
 			local base = math.floor(exact)
 			out[i] = base
@@ -263,13 +267,13 @@ end
 function Rules.PoolMembers(weights: { number }, minShare: number): number
 	local total = 0
 	for _, w in weights do
-		if w == w and w > 0 then
+		if goodWeight(w) then
 			total += w
 		end
 	end
 	local n = 0
 	for _, w in weights do
-		if w == w and w > 0 and w >= total * minShare then
+		if goodWeight(w) and w >= total * minShare then
 			n += 1
 		end
 	end
@@ -297,7 +301,7 @@ end
 
 -- Damage that really counts: never more than the Spirit the ghost had left (no overkill).
 function Rules.Effective(damage: number, spiritLeft: number): number
-	if damage ~= damage or damage <= 0 or spiritLeft <= 0 then
+	if damage ~= damage or damage <= 0 or spiritLeft ~= spiritLeft or spiritLeft <= 0 then
 		return 0
 	end
 	return math.min(damage, spiritLeft)

@@ -242,4 +242,71 @@ T.auto_attack_is_not_sold = function()
 		end
 	end
 end
+-- display odds (Rules.Odds, used by the crate panel) are exactly the slices Rules.Roll uses,
+-- under every luck stack a player can have (boost x2, Lucky Hunter x1.5, server luck x2, lucky opens x2)
+T.display_odds_equal_roll_slices_under_luck = function()
+	local lucks = { 1, 1.5, 2, 3, 4, 6, 8, 12, 24 }
+	for id, crate in Config.Crates do
+		if #crate.Pool > 0 then
+			for _, luck in lucks do
+				local odds, acc = Rules.Odds(crate.Pool, order, luck, Config.LuckAffectsFromOrder), 0
+				for _, e in crate.Pool do
+					local p = odds[e.Hunter]
+					assert(p == p and p > 0, id .. " " .. e.Hunter .. " unreachable at luck " .. luck)
+					local mid = acc + p / 2
+					assert(Rules.Roll(crate.Pool, order, luck, Config.LuckAffectsFromOrder, mid) == e.Hunter, id .. " roll slice " .. e.Hunter)
+					acc += p
+				end
+				assert(math.abs(acc - 1) < 1e-9, id .. " odds sum " .. acc .. " at luck " .. luck)
+			end
+		end
+	end
+end
+
+T.every_hunter_obtainable_exactly_once = function()
+	local src = {}
+	for _, c in Config.Crates do
+		for _, e in c.Pool do
+			src[e.Hunter] = (src[e.Hunter] or 0) + 1
+		end
+	end
+	for _, h in Config.Exclusives do
+		src[h] = (src[h] or 0) + 1
+	end
+	for id in Config.Hunters do
+		assert(src[id] == 1, id .. " is in " .. tostring(src[id] or 0) .. " crates/exclusive slots (want 1)")
+	end
+end
+
+T.zone_multiplier_rises = function()
+	local zm = Config.Daily.ZoneMultiplier
+	for i = 2, #zm do
+		assert(zm[i] > zm[i - 1], "Daily.ZoneMultiplier must rise at " .. i)
+	end
+end
+
+-- locked: the cheapest egg takes about 3-5 beginner tower runs (a beginner run reaches ~room 5)
+T.cheapest_egg_takes_3_to_5_beginner_runs = function()
+	local cheapest = math.huge
+	for _, e in Config.Eggs do
+		cheapest = math.min(cheapest, e.Price)
+	end
+	local shards = 0
+	for r = 1, 5 do
+		shards += (Rules.TowerReward(r, Config.Tower :: any))
+	end
+	local runs = cheapest / shards
+	assert(runs >= 3 and runs <= 5, "cheapest egg = " .. runs .. " room-5 runs")
+	-- rewards stay finite past the scaling cap
+	local s, e = Rules.TowerReward(1e9, Config.Tower :: any)
+	assert(s == s and e == e and s < math.huge and e < math.huge, "tower reward not finite")
+end
+
+T.pet_bonus_caps_cover_every_kind = function()
+	for id, pet in Config.Pets do
+		local cap = Config.PetRules.Caps[pet.Bonus.Kind]
+		assert(cap and cap > 0 and cap <= 1, id .. " bonus kind " .. pet.Bonus.Kind .. " has no sane cap")
+		assert(pet.Bonus.Value > 0 and pet.Bonus.Value <= cap, id .. " bonus above its cap")
+	end
+end
 return T

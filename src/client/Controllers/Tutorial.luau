@@ -421,7 +421,7 @@ function Tutorial.Init()
 	})
 	Kit.Corner(promptFrame, UDim.new(0, 14))
 	Kit.new("UIScale", { Parent = promptFrame })
-	promptLabel = Kit.Label(promptFrame, "", { Size = UDim2.new(1, -70, 0, 28), Position = UDim2.fromOffset(12, 4), Color = Theme.Ecto, Style = "Heading", TextSize = 22, Fit = true, ZIndex = 41 })
+	promptLabel = Kit.Label(promptFrame, "", { Size = UDim2.new(1, -70, 0, 28), Position = UDim2.fromOffset(12, 4), Color = Theme.Ecto, Style = "Heading", Fit = true, ZIndex = 41 })
 	promptSub = Kit.Label(promptFrame, "", { Size = UDim2.new(1, -70, 0, 20), Position = UDim2.fromOffset(12, 32), Color = Theme.Text, Style = "Small", Fit = true, ZIndex = 41 })
 	Kit.Button(promptFrame, {
 		Text = "SKIP",

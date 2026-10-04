@@ -55,7 +55,7 @@ function Remotes.Init()
 			return { ok = false, err = "Something went wrong" }
 		end
 		-- only requests that did something count as activity (rejected spam doesn't)
-		if result == true or (type(result) == "table" and result.ok == true) then
+		if player.Parent and (result == true or (type(result) == "table" and result.ok == true)) then
 			lastAction[player] = os.clock()
 		end
 		if type(result) ~= "table" then

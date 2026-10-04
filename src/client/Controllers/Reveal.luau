@@ -430,12 +430,16 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 				Size = UDim2.fromOffset(118, 44),
 				ZIndex = 12,
 				OnClick = function()
+					if not b.Active then
+						return -- already equipped / request in flight (double tap)
+					end
+					b.Active = false
 					local r = if free then State.Request("Equip", res.Uid) else State.Request("EquipBest")
 					if r.ok then
 						Kit.SetButtonText(b, "EQUIPPED ✅")
 						b:SetAttribute("Color", "Gray")
-						b.Active = false
 					else
+						b.Active = true
 						Kit.Toast(r.err or "Couldn't equip", "Bad")
 					end
 				end,
@@ -727,7 +731,7 @@ end
 -- Shared ending: legendary title slam, camera slides left, the result card, auto-close.
 local function finish(g: ScreenGui, skip: TextButton, cam: Camera, camCF: CFrame, rarity: Config.RarityDef, card: () -> ())
 	if rarity.Order >= 5 and not skipping then
-		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", TextSize = 54, ZIndex = 8, Stroke = 4 })
+		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", ZIndex = 8, Stroke = 4 })
 		-- solid colour (a UIGradient on big text dropped letters on phones)
 		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
 		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)

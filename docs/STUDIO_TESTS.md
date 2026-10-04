@@ -180,3 +180,18 @@ The 🛠 DEV button (top right, next to ⚙) has all test tools. Chat commands a
 ## H. Saving
 - [ ] Stop while holding Ectoplasm and hunters; Play again: same numbers.
 - [ ] Output window: no red errors. (A yellow DataStore warning is expected if API access is off.)
+
+## v1.9 audit pass (nothing below has been run in Studio yet)
+- [ ] Phone emulator: press a button, drag your finger off it onto a list: the button springs back (not stuck small).
+- [ ] Crate panel with a Luck boost: the luck line sits below LUCKY / AUTO OPEN, not under them. With the Lucky Hunter pass the shown odds go up.
+- [ ] Hatchery panel: pet bonus reads in full (no "PO…"). Index HUNTERS/PETS tabs and NORMAL/SHINY/MEGA text is clear on phone.
+- [ ] 3+ boosts active: the boost chips wrap to a second row, nothing off screen.
+- [ ] Reveal: double-tap EQUIP on the result card: one equip, no red error toast.
+- [ ] Target a ghost, tap it again with Auto Attack on, then turn Auto Attack off: crew keeps that ghost.
+- [ ] Teleport (worlds / tower): pets snap to you instead of flying across the map.
+- [ ] Buy an egg, walk away instantly: no "walk to the hatchery" error for that same buy.
+- [ ] Fall off the map in the tower, then later on the main map: you land on the right map each time.
+- [ ] Trade: while trading, the tower pad says "Finish your trade first!". Trade away your whole crew: the best hunters left are equipped. A second trade request to the same player while one is pending says they already have one.
+- [ ] Tower: leave the game mid-room with a friend still inside: their run keeps going; the pad countdown clears for players who couldn't get in.
+- [ ] Hospital floor cross and Sunken chest gold band: no flicker.
+

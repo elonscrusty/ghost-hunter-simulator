@@ -368,15 +368,16 @@ function IndexPanel.Init()
 			AutoButtonColor = false,
 			BackgroundColor3 = Theme.Bg,
 			Font = Theme.Body,
-			TextScaled = true,
 			TextColor3 = Theme.Text,
+			TextTruncate = Enum.TextTruncate.AtEnd,
 			LayoutOrder = i,
 			ZIndex = 63,
 			Parent = tabRow,
 		})
+		-- fixed size from the type scale (TextScaled made odd sizes that broke text on phones)
+		Kit.FitText(b :: any, Theme.Type.Small, 0, true)
 		Kit.Corner(b, UDim.new(1, 0))
 		Kit.Stroke(b, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
-		Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), Parent = b })
 		b.Activated:Connect(function()
 			Kit.Play("Click")
 			setTab(t)
@@ -448,15 +449,16 @@ function IndexPanel.Init()
 			AutoButtonColor = false,
 			BackgroundColor3 = Theme.Bg,
 			Font = Theme.Body,
-			TextScaled = true,
 			TextColor3 = Theme.Text,
+			TextTruncate = Enum.TextTruncate.AtEnd,
 			LayoutOrder = t,
 			ZIndex = 66,
 			Parent = tierRow,
 		})
+		Kit.FitText(b :: any, Theme.Type.Tiny, 0, true)
 		Kit.Corner(b, UDim.new(1, 0))
 		Kit.Stroke(b, 1.5, Config.Tiers[t].Color, Enum.ApplyStrokeMode.Border)
-		Kit.new("UIPadding", { PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 3), Parent = b })
+		Kit.new("UIPadding", { PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 2), Parent = b })
 		b.Activated:Connect(function()
 			Kit.Play("Click")
 			detailTier = t

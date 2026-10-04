@@ -107,4 +107,23 @@ T.prune_keeps_newest = function()
 	eq(#Eggs.Prune({ a = { Egg = "x", Pet = "y", Uid = "p1", T = 1 } }, 20), 0)
 end
 
+T.every_pet_obtainable = function()
+	local inEgg = {}
+	for _, egg in Config.Eggs do
+		for _, o in egg.Odds do
+			inEgg[o.Pet] = true
+		end
+	end
+	for id in Config.Pets do
+		assert(inEgg[id] or id == Config.RarePetEvent.Pet, id .. " is in no egg and is not the event pet")
+	end
+	assert(Config.Pets[Config.RarePetEvent.Pet], "event pet exists")
+	-- egg prices rise in EggOrder
+	local prevPrice = 0
+	for _, id in Config.EggOrder do
+		assert(Config.Eggs[id].Price > prevPrice, id .. " price order")
+		prevPrice = Config.Eggs[id].Price
+	end
+end
+
 return T

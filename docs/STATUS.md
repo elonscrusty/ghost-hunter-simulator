@@ -1,5 +1,13 @@
 # Status
 
+## v1.9 audit pass (built, not yet published)
+- Fixes across UI (touch buttons, titles, text sizes, boost chips), combat (NaN guards, ghost
+  cleanup, re-tap target), tower (stuck runs, slot leaks, pad cancel), pets/world (snap after
+  teleport, egg retry, tower fall spot, z-fighting), saving/trading (trade dupe paths, stale-save
+  guard + kick, trades blocked in tower), shown crate odds include pass + Server Luck.
+- Economy sim: `cd tests && luau EconSim.luau`. Proposed, NOT applied: tower Ecto too high
+  (20-250x farming), Lucky Opens price 5 -> 3. Checklist: STUDIO_TESTS.md "v1.9".
+
 ## v1.6 (built, not yet published)
 - Shipped: ghost retaliation (telegraphed hits, 2:00 knockouts, Backup Rookie), hunter tiers + merge
   (5 -> Shiny -> Mega, lock), hunter-only trading, endless Boss Tower (party of 4, Spirit Shards,

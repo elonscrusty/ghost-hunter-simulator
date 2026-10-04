@@ -290,7 +290,9 @@ function PetFollowers.Start()
 			for _, pet in e.Pets do
 				local bob = math.sin(t * 2.2 + pet.Slot * 1.7) * 0.25
 				local target = base * CFrame.new(SLOTS[pet.Slot] + Vector3.new(0, bob, 0))
-				local cur = if pet.Cur then pet.Cur:Lerp(target, alpha) else target
+				-- snap after a teleport / respawn instead of streaking across the map
+				local prev = pet.Cur
+				local cur = if prev and (prev.Position - target.Position).Magnitude < 40 then prev:Lerp(target, alpha) else target
 				pet.Cur = cur
 				for _, pc in pet.Pieces do
 					table.insert(parts, pc.Part)

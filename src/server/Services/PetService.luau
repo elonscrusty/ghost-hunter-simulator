@@ -77,16 +77,17 @@ function PetService.Init()
 		if not egg then
 			return Remotes.Fail("Unknown egg")
 		end
-		-- buy at the hatchery (pavilion around X 48..68, Z 66..88), like crates at their station
-		if not Remotes.Near(player, Vector3.new(58, 0, 77), 45) then
-			return Remotes.Fail("Walk to the Pet Hatchery first!")
-		end
 		local done = d.PendingHatch[requestId]
 		if done then
 			if done.Egg ~= eggId then
 				return Remotes.Fail("Unknown egg")
 			end
 			return { ok = true, Egg = done.Egg, Pet = done.Pet, Uid = done.Uid, Shards = d.Shards }
+		end
+		-- buy at the hatchery (pavilion around X 48..68, Z 66..88), like crates at their station
+		-- (checked after the retry lookup, so a retry of a hatch that already went through succeeds)
+		if not Remotes.Near(player, Vector3.new(58, 0, 77), 45) then
+			return Remotes.Fail("Walk to the Pet Hatchery first!")
 		end
 		-- a double tap (two different ids) can't buy twice by accident
 		local now = os.clock()

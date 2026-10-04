@@ -31,7 +31,7 @@ function EventPopup.Init()
 	local body = panel.Body
 	-- solid colour, no UIGradient: on phones the gradient-filled 56 px "2X" lost its "2" and
 	-- flickered (seen in a player recording)
-	Kit.Label(body, "2X", { Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 12), Color = Theme.Ecto, Style = "Banner", TextSize = 48, ZIndex = 62, Stroke = 3 })
+	Kit.Label(body, "2X", { Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 12), Color = Theme.Ecto, Style = "Banner", ZIndex = 62, Stroke = 3 })
 	Kit.Label(body, "Earn DOUBLE Ectoplasm from ghosts while the event is active!", { Size = UDim2.new(1, -20, 0, 48), Position = UDim2.fromOffset(10, 80), Style = "Body", ZIndex = 62 })
 	local ok = Kit.Button(body, {
 		Text = "LET'S HUNT!",

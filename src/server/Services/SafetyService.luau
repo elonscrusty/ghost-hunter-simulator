@@ -22,13 +22,13 @@ local SAFE_MAX_Y = -2 -- root must be above this (lowest walkable floor top is ~
 local RESCUE_COOLDOWN = 2 -- seconds; lets the teleport replicate before checking again
 local TOAST = "Whoops! You fell out of the world - put you back safely."
 
-type Track = { LastSafe: CFrame?, SafeAt: number, RescuedAt: number }
+type Track = { LastSafe: CFrame?, SafeInTower: boolean, SafeAt: number, RescuedAt: number }
 local tracks: { [Player]: Track } = {}
 
 local function track(player: Player): Track
 	local t = tracks[player]
 	if not t then
-		t = { LastSafe = nil, SafeAt = 0, RescuedAt = 0 }
+		t = { LastSafe = nil, SafeInTower = false, SafeAt = 0, RescuedAt = 0 }
 		tracks[player] = t
 	end
 	return t
@@ -68,7 +68,8 @@ local function rescue(player: Player, character: Model, root: BasePart, t: Track
 			source = "TowerSafe"
 		end
 	end
-	if not target and t.LastSafe then
+	-- a spot saved inside a tower room never counts on the main map (and vice versa)
+	if not target and t.LastSafe and t.SafeInTower == (player:GetAttribute("InTower") == true) then
 		local cf = (t.LastSafe :: CFrame) + Vector3.new(0, 3, 0)
 		if groundBelow(cf.Position, character) then
 			target = cf
@@ -126,6 +127,7 @@ local function check(player: Player, now: number)
 		local flat = Vector3.new(look.X, 0, look.Z)
 		local pos = root.Position
 		t.LastSafe = if flat.Magnitude > 0.01 then CFrame.lookAt(pos, pos + flat.Unit) else CFrame.new(pos)
+		t.SafeInTower = player:GetAttribute("InTower") == true
 		t.SafeAt = now
 	end
 end

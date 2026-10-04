@@ -94,7 +94,9 @@ function Targeting.Select(uid: number)
 	showHighlight(uid)
 	Sound.Play("Select")
 	Effects.Ring(e.Pos, e.Def.Glow, 4 * e.Def.Scale, 0.35)
-	if Targeting.Current() ~= uid then
+	-- re-tapping the current ghost still tells the server while Auto Attack is on, so the pick
+	-- becomes manual and turning Auto Attack off keeps it
+	if Targeting.Current() ~= uid or player:GetAttribute("AutoAttack") == true then
 		selectRemote:FireServer(uid)
 	end
 	selectedSignal:Fire(uid)

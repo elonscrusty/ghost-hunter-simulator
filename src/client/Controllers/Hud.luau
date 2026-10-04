@@ -205,12 +205,14 @@ local function buildTop(screen: ScreenGui)
 	local _ = screen
 	boostHolder = Kit.new("Frame", {
 		Size = UDim2.fromOffset(340, 22),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		LayoutOrder = 3,
 		Visible = false,
 		Parent = stack,
 	})
-	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Parent = boostHolder })
+	-- 3+ active boosts wrap onto a second row instead of spilling past the stack's sides
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Wraps = true, Parent = boostHolder })
 end
 
 -- HUD layout

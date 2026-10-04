@@ -54,6 +54,9 @@ local busy: { [Player]: { [string]: string } } = {}
 function HunterService.SetBusy(player: Player, uid: string, reason: string?)
 	local b = busy[player]
 	if not b then
+		if reason == nil or not player.Parent then
+			return -- nothing to clear / player already left (never re-create their entry)
+		end
 		b = {}
 		busy[player] = b
 	end
@@ -150,6 +153,13 @@ local function ensureEquipped(player: Player, d: DataService.Data)
 	-- lost the extra-slots pass: keep only as many equipped as there are slots
 	while #d.Equipped > PlayerInfo.Slots(player) do
 		table.remove(d.Equipped)
+	end
+end
+
+function HunterService.EnsureEquipped(player: Player)
+	local d = DataService.Get(player)
+	if d then
+		ensureEquipped(player, d)
 	end
 end
 

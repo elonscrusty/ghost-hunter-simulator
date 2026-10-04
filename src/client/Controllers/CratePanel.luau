@@ -66,7 +66,8 @@ local function refresh()
 	crateIcon.Image = img or ""
 	crateIcon.Visible = img ~= nil
 	-- the luck boost ends on the server clock even if no new snapshot arrives
-	local luck = if (d.Boosts.Luck or 0) > State.Now() then Config.Boosts.Luck.Multiplier else 1
+	-- (LuckOther = the Lucky Hunter pass and Server Luck, so the shown odds match the real roll)
+	local luck = (tonumber(d.LuckOther) or 1) * (if (d.Boosts.Luck or 0) > State.Now() then Config.Boosts.Luck.Multiplier else 1)
 	if d.LuckyOpens and (d.LuckyOpens[crateId] or 0) > 0 then
 		luck *= Config.LuckyOpens.Multiplier
 	end
@@ -309,14 +310,15 @@ function CratePanel.Init()
 		Parent = panel.Root,
 	})
 	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -400, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
-	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
+	-- below the LUCKY / AUTO OPEN buttons (y 8-42): it used to sit half under them
+	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 46), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
-	legendLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 52), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62, Fit = true })
+	legendLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 64), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62, Fit = true })
 	legendLabel.RichText = true
 	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
 	list = Kit.new("ScrollingFrame", {
-		Size = UDim2.new(1, 0, 1, -136),
-		Position = UDim2.fromOffset(0, 72),
+		Size = UDim2.new(1, 0, 1, -146),
+		Position = UDim2.fromOffset(0, 84),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,

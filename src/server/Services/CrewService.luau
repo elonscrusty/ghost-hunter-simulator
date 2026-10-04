@@ -99,7 +99,12 @@ end
 local function regenTick(dt: number)
 	local now = os.clock()
 	for player, list in health do
+		local d = DataService.Get(player)
 		for uid, e in list do
+			if not d or not d.Hunters[uid] then
+				list[uid] = nil -- traded / merged / sold away: forget its session HP
+				continue
+			end
 			local max = CrewService.MaxHP(player, uid)
 			if e.HP > max then
 				e.HP = max

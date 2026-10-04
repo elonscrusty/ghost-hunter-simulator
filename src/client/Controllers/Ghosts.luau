@@ -292,8 +292,13 @@ local function add(model: Instance)
 		updateSpirit(e, (model:GetAttribute("Spirit") :: number?) or 0)
 	end)
 	model.AncestryChanged:Connect(function()
-		if not model:IsDescendantOf(workspace) and entries[uid] == e then
-			entries[uid] = nil
+		if not model:IsDescendantOf(workspace) then
+			if entries[uid] == e then
+				entries[uid] = nil
+			end
+			-- a culled rig is parked outside the model, so the model's Destroy wouldn't take it
+			e.Dying = true
+			e.Vis:Destroy()
 		end
 	end)
 	-- spawn-in: grow from nothing (the event boss gets its own dramatic entrance)

@@ -252,11 +252,24 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	b.MouseLeave:Connect(function()
 		Kit.Tween(scale, 0.12, { Scale = 1 })
 	end)
+	-- release is watched globally: a finger that drags off the button (e.g. to scroll a list)
+	-- never fires MouseButton1Up on it, which used to leave the button stuck shrunk
+	local pressConn: RBXScriptConnection? = nil
 	b.MouseButton1Down:Connect(function()
 		Kit.Tween(scale, 0.06, { Scale = 0.93 })
-	end)
-	b.MouseButton1Up:Connect(function()
-		Kit.Tween(scale, 0.15, { Scale = 1 }, Enum.EasingStyle.Back)
+		if pressConn then
+			pressConn:Disconnect()
+		end
+		pressConn = UserInputService.InputEnded:Connect(function(input)
+			local t = input.UserInputType
+			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch or input.KeyCode == Enum.KeyCode.ButtonA then
+				if pressConn then
+					pressConn:Disconnect()
+					pressConn = nil
+				end
+				Kit.Tween(scale, 0.15, { Scale = 1 }, Enum.EasingStyle.Back)
+			end
+		end)
 	end)
 	b.Activated:Connect(function()
 		play("Click")
@@ -559,6 +572,11 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 	local bc = Theme.Buttons[color or "Purple"] or Theme.Buttons.Purple
 	Kit.Gradient(banner, bc[1], bc[2], 90)
 	local titleLabel = Kit.Label(banner, title, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 63, Style = "Title", Fit = true })
+	-- panels that retitle themselves (crate / egg names, "UNLOCK CEMETERY?") get a banner that
+	-- fits the new title instead of cutting it off with "…"
+	titleLabel:GetPropertyChangedSignal("Text"):Connect(function()
+		banner.Size = UDim2.new(0, math.clamp(#titleLabel.Text * 15 + 60, 200, 420), 0, 44)
+	end)
 	local body: Frame = Kit.new("Frame", {
 		Name = "Body",
 		Size = UDim2.new(1, -28, 1, -50),

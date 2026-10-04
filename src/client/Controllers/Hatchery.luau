@@ -90,7 +90,9 @@ local function petCard(order: number, pet: Config.PetDef, chance: number)
 	Kit.Icon(pic, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 40, Stroke = 0, ZIndex = 64 })
 	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 92), ZIndex = 64, Style = "Body", Fit = true })
 	Kit.Label(card, r and r.Name or string.upper(pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 113), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
-	Kit.Label(card, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(0.6, -8, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Ecto, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
+	-- two short lines (a one-line "+25% POWER for all hunters" was cut to "+25% PO…" here)
+	local bonus = string.gsub(PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), " for all hunters", "")
+	Kit.Label(card, bonus, { Size = UDim2.new(0.6, -8, 0, 28), Position = UDim2.new(0, 8, 1, -32), ZIndex = 64, Color = Theme.Ecto, Align = Enum.TextXAlignment.Left, Style = "Tiny", Wrap = true })
 	Kit.Label(card, pct(chance), { Size = UDim2.new(0.4, 0, 0, 24), Position = UDim2.new(1, -8, 1, -29), AnchorPoint = Vector2.new(1, 0), ZIndex = 64, Align = Enum.TextXAlignment.Right, Style = "Heading", Fit = true })
 end
 

@@ -128,7 +128,7 @@ local function chest(parent: Instance, x: number, z: number, fx: number, fz: num
 	local base = CFrame.new(x, 0, z) * CFrame.Angles(0, Kit.FaceYaw(fx, fz), 0)
 	local gold = Kit.Vivid(GOLD)
 	Kit.Part(m, V(6, 3.4, 4), base * CFrame.new(0, 1.7, 0), WOODC, { Mat = WOOD, Solid = true })
-	Kit.Part(m, V(6.3, 0.6, 4.3), base * CFrame.new(0, 3.1, 0), gold, GOLD_M)
+	Kit.Part(m, V(6.3, 0.5, 4.3), base * CFrame.new(0, 3.05, 0), gold, GOLD_M) -- top below the box top (no z-fight)
 	Kit.Part(m, V(6, 0.6, 4), base * CFrame.new(0, 4.6, 2.6) * CFrame.Angles(-1.1, 0, 0), WOODC, { Mat = WOOD })
 	Kit.Part(m, V(0.8, 1.2, 0.3), base * CFrame.new(0, 2.6, -2.1), gold, GOLD_M)
 	-- coin pile spilling out the front + a couple of gems

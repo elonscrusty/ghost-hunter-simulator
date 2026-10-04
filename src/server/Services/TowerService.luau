@@ -38,6 +38,7 @@ local TowerService = {}
 
 local TC = Config.Tower
 local TICK = 0.25
+local STARTING_LIMIT = 15 -- seconds a run may sit in "Starting" before the watchdog ends it
 local SLOT_X, SLOT_Z, SLOT_STEP, SLOTS_PER_ROW = 1400, -600, 300, 4
 
 type Earned = { Ecto: number, Shards: number }
@@ -146,7 +147,13 @@ local function clearPlayer(player: Player)
 	player:SetAttribute("TowerRoom", nil)
 	player:SetAttribute("TowerSafe", nil)
 	if player.Parent then
-		HunterService.Refresh(player)
+		-- a failed refresh (player half-way out) must not abort the run cleanup that called us
+		local ok, err = pcall(function()
+			HunterService.Refresh(player)
+		end)
+		if not ok then
+			warn("[Tower] refresh failed: " .. tostring(err))
+		end
 	end
 end
 
@@ -193,6 +200,11 @@ function cleanup(run: Run)
 		return
 	end
 	run.Phase = "Ended"
+	-- free the slot first so an error below can never leak it
+	if slots[run.Slot] == run then
+		slots[run.Slot] = nil
+	end
+	runs[run.Id] = nil
 	for _, p in memberList(run) do
 		run.Members[p] = nil
 		if memberOf[p] == run then
@@ -205,16 +217,20 @@ function cleanup(run: Run)
 	local g = run.Boss
 	run.Boss = nil
 	if g and g.Alive then
-		GhostService.Remove(g, nil, false)
+		local ok, err = pcall(function()
+			GhostService.Remove(g, nil, false)
+		end)
+		if not ok then
+			warn("[Tower] boss removal failed: " .. tostring(err))
+		end
 	end
-	if run.Model then
-		run.Model:Destroy()
-		run.Model = nil
+	local model = run.Model
+	run.Model = nil
+	if model then
+		pcall(function()
+			model:Destroy()
+		end)
 	end
-	if slots[run.Slot] == run then
-		slots[run.Slot] = nil
-	end
-	runs[run.Id] = nil
 end
 
 -- Ends the run for everyone: each member goes back to the spawn with a message.
@@ -239,6 +255,7 @@ local function startRoom(run: Run, n: number)
 	run.Room = n
 	run.Votes = {}
 	run.Phase = "Starting"
+	run.EndsAt = serverNow() + STARTING_LIMIT -- watchdog: tickRun ends a run stuck here
 	TowerRoom.SetRoom(model, n)
 	local chest = model:FindFirstChild("Chest")
 	if chest then
@@ -424,6 +441,10 @@ local function blocked(player: Player): string?
 	if player:GetAttribute("InTower") == true or memberOf[player] then
 		return "You're already in the tower!"
 	end
+	-- lazy require: TradeService loads after TowerService
+	if require(script.Parent.TradeService).InTrade(player) then
+		return "Finish your trade first!"
+	end
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not hum or hum.Health <= 0 then
@@ -459,7 +480,7 @@ local function startRun(party: { Player }, first: number, dev: boolean): string?
 		Earned = {},
 		Best = 0,
 		Model = nil,
-		EndsAt = 0,
+		EndsAt = serverNow() + STARTING_LIMIT,
 		Dev = dev,
 	}
 	nextId += 1
@@ -582,6 +603,12 @@ local function runLobby(l: Lobby)
 			end
 		end
 		startRun(party, first, false)
+		-- anyone who didn't get in (tower full, door stuck, teleport failed) leaves the pad UI
+		for _, p in party do
+			if p.Parent and not memberOf[p] then
+				Fx.To(p, "Tower", { State = "PadCancel" })
+			end
+		end
 	end
 end
 
@@ -677,7 +704,16 @@ local function tickRun(run: Run, t: number)
 			leave(run, p, "", false)
 		end
 	end
-	if run.Phase == "Fight" then
+	if next(run.Members) == nil then
+		cleanup(run) -- safety: an empty run (e.g. a leave that errored half-way) frees its slot
+		return
+	end
+	if run.Phase == "Starting" then
+		-- rooms start synchronously; a run still "Starting" this long hit an error mid-start
+		if t >= run.EndsAt then
+			endRun(run, "Something went wrong in the tower. Your rewards are safe!")
+		end
+	elseif run.Phase == "Fight" then
 		-- wipe: nobody has a hunter that can fight
 		local anyActive = false
 		for p in run.Members do

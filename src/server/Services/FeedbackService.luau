@@ -95,6 +95,9 @@ function FeedbackService.Init()
 		if type(text) ~= "string" then
 			return Remotes.Fail("Write something first")
 		end
+		if #text > fb.MaxLength * 4 then
+			return Remotes.Fail("That's too long") -- don't run pattern work on huge strings
+		end
 		local clean = text:gsub("%c", " "):gsub("^%s+", ""):gsub("%s+$", "")
 		if #clean < fb.MinLength then
 			return Remotes.Fail("Tell us a bit more (" .. fb.MinLength .. "+ letters)")
@@ -123,7 +126,12 @@ function FeedbackService.Init()
 			Zone = zoneOf(player),
 			Version = Config.Version,
 		}
-		if not save(entry) then
+		local saved = save(entry)
+		if not player.Parent then
+			lastSent[player] = nil -- left while the filter/save yielded: don't keep their entries
+			return { ok = saved }
+		end
+		if not saved then
 			lastSent[player] = nil
 			return Remotes.Fail("Couldn't send right now, try again later")
 		end

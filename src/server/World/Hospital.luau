@@ -476,9 +476,10 @@ local function lobby(f: Instance)
 	Kit.AddRect(44, 1335, 49, 1343)
 	plant(f, 45, 1276)
 	plant(f, -30, 1349)
-	-- big painted cross on the floor under the ghosts (flat) + a puddle
-	Kit.Box(f, V(-5, 0.16, 1285), V(5, 0.19, 1325), C(255, 205, 210))
-	Kit.Box(f, V(-20, 0.16, 1300), V(20, 0.19, 1310), C(255, 205, 210))
+	-- big painted cross on the floor under the ghosts (flat, a hair above the guide lines so they
+	-- don't z-fight) + a puddle
+	Kit.Box(f, V(-5, 0.16, 1285), V(5, 0.22, 1325), C(255, 205, 210))
+	Kit.Box(f, V(-20, 0.16, 1300), V(20, 0.22, 1310), C(255, 205, 210))
 	puddle(f, 12, 1318, 6)
 	floater(f, V(1.6, 2.2, 0.2), V(-44, 9, 1311), C(205, 170, 120), "FloatingClipboard")
 	floater(f, V(1.6, 2.2, 0.2), V(42, 9, 1316), C(205, 170, 120), "FloatingClipboard")

@@ -334,6 +334,10 @@ type Profile = {
 	SyncQueued: boolean,
 	JoinedAt: number,
 	Seq: number, -- save counter: an older snapshot can never overwrite a newer one
+	-- _sess/_seq of the stored profile when we loaded it: if the stored profile later carries
+	-- another session's stamp, a newer session (lock takeover) has written it and we never may
+	LoadedSess: any,
+	LoadedSeq: any,
 }
 
 local profiles: { [Player]: Profile } = {}
@@ -432,6 +436,9 @@ local function loadProfile(player: Player, p: Profile): Data?
 			return nil
 		end
 		if not locked then
+			if type(result) == "table" then
+				p.LoadedSess, p.LoadedSeq = result._sess, result._seq
+			end
 			return migrate(result)
 		end
 		-- Another session still holds the lock (player just hopped). Wait for it to save.
@@ -452,6 +459,9 @@ local function loadProfile(player: Player, p: Profile): Data?
 			return old
 		end)
 	end)
+	if ok and not corrupt and type(result) == "table" then
+		p.LoadedSess, p.LoadedSeq = result._sess, result._seq
+	end
 	return if ok and not corrupt then migrate(result) else nil
 end
 
@@ -466,6 +476,7 @@ local function saveP(p: Profile, release: boolean): boolean
 	if p.Leaving and not release then
 		return false -- only the final, releasing save runs for a leaving player
 	end
+	inflight += 1 -- counted while waiting too, so BindToClose never stops before this save runs
 	if p.Saving then
 		-- wait for the running write; after that go ahead anyway: the save counter (_seq) makes
 		-- sure an older snapshot can never land on top of a newer one, so the final save of a
@@ -476,7 +487,6 @@ local function saveP(p: Profile, release: boolean): boolean
 		end
 	end
 	p.Saving = true
-	inflight += 1
 	local ds = store :: DataStore
 	p.Data.Stats.Seconds += math.floor(os.clock() - p.JoinedAt)
 	p.JoinedAt = os.clock()
@@ -494,6 +504,12 @@ local function saveP(p: Profile, release: boolean): boolean
 		return ds:UpdateAsync(p.Key, function(old: any)
 			if type(old) == "table" and lockFresh(old._lock, p.Session) then
 				-- another session owns this profile now: never overwrite its newer data
+				aborted = true
+				return nil
+			end
+			if type(old) == "table" and old._sess ~= p.Session and (old._sess ~= p.LoadedSess or old._seq ~= p.LoadedSeq) then
+				-- another session saved this profile after we loaded it (it took over our lock
+				-- and may have released it since): our snapshot is older, never write it
 				aborted = true
 				return nil
 			end
@@ -521,6 +537,15 @@ local function saveP(p: Profile, release: boolean): boolean
 	inflight -= 1
 	if ok and aborted then
 		warn("[Data] save skipped for " .. p.Key .. ": another session owns the profile")
+		-- this server can never save this profile again: send the player to the newer session
+		-- instead of letting them play on with progress that can't be kept
+		if not p.Leaving then
+			p.Leaving = true
+			local player = Players:GetPlayerByUserId(tonumber(string.sub(p.Key, 3)) or 0)
+			if player and profiles[player] == p then
+				player:Kick("Your Ghost Hunter data was opened on another server. Please rejoin - your saved progress is safe.")
+			end
+		end
 	end
 	return ok and not aborted
 end
@@ -702,6 +727,8 @@ local function onPlayerAdded(player: Player)
 		SyncQueued = false,
 		JoinedAt = os.clock(),
 		Seq = 0,
+		LoadedSess = nil,
+		LoadedSeq = nil,
 	}
 	profiles[player] = p
 	-- rejoined this same server while the previous session was still saving: wait for it
