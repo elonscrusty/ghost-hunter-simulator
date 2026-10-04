@@ -258,6 +258,24 @@ function Rules.SplitPool(pool: number, weights: { number }): { number }
 	return out
 end
 
+-- How many contributors size a shared pool: those with at least `minShare` of the total damage
+-- (alts that land one tick can't inflate the pool). Always at least 1.
+function Rules.PoolMembers(weights: { number }, minShare: number): number
+	local total = 0
+	for _, w in weights do
+		if w == w and w > 0 then
+			total += w
+		end
+	end
+	local n = 0
+	for _, w in weights do
+		if w == w and w > 0 and w >= total * minShare then
+			n += 1
+		end
+	end
+	return math.max(1, n)
+end
+
 -- Damage that really counts: never more than the Spirit the ghost had left (no overkill).
 function Rules.Effective(damage: number, spiritLeft: number): number
 	if damage ~= damage or damage <= 0 or spiritLeft <= 0 then

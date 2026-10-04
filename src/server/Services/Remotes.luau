@@ -49,11 +49,14 @@ function Remotes.Init()
 		if not Remotes.Allow(player, h.bucket) then
 			return { ok = false, err = "Slow down!" }
 		end
-		lastAction[player] = os.clock()
 		local ok, result = pcall(h.fn, player, ...)
 		if not ok then
 			warn(string.format("[Remotes] %s from %s errored: %s", action, player.Name, tostring(result)))
 			return { ok = false, err = "Something went wrong" }
+		end
+		-- only requests that did something count as activity (rejected spam doesn't)
+		if result == true or (type(result) == "table" and result.ok == true) then
+			lastAction[player] = os.clock()
 		end
 		if type(result) ~= "table" then
 			return { ok = result == true }

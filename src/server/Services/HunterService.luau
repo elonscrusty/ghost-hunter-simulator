@@ -375,6 +375,9 @@ function HunterService.Init()
 	end
 
 	Remotes.Register("Equip", "Inventory", function(player, uid)
+		if player:GetAttribute("InTower") then
+			return Remotes.Fail("Can't change your crew inside the Boss Tower")
+		end
 		local d = DataService.Get(player)
 		if not d or not validUid(d, uid) then
 			return Remotes.Fail("Unknown hunter")
@@ -391,6 +394,9 @@ function HunterService.Init()
 	end)
 
 	Remotes.Register("Unequip", "Inventory", function(player, uid)
+		if player:GetAttribute("InTower") then
+			return Remotes.Fail("Can't change your crew inside the Boss Tower")
+		end
 		local d = DataService.Get(player)
 		if not d or not validUid(d, uid) then
 			return Remotes.Fail("Unknown hunter")
@@ -408,6 +414,9 @@ function HunterService.Init()
 	end)
 
 	Remotes.Register("EquipBest", "Inventory", function(player)
+		if player:GetAttribute("InTower") then
+			return Remotes.Fail("Can't change your crew inside the Boss Tower")
+		end
 		local d = DataService.Get(player)
 		if not d then
 			return Remotes.Fail("Loading...")
@@ -425,6 +434,10 @@ function HunterService.Init()
 		local d = DataService.Get(player)
 		if not d or not validUid(d, uid) or type(locked) ~= "boolean" then
 			return Remotes.Fail("Unknown hunter")
+		end
+		local why = HunterService.BusyReason(player, uid)
+		if why then
+			return Remotes.Fail(why)
 		end
 		d.Hunters[uid].Locked = locked
 		DataService.Changed(player)
@@ -466,6 +479,9 @@ function HunterService.Init()
 	-- -> 1 hunter of the next tier. All checks and the swap happen in one step on the server, so a
 	-- repeated request finds the hunters already gone and fails harmlessly.
 	Remotes.Register("Merge", "Inventory", function(player, uids)
+		if player:GetAttribute("InTower") then
+			return Remotes.Fail("Can't change your crew inside the Boss Tower")
+		end
 		local d = DataService.Get(player)
 		if not d then
 			return Remotes.Fail("Loading...")

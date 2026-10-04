@@ -127,6 +127,11 @@ T.split_multiple_hunters_sum_per_player = function()
 	local o = Rules.SplitPool(60, { a, b })
 	eq(o[1], 30); eq(o[2], 30)
 end
+T.pool_members_ignore_tiny_contributors = function()
+	eq(Rules.PoolMembers({ 90, 1, 1, 8 }, 0.1), 1)
+	eq(Rules.PoolMembers({ 50, 50 }, 0.1), 2)
+	eq(Rules.PoolMembers({}, 0.1), 1)
+end
 T.overkill_not_counted = function()
 	eq(Rules.Effective(500, 20), 20)
 	eq(Rules.Effective(5, 20), 5)

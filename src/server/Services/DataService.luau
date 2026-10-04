@@ -121,7 +121,7 @@ local function migrate(raw: any): Data
 		return d
 	end
 	for k, v in raw do
-		if k == "_lock" or k == "_seq" then
+		if k == "_lock" or k == "_seq" or k == "_sess" then
 			continue
 		end
 		local cur = (d :: any)[k]
@@ -451,6 +451,8 @@ local function saveP(p: Profile, release: boolean): boolean
 	p.Seq += 1
 	local seq = p.Seq
 	snapshot._seq = seq
+	snapshot._sess = p.Session -- with _seq: our older snapshot never lands on our newer one,
+	-- even after the final save released the lock
 	local aborted = false
 	local stale = false
 	local ok = retry("save " .. p.Key, function()
@@ -462,7 +464,7 @@ local function saveP(p: Profile, release: boolean): boolean
 				aborted = true
 				return nil
 			end
-			if type(old) == "table" and type(old._lock) == "table" and old._lock.session == p.Session and (tonumber(old._seq) or 0) > seq then
+			if type(old) == "table" and old._sess == p.Session and (tonumber(old._seq) or 0) > seq then
 				stale = true -- our own NEWER snapshot is already stored
 				return nil
 			end
@@ -508,7 +510,7 @@ function DataService.ResetProgress(player: Player): boolean
 	if not d then
 		return false
 	end
-	local keep = { Purchases = d.Purchases, Settings = d.Settings, SkipTokens = d.SkipTokens }
+	local keep = { Purchases = d.Purchases, Settings = d.Settings, SkipTokens = d.SkipTokens, TradesApplied = d.TradesApplied }
 	local fresh = defaults()
 	table.clear(d :: any)
 	for k, v in fresh :: any do
@@ -517,6 +519,7 @@ function DataService.ResetProgress(player: Player): boolean
 	d.Purchases = keep.Purchases
 	d.Settings = keep.Settings
 	d.SkipTokens = keep.SkipTokens
+	d.TradesApplied = keep.TradesApplied
 	DataService.Changed(player)
 	return true
 end
@@ -550,6 +553,9 @@ local function snapshot(player: Player, d: Data): any
 		Boosts = d.Boosts,
 		FreeCrates = d.FreeCrates,
 		LuckyOpens = d.LuckyOpens,
+		SkipTokens = d.SkipTokens,
+		TowerRuns = d.TowerRuns,
+		TowerBest = d.TowerBest,
 		Settings = d.Settings,
 		Tutorial = d.Tutorial,
 		Stats = d.Stats,

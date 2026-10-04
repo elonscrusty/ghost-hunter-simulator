@@ -334,7 +334,23 @@ local function recover(player: Player, d: any)
 		if okRec and type(rec) == "table" and rec.State == "committed" and (rec.A == player.UserId or rec.B == player.UserId) then
 			applySide(d, rec :: any, player.UserId)
 			warn("[Trade] recovered trade " .. id .. " for " .. player.UserId)
-		elseif okRec and (rec == nil or (type(rec) == "table" and rec.State == "aborted")) then
+		elseif okRec and rec == nil then
+			-- the record may still be on its way: settle it first. An "aborted" marker is only
+			-- written into an EMPTY key, so the trade either committed (apply it) or never will.
+			pcall(function()
+				ds:UpdateAsync("t_" .. id, function(old: any)
+					return if old == nil then { Id = id, State = "aborted" } else nil
+				end)
+			end)
+			local ok2, cur = pcall(function()
+				return ds:GetAsync("t_" .. id)
+			end)
+			if ok2 and type(cur) == "table" and cur.State == "committed" and (cur.A == player.UserId or cur.B == player.UserId) then
+				applySide(d, cur :: any, player.UserId)
+			elseif ok2 and type(cur) == "table" and cur.State == "aborted" then
+				task.spawn(editPending, player.UserId, id, false)
+			end
+		elseif okRec and type(rec) == "table" and rec.State == "aborted" then
 			task.spawn(editPending, player.UserId, id, false) -- never committed: nothing to do
 		end
 	end
@@ -431,6 +447,9 @@ function TradeService.Init()
 				return Remotes.Fail(why)
 			end
 			table.insert(clean, uid)
+		end
+		if #clean > T.MaxOffer then
+			return Remotes.Fail(string.format("Up to %d hunters per side", T.MaxOffer))
 		end
 		for _, uid in s.Offer[player] do
 			HunterService.SetBusy(player, uid, nil)

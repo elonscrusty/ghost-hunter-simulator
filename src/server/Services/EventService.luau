@@ -60,7 +60,7 @@ local function reward(g: GhostService.Ghost)
 	-- multipliers. Participants are everyone who dealt damage (no damage = no reward).
 	local _ = total
 	local shares = GhostService.SplitDamage(g)
-	local pool = Rules.SplitPool(Config.Event.RewardBase * #shares.Players, shares.Weights)
+	local pool = Rules.SplitPool(Config.Event.RewardBase * Rules.PoolMembers(shares.Weights, 0.05), shares.Weights)
 	for i, player in shares.Players do
 		local d = DataService.Get(player)
 		if d and pool[i] > 0 then

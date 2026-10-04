@@ -80,6 +80,9 @@ function PetService.Init()
 	end)
 
 	Remotes.Register("EquipPet", "Inventory", function(player, uid, on)
+		if player:GetAttribute("InTower") then
+			return Remotes.Fail("Can't change pets inside the Boss Tower")
+		end
 		local d = DataService.Get(player)
 		if not d or type(uid) ~= "string" or type(on) ~= "boolean" then
 			return Remotes.Fail("Unknown pet")

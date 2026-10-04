@@ -62,7 +62,7 @@ local nextId = 1
 local roomsFolder: Folder
 local padPart: BasePart? = nil
 
-type Lobby = { EndsAt: number, Seen: { [Player]: boolean } }
+type Lobby = { EndsAt: number, Seen: { [Player]: boolean }, Joined: { [Player]: boolean } }
 local lobby: Lobby? = nil
 
 local function serverNow(): number
@@ -126,6 +126,8 @@ local function teleport(player: Player, pos: Vector3, facing: Vector3): boolean
 		root.AssemblyAngularVelocity = Vector3.zero
 		char:PivotTo(CFrame.lookAt(pos, pos + facing))
 	end)
+	-- fall rescue inside the tower returns here, never to the main map
+	player:SetAttribute("TowerSafe", if ok and player:GetAttribute("InTower") then pos else nil)
 	return ok
 end
 
@@ -139,6 +141,7 @@ end
 local function clearPlayer(player: Player)
 	player:SetAttribute("InTower", nil)
 	player:SetAttribute("TowerRoom", nil)
+	player:SetAttribute("TowerSafe", nil)
 	if player.Parent then
 		HunterService.Refresh(player) -- the Backup Rookie may step in again outside the tower
 	end
@@ -303,8 +306,11 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 			total += split.Weights[i]
 		end
 	end
-	local shardShares = Rules.SplitPool(shardsEach * #members, weights)
-	local ectoShares = Rules.SplitPool(ectoEach * #members, weights)
+	-- pool size counts members who did at least 10% of the damage (idle alts add nothing)
+	local _ = members
+	local sized = Rules.PoolMembers(weights, 0.1)
+	local shardShares = Rules.SplitPool(shardsEach * sized, weights)
+	local ectoShares = Rules.SplitPool(ectoEach * sized, weights)
 	local paid: { [Player]: { Ecto: number, Shards: number, Pct: number } } = {}
 	for i, p in players do
 		local d = DataService.Get(p)
@@ -491,7 +497,7 @@ local function runLobby(l: Lobby)
 	while serverNow() < l.EndsAt do
 		local here = {}
 		for _, p in Players:GetPlayers() do
-			if onPad(p) and not memberOf[p] then
+			if onPad(p) and not memberOf[p] and l.Joined[p] then -- only players who chose to enter
 				table.insert(here, p)
 			end
 		end
@@ -513,7 +519,7 @@ local function runLobby(l: Lobby)
 	-- party = eligible players on the pad now, nearest first
 	local cands = {}
 	for _, p in Players:GetPlayers() do
-		if onPad(p) and blocked(p) == nil then
+		if onPad(p) and blocked(p) == nil and l.Joined[p] then
 			table.insert(cands, { P = p, D = padDistance(p) })
 		end
 	end
@@ -552,12 +558,13 @@ local function requestStart(player: Player): any
 		return Remotes.Fail("Stand on the tower pad first!")
 	end
 	if lobby then
-		return { ok = true, EndsAt = (lobby :: Lobby).EndsAt } -- already counting down
+		(lobby :: Lobby).Joined[player] = true -- joins the countdown that is already running
+		return { ok = true, EndsAt = (lobby :: Lobby).EndsAt }
 	end
 	if not freeSlot() then
 		return Remotes.Fail("The tower is full right now. Try again in a moment!")
 	end
-	local l: Lobby = { EndsAt = serverNow() + TC.Countdown, Seen = {} }
+	local l: Lobby = { EndsAt = serverNow() + TC.Countdown, Seen = {}, Joined = { [player] = true } }
 	lobby = l
 	task.spawn(function()
 		local ok, err = pcall(function()
