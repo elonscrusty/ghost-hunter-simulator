@@ -7,6 +7,8 @@
   no release refund, trade freeze during commit, tower Ecto ~= farming, Lucky Opens 2x price,
   Ecto Sack 6000, phone UI (44pt taps, popup queue, loading screen, no text scaling), lazy ghost
   models, 1 move attribute, z-fighting and snag props.
+- Trading is switched OFF (`Config.Trade.Enabled = false`): no TRADE button, no trading booth,
+  server refuses requests. Old trade records still settle on join. Set it to true to bring it back.
 - PUBLISH with "Shut down all servers" (old live servers don't have the version check).
 
 ## v1.9 audit pass (built, not yet published)

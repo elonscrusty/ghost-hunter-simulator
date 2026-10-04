@@ -474,6 +474,9 @@ function TradeService.Init()
 	DataService.AddLoadHook(recover)
 
 	Remotes.Register("TradeRequest", "Default", function(player, targetId)
+		if not T.Enabled then
+			return Remotes.Fail("Trading is turned off for now")
+		end
 		local target = if type(targetId) == "number" then Players:GetPlayerByUserId(targetId) else nil
 		if not target or target == player then
 			return Remotes.Fail("That player isn't here")
@@ -497,6 +500,9 @@ function TradeService.Init()
 	end)
 
 	Remotes.Register("TradeRespond", "Default", function(player, fromId, accept)
+		if not T.Enabled then
+			return Remotes.Fail("Trading is turned off for now")
+		end
 		local req = requests[player]
 		requests[player] = nil
 		if not req or type(fromId) ~= "number" or req.From.UserId ~= fromId or os.clock() > req.Expires or not req.From.Parent then

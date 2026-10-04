@@ -684,7 +684,7 @@ local function onData(d: any)
 	-- gradual reveal: PETS once the Boss Tower/shards start, TRADE once the player has 5+ hunters
 	local shards = d.Shards or 0
 	Hud.Buttons.Pets.Visible = shards > 0 or (d.Pets ~= nil and next(d.Pets) ~= nil) or (d.TowerRuns or 0) > 0
-	tradeButton.Visible = State.CountOwned() >= 5
+	tradeButton.Visible = Config.Trade.Enabled and State.CountOwned() >= 5
 	shardLabel.Text = Format.Short(shards)
 end
 
@@ -706,7 +706,7 @@ function Hud.Init()
 	buildBanners()
 	Hud.Buttons.Pets.Visible = false
 	-- world kiosks open their panels (always, even before the menu buttons are revealed)
-	local KIOSK_PANELS: { [string]: string } = { Trade = "Trade", Pets = "Pets", Merge = "Hunters" }
+	local KIOSK_PANELS: { [string]: string } = { Trade = if Config.Trade.Enabled then "Trade" else nil, Pets = "Pets", Merge = "Hunters" } :: any
 	ProximityPromptService.PromptTriggered:Connect(function(prompt: ProximityPrompt)
 		local parent = prompt.Parent
 		local name = parent and KIOSK_PANELS[tostring(parent:GetAttribute("Kiosk"))]

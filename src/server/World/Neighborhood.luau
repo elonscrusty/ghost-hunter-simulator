@@ -304,7 +304,9 @@ end
 local function kiosks(f: Instance)
 	local folder = Kit.Folder(f, "Kiosks")
 	for _, k in KIOSKS do
-		kiosk(folder, k)
+		if k.Id ~= "Trade" or Config.Trade.Enabled then -- no trading booth while trading is off
+			kiosk(folder, k)
+		end
 	end
 end
 
