@@ -455,7 +455,7 @@ local function findPad(): BasePart?
 		return padPart
 	end
 	local map = workspace:FindFirstChild("Map")
-	local plaza = map and map:FindFirstChild("EventArena")
+	local plaza = map and map:FindFirstChild("TowerEntrance")
 	local pad = plaza and plaza:FindFirstChild("TowerPad")
 	padPart = if pad and pad:IsA("BasePart") then pad else nil
 	return padPart

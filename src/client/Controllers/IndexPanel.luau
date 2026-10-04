@@ -14,6 +14,14 @@ local Rules = require(GH.Logic.Rules)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
 local State = require(Client.State)
+
+-- max HP of a hunter with this power (incl. the equipped pets' HP bonus), as the server counts it
+local function hpFor(power: number): number
+	local d = State.Data
+	local bonus = if d and d.PetBonuses then tonumber(d.PetBonuses.HP) or 0 else 0
+	return Rules.HunterMaxHP(power, Config.Retaliation.HPPerPower, bonus)
+end
+
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Portrait = require(Client.UI.Portrait)
@@ -152,7 +160,7 @@ local function showDetail(h: Config.HunterDef)
 			else tierLabel(tier) .. " not discovered yet. Merge " .. Config.Merge.Count .. " " .. (if tier == 1 then "NORMAL" else "✨ SHINY") .. " copies to make one!"
 	end
 	detailName.TextColor3 = if tier > 0 then Config.Tiers[tier].Color else rar.Color
-	detailInfo.Text = tierLabel(tier) .. "  ·  " .. rar.Name .. "  ·  ⚡ " .. (if found then Format.Commas(h.Power * Config.Tiers[tier].Mult) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
+	detailInfo.Text = tierLabel(tier) .. "  ·  " .. rar.Name .. "  ·  ⚡ " .. (if found then Format.Short(h.Power * Config.Tiers[tier].Mult) .. "  ·  ❤️ " .. Format.Short(hpFor(h.Power * Config.Tiers[tier].Mult)) .. " HP" else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
 end
 
 local function rebuild()

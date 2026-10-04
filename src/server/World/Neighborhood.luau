@@ -1,13 +1,13 @@
 --!strict
 -- ZONE 1: Haunted Neighborhood (Z -37..260) and the LOBBY behind it (Config.Layout.Lobby,
--- Z -130..-37, no ghosts): spawn plaza, Ghost Hunter HQ, Merge/Trading booths (the Hatchery and
--- the boards are built in their own files). Players walk from the plaza through the free
+-- Z -130..-37, no ghosts): spawn plaza, Ghost Hunter HQ, Merge/Trading booths (the Hatchery,
+-- the Boss Tower entrance and the boards are built in their own files). Players walk from the plaza through the free
 -- "THE NEIGHBORHOOD" arch in the lobby's front hedge, past the Beginner crate station and the
--- upgrade booth, then down a main road along X = 0 to the Cemetery gate, a cross street at Z 110..124 leading east to
--- the event arena, and candy-coloured houses placed on a grid wherever the keep-out map allows.
+-- upgrade booth, then down a main road along X = 0 to the Cemetery gate, a cross street at Z 110..124 running
+-- from hedge to hedge, and candy-coloured houses placed on a grid wherever the keep-out map allows.
 -- Palette: bright grass, warm houses, orange accents, purple paranormal touches, ectoplasm
 -- green. Glow is reserved for the front windows, street lamps, car headlights and the HQ
--- antenna; side windows, plaza rings, chevrons, bands, doors and tanks are solid colours.
+-- antenna; side windows, plaza rings, bands, doors and tanks are solid colours.
 -- Materials: Asphalt roads, Concrete sidewalks, Slate roof shingles, Brick chimneys, Wood posts.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
@@ -136,16 +136,6 @@ end
 --==================================================================
 -- SPAWN PLAZA + HQ
 --==================================================================
-local function chevron(parent: Instance, tip: Vector3, dir: Vector3, color: Color3)
-	local perp = V(-dir.Z, 0, dir.X)
-	local paint = Kit.Vivid(color)
-	for _, s in { -1, 1 } do
-		local arm = (-dir + perp * s).Unit
-		local center = tip + arm * 2
-		Kit.Part(parent, V(1, 0.15, 4.6), CFrame.lookAt(center, center + arm), paint)
-	end
-end
-
 local function plaza(f: Instance)
 	local spawnPos = Config.Layout.Spawn
 	local sx, sz = spawnPos.X, spawnPos.Z
@@ -178,17 +168,6 @@ local function plaza(f: Instance)
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(sx - 7.4, 0.4, sz + s * 7) - V(0, 0, 0.4), V(sx + 7.4, 1.3, sz + s * 7) + V(0, 0, 0.4), border)
 		Kit.Box(f, V(sx + s * 7, 0.4, sz - 7) - V(0.4, 0, 0), V(sx + s * 7, 1.3, sz + 7) + V(0.4, 0, 0), border)
-	end
-
-
-	-- guide chevrons to the Beginner crate and the upgrade booth
-	local beg = Config.Layout.CrateStations.Beginner
-	local up = Config.Layout.UpgradeStation
-	for _, target in { beg, up } do
-		local dir = (V(target.X, 0, target.Z) - V(sx, 0, sz)).Unit
-		for i = 1, 3 do
-			chevron(f, V(sx, 0.55, sz) + dir * (8 + i * 4.5), dir, if target == beg then C(255, 180, 60) else C(90, 210, 255))
-		end
 	end
 end
 
@@ -439,9 +418,9 @@ local function roads(f: Instance)
 	for z = front + 9, 250, 12 do
 		Kit.Box(f, V(-0.4, 0.1, z), V(0.4, 0.14, z + 6), C(255, 210, 80))
 	end
-	-- cross street toward the arena
-	Kit.Box(f, V(-136, -0.4, 110), V(63, 0.06, 124), asphalt, { Mat = Enum.Material.Asphalt, Solid = true, Name = "CrossStreet" })
-	for x = -130, 55, 12 do
+	-- cross street from hedge to hedge
+	Kit.Box(f, V(-136, -0.4, 110), V(136, 0.06, 124), asphalt, { Mat = Enum.Material.Asphalt, Solid = true, Name = "CrossStreet" })
+	for x = -130, 124, 12 do
 		if x < -16 or x > 14 then
 			Kit.Box(f, V(x, 0.06, 116.6), V(x + 6, 0.1, 117.4), C(255, 210, 80))
 		end
@@ -451,10 +430,10 @@ local function roads(f: Instance)
 		Kit.Box(f, V(s * 10, -0.4, front + 3), V(s * 14, 0.22, 106), walk, pave)
 		Kit.Box(f, V(s * 10, -0.4, 128), V(s * 14, 0.22, 257), walk, pave)
 		Kit.Box(f, V(-136, -0.4, if s < 0 then 106 else 124), V(-14, 0.22, if s < 0 then 110 else 128), walk, pave)
-		Kit.Box(f, V(14, -0.4, if s < 0 then 106 else 124), V(61, 0.22, if s < 0 then 110 else 128), walk, pave)
+		Kit.Box(f, V(14, -0.4, if s < 0 then 106 else 124), V(136, 0.22, if s < 0 then 110 else 128), walk, pave)
 	end
 	Kit.AddRect(-14, LZ - 36, 14, 260, true)
-	Kit.AddRect(-136, 106, 63, 128, true)
+	Kit.AddRect(-136, 106, 136, 128, true)
 end
 
 --==================================================================
@@ -491,7 +470,7 @@ function Neighborhood.Build(map: Instance)
 			end
 		end
 	end
-	for x = -125, 50, 35 do
+	for x = -125, 120, 35 do
 		if Kit.IsFree(x, 108, 1, true) then
 			Props.StreetLamp(f, V(x, 0.22, 108), C(255, 200, 120), false)
 		end

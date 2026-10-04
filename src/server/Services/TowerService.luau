@@ -670,7 +670,7 @@ end
 
 local function setupPrompt()
 	local map = workspace:FindFirstChild("Map")
-	local plaza = map and map:FindFirstChild("EventArena")
+	local plaza = map and map:FindFirstChild("TowerEntrance") -- lobby, next to the Pet Hatchery
 	local pad = plaza and plaza:FindFirstChild("TowerPad")
 	if not pad or not pad:IsA("BasePart") then
 		warn("[Tower] TowerPad not found; the pad prompt is off (TowerStart still works only on a pad)")

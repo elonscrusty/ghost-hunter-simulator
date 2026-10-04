@@ -2095,10 +2095,11 @@ Config.Data = {
 export type GhostArea = { Ghost: string, Center: Vector3, Radius: number, Count: number }
 
 Config.Layout = {
-	-- Lobby (spawn plaza, HQ, booths, hatchery, boards) sits behind the Neighborhood: X -64..64,
-	-- Z BackZ..FrontZ, no ghosts. A hedge wall centred on FrontZ (6 thick) closes it, with a free
-	-- open arch (EntranceWidth, centred on X = 0) leading into the Neighborhood.
-	Lobby = { BackZ = -130, FrontZ = -37, HalfWidth = 64, EntranceWidth = 34 },
+	-- Lobby (spawn plaza, HQ, booths, hatchery, Boss Tower entrance, boards) sits behind the
+	-- Neighborhood: X MinX..MaxX, Z BackZ..FrontZ, no ghosts. The left side is wider (the Boss
+	-- Tower stands there). Hedges close it on three sides; a hedge wall centred on FrontZ (6 thick)
+	-- closes the front, with a free open arch (EntranceWidth, centred on X = 0) into the Neighborhood.
+	Lobby = { BackZ = -130, FrontZ = -37, MinX = -96, MaxX = 64, EntranceWidth = 34 },
 	Spawn = Vector3.new(0, 3, -70),
 	HalfWidth = 140, -- playable area spans X -HalfWidth..HalfWidth
 	Gates = {
@@ -2164,7 +2165,9 @@ Config.Layout = {
 	PowerBoard = { Position = Vector3.new(38.4, 0, -55.1), Yaw = math.rad(72) },
 	Hatchery = Vector3.new(-27, 0, -93), -- Pet Hatchery centre (PetService BuyEgg near check)
 	TradeBooth = Vector3.new(31, 0, -89), -- TRADING booth: both players must stand near it to trade
-	EventArena = { Center = Vector3.new(95, 0, 110), Radius = 32 },
+	-- Boss Tower entrance in the lobby, left of the Pet Hatchery, facing the spawn plaza: party
+	-- pad centre (TowerService pad checks use the built TowerPad part; Tutorial points here).
+	TowerEntrance = { Pad = Vector3.new(-66, 0, -82) },
 	GhostAreas = {
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(0, 0, 70), Radius = 34, Count = 7 },
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(-80, 0, 80), Radius = 26, Count = 4 },
@@ -13061,7 +13064,7 @@ end
 
 local function setupPrompt()
 	local map = workspace:FindFirstChild("Map")
-	local plaza = map and map:FindFirstChild("EventArena")
+	local plaza = map and map:FindFirstChild("TowerEntrance") -- lobby, next to the Pet Hatchery
 	local pad = plaza and plaza:FindFirstChild("TowerPad")
 	if not pad or not pad:IsA("BasePart") then
 		warn("[Tower] TowerPad not found; the pad prompt is off (TowerStart still works only on a pad)")
@@ -13927,232 +13930,6 @@ return TradeService
         </Properties>
         <Item class="ModuleScript" referent="43">
           <Properties>
-            <string name="Name">Arena</string>
-            <string name="Source"><![CDATA[--!strict
--- TOWER PLAZA (workspace.Map.EventArena) on the old event-arena plot at the end of the cross
--- street. Two parts:
---   * an open courtyard around Config.Layout.EventArena.Center (the retired Giant Poltergeist
---     event used to spawn there; kept as open space): nothing tall near
---     the centre (so nothing solid there up to Y = 30 or higher);
---   * the ENDLESS BOSS TOWER on the east side of the plot (backed against the east hedge) with
---     the party pad (part "TowerPad", radius Config.Tower.PadRadius) in front of its door.
---     TowerService finds TowerPad and adds the "Enter Boss Tower" ProximityPrompt at runtime.
--- The keep-out reservations of the old arena (the plot circle and the two bleacher strips) stay
--- registered, so Neighborhood props still keep off the whole plot.
-
-local Config = require(game:GetService("ReplicatedStorage").GH.Config)
-local Kit = require(script.Parent.Kit)
-local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
-local Props = require(script.Parent.Props)
-
-local Arena = {}
-
-local C = Color3.fromRGB
-local V = Vector3.new
-local NEON = Enum.Material.Neon
-
-local STONE = C(92, 66, 138)
-local STONE_DARK = C(62, 44, 96)
-local STONE_LIGHT = C(128, 98, 178)
-local ROOF = C(70, 40, 110)
-local ECTO = C(110, 255, 160)
-local PAD_OFFSET = 19 -- pad centre is this far east of the courtyard centre
-
--- A stone post with a small glowing ghost lantern on top (optionally lit).
-local function lantern(parent: Instance, x: number, z: number, h: number, light: boolean)
-	Kit.Box(parent, V(x - 0.8, 0, z - 0.8), V(x + 0.8, h, z + 0.8), STONE_DARK, { Mat = Enum.Material.Slate, Solid = true })
-	Kit.Box(parent, V(x - 1.2, h, z - 1.2), V(x + 1.2, h + 0.5, z + 1.2), STONE_LIGHT, { Mat = Enum.Material.Slate })
-	Kit.Box(parent, V(x - 0.9, h + 0.5, z - 0.9), V(x + 0.9, h + 3.1, z + 0.9), C(40, 30, 60), { Mat = Enum.Material.Glass, Transp = 0.55 })
-	local glow = Kit.Ball(parent, 1.3, V(x, h + 1.8, z), ECTO, { Mat = NEON })
-	Kit.Box(parent, V(x - 1.2, h + 3.1, z - 1.2), V(x + 1.2, h + 3.5, z + 1.2), STONE_DARK, { Mat = Enum.Material.Metal })
-	if light then
-		Kit.Light(glow, ECTO, 18, 1.2, true)
-	end
-end
-
--- Crenellations along the top edge of a box footprint.
-local function battlements(parent: Instance, x1: number, z1: number, x2: number, z2: number, y: number)
-	local step = 3
-	for x = x1, x2 - 1.5, step do
-		Kit.Box(parent, V(x, y, z1), V(x + 1.5, y + 2, z1 + 1.2), STONE_LIGHT, { Mat = Enum.Material.Slate })
-		Kit.Box(parent, V(x, y, z2 - 1.2), V(x + 1.5, y + 2, z2), STONE_LIGHT, { Mat = Enum.Material.Slate })
-	end
-	for z = z1 + step, z2 - step, step do
-		Kit.Box(parent, V(x1, y, z), V(x1 + 1.2, y + 2, z + 1.5), STONE_LIGHT, { Mat = Enum.Material.Slate })
-		Kit.Box(parent, V(x2 - 1.2, y, z), V(x2, y + 2, z + 1.5), STONE_LIGHT, { Mat = Enum.Material.Slate })
-	end
-end
-
--- Painted ectoplasm band (solid material + vivid colour, not Neon) on the three visible sides
--- of a box footprint (the east side is against the hedge).
-local function band(parent: Instance, x1: number, z1: number, x2: number, z2: number, y: number)
-	local paint = Kit.Vivid(ECTO)
-	Kit.Box(parent, V(x1 - 0.3, y, z1 - 0.3), V(x2, y + 0.8, z1 + 0.2), paint)
-	Kit.Box(parent, V(x1 - 0.3, y, z2 - 0.2), V(x2, y + 0.8, z2 + 0.3), paint)
-	Kit.Box(parent, V(x1 - 0.3, y, z1), V(x1 + 0.2, y + 0.8, z2), paint)
-end
-
--- Gable roof from two wedges whose tall faces meet over cz.
-local function gable(parent: Instance, x: number, y: number, cz: number, width: number, height: number, depth: number)
-	local half = depth / 2
-	Kit.Wedge(parent, V(width, height, half), CFrame.new(x, y + height / 2, cz - half / 2), ROOF, { Mat = Enum.Material.Slate })
-	Kit.Wedge(parent, V(width, height, half), CFrame.new(x, y + height / 2, cz + half / 2) * CFrame.Angles(0, math.pi, 0), ROOF, { Mat = Enum.Material.Slate })
-end
-
--- Returns the X of the door face.
-local function buildTower(m: Instance, cx: number, cz: number): number
-	-- Footprint X 125..139 against the east hedge (X 140); the door faces -X (the courtyard).
-	local x1, x2 = cx + 30, cx + 44
-	local z1, z2 = cz - 15, cz + 15
-	local stone: Kit.Opts = { Mat = Enum.Material.Slate, Solid = true }
-	-- base hall
-	Kit.Box(m, V(x1, 0, z1), V(x2, 30, z2), STONE, stone)
-	Kit.Box(m, V(x1 - 0.6, 0, z1 - 0.6), V(x2, 2, z2 + 0.6), STONE_DARK, stone) -- plinth
-	band(m, x1, z1, x2, z2, 29.2)
-	battlements(m, x1, z1, x2, z2, 30)
-	-- front corner turrets with pointed roofs
-	for _, sz in { -1, 1 } do
-		local tz = if sz < 0 then z1 + 2 else z2 - 2
-		Kit.Cyl(m, 38, 6, CFrame.new(x1 + 2, 19, tz), STONE_DARK, stone)
-		Kit.Cyl(m, 0.8, 6.8, CFrame.new(x1 + 2, 37.6, tz), Kit.Vivid(ECTO))
-		gable(m, x1 + 2, 38, tz, 7, 6, 7)
-	end
-	-- upper tower
-	local ux1, ux2, uz1, uz2 = x1 + 3, x2 - 1, cz - 9, cz + 9
-	Kit.Box(m, V(ux1, 30, uz1), V(ux2, 62, uz2), STONE_LIGHT, stone)
-	band(m, ux1, uz1, ux2, uz2, 45)
-	band(m, ux1, uz1, ux2, uz2, 61.2)
-	battlements(m, ux1, uz1, ux2, uz2, 62)
-	-- spire with a floating ectoplasm orb
-	Kit.Box(m, V(ux1 + 3, 62, uz1 + 3), V(ux2 - 3, 70, uz2 - 3), STONE_DARK, stone)
-	local sx = (ux1 + ux2) / 2
-	gable(m, sx, 70, cz, ux2 - ux1 - 4, 12, uz2 - uz1 - 6)
-	local orb = Kit.Ball(m, 3.4, V(sx, 85, cz), ECTO, { Mat = NEON })
-	Kit.Float(orb, 1.2)
-	Kit.Light(orb, ECTO, 30, 1.5)
-	-- glowing windows on the courtyard face (small neon accents)
-	for _, wz in { -5, 0, 5 } do
-		Kit.Box(m, V(ux1 - 0.25, 48, cz + wz - 1), V(ux1 + 0.1, 53, cz + wz + 1), ECTO, { Mat = NEON })
-		Kit.Box(m, V(ux1 - 0.25, 35, cz + wz - 1), V(ux1 + 0.1, 40, cz + wz + 1), C(25, 15, 40))
-	end
-	for _, wz in { -10, 10 } do
-		Kit.Box(m, V(x1 - 0.25, 18, cz + wz - 1.2), V(x1 + 0.1, 23, cz + wz + 1.2), C(255, 200, 90), { Mat = NEON })
-	end
-	-- carved ghost eyes high on the upper tower front
-	for _, s in { -1, 1 } do
-		local fz = cz + s * 4.5
-		Kit.Ball(m, 1.2, V(ux1 - 0.2, 57, fz - 0.8), C(25, 15, 40))
-		Kit.Ball(m, 1.2, V(ux1 - 0.2, 57, fz + 0.8), C(25, 15, 40))
-	end
-
-	-- the door: dark arch with an ectoplasm portal glow and a stone frame
-	local dz1, dz2 = cz - 6, cz + 6
-	Kit.Box(m, V(x1 - 0.4, 0, dz1), V(x1 + 0.2, 15, dz2), C(25, 15, 40), { Name = "TowerDoor" })
-	local portal = Kit.Box(m, V(x1 - 0.55, 0.3, dz1 + 1), V(x1 - 0.45, 13.5, dz2 - 1), ECTO, { Mat = NEON, Transp = 0.45, Name = "Portal" })
-	Kit.Emitter(portal, ECTO, 3, 3, 0.5)
-	for _, s in { -1, 1 } do
-		local pz = if s < 0 then dz1 - 1.5 else dz2 + 1.5
-		Kit.Box(m, V(x1 - 2, 0, pz - 1.5), V(x1, 17, pz + 1.5), STONE_LIGHT, stone)
-	end
-	Kit.Box(m, V(x1 - 2, 15, dz1 - 3), V(x1, 18, dz2 + 3), STONE_LIGHT, stone)
-	-- sign over the door
-	local signCF = CFrame.new(x1 - 2.2, 22.5, cz) * CFrame.Angles(0, Kit.FaceYaw(-1, 0), 0)
-	local sign = Kit.Part(m, V(24, 5, 0.6), signCF, C(45, 25, 80))
-	Kit.Part(m, V(25, 6, 0.3), signCF * CFrame.new(0, 0, 0.45), Kit.Vivid(ECTO))
-	Kit.Sign(sign, Enum.NormalId.Front, "ENDLESS BOSS TOWER", C(150, 255, 170))
-	return x1
-end
-
--- Flat party pad (top at 0.34): the TowerPad part carries the prompt (added by TowerService).
-local function buildPad(m: Instance, px: number, pz: number): Part
-	local r = Config.Tower.PadRadius
-	Kit.Disc(m, px, pz, 0.24, r * 2 + 1.4, 0.3, Kit.Vivid(ECTO), { Solid = true })
-	local pad = Kit.Disc(m, px, pz, 0.3, r * 2 - 1, 0.3, C(70, 45, 120), { Mat = Enum.Material.Slate, Solid = true, Name = "TowerPad" })
-	Kit.Disc(m, px, pz, 0.34, 5, 0.08, Kit.Vivid(C(190, 120, 255)))
-	for i = 0, 3 do
-		local a = i / 4 * math.pi * 2 + math.pi / 4
-		Kit.Disc(m, px + math.cos(a) * (r - 2.4), pz + math.sin(a) * (r - 2.4), 0.34, 1.6, 0.08, Kit.Vivid(ECTO))
-	end
-	return pad
-end
-
-function Arena.Build(map: Instance)
-	local ea = Config.Layout.EventArena
-	local cx, cz, r = ea.Center.X, ea.Center.Z, ea.Radius
-	local m = Kit.Model(map, "EventArena")
-
-	-- (the old event courtyard's floor circles were removed: they overlapped the tower pad)
-	-- cobble path from the cross street, across the courtyard, to the pad (flat)
-	local px = cx + PAD_OFFSET
-	Kit.Box(m, V(cx - r - 2, -0.4, cz - 3), V(px - Config.Tower.PadRadius, 0.14, cz + 3), C(110, 90, 150), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "TowerPath" })
-
-	-- TOWER + PAD
-	local doorX = buildTower(m, cx, cz)
-	buildPad(m, px, cz)
-	-- ghost lanterns flanking the tower door and the pad (all outside the clear courtyard)
-	lantern(m, doorX - 3, cz - 11, 6, true)
-	lantern(m, doorX - 3, cz + 11, 6, false)
-	lantern(m, px + 2, cz - Config.Tower.PadRadius - 3.5, 5, false)
-	lantern(m, px + 2, cz + Config.Tower.PadRadius + 3.5, 5, true)
-
-	-- courtyard edge: pumpkins and lanterns on a ring outside the clear radius, leaving the
-	-- west side open for the cross street and the east side for the tower
-	for i = 0, 11 do
-		local a = (i + 0.5) / 12 * math.pi * 2
-		local ex, ez = cx + math.cos(a) * (r + 1), cz + math.sin(a) * (r + 1)
-		local west = ex < cx and ez > cz - 12 and ez < cz + 26
-		local east = ex > cx + 14 and math.abs(ez - cz) < 26
-		if math.abs(ex) < 134 and not west and not east then
-			if i % 2 == 0 then
-				Props.Pumpkin(m, V(ex, 0, ez), 3.4, cx - ex, cz - ez, true)
-			else
-				lantern(m, ex, ez, 4, false)
-			end
-		end
-	end
-
-	-- entrance arch over the cross street on the west side, sign facing -X (toward the road)
-	local ax = cx - r - 5
-	for _, sz in { -1, 1 } do
-		local pz = cz + 7 + sz * 13
-		Kit.Box(m, V(ax - 1.2, 0, pz - 1.2), V(ax + 1.2, 22, pz + 1.2), STONE, { Mat = Enum.Material.Slate, Solid = true })
-		Kit.Ball(m, 3, V(ax, 23, pz), Kit.Vivid(ECTO))
-	end
-	local archCF = CFrame.new(ax, 19, cz + 7) * CFrame.Angles(0, Kit.FaceYaw(-1, 0), 0)
-	local arch = Kit.Part(m, V(24, 5, 0.8), archCF, C(45, 25, 80))
-	Kit.Part(m, V(25, 6, 0.4), archCF * CFrame.new(0, 0, 0.5), Kit.Vivid(C(190, 120, 255)))
-	-- title between two icon images: the tower icon once uploaded, else the Spirit Shards icon
-	-- (shards are what the tower pays); plain text if neither image exists
-	local icon = Icons.Get("tower") or Icons.Get("shards")
-	if icon then
-		local g = Kit.Gui(arch, Enum.NormalId.Front)
-		for _, x in { 0.02, 0.8 } do
-			local img = Instance.new("ImageLabel")
-			img.Name = "TowerIcon"
-			img.BackgroundTransparency = 1
-			img.Image = icon
-			img.ScaleType = Enum.ScaleType.Fit
-			img.Position = UDim2.fromScale(x, 0.07)
-			img.Size = UDim2.fromScale(0.18, 0.86) -- square on the 24 x 5 board
-			img.Parent = g
-		end
-		Kit.Label(g, "BOSS TOWER", C(150, 255, 170), { Size = UDim2.fromScale(0.58, 0.8), Pos = UDim2.fromScale(0.21, 0.1) })
-	else
-		Kit.Sign(arch, Enum.NormalId.Front, "BOSS TOWER", C(150, 255, 170))
-	end
-
-	-- keep-out reservations of the old arena plot (circle + the two former bleacher strips)
-	Kit.AddCircle(cx, cz, r + 6)
-	Kit.AddRect(cx - 15, cz + r + 4, cx + 15, cz + r + 16)
-	Kit.AddRect(cx - 15, cz - r - 4, cx + 15, cz - r - 16)
-end
-
-return Arena
-]]></string>
-          </Properties>
-        </Item>
-        <Item class="ModuleScript" referent="44">
-          <Properties>
             <string name="Name">Boundary</string>
             <string name="Source"><![CDATA[--!strict
 -- Ground slabs (top at Y=0), lobby + themed outer walls, the two zone-separation walls and the
@@ -14265,10 +14042,10 @@ function Boundary.Build(map: Instance)
 		hedgeRun(f, V(s * (eh + 8), 0, front - 3), V(s * (HW - 0.01), 14, front + 3))
 	end
 	-- Lobby: hedges on both sides and behind HQ
-	local LW = LOBBY.HalfWidth
-	hedgeRun(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(-LW, 14, front - 3))
-	hedgeRun(f, V(LW, 0, LOBBY.BackZ - 6), V(LW + 6, 14, front - 3))
-	hedgeRun(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(LW + 6, 14, LOBBY.BackZ))
+	local LX1, LX2 = LOBBY.MinX, LOBBY.MaxX -- the left side is wider (Boss Tower entrance)
+	hedgeRun(f, V(LX1 - 6, 0, LOBBY.BackZ - 6), V(LX1, 14, front - 3))
+	hedgeRun(f, V(LX2, 0, LOBBY.BackZ - 6), V(LX2 + 6, 14, front - 3))
+	hedgeRun(f, V(LX1 - 6, 0, LOBBY.BackZ - 6), V(LX2 + 6, 14, LOBBY.BackZ))
 	-- Cemetery: mossy stone with mint cap balls
 	stoneRun(f, V(-W, 0, 263), V(-HW, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
 	stoneRun(f, V(HW, 0, 263), V(W, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
@@ -14311,10 +14088,11 @@ function Boundary.Build(map: Instance)
 	invisible(f, V(-W, 0, END), V(W, INVIS_TOP, END + 6))
 	for _, s in { -1, 1 } do
 		invisible(f, V(s * eh, 0, front - 3), V(s * W, INVIS_TOP, front + 3))
-		invisible(f, V(s * LW, 0, LOBBY.BackZ - 6), V(s * (LW + 6), INVIS_TOP, front - 3))
+		local lx = if s < 0 then LX1 else LX2
+		invisible(f, V(lx, 0, LOBBY.BackZ - 6), V(lx + s * 6, INVIS_TOP, front - 3))
 	end
 	invisible(f, V(-eh, 30, front - 3), V(eh, INVIS_TOP, front + 3)) -- above the arch beam
-	invisible(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(LW + 6, INVIS_TOP, LOBBY.BackZ))
+	invisible(f, V(LX1 - 6, 0, LOBBY.BackZ - 6), V(LX2 + 6, INVIS_TOP, LOBBY.BackZ))
 
 	-- Outer scenery: soft purple hills and big trees just beyond the walls.
 	local hill = { C(120, 90, 190), C(100, 150, 120), C(150, 100, 200) }
@@ -14332,10 +14110,10 @@ function Boundary.Build(map: Instance)
 	end
 	-- outside the lobby hedges: a few big trees on the grass either side
 	-- (fixed sizes: no Kit.Rng here, so the other zones' random props don't shift)
-	for i, p in { { 92, -70 }, { 122, -112 }, { 84, -122 }, { 128, -62 } } do
-		for _, s in { -1, 1 } do
-			Props.Tree(f, V(s * p[1], 0, p[2]), 18 + (i % 3) * 3)
-		end
+	-- (offsets are measured from each side's hedge, so the wider left side keeps them outside)
+	for i, p in { { 28, -70 }, { 58, -112 }, { 20, -122 }, { 64, -62 } } do
+		Props.Tree(f, V(LX2 + p[1], 0, p[2]), 18 + (i % 3) * 3)
+		Props.Tree(f, V(LX1 - math.min(p[1], 40), 0, p[2]), 18 + (i % 3) * 3)
 	end
 end
 
@@ -14343,7 +14121,7 @@ return Boundary
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Builder</string>
             <string name="Source"><![CDATA[--!strict
@@ -14352,16 +14130,18 @@ return Boundary
 
 	Layout (studs, +Z forward; ground top is Y = 0 everywhere walkable; play area |X| <= 140):
 
-	  LOBBY (Config.Layout.Lobby: X -64..64, Z -130..-37, hedges all round, no ghosts)
+	  LOBBY (Config.Layout.Lobby: X -96..64, Z -130..-37, hedges all round, no ghosts)
 	  Z -130 ....... hedge wall behind the lobby
 	  Z -130..-106   Ghost Hunter HQ building (behind spawn); Pet Hatchery (left) and the
 	                 Merge + Trading kiosks (right) in the pockets between HQ and the plaza
+	  X -96..-50     Boss Tower entrance (TowerEntrance.luau) left of the hatchery: tower,
+	                 party pad at Config.Layout.TowerEntrance.Pad, "BOSS TOWER" arch
 	  Z  -70         Spawn plaza (SpawnLocation at Config.Layout.Spawn, faces +Z); TOP GHOST
 	                 HUNTERS + TOP POWER boards on its right
 	  Z  -37         Lobby hedge wall with the free "THE NEIGHBORHOOD" arch (X -17..17)
 	  Z   -6         Beginner crate station (X -28, beacon) | Upgrade booth (X +28)
 	  Z -37..260     ZONE 1 NEIGHBORHOOD: main road X -10..10 up to the gate, cross street
-	                 Z 110..124 east to the Event Arena (95, 110, r32); houses on a 30-stud grid
+	                 Z 110..124 across the zone (X -136..136); houses on a 30-stud grid
 	                 wherever ghost areas / roads / stations leave room.
 	  Z 260          Stone wall + Gate_Cemetery (34-wide opening at X = 0)
 	  Z 260..540     ZONE 2 CEMETERY: cobble path X -8..8, Haunted station (X -28, Z 292),
@@ -14384,7 +14164,7 @@ return Boundary
 	Every ghost area circle from Config.Layout.GhostAreas is registered as a keep-out, so no
 	prop taller than ~0.3 studs is placed inside one (flat road paint / cracks / rune lines only).
 	Instance tree:
-	  workspace.Map.{Boundary, Gates, Stations, EventArena, Neighborhood, Cemetery, School, Carnival,
+	  workspace.Map.{Boundary, Gates, Stations, TowerEntrance, Neighborhood, Cemetery, School, Carnival,
 	                 Hospital, Harbor, Castle, SpiritRealm}
 ]]
 
@@ -14397,7 +14177,7 @@ local Boundary = require(script.Parent.Boundary)
 local Gates = require(script.Parent.Gates)
 local Stations = require(script.Parent.Stations)
 local Leaderboard = require(script.Parent.Leaderboard)
-local Arena = require(script.Parent.Arena)
+local TowerEntrance = require(script.Parent.TowerEntrance)
 local Neighborhood = require(script.Parent.Neighborhood)
 local Cemetery = require(script.Parent.Cemetery)
 local School = require(script.Parent.School)
@@ -14435,7 +14215,7 @@ local function registerKeepOuts()
 	Kit.AddRect(-10, 880, 10, Config.Zones[#Config.Zones].MaxZ, true)
 	-- the whole lobby plus its front hedge wall: nothing random grows in there
 	local lobby = Config.Layout.Lobby
-	Kit.AddRect(-lobby.HalfWidth - 6, lobby.BackZ - 6, lobby.HalfWidth + 6, lobby.FrontZ + 3)
+	Kit.AddRect(lobby.MinX - 6, lobby.BackZ - 6, lobby.MaxX + 6, lobby.FrontZ + 3)
 	Kit.AddRect(-146, lobby.FrontZ - 3, 146, lobby.FrontZ + 5)
 	-- pockets behind the plaza: Pet Hatchery on the left (Hatchery.luau), the Merge + Trading
 	-- kiosks on the right (Neighborhood.luau)
@@ -14501,7 +14281,7 @@ local function buildAll(map: Folder)
 	Gates.Build(map)
 	Stations.Build(map)
 	Leaderboard.Build(map)
-	Arena.Build(map)
+	TowerEntrance.Build(map)
 	Neighborhood.Build(map)
 	Cemetery.Build(map)
 	School.Build(map)
@@ -14547,7 +14327,7 @@ return Builder
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Carnival</string>
             <string name="Source"><![CDATA[--!strict
@@ -15206,7 +14986,7 @@ return Carnival
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Castle</string>
             <string name="Source"><![CDATA[--!strict
@@ -15776,7 +15556,7 @@ return Castle
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">Cemetery</string>
             <string name="Source"><![CDATA[--!strict
@@ -16011,7 +15791,7 @@ return Cemetery
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="49">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">Clockwork</string>
             <string name="Source"><![CDATA[--!strict
@@ -16449,7 +16229,7 @@ return Clockwork
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="50">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">Frost</string>
             <string name="Source"><![CDATA[--!strict
@@ -16938,7 +16718,7 @@ return Frost
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">Gates</string>
             <string name="Source"><![CDATA[--!strict
@@ -17068,7 +16848,7 @@ return Gates
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">Harbor</string>
             <string name="Source"><![CDATA[--!strict
@@ -17662,7 +17442,7 @@ return Harbor
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">Hatchery</string>
             <string name="Source"><![CDATA[--!strict
@@ -17960,7 +17740,7 @@ return Hatchery
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="54">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">Hospital</string>
             <string name="Source"><![CDATA[--!strict
@@ -18653,7 +18433,7 @@ return Hospital
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="55">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">Inferno</string>
             <string name="Source"><![CDATA[--!strict
@@ -19070,7 +18850,7 @@ return Inferno
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="55">
           <Properties>
             <string name="Name">Kit</string>
             <string name="Source"><![CDATA[--!strict
@@ -19454,7 +19234,7 @@ return Kit
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="57">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -19545,7 +19325,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">Lighting</string>
             <string name="Source"><![CDATA[--!strict
@@ -19633,19 +19413,19 @@ return LightingSetup
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="58">
           <Properties>
             <string name="Name">Neighborhood</string>
             <string name="Source"><![CDATA[--!strict
 -- ZONE 1: Haunted Neighborhood (Z -37..260) and the LOBBY behind it (Config.Layout.Lobby,
--- Z -130..-37, no ghosts): spawn plaza, Ghost Hunter HQ, Merge/Trading booths (the Hatchery and
--- the boards are built in their own files). Players walk from the plaza through the free
+-- Z -130..-37, no ghosts): spawn plaza, Ghost Hunter HQ, Merge/Trading booths (the Hatchery,
+-- the Boss Tower entrance and the boards are built in their own files). Players walk from the plaza through the free
 -- "THE NEIGHBORHOOD" arch in the lobby's front hedge, past the Beginner crate station and the
--- upgrade booth, then down a main road along X = 0 to the Cemetery gate, a cross street at Z 110..124 leading east to
--- the event arena, and candy-coloured houses placed on a grid wherever the keep-out map allows.
+-- upgrade booth, then down a main road along X = 0 to the Cemetery gate, a cross street at Z 110..124 running
+-- from hedge to hedge, and candy-coloured houses placed on a grid wherever the keep-out map allows.
 -- Palette: bright grass, warm houses, orange accents, purple paranormal touches, ectoplasm
 -- green. Glow is reserved for the front windows, street lamps, car headlights and the HQ
--- antenna; side windows, plaza rings, chevrons, bands, doors and tanks are solid colours.
+-- antenna; side windows, plaza rings, bands, doors and tanks are solid colours.
 -- Materials: Asphalt roads, Concrete sidewalks, Slate roof shingles, Brick chimneys, Wood posts.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
@@ -19774,16 +19554,6 @@ end
 --==================================================================
 -- SPAWN PLAZA + HQ
 --==================================================================
-local function chevron(parent: Instance, tip: Vector3, dir: Vector3, color: Color3)
-	local perp = V(-dir.Z, 0, dir.X)
-	local paint = Kit.Vivid(color)
-	for _, s in { -1, 1 } do
-		local arm = (-dir + perp * s).Unit
-		local center = tip + arm * 2
-		Kit.Part(parent, V(1, 0.15, 4.6), CFrame.lookAt(center, center + arm), paint)
-	end
-end
-
 local function plaza(f: Instance)
 	local spawnPos = Config.Layout.Spawn
 	local sx, sz = spawnPos.X, spawnPos.Z
@@ -19816,17 +19586,6 @@ local function plaza(f: Instance)
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(sx - 7.4, 0.4, sz + s * 7) - V(0, 0, 0.4), V(sx + 7.4, 1.3, sz + s * 7) + V(0, 0, 0.4), border)
 		Kit.Box(f, V(sx + s * 7, 0.4, sz - 7) - V(0.4, 0, 0), V(sx + s * 7, 1.3, sz + 7) + V(0.4, 0, 0), border)
-	end
-
-
-	-- guide chevrons to the Beginner crate and the upgrade booth
-	local beg = Config.Layout.CrateStations.Beginner
-	local up = Config.Layout.UpgradeStation
-	for _, target in { beg, up } do
-		local dir = (V(target.X, 0, target.Z) - V(sx, 0, sz)).Unit
-		for i = 1, 3 do
-			chevron(f, V(sx, 0.55, sz) + dir * (8 + i * 4.5), dir, if target == beg then C(255, 180, 60) else C(90, 210, 255))
-		end
 	end
 end
 
@@ -20077,9 +19836,9 @@ local function roads(f: Instance)
 	for z = front + 9, 250, 12 do
 		Kit.Box(f, V(-0.4, 0.1, z), V(0.4, 0.14, z + 6), C(255, 210, 80))
 	end
-	-- cross street toward the arena
-	Kit.Box(f, V(-136, -0.4, 110), V(63, 0.06, 124), asphalt, { Mat = Enum.Material.Asphalt, Solid = true, Name = "CrossStreet" })
-	for x = -130, 55, 12 do
+	-- cross street from hedge to hedge
+	Kit.Box(f, V(-136, -0.4, 110), V(136, 0.06, 124), asphalt, { Mat = Enum.Material.Asphalt, Solid = true, Name = "CrossStreet" })
+	for x = -130, 124, 12 do
 		if x < -16 or x > 14 then
 			Kit.Box(f, V(x, 0.06, 116.6), V(x + 6, 0.1, 117.4), C(255, 210, 80))
 		end
@@ -20089,10 +19848,10 @@ local function roads(f: Instance)
 		Kit.Box(f, V(s * 10, -0.4, front + 3), V(s * 14, 0.22, 106), walk, pave)
 		Kit.Box(f, V(s * 10, -0.4, 128), V(s * 14, 0.22, 257), walk, pave)
 		Kit.Box(f, V(-136, -0.4, if s < 0 then 106 else 124), V(-14, 0.22, if s < 0 then 110 else 128), walk, pave)
-		Kit.Box(f, V(14, -0.4, if s < 0 then 106 else 124), V(61, 0.22, if s < 0 then 110 else 128), walk, pave)
+		Kit.Box(f, V(14, -0.4, if s < 0 then 106 else 124), V(136, 0.22, if s < 0 then 110 else 128), walk, pave)
 	end
 	Kit.AddRect(-14, LZ - 36, 14, 260, true)
-	Kit.AddRect(-136, 106, 63, 128, true)
+	Kit.AddRect(-136, 106, 136, 128, true)
 end
 
 --==================================================================
@@ -20129,7 +19888,7 @@ function Neighborhood.Build(map: Instance)
 			end
 		end
 	end
-	for x = -125, 50, 35 do
+	for x = -125, 120, 35 do
 		if Kit.IsFree(x, 108, 1, true) then
 			Props.StreetLamp(f, V(x, 0.22, 108), C(255, 200, 120), false)
 		end
@@ -20195,7 +19954,7 @@ return Neighborhood
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">Props</string>
             <string name="Source"><![CDATA[--!strict
@@ -20448,7 +20207,7 @@ return Props
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="61">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">School</string>
             <string name="Source"><![CDATA[--!strict
@@ -21009,7 +20768,7 @@ return School
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="62">
+        <Item class="ModuleScript" referent="61">
           <Properties>
             <string name="Name">SpiritRealm</string>
             <string name="Source"><![CDATA[--!strict
@@ -21575,7 +21334,7 @@ return SpiritRealm
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="63">
+        <Item class="ModuleScript" referent="62">
           <Properties>
             <string name="Name">Stations</string>
             <string name="Source"><![CDATA[--!strict
@@ -21764,7 +21523,7 @@ return Stations
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="64">
+        <Item class="ModuleScript" referent="63">
           <Properties>
             <string name="Name">Sunken</string>
             <string name="Source"><![CDATA[--!strict
@@ -22231,7 +21990,7 @@ return Sunken
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="65">
+        <Item class="ModuleScript" referent="64">
           <Properties>
             <string name="Name">Swamp</string>
             <string name="Source"><![CDATA[--!strict
@@ -22781,7 +22540,7 @@ return Swamp
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="66">
+        <Item class="ModuleScript" referent="65">
           <Properties>
             <string name="Name">TextFit</string>
             <string name="Source"><![CDATA[--!strict
@@ -22928,7 +22687,7 @@ return TextFit
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="67">
+        <Item class="ModuleScript" referent="66">
           <Properties>
             <string name="Name">Throne</string>
             <string name="Source"><![CDATA[--!strict
@@ -23334,7 +23093,7 @@ return Throne
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="68">
+        <Item class="ModuleScript" referent="67">
           <Properties>
             <string name="Name">Tomb</string>
             <string name="Source"><![CDATA[--!strict
@@ -23787,6 +23546,202 @@ function Tomb.Build(map: Instance)
 end
 
 return Tomb
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="68">
+          <Properties>
+            <string name="Name">TowerEntrance</string>
+            <string name="Source"><![CDATA[--!strict
+-- BOSS TOWER ENTRANCE (workspace.Map.TowerEntrance) in the lobby's wider left side, just
+-- outside the Pet Hatchery, turned to face the spawn plaza so it is visible from spawn.
+-- Built in a local frame `base` (origin = the party pad centre Config.Layout.TowerEntrance.Pad,
+-- local -Z = front, toward the spawn):
+--   * the party pad (part "TowerPad", radius Config.Tower.PadRadius) at the origin;
+--     TowerService finds Map.TowerEntrance.TowerPad and adds the "Enter Boss Tower" prompt;
+--   * the ENDLESS BOSS TOWER behind it (local Z 11..21, X -9..9, spire orb at Y ~52: taller
+--     than the hatchery and HQ, smaller than the old plaza tower), door facing the pad;
+--   * the "BOSS TOWER" arch in front of the pad (local Z -13), facing the plaza.
+-- The whole lobby is a keep-out (Builder), so no random props land here.
+
+local Config = require(game:GetService("ReplicatedStorage").GH.Config)
+local Kit = require(script.Parent.Kit)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
+
+local TowerEntrance = {}
+
+local C = Color3.fromRGB
+local V = Vector3.new
+local NEON = Enum.Material.Neon
+
+local STONE = C(92, 66, 138)
+local STONE_DARK = C(62, 44, 96)
+local STONE_LIGHT = C(128, 98, 178)
+local ROOF = C(70, 40, 110)
+local ECTO = C(110, 255, 160)
+
+-- tower footprint (local): X -TW..TW, Z TZ1..TZ2 (door face at TZ1)
+local TW, TZ1, TZ2 = 9, 11, 21
+local HALL_H = 18
+local ARCH_Z = -13
+
+function TowerEntrance.Build(map: Instance)
+	local m = Kit.Model(map, "TowerEntrance")
+	local P = Config.Layout.TowerEntrance.Pad
+	local spawnPos = Config.Layout.Spawn
+	local base = CFrame.new(P.X, 0, P.Z) * CFrame.Angles(0, Kit.FaceYaw(spawnPos.X - P.X, spawnPos.Z - P.Z), 0)
+	local function L(x: number, y: number, z: number): CFrame
+		return base * CFrame.new(x, y, z)
+	end
+	-- local box from corner (x1, y1, z1) to (x2, y2, z2)
+	local function box(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number, color: Color3, opts: Kit.Opts?): Part
+		local size = V(math.abs(x2 - x1), math.abs(y2 - y1), math.abs(z2 - z1))
+		return Kit.Part(m, size, L((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2), color, opts)
+	end
+	local stone: Kit.Opts = { Mat = Enum.Material.Slate, Solid = true }
+
+	local function battlements(x1: number, z1: number, x2: number, z2: number, y: number)
+		for x = x1, x2 - 1.2, 2.5 do
+			box(x, y, z1, x + 1.2, y + 1.6, z1 + 1, STONE_LIGHT, { Mat = Enum.Material.Slate })
+			box(x, y, z2 - 1, x + 1.2, y + 1.6, z2, STONE_LIGHT, { Mat = Enum.Material.Slate })
+		end
+		for z = z1 + 2.5, z2 - 2.5, 2.5 do
+			box(x1, y, z, x1 + 1, y + 1.6, z + 1.2, STONE_LIGHT, { Mat = Enum.Material.Slate })
+			box(x2 - 1, y, z, x2, y + 1.6, z + 1.2, STONE_LIGHT, { Mat = Enum.Material.Slate })
+		end
+	end
+	-- painted ectoplasm band (solid, not Neon) around a footprint
+	local function band(x1: number, z1: number, x2: number, z2: number, y: number)
+		local paint = Kit.Vivid(ECTO)
+		box(x1 - 0.3, y, z1 - 0.3, x2 + 0.3, y + 0.7, z1 + 0.2, paint)
+		box(x1 - 0.3, y, z2 - 0.2, x2 + 0.3, y + 0.7, z2 + 0.3, paint)
+		box(x1 - 0.3, y, z1, x1 + 0.2, y + 0.7, z2, paint)
+		box(x2 - 0.2, y, z1, x2 + 0.3, y + 0.7, z2, paint)
+	end
+	-- gable roof (ridge along local X) over (x, cz) from y up by height
+	local function gable(x: number, y: number, cz: number, width: number, height: number, depth: number)
+		local half = depth / 2
+		Kit.Wedge(m, V(width, height, half), L(x, y + height / 2, cz - half / 2), ROOF, { Mat = Enum.Material.Slate })
+		Kit.Wedge(m, V(width, height, half), L(x, y + height / 2, cz + half / 2) * CFrame.Angles(0, math.pi, 0), ROOF, { Mat = Enum.Material.Slate })
+	end
+	-- stone post with a glowing ghost lantern on top
+	local function lantern(x: number, z: number, h: number, light: boolean)
+		local p = L(x, 0, z).Position
+		local px, pz = p.X, p.Z
+		Kit.Box(m, V(px - 0.7, 0, pz - 0.7), V(px + 0.7, h, pz + 0.7), STONE_DARK, stone)
+		Kit.Box(m, V(px - 1.1, h, pz - 1.1), V(px + 1.1, h + 0.45, pz + 1.1), STONE_LIGHT, { Mat = Enum.Material.Slate })
+		Kit.Box(m, V(px - 0.8, h + 0.45, pz - 0.8), V(px + 0.8, h + 2.8, pz + 0.8), C(40, 30, 60), { Mat = Enum.Material.Glass, Transp = 0.55 })
+		local glow = Kit.Ball(m, 1.2, V(px, h + 1.6, pz), ECTO, { Mat = NEON })
+		Kit.Box(m, V(px - 1.1, h + 2.8, pz - 1.1), V(px + 1.1, h + 3.2, pz + 1.1), STONE_DARK, { Mat = Enum.Material.Metal })
+		if light then
+			Kit.Light(glow, ECTO, 16, 1.1, true)
+		end
+	end
+
+	--------------------------------------------------------------- TOWER
+	box(-TW, 0, TZ1, TW, HALL_H, TZ2, STONE, stone) -- base hall
+	box(-TW - 0.5, 0, TZ1 - 0.5, TW + 0.5, 1.6, TZ2 + 0.5, STONE_DARK, stone) -- plinth
+	band(-TW, TZ1, TW, TZ2, HALL_H - 0.7)
+	battlements(-TW, TZ1, TW, TZ2, HALL_H)
+	-- front corner turrets with pointed roofs
+	for _, sx in { -1, 1 } do
+		local tx = sx * (TW - 1.5)
+		Kit.Cyl(m, 24, 4.6, L(tx, 12, TZ1 + 1.5), STONE_DARK, stone)
+		Kit.Cyl(m, 0.7, 5.2, L(tx, 23.9, TZ1 + 1.5), Kit.Vivid(ECTO))
+		gable(tx, 24.2, TZ1 + 1.5, 5.4, 4.5, 5.4)
+	end
+	-- upper tower
+	local ux, uz1, uz2, uy = 6, TZ1 + 1.5, TZ2 - 1, 37
+	box(-ux, HALL_H, uz1, ux, uy, uz2, STONE_LIGHT, stone)
+	band(-ux, uz1, ux, uz2, 27)
+	band(-ux, uz1, ux, uz2, uy - 0.7)
+	battlements(-ux, uz1, ux, uz2, uy)
+	-- spire with a floating ectoplasm orb
+	local ucz = (uz1 + uz2) / 2
+	box(-ux + 2, uy, uz1 + 2, ux - 2, uy + 4, uz2 - 2, STONE_DARK, stone)
+	gable(0, uy + 4, ucz, ux * 2 - 3, 8, uz2 - uz1 - 3)
+	local orb = Kit.Ball(m, 2.6, L(0, uy + 15, ucz).Position, ECTO, { Mat = NEON })
+	Kit.Float(orb, 1)
+	Kit.Light(orb, ECTO, 26, 1.4)
+	-- windows on the front of the upper tower, carved ghost eyes above them
+	for _, wx in { -3.2, 0, 3.2 } do
+		box(wx - 0.8, 29, uz1 - 0.25, wx + 0.8, 32.5, uz1 + 0.05, ECTO, { Mat = NEON })
+		box(wx - 0.8, 21, uz1 - 0.25, wx + 0.8, 24.5, uz1 + 0.05, C(25, 15, 40))
+	end
+	for _, s in { -1, 1 } do
+		local fx = s * 2.8
+		Kit.Ball(m, 1, L(fx - 0.6, 34.6, uz1 - 0.15).Position, C(25, 15, 40))
+		Kit.Ball(m, 1, L(fx + 0.6, 34.6, uz1 - 0.15).Position, C(25, 15, 40))
+	end
+	-- the door: dark arch with an ectoplasm portal glow and a stone frame
+	local dw = 4
+	box(-dw, 0, TZ1 - 0.4, dw, 10, TZ1 + 0.2, C(25, 15, 40), { Name = "TowerDoor" })
+	local portal = box(-dw + 0.8, 0.3, TZ1 - 0.55, dw - 0.8, 9, TZ1 - 0.45, ECTO, { Mat = NEON, Transp = 0.45, Name = "Portal" })
+	Kit.Emitter(portal, ECTO, 3, 2.4, 0.5)
+	for _, s in { -1, 1 } do
+		local fx = s * (dw + 1.1)
+		box(fx - 1.1, 0, TZ1 - 1.6, fx + 1.1, 11.5, TZ1, STONE_LIGHT, stone)
+	end
+	box(-dw - 2.2, 10, TZ1 - 1.6, dw + 2.2, 12, TZ1, STONE_LIGHT, stone)
+	-- sign over the door
+	local signCF = L(0, 14.6, TZ1 - 1.2)
+	local sign = Kit.Part(m, V(15, 3.2, 0.5), signCF, C(45, 25, 80))
+	Kit.Part(m, V(15.8, 3.9, 0.3), signCF * CFrame.new(0, 0, 0.4), Kit.Vivid(ECTO))
+	Kit.Sign(sign, Enum.NormalId.Front, "ENDLESS BOSS TOWER", C(150, 255, 170))
+	lantern(-TW + 1, TZ1 - 3, 5, true)
+	lantern(TW - 1, TZ1 - 3, 5, false)
+
+	--------------------------------------------------------------- PAD
+	-- flat party pad (top at 0.34): the TowerPad part carries the prompt (added by TowerService)
+	local r = Config.Tower.PadRadius
+	Kit.Disc(m, P.X, P.Z, 0.24, r * 2 + 1.4, 0.3, Kit.Vivid(ECTO), { Solid = true })
+	Kit.Disc(m, P.X, P.Z, 0.3, r * 2 - 1, 0.3, C(70, 45, 120), { Mat = Enum.Material.Slate, Solid = true, Name = "TowerPad" })
+	Kit.Disc(m, P.X, P.Z, 0.34, 5, 0.08, Kit.Vivid(C(190, 120, 255)))
+	for i = 0, 3 do
+		local a = i / 4 * math.pi * 2 + math.pi / 4
+		local d = L(math.cos(a) * (r - 2.4), 0, math.sin(a) * (r - 2.4)).Position
+		Kit.Disc(m, d.X, d.Z, 0.34, 1.6, 0.08, Kit.Vivid(ECTO))
+	end
+	-- flat cobble apron joining the pad to the door and out through the arch (top 0.14)
+	box(-4, -0.4, r - 0.5, 4, 0.14, TZ1 - 1.6, C(110, 90, 150), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "TowerPath" })
+	box(-5, -0.4, ARCH_Z - 5, 5, 0.14, -r + 0.5, C(110, 90, 150), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "TowerPath" })
+
+	--------------------------------------------------------------- ARCH
+	local ah = 16
+	for _, s in { -1, 1 } do
+		local ax = s * 11
+		box(ax - 1, 0, ARCH_Z - 1, ax + 1, ah, ARCH_Z + 1, STONE, stone)
+		Kit.Ball(m, 2.6, L(ax, ah + 1, ARCH_Z).Position, Kit.Vivid(ECTO))
+	end
+	local archCF = L(0, ah - 2.6, ARCH_Z)
+	local arch = Kit.Part(m, V(20, 4.2, 0.8), archCF, C(45, 25, 80), { Name = "TowerArchSign" })
+	Kit.Part(m, V(21, 5, 0.4), archCF * CFrame.new(0, 0, 0.5), Kit.Vivid(C(190, 120, 255)))
+	-- title between two icon images: the tower icon once uploaded, else the Spirit Shards icon
+	-- (shards are what the tower pays); plain text if neither image exists
+	local icon = Icons.Get("tower") or Icons.Get("shards")
+	if icon then
+		local g = Kit.Gui(arch, Enum.NormalId.Front)
+		for _, x in { 0.02, 0.8 } do
+			local img = Instance.new("ImageLabel")
+			img.Name = "TowerIcon"
+			img.BackgroundTransparency = 1
+			img.Image = icon
+			img.ScaleType = Enum.ScaleType.Fit
+			img.Position = UDim2.fromScale(x, 0.07)
+			img.Size = UDim2.fromScale(0.18, 0.86) -- about square on the 20 x 4.2 board
+			img.Parent = g
+		end
+		Kit.Label(g, "BOSS TOWER", C(150, 255, 170), { Size = UDim2.fromScale(0.58, 0.8), Pos = UDim2.fromScale(0.21, 0.1) })
+	else
+		Kit.Sign(arch, Enum.NormalId.Front, "BOSS TOWER", C(150, 255, 170))
+	end
+	lantern(-8, ARCH_Z - 3, 4, false)
+	lantern(8, ARCH_Z - 3, 4, true)
+
+	Kit.AddCircle(P.X, P.Z, 30)
+end
+
+return TowerEntrance
 ]]></string>
           </Properties>
         </Item>
@@ -29256,8 +29211,17 @@ local RunService = game:GetService("RunService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Rules = require(GH.Logic.Rules)
 local Client = script.Parent.Parent
 local State = require(Client.State)
+
+-- max HP of a hunter with this power (incl. the equipped pets' HP bonus), as the server counts it
+local function hpFor(power: number): number
+	local d = State.Data
+	local bonus = if d and d.PetBonuses then tonumber(d.PetBonuses.HP) or 0 else 0
+	return Rules.HunterMaxHP(power, Config.Retaliation.HPPerPower, bonus)
+end
+
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Portrait = require(Client.UI.Portrait)
@@ -29431,7 +29395,7 @@ local function setInspect(uid: string?)
 	rarityLabel.Text = rar.Name
 	local g = rarityRibbon:FindFirstChildOfClass("UIGradient") :: UIGradient
 	g.Color = ColorSequence.new(rar.Color, rar.Color2)
-	statLabel.Text = "⚡ " .. Format.Commas(powerOf(h)) .. " CAPTURE POWER"
+	statLabel.Text = "⚡ " .. Format.Short(powerOf(h)) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(powerOf(h))) .. " HP"
 	blurbLabel.Text = def.Blurb
 	local isEq = table.find(d.Equipped, uid) ~= nil
 	Kit.SetButtonText(equipButton, if isEq then "UNEQUIP" else "EQUIP")
@@ -30132,6 +30096,14 @@ local Rules = require(GH.Logic.Rules)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
 local State = require(Client.State)
+
+-- max HP of a hunter with this power (incl. the equipped pets' HP bonus), as the server counts it
+local function hpFor(power: number): number
+	local d = State.Data
+	local bonus = if d and d.PetBonuses then tonumber(d.PetBonuses.HP) or 0 else 0
+	return Rules.HunterMaxHP(power, Config.Retaliation.HPPerPower, bonus)
+end
+
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Portrait = require(Client.UI.Portrait)
@@ -30270,7 +30242,7 @@ local function showDetail(h: Config.HunterDef)
 			else tierLabel(tier) .. " not discovered yet. Merge " .. Config.Merge.Count .. " " .. (if tier == 1 then "NORMAL" else "✨ SHINY") .. " copies to make one!"
 	end
 	detailName.TextColor3 = if tier > 0 then Config.Tiers[tier].Color else rar.Color
-	detailInfo.Text = tierLabel(tier) .. "  ·  " .. rar.Name .. "  ·  ⚡ " .. (if found then Format.Commas(h.Power * Config.Tiers[tier].Mult) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
+	detailInfo.Text = tierLabel(tier) .. "  ·  " .. rar.Name .. "  ·  ⚡ " .. (if found then Format.Short(h.Power * Config.Tiers[tier].Mult) .. "  ·  ❤️ " .. Format.Short(hpFor(h.Power * Config.Tiers[tier].Mult)) .. " HP" else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
 end
 
 local function rebuild()
@@ -32545,6 +32517,14 @@ local HunterRig = require(GH.Rigs.HunterRig)
 local CrateRig = require(GH.Rigs.CrateRig)
 local Client = script.Parent.Parent
 local State = require(Client.State)
+
+-- max HP of a hunter with this power (incl. the equipped pets' HP bonus), as the server counts it
+local function hpFor(power: number): number
+	local d = State.Data
+	local bonus = if d and d.PetBonuses then tonumber(d.PetBonuses.HP) or 0 else 0
+	return Rules.HunterMaxHP(power, Config.Retaliation.HPPerPower, bonus)
+end
+
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Effects = require(script.Parent.Effects)
@@ -32953,7 +32933,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Gradient(ribbon, rarity.Color, rarity.Color2, 0)
 	Kit.Label(ribbon, rarity.Name, { Style = "Heading", ZIndex = 13 })
 	Kit.Label(card, string.upper(def.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
-	Kit.Label(card, "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", ZIndex = 11 })
+	Kit.Label(card, "⚡ " .. Format.Short(def.Power) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(def.Power)) .. " HP", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", Fit = true, ZIndex = 11 })
 	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 78), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
 		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, -26), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
@@ -34670,7 +34650,7 @@ local function findPad(): BasePart?
 		return padPart
 	end
 	local map = workspace:FindFirstChild("Map")
-	local plaza = map and map:FindFirstChild("EventArena")
+	local plaza = map and map:FindFirstChild("TowerEntrance")
 	local pad = plaza and plaza:FindFirstChild("TowerPad")
 	padPart = if pad and pad:IsA("BasePart") then pad else nil
 	return padPart
@@ -35410,7 +35390,7 @@ local TOWER_SHOW = 10
 local towerPointed = false
 
 local function towerPos(): Vector3?
-	return Config.Layout.EventArena.Center + Vector3.new(30, 8, 0)
+	return Config.Layout.TowerEntrance.Pad + Vector3.new(0, 8, 0) -- the party pad in the lobby
 end
 
 local function wantsTowerGoal(d: any): boolean

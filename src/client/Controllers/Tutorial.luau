@@ -192,7 +192,7 @@ local TOWER_SHOW = 10
 local towerPointed = false
 
 local function towerPos(): Vector3?
-	return Config.Layout.EventArena.Center + Vector3.new(30, 8, 0)
+	return Config.Layout.TowerEntrance.Pad + Vector3.new(0, 8, 0) -- the party pad in the lobby
 end
 
 local function wantsTowerGoal(d: any): boolean

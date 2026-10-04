@@ -109,10 +109,10 @@ function Boundary.Build(map: Instance)
 		hedgeRun(f, V(s * (eh + 8), 0, front - 3), V(s * (HW - 0.01), 14, front + 3))
 	end
 	-- Lobby: hedges on both sides and behind HQ
-	local LW = LOBBY.HalfWidth
-	hedgeRun(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(-LW, 14, front - 3))
-	hedgeRun(f, V(LW, 0, LOBBY.BackZ - 6), V(LW + 6, 14, front - 3))
-	hedgeRun(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(LW + 6, 14, LOBBY.BackZ))
+	local LX1, LX2 = LOBBY.MinX, LOBBY.MaxX -- the left side is wider (Boss Tower entrance)
+	hedgeRun(f, V(LX1 - 6, 0, LOBBY.BackZ - 6), V(LX1, 14, front - 3))
+	hedgeRun(f, V(LX2, 0, LOBBY.BackZ - 6), V(LX2 + 6, 14, front - 3))
+	hedgeRun(f, V(LX1 - 6, 0, LOBBY.BackZ - 6), V(LX2 + 6, 14, LOBBY.BackZ))
 	-- Cemetery: mossy stone with mint cap balls
 	stoneRun(f, V(-W, 0, 263), V(-HW, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
 	stoneRun(f, V(HW, 0, 263), V(W, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
@@ -155,10 +155,11 @@ function Boundary.Build(map: Instance)
 	invisible(f, V(-W, 0, END), V(W, INVIS_TOP, END + 6))
 	for _, s in { -1, 1 } do
 		invisible(f, V(s * eh, 0, front - 3), V(s * W, INVIS_TOP, front + 3))
-		invisible(f, V(s * LW, 0, LOBBY.BackZ - 6), V(s * (LW + 6), INVIS_TOP, front - 3))
+		local lx = if s < 0 then LX1 else LX2
+		invisible(f, V(lx, 0, LOBBY.BackZ - 6), V(lx + s * 6, INVIS_TOP, front - 3))
 	end
 	invisible(f, V(-eh, 30, front - 3), V(eh, INVIS_TOP, front + 3)) -- above the arch beam
-	invisible(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(LW + 6, INVIS_TOP, LOBBY.BackZ))
+	invisible(f, V(LX1 - 6, 0, LOBBY.BackZ - 6), V(LX2 + 6, INVIS_TOP, LOBBY.BackZ))
 
 	-- Outer scenery: soft purple hills and big trees just beyond the walls.
 	local hill = { C(120, 90, 190), C(100, 150, 120), C(150, 100, 200) }
@@ -176,10 +177,10 @@ function Boundary.Build(map: Instance)
 	end
 	-- outside the lobby hedges: a few big trees on the grass either side
 	-- (fixed sizes: no Kit.Rng here, so the other zones' random props don't shift)
-	for i, p in { { 92, -70 }, { 122, -112 }, { 84, -122 }, { 128, -62 } } do
-		for _, s in { -1, 1 } do
-			Props.Tree(f, V(s * p[1], 0, p[2]), 18 + (i % 3) * 3)
-		end
+	-- (offsets are measured from each side's hedge, so the wider left side keeps them outside)
+	for i, p in { { 28, -70 }, { 58, -112 }, { 20, -122 }, { 64, -62 } } do
+		Props.Tree(f, V(LX2 + p[1], 0, p[2]), 18 + (i % 3) * 3)
+		Props.Tree(f, V(LX1 - math.min(p[1], 40), 0, p[2]), 18 + (i % 3) * 3)
 	end
 end
 

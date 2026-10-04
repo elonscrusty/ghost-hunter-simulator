@@ -4,16 +4,18 @@
 
 	Layout (studs, +Z forward; ground top is Y = 0 everywhere walkable; play area |X| <= 140):
 
-	  LOBBY (Config.Layout.Lobby: X -64..64, Z -130..-37, hedges all round, no ghosts)
+	  LOBBY (Config.Layout.Lobby: X -96..64, Z -130..-37, hedges all round, no ghosts)
 	  Z -130 ....... hedge wall behind the lobby
 	  Z -130..-106   Ghost Hunter HQ building (behind spawn); Pet Hatchery (left) and the
 	                 Merge + Trading kiosks (right) in the pockets between HQ and the plaza
+	  X -96..-50     Boss Tower entrance (TowerEntrance.luau) left of the hatchery: tower,
+	                 party pad at Config.Layout.TowerEntrance.Pad, "BOSS TOWER" arch
 	  Z  -70         Spawn plaza (SpawnLocation at Config.Layout.Spawn, faces +Z); TOP GHOST
 	                 HUNTERS + TOP POWER boards on its right
 	  Z  -37         Lobby hedge wall with the free "THE NEIGHBORHOOD" arch (X -17..17)
 	  Z   -6         Beginner crate station (X -28, beacon) | Upgrade booth (X +28)
 	  Z -37..260     ZONE 1 NEIGHBORHOOD: main road X -10..10 up to the gate, cross street
-	                 Z 110..124 east to the Event Arena (95, 110, r32); houses on a 30-stud grid
+	                 Z 110..124 across the zone (X -136..136); houses on a 30-stud grid
 	                 wherever ghost areas / roads / stations leave room.
 	  Z 260          Stone wall + Gate_Cemetery (34-wide opening at X = 0)
 	  Z 260..540     ZONE 2 CEMETERY: cobble path X -8..8, Haunted station (X -28, Z 292),
@@ -36,7 +38,7 @@
 	Every ghost area circle from Config.Layout.GhostAreas is registered as a keep-out, so no
 	prop taller than ~0.3 studs is placed inside one (flat road paint / cracks / rune lines only).
 	Instance tree:
-	  workspace.Map.{Boundary, Gates, Stations, EventArena, Neighborhood, Cemetery, School, Carnival,
+	  workspace.Map.{Boundary, Gates, Stations, TowerEntrance, Neighborhood, Cemetery, School, Carnival,
 	                 Hospital, Harbor, Castle, SpiritRealm}
 ]]
 
@@ -49,7 +51,7 @@ local Boundary = require(script.Parent.Boundary)
 local Gates = require(script.Parent.Gates)
 local Stations = require(script.Parent.Stations)
 local Leaderboard = require(script.Parent.Leaderboard)
-local Arena = require(script.Parent.Arena)
+local TowerEntrance = require(script.Parent.TowerEntrance)
 local Neighborhood = require(script.Parent.Neighborhood)
 local Cemetery = require(script.Parent.Cemetery)
 local School = require(script.Parent.School)
@@ -87,7 +89,7 @@ local function registerKeepOuts()
 	Kit.AddRect(-10, 880, 10, Config.Zones[#Config.Zones].MaxZ, true)
 	-- the whole lobby plus its front hedge wall: nothing random grows in there
 	local lobby = Config.Layout.Lobby
-	Kit.AddRect(-lobby.HalfWidth - 6, lobby.BackZ - 6, lobby.HalfWidth + 6, lobby.FrontZ + 3)
+	Kit.AddRect(lobby.MinX - 6, lobby.BackZ - 6, lobby.MaxX + 6, lobby.FrontZ + 3)
 	Kit.AddRect(-146, lobby.FrontZ - 3, 146, lobby.FrontZ + 5)
 	-- pockets behind the plaza: Pet Hatchery on the left (Hatchery.luau), the Merge + Trading
 	-- kiosks on the right (Neighborhood.luau)
@@ -153,7 +155,7 @@ local function buildAll(map: Folder)
 	Gates.Build(map)
 	Stations.Build(map)
 	Leaderboard.Build(map)
-	Arena.Build(map)
+	TowerEntrance.Build(map)
 	Neighborhood.Build(map)
 	Cemetery.Build(map)
 	School.Build(map)

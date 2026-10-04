@@ -10,8 +10,17 @@ local RunService = game:GetService("RunService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Rules = require(GH.Logic.Rules)
 local Client = script.Parent.Parent
 local State = require(Client.State)
+
+-- max HP of a hunter with this power (incl. the equipped pets' HP bonus), as the server counts it
+local function hpFor(power: number): number
+	local d = State.Data
+	local bonus = if d and d.PetBonuses then tonumber(d.PetBonuses.HP) or 0 else 0
+	return Rules.HunterMaxHP(power, Config.Retaliation.HPPerPower, bonus)
+end
+
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Portrait = require(Client.UI.Portrait)
@@ -185,7 +194,7 @@ local function setInspect(uid: string?)
 	rarityLabel.Text = rar.Name
 	local g = rarityRibbon:FindFirstChildOfClass("UIGradient") :: UIGradient
 	g.Color = ColorSequence.new(rar.Color, rar.Color2)
-	statLabel.Text = "⚡ " .. Format.Commas(powerOf(h)) .. " CAPTURE POWER"
+	statLabel.Text = "⚡ " .. Format.Short(powerOf(h)) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(powerOf(h))) .. " HP"
 	blurbLabel.Text = def.Blurb
 	local isEq = table.find(d.Equipped, uid) ~= nil
 	Kit.SetButtonText(equipButton, if isEq then "UNEQUIP" else "EQUIP")

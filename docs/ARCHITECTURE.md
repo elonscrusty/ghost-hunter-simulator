@@ -40,7 +40,7 @@ GhostService, ProgressService, EventService, ShopService, StationService.
 | `EventService` | Giant Poltergeist loop: warning → spawn (Spirit scales with crews) → timer → rewards by damage share / escape. |
 | `ShopService` | `ProcessReceipt` (idempotent, saves before granting), game pass checks, purchase prompts. |
 | `StationService` | Display crates, odds boards (SurfaceGui), ProximityPrompts on stations and gates. |
-| `World/*` | Procedural map: lighting, boundaries, gates, stations, arena, eight zones (one file each), props. |
+| `World/*` | Procedural map: lighting, boundaries, gates, stations, Boss Tower entrance (lobby), eight zones (one file each), props. |
 
 ### Remotes
 | Name | Direction | Payload |

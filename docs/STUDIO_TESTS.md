@@ -52,7 +52,7 @@ Studio: **Test** tab > **Clients and Servers** > 2 Players > Start. Two windows 
 8. Start another trade and have B close the window / leave the game mid-trade. Expected: A's trade cancels and A keeps all hunters.
 
 ### 6. Boss Tower
-1. Walk to the plaza east of spawn. Expected: the Boss Tower entrance with a glowing pad.
+1. Look left from spawn: the Boss Tower (with its "BOSS TOWER" arch and glowing pad) stands just left of the Pet Hatchery in the lobby. Walk onto the pad. Expected: the "Enter Boss Tower" prompt; after a run you return to the spawn plaza. The spawn plaza no longer has orange/blue chevron arrows.
 2. Stand on the pad. Expected: you join the party; press START. A 6-second countdown shows, then you enter room 1.
 3. Fight the boss (tap it). Expected: it hits back with ❗ warnings like ghosts. Beat it. Expected: payout toast with Ectoplasm and Spirit Shards, a chest appears.
 4. Open the chest. Expected: bonus shown. Then ▶ CONTINUE or 🚪 LEAVE. Expected: Continue starts room 2 (30 s to choose, else run ends); Leave returns you to spawn with rewards kept.

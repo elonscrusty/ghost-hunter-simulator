@@ -27,6 +27,14 @@ local HunterRig = require(GH.Rigs.HunterRig)
 local CrateRig = require(GH.Rigs.CrateRig)
 local Client = script.Parent.Parent
 local State = require(Client.State)
+
+-- max HP of a hunter with this power (incl. the equipped pets' HP bonus), as the server counts it
+local function hpFor(power: number): number
+	local d = State.Data
+	local bonus = if d and d.PetBonuses then tonumber(d.PetBonuses.HP) or 0 else 0
+	return Rules.HunterMaxHP(power, Config.Retaliation.HPPerPower, bonus)
+end
+
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Effects = require(script.Parent.Effects)
@@ -435,7 +443,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Gradient(ribbon, rarity.Color, rarity.Color2, 0)
 	Kit.Label(ribbon, rarity.Name, { Style = "Heading", ZIndex = 13 })
 	Kit.Label(card, string.upper(def.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
-	Kit.Label(card, "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", ZIndex = 11 })
+	Kit.Label(card, "⚡ " .. Format.Short(def.Power) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(def.Power)) .. " HP", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", Fit = true, ZIndex = 11 })
 	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 78), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
 		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, -26), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })

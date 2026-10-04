@@ -113,7 +113,7 @@ Kit.Float = function(...)
 	return ok
 end
 
-local MODULES = { "Lighting", "Boundary", "Gates", "Stations", "Arena", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
+local MODULES = { "Lighting", "Boundary", "Gates", "Stations", "TowerEntrance", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
 local MAP: any = nil
 local FAILED: { [string]: boolean } = {}
 for _, name in MODULES do
@@ -171,7 +171,7 @@ type PInfo = {
 	Mark: number,
 }
 local PARTS: { PInfo } = {}
-local FOLDERS = { "Boundary", "Gates", "Stations", "EventArena", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
+local FOLDERS = { "Boundary", "Gates", "Stations", "TowerEntrance", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
 
 if MAP then
 	local rows = {}
@@ -182,7 +182,7 @@ if MAP then
 		seen[ch.Name] = true
 	end
 	for _, fname in FOLDERS do
-		local mname = if fname == "EventArena" then "Arena" else fname
+		local mname = fname
 		if not seen[fname] and not FAILED[mname] then
 			fail("Map." .. fname .. " is missing")
 		end
@@ -390,27 +390,34 @@ if MAP then
 	end
 	print(string.format("  %d/%d ghost areas clear", #Config.Layout.GhostAreas - bad, #Config.Layout.GhostAreas))
 
-	-- Tower Plaza courtyard (open space where the retired Giant Poltergeist event spawned):
-	-- nothing taller than the flat paint may stand within 20 studs of it up to Y = 30.
+	-- Boss Tower entrance (lobby): Map.TowerEntrance.TowerPad sits at Config.Layout.TowerEntrance.Pad
+	-- and nothing solid stands on the pad (Y 0.5..8) within PadRadius, so a party of 4 fits.
 	do
-		local c = Config.Layout.EventArena.Center
-		local R = 20
+		local c = Config.Layout.TowerEntrance.Pad
+		local R = Config.Tower.PadRadius
+		local te = MAP and MAP:FindFirstChild("TowerEntrance")
+		local pad = te and te:FindFirstChild("TowerPad")
+		if not pad then
+			issue("Map.TowerEntrance.TowerPad is missing")
+		elseif (Vector3.new(pad.Position.X, 0, pad.Position.Z) - Vector3.new(c.X, 0, c.Z)).Magnitude > 0.5 then
+			issue(string.format("TowerPad at (%d, %d), Config.Layout.TowerEntrance.Pad is (%d, %d)", pad.Position.X, pad.Position.Z, c.X, c.Z))
+		end
 		local hits = {}
 		for _, p in query(c.X - R, c.Z - R, c.X + R, c.Z + R) do
-			if (p.Visible or p.Solid) and p.Y2 > 0.4 and p.Y1 < 30 and hitsCircle(p, c.X, c.Z, R) then
+			if p.Solid and p.Y2 > 0.5 and p.Y1 < 8 and hitsCircle(p, c.X, c.Z, R) then
 				table.insert(hits, p)
 			end
 		end
 		if #hits > 0 then
-			issue(string.format("event courtyard (%d, %d) r=%d: %d part(s) inside", c.X, c.Z, R, #hits))
+			issue(string.format("tower pad (%d, %d) r=%d: %d solid part(s) on it", c.X, c.Z, R, #hits))
 			for j, p in hits do
 				if j > MAX_LIST and not VERBOSE then
 					break
 				end
-				print("      " .. describe(p) .. (if p.Solid then " SOLID" else ""))
+				print("      " .. describe(p))
 			end
-		else
-			print("  event courtyard clear (r=20, Y 0.4..30)")
+		elseif pad then
+			print(string.format("  tower pad (%d, %d) clear (r=%d, Y 0.5..8)", c.X, c.Z, R))
 		end
 	end
 
@@ -650,7 +657,7 @@ if MAP then
 				issue(string.format("edge X=%d: no solid wall (Y <1 .. >8) at %s", sx * 143, table.concat(list, ", ")))
 			end
 		end
-		-- lobby: walled on both sides (|X| LW..LW+6) and behind (Z BackZ-6..BackZ)
+		-- lobby: walled on both sides (MinX-6..MinX, MaxX..MaxX+6) and behind (Z BackZ-6..BackZ)
 		local lobby = Config.Layout.Lobby
 		local function walledAt(x: number, z: number): boolean
 			for _, p in query(x, z, x, z) do
@@ -663,15 +670,16 @@ if MAP then
 		local lobbyGaps = {}
 		for _, sx in { -1, 1 } do
 			local z = lobby.BackZ - 4
+			local wx = if sx < 0 then lobby.MinX - 3 else lobby.MaxX + 3
 			while z <= lobby.FrontZ - 4 do
-				if not walledAt(sx * (lobby.HalfWidth + 3), z) then
-					table.insert(lobbyGaps, string.format("(%d, %d)", sx * (lobby.HalfWidth + 3), z))
+				if not walledAt(wx, z) then
+					table.insert(lobbyGaps, string.format("(%d, %d)", wx, z))
 				end
 				z += 4
 			end
 		end
-		local x = -lobby.HalfWidth
-		while x <= lobby.HalfWidth do
+		local x = lobby.MinX
+		while x <= lobby.MaxX do
 			if not walledAt(x, lobby.BackZ - 3) then
 				table.insert(lobbyGaps, string.format("(%d, %d)", x, lobby.BackZ - 3))
 			end

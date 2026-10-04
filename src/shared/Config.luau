@@ -2078,10 +2078,11 @@ Config.Data = {
 export type GhostArea = { Ghost: string, Center: Vector3, Radius: number, Count: number }
 
 Config.Layout = {
-	-- Lobby (spawn plaza, HQ, booths, hatchery, boards) sits behind the Neighborhood: X -64..64,
-	-- Z BackZ..FrontZ, no ghosts. A hedge wall centred on FrontZ (6 thick) closes it, with a free
-	-- open arch (EntranceWidth, centred on X = 0) leading into the Neighborhood.
-	Lobby = { BackZ = -130, FrontZ = -37, HalfWidth = 64, EntranceWidth = 34 },
+	-- Lobby (spawn plaza, HQ, booths, hatchery, Boss Tower entrance, boards) sits behind the
+	-- Neighborhood: X MinX..MaxX, Z BackZ..FrontZ, no ghosts. The left side is wider (the Boss
+	-- Tower stands there). Hedges close it on three sides; a hedge wall centred on FrontZ (6 thick)
+	-- closes the front, with a free open arch (EntranceWidth, centred on X = 0) into the Neighborhood.
+	Lobby = { BackZ = -130, FrontZ = -37, MinX = -96, MaxX = 64, EntranceWidth = 34 },
 	Spawn = Vector3.new(0, 3, -70),
 	HalfWidth = 140, -- playable area spans X -HalfWidth..HalfWidth
 	Gates = {
@@ -2147,7 +2148,9 @@ Config.Layout = {
 	PowerBoard = { Position = Vector3.new(38.4, 0, -55.1), Yaw = math.rad(72) },
 	Hatchery = Vector3.new(-27, 0, -93), -- Pet Hatchery centre (PetService BuyEgg near check)
 	TradeBooth = Vector3.new(31, 0, -89), -- TRADING booth: both players must stand near it to trade
-	EventArena = { Center = Vector3.new(95, 0, 110), Radius = 32 },
+	-- Boss Tower entrance in the lobby, left of the Pet Hatchery, facing the spawn plaza: party
+	-- pad centre (TowerService pad checks use the built TowerPad part; Tutorial points here).
+	TowerEntrance = { Pad = Vector3.new(-66, 0, -82) },
 	GhostAreas = {
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(0, 0, 70), Radius = 34, Count = 7 },
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(-80, 0, 80), Radius = 26, Count = 4 },
