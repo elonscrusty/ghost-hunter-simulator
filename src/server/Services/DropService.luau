@@ -3,6 +3,9 @@
 -- when it is picked up (player's root within their pickup radius). Clients only draw orbs
 -- (bounce, glow, magnet flight). Orbs are per player, so nobody can steal another's loot.
 -- One loop checks every player's orbs on a short interval; no per-orb connections.
+-- v1.6: an orb is an EARNED payout, so it is never lost: orbs that time out or are pushed out
+-- by the per-player cap are credited automatically, and when a player leaves (or the server
+-- closes) every orb still on the ground is credited before the final save.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -64,10 +67,10 @@ function DropService.Spawn(player: Player, origin: Vector3, total: number, count
 	local expires = os.clock() + Config.Drops.Lifetime
 	local out: { { any } } = {}
 	local removed: { number } = {}
+	local autoCredit = 0
 	refreshFilter()
 	for _, v in values do
-		-- over the cap (nobody is collecting): the oldest orb fades away to make room,
-		-- exactly as if it had timed out
+		-- over the cap (nobody is collecting): the oldest orb is auto-collected to make room
 		if #bag.List >= Config.Drops.MaxPerPlayer then
 			local oldest = 1
 			for i, d in bag.List do
@@ -76,6 +79,7 @@ function DropService.Spawn(player: Player, origin: Vector3, total: number, count
 				end
 			end
 			table.insert(removed, bag.List[oldest].Id)
+			autoCredit += bag.List[oldest].Value
 			bag.List[oldest] = bag.List[#bag.List]
 			bag.List[#bag.List] = nil
 		end
@@ -93,6 +97,9 @@ function DropService.Spawn(player: Player, origin: Vector3, total: number, count
 	end
 	if #out > 0 then
 		dropsRemote:FireClient(player, origin, out, removed)
+	end
+	if autoCredit > 0 then
+		DataService.AddEcto(player, autoCredit)
 	end
 end
 
@@ -122,6 +129,8 @@ local function pickupTick()
 				bag.List[i] = bag.List[#bag.List]
 				bag.List[#bag.List] = nil
 			elseif t >= d.Expires then
+				got += d.Value -- timed out: still paid (it was earned)
+				table.insert(ids, d.Id)
 				bag.List[i] = bag.List[#bag.List]
 				bag.List[#bag.List] = nil
 			else
@@ -139,6 +148,22 @@ end
 function DropService.Init()
 	dropsRemote = Net.Event("Drops")
 	collectRemote = Net.Event("Collect")
+	-- leaving / server closing: credit every orb still on the ground before the final save
+	DataService.AddLeaveHook(function(player, data)
+		local bag = bags[player]
+		if not bag then
+			return
+		end
+		local total = 0
+		for _, d in bag.List do
+			total += d.Value
+		end
+		table.clear(bag.List)
+		if total > 0 then
+			data.Ecto += total
+			data.TotalEcto += total
+		end
+	end)
 end
 
 function DropService.Start()
@@ -150,7 +175,13 @@ function DropService.Start()
 		add(pl)
 	end
 	Players.PlayerRemoving:Connect(function(player)
-		bags[player] = nil
+		-- DataService's leave hook credits the orbs; drop the bag a little later so the hook
+		-- never finds it already gone (PlayerRemoving handlers run in any order)
+		task.delay(30, function()
+			if not player.Parent then
+				bags[player] = nil
+			end
+		end)
 	end)
 	task.spawn(function()
 		while true do

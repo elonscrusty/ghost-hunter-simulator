@@ -55,16 +55,21 @@ local function reward(g: GhostService.Ghost)
 		end
 	end
 	local arena = Config.Layout.EventArena
-	for _, player in participants do
+	-- SHARED POOL: RewardBase per participant, split by each participant's share of the damage
+	-- (whole units, largest remainder), then scaled by that player's zone and Ectoplasm
+	-- multipliers. Participants are everyone who dealt damage (no damage = no reward).
+	local _ = total
+	local shares = GhostService.SplitDamage(g)
+	local pool = Rules.SplitPool(Config.Event.RewardBase * #shares.Players, shares.Weights)
+	for i, player in shares.Players do
 		local d = DataService.Get(player)
-		if d then
-			local share = Rules.EventShare(g.Damage[player], total, #participants, Config.Event.MinShare, Config.Event.MaxShare)
-			local amount = Config.Event.RewardBase * PlayerInfo.ZoneMultiplier(player) * share * PlayerInfo.EctoMultiplier(player)
-			amount = math.floor(amount + 0.5)
+		if d and pool[i] > 0 then
+			local amount = math.floor(pool[i] * PlayerInfo.ZoneMultiplier(player) * PlayerInfo.EctoMultiplier(player) + 0.5)
 			-- Ectoplasm shower over the arena
 			DropService.Spawn(player, arena.Center + Vector3.new(0, 12, 0), amount, Config.Event.RewardDrops, { 4, arena.Radius - 4 })
 			d.Stats.Events += 1
-			Fx.Toast(player, "GIANT POLTERGEIST DEFEATED! +" .. Format.Commas(amount) .. " Ectoplasm incoming!", "Good")
+			Fx.To(player, "Payout", { Name = g.Def.Name, Pct = shares.Weights[i] / shares.Total, Ecto = amount })
+			Fx.Toast(player, string.format("GIANT POLTERGEIST DEFEATED! %d%% of the damage: +%s Ectoplasm!", math.floor(shares.Weights[i] / shares.Total * 100 + 0.5), Format.Commas(amount)), "Good")
 		end
 	end
 end

@@ -29,6 +29,8 @@ local order = {
 	"DataService",
 	"PlayerInfo",
 	"HunterService",
+	"CrewService",
+	"PetService",
 	"DropService",
 	"GhostService",
 	"ProgressService",

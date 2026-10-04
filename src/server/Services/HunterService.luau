@@ -1,7 +1,10 @@
 --!strict
 -- Hunter inventory, equipping and crate opening (server-authoritative rolls).
 -- Replicates each player's crew to everyone through player attributes:
---   Crew = "HunterId,HunterId,..." (equipped order), CrewPower = number.
+--   Crew = "HunterId|tier|uid,..." (equipped hunters that can fight, in order; uid "backup" =
+--   the temporary Backup Rookie), CrewPower = number.
+-- v1.6: hunter tiers (Normal / Shiny / Mega), knockouts (d.Knocked, real-time timers), merging,
+-- and a per-player "busy" registry so one hunter can't be merged, traded or released at once.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -24,9 +27,10 @@ HunterService.GrantExclusive = nil :: any
 local rng = Random.new()
 local STATION_RANGE = 30
 
-local function powerOf(id: string): number
+local function powerOf(id: string, tier: number?): number
 	local h = Config.Hunters[id]
-	return if h then h.Power else 0
+	local t = Config.Tiers[tier or 0] or Config.Tiers[0]
+	return if h then Rules.HunterPower(h.Power, t.Mult) else 0
 end
 
 local function rarityOrder(id: string): number
@@ -45,12 +49,69 @@ local function countOwned(d: DataService.Data): number
 	return n
 end
 
+-- player -> uid -> reason ("In a trade", ...) while another system holds that hunter
+local busy: { [Player]: { [string]: string } } = {}
+
+function HunterService.SetBusy(player: Player, uid: string, reason: string?)
+	local b = busy[player]
+	if not b then
+		b = {}
+		busy[player] = b
+	end
+	(b :: { [string]: string? })[uid] = reason
+end
+
+function HunterService.BusyReason(player: Player, uid: string): string?
+	local b = busy[player]
+	return if b then b[uid] else nil
+end
+
+function HunterService.IsKnocked(d: DataService.Data, uid: string): boolean
+	local t = d.Knocked[uid]
+	return t ~= nil and t > os.time()
+end
+
+-- Equipped hunters that can fight right now (not knocked out), in equipped order.
+function HunterService.ActiveUids(player: Player): { string }
+	local d = DataService.Get(player)
+	local out = {}
+	if d then
+		for _, uid in d.Equipped do
+			if d.Hunters[uid] and not HunterService.IsKnocked(d, uid) then
+				table.insert(out, uid)
+			end
+		end
+	end
+	return out
+end
+
+-- True when no equipped hunter can fight: the Backup Rookie steps in (outside the tower).
+function HunterService.UsesBackup(player: Player): boolean
+	return #HunterService.ActiveUids(player) == 0 and player:GetAttribute("InTower") ~= true
+end
+
+function HunterService.HunterPower(player: Player, uid: string): number
+	local d = DataService.Get(player)
+	if uid == "backup" then
+		return Config.Retaliation.BackupPower
+	end
+	local h = d and d.Hunters[uid]
+	return if h then powerOf(h.Id, h.Tier) else 0
+end
+
+-- Damage per second of the player's crew: hunters that can fight (+ pet Power bonus). With no
+-- hunter able to fight, the Backup Rookie's power (never in the Boss Tower).
 function HunterService.CrewPower(player: Player): number
 	local d = DataService.Get(player)
 	if not d then
 		return 0
 	end
-	return Rules.CrewPower(d.Equipped, d.Hunters, powerOf)
+	local active = HunterService.ActiveUids(player)
+	local base = Rules.CrewPower(active, d.Hunters, powerOf)
+	if #active == 0 and player:GetAttribute("InTower") ~= true then
+		base = Config.Retaliation.BackupPower
+	end
+	return base * (1 + PlayerInfo.PetBonus(player, "Power"))
 end
 
 -- Pushes the crew to attributes (for everyone's visuals) and re-syncs the owner.
@@ -60,14 +121,17 @@ function HunterService.Refresh(player: Player)
 		return
 	end
 	local ids = {}
-	for _, uid in d.Equipped do
+	for _, uid in HunterService.ActiveUids(player) do
 		local h = d.Hunters[uid]
-		if h then
-			table.insert(ids, h.Id)
-		end
+		table.insert(ids, string.format("%s|%d|%s", h.Id, h.Tier or 0, uid))
+	end
+	local backup = #ids == 0 and player:GetAttribute("InTower") ~= true
+	if backup then
+		table.insert(ids, Config.Retaliation.BackupHunter .. "|0|backup")
 	end
 	player:SetAttribute("Crew", table.concat(ids, ","))
-	player:SetAttribute("CrewPower", Rules.CrewPower(d.Equipped, d.Hunters, powerOf))
+	player:SetAttribute("Backup", backup)
+	player:SetAttribute("CrewPower", HunterService.CrewPower(player))
 	DataService.Changed(player)
 end
 
@@ -84,11 +148,38 @@ function HunterService.Add(player: Player, hunterId: string): (string?, boolean)
 end
 
 -- A profile with nothing equipped (new player) gets its best hunters equipped.
+-- hunters that can fight (EQUIP BEST skips knocked-out ones)
+local function fitHunters(d: DataService.Data): { [string]: DataService.HunterRecord }
+	local out = {}
+	for uid, h in d.Hunters do
+		if not HunterService.IsKnocked(d, uid) then
+			out[uid] = h
+		end
+	end
+	return out
+end
+
 local function ensureEquipped(player: Player, d: DataService.Data)
 	if #d.Equipped == 0 then
-		d.Equipped = Rules.EquipBest(d.Hunters, powerOf, rarityOrder, PlayerInfo.Slots(player))
+		d.Equipped = Rules.EquipBest(fitHunters(d), powerOf, rarityOrder, PlayerInfo.Slots(player))
+		if #d.Equipped == 0 then
+			d.Equipped = Rules.EquipBest(d.Hunters, powerOf, rarityOrder, PlayerInfo.Slots(player))
+		end
+	end
+	-- lost the extra-slots pass: keep only as many equipped as there are slots
+	while #d.Equipped > PlayerInfo.Slots(player) do
+		table.remove(d.Equipped)
 	end
 end
+
+-- Ectoplasm price of the crate a hunter comes from (release refund / merge cost base).
+local function cratePrice(id: string): number
+	local def = Config.Hunters[id]
+	local zone = def and Config.ZoneById[def.Zone]
+	local crate = zone and Config.Crates[zone.Crate]
+	return if crate then crate.Price else 0
+end
+HunterService.CratePrice = cratePrice
 
 local function crateRoll(player: Player, crate: Config.CrateDef, extraLuck: number): string
 	return Rules.Roll(crate.Pool :: any, rarityOrder, PlayerInfo.LuckMultiplier(player) * extraLuck, Config.LuckAffectsFromOrder, rng:NextNumber())
@@ -321,7 +412,11 @@ function HunterService.Init()
 		if not d then
 			return Remotes.Fail("Loading...")
 		end
-		d.Equipped = Rules.EquipBest(d.Hunters, powerOf, rarityOrder, PlayerInfo.Slots(player))
+		local best = Rules.EquipBest(fitHunters(d), powerOf, rarityOrder, PlayerInfo.Slots(player))
+		if #best == 0 then
+			return Remotes.Fail("All your hunters are recovering!")
+		end
+		d.Equipped = best
 		HunterService.Refresh(player)
 		return { ok = true, Power = HunterService.CrewPower(player) }
 	end)
@@ -349,11 +444,10 @@ function HunterService.Init()
 			if total - released <= 1 then
 				break
 			end
-			if validUid(d, uid) and not table.find(d.Equipped, uid) and not d.Hunters[uid].Locked then
-				local def = Config.Hunters[d.Hunters[uid].Id]
-				local crate = Config.Crates[(Config.ZoneById[def.Zone] :: Config.ZoneDef).Crate]
-				refund += math.floor((if crate then crate.Price else 0) * Config.Inventory.ReleaseRefund)
+			if validUid(d, uid) and not table.find(d.Equipped, uid) and not d.Hunters[uid].Locked and not HunterService.BusyReason(player, uid) then
+				refund += math.floor(cratePrice(d.Hunters[uid].Id) * Config.Inventory.ReleaseRefund)
 				d.Hunters[uid] = nil
+				d.Knocked[uid] = nil
 				released += 1
 			end
 		end
@@ -368,6 +462,65 @@ function HunterService.Init()
 		return { ok = true, Released = released, Refund = refund }
 	end)
 
+	-- MERGE: 5 identical hunters (same hunter, same tier, unlocked, not busy, not knocked out)
+	-- -> 1 hunter of the next tier. All checks and the swap happen in one step on the server, so a
+	-- repeated request finds the hunters already gone and fails harmlessly.
+	Remotes.Register("Merge", "Inventory", function(player, uids)
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		local ok, err, id, tier = Rules.MergeCheck(d.Hunters :: any, uids, Config.Merge.Count, Config.Merge.MaxTier, function(uid)
+			local why = HunterService.BusyReason(player, uid)
+			if why then
+				return why
+			end
+			return if HunterService.IsKnocked(d, uid) then "Knocked-out hunters can't be merged" else nil
+		end)
+		if not ok then
+			return Remotes.Fail(err or "Can't merge those")
+		end
+		local hunterId, fromTier = id :: string, tier :: number
+		local newTier = fromTier + 1
+		local cost = math.floor(cratePrice(hunterId) * (Config.Merge.CostMult[newTier] or 1))
+		if cost > 0 and not DataService.Spend(player, cost) then
+			return Remotes.Fail("Merging costs " .. Format.Commas(cost) .. " Ectoplasm")
+		end
+		-- consume, then create; the new hunter takes the first equipped slot of the consumed ones
+		local slot: number? = nil
+		for _, uid in uids :: { string } do
+			local i = table.find(d.Equipped, uid)
+			if i then
+				slot = if slot then math.min(slot, i) else i
+			end
+		end
+		local keep = {}
+		for _, uid in d.Equipped do
+			if not table.find(uids :: { string }, uid) then
+				table.insert(keep, uid)
+			end
+		end
+		for _, uid in uids :: { string } do
+			d.Hunters[uid] = nil
+			d.Knocked[uid] = nil
+		end
+		local newUid = DataService.NewUid(d)
+		d.Hunters[newUid] = { Id = hunterId, Locked = false, T = os.time(), Tier = newTier }
+		if slot then
+			table.insert(keep, math.min(slot, #keep + 1), newUid)
+		end
+		d.Equipped = keep
+		ensureEquipped(player, d)
+		HunterService.Refresh(player)
+		DataService.Save(player)
+		local tdef = Config.Tiers[newTier]
+		local def = Config.Hunters[hunterId]
+		if newTier >= 2 then
+			Fx.AllExcept(player, "Announce", { Text = string.format("%s merged a %s %s!", player.DisplayName, tdef.Name, string.upper(def.Name)), Color = "Exclusive" })
+		end
+		return { ok = true, Uid = newUid, Hunter = hunterId, Tier = newTier, Cost = cost }
+	end)
+
 	DataService.Loaded:Connect(function(player: Player)
 		-- always work on the live profile (never a copy)
 		local d = DataService.Get(player)
@@ -376,6 +529,12 @@ function HunterService.Init()
 		end
 		if next(d.Hunters) == nil then
 			HunterService.Add(player, Config.StarterHunter)
+		end
+		local t = os.time()
+		for uid, untilT in d.Knocked do
+			if untilT <= t then
+				d.Knocked[uid] = nil -- recovered while offline
+			end
 		end
 		ensureEquipped(player, d)
 		HunterService.Refresh(player)
@@ -386,6 +545,7 @@ function HunterService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		autoOpen[player] = nil -- stops their Auto Open loop
 		autoNext[player] = nil
+		busy[player] = nil
 		PlayerInfo.Forget(player)
 	end)
 end

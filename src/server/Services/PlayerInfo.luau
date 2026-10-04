@@ -82,6 +82,31 @@ function PlayerInfo.AddBoost(d: DataService.Data, boost: string, seconds: number
 	d.Boosts[boost] = math.min(cur + seconds, now + Config.Boosts.MaxStackSeconds)
 end
 
+-- Bonuses from the player's EQUIPPED ghost pets: { Power, Ecto, HP, Recovery } fractions.
+-- Computed from the saved equipped list every time (never accumulated), so re-equipping,
+-- reconnecting or respawning can't stack a bonus twice.
+function PlayerInfo.PetBonuses(player: Player): { [string]: number }
+	local d = DataService.Get(player)
+	if not d then
+		return {}
+	end
+	local list = {}
+	local seen = {}
+	for _, uid in d.EquippedPets do
+		local pet = d.Pets[uid]
+		local def = pet and Config.Pets[pet.Id]
+		if def and not seen[uid] and #list < Config.PetRules.MaxEquipped then
+			seen[uid] = true
+			table.insert(list, def.Bonus)
+		end
+	end
+	return Rules.PetBonuses(list, Config.PetRules.Caps)
+end
+
+function PlayerInfo.PetBonus(player: Player, kind: string): number
+	return PlayerInfo.PetBonuses(player)[kind] or 0
+end
+
 function PlayerInfo.EctoMultiplier(player: Player): number
 	local d = DataService.Get(player)
 	if not d then
@@ -99,7 +124,9 @@ function PlayerInfo.EctoMultiplier(player: Player): number
 		passMul *= vip.Multiplier or 1
 	end
 	-- FinalReward = BaseGhostReward * this (upgrades, boost, passes, global event)
-	return Rules.EctoMultiplier(bonus, PlayerInfo.BoostActive(d, "Ecto"), Config.Boosts.Ecto.Multiplier, passMul) * globalEcto
+	return Rules.EctoMultiplier(bonus, PlayerInfo.BoostActive(d, "Ecto"), Config.Boosts.Ecto.Multiplier, passMul)
+		* globalEcto
+		* (1 + PlayerInfo.PetBonus(player, "Ecto"))
 end
 
 function PlayerInfo.LuckMultiplier(player: Player): number
@@ -171,6 +198,7 @@ function PlayerInfo.Init()
 		s.ZoneMultiplier = PlayerInfo.ZoneMultiplier(player)
 		s.MaxHunters = PlayerInfo.MaxHunters(player)
 		s.ServerLuckUntil = serverLuckUntil
+		s.PetBonuses = PlayerInfo.PetBonuses(player)
 		local owned = {}
 		for _, p in Config.GamePasses do
 			owned[p.Key] = PlayerInfo.HasPass(player, p.Key)

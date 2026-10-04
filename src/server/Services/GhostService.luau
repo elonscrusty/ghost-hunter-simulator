@@ -16,6 +16,7 @@ local Signal = require(GH.Signal)
 local DataService = require(script.Parent.DataService)
 local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
+local CrewService = require(script.Parent.CrewService)
 local DropService = require(script.Parent.DropService)
 local Remotes = require(script.Parent.Remotes)
 local Fx = require(script.Parent.Fx)
@@ -38,8 +39,14 @@ export type Ghost = {
 	Alive: boolean,
 	Event: boolean,
 	Area: number?, -- index into Config.Layout.GhostAreas (nil for event ghosts)
+	-- effective damage per player (health actually removed; overkill never counts). The record
+	-- belongs to this one encounter and goes away with the ghost.
 	Damage: { [Player]: number },
 	DirtySpirit: boolean,
+	Tower: any?, -- Boss Tower run that owns this boss (only its members may fight it)
+	HitFrac: number?, -- tower bosses: hit = target max HP * this
+	NextAttack: number, -- os.clock of the next retaliation
+	Pending: { Player: Player, Uid: string, Lands: number }?, -- telegraphed hit in flight
 }
 
 local buildHitbox: (Config.GhostDef, Vector3) -> Model
@@ -166,14 +173,14 @@ function buildHitbox(def: Config.GhostDef, pos: Vector3): Model
 end
 
 -- Creates a ghost. `spirit` overrides the config value (event ghost scaling).
-export type SpawnOpts = { Spirit: number?, Event: boolean?, Area: number? }
+export type SpawnOpts = { Spirit: number?, Event: boolean?, Area: number?, Tower: any?, HitFrac: number?, Pos: Vector3? }
 
 function GhostService.Spawn(def: Config.GhostDef, center: Vector3, radius: number, opts: SpawnOpts?): Ghost
 	local o: SpawnOpts = opts or {}
 	local uid = nextUid
 	nextUid += 1
 	local spirit = math.floor(o.Spirit or def.Spirit)
-	local pos = spacedPoint(center, radius, def.Hover, o.Area, nil, Config.Combat.HitboxDiameter * def.Scale * 1.4)
+	local pos = o.Pos or spacedPoint(center, radius, def.Hover, o.Area, nil, Config.Combat.HitboxDiameter * def.Scale * 1.4)
 	local model = buildHitbox(def, pos)
 	model.Name = "Ghost_" .. uid
 	model:SetAttribute("Uid", uid)
@@ -182,6 +189,7 @@ function GhostService.Spawn(def: Config.GhostDef, center: Vector3, radius: numbe
 	model:SetAttribute("MaxSpirit", spirit)
 	model:SetAttribute("Zone", def.Zone)
 	model:SetAttribute("Event", o.Event == true)
+	model:SetAttribute("Tower", o.Tower ~= nil)
 	local g: Ghost = {
 		Uid = uid,
 		Def = def,
@@ -200,6 +208,10 @@ function GhostService.Spawn(def: Config.GhostDef, center: Vector3, radius: numbe
 		Area = o.Area,
 		Damage = {},
 		DirtySpirit = false,
+		Tower = o.Tower,
+		HitFrac = o.HitFrac,
+		NextAttack = 0,
+		Pending = nil,
 	}
 	ghosts[uid] = g
 	setSegment(g, pos)
@@ -244,7 +256,7 @@ local function autoCandidate(player: Player): Ghost?
 	local t = now()
 	for _, g in ghosts do
 		local zone = Config.ZoneById[g.Def.Zone]
-		if g.Alive and zone and zone.Order == here and d.Zones[zone.Id] then
+		if g.Alive and not g.Tower and zone and zone.Order == here and d.Zones[zone.Id] then
 			local dist = (GhostService.Position(g, t) - p).Magnitude
 			if dist < bestDist then
 				best, bestDist = g, dist
@@ -252,6 +264,30 @@ local function autoCandidate(player: Player): Ghost?
 		end
 	end
 	return best
+end
+
+-- Contribution list for a finished encounter: players still in the server with damage > 0
+-- (stable order: biggest damage first, then UserId).
+function GhostService.SplitDamage(g: Ghost): { Players: { Player }, Weights: { number }, Total: number }
+	local list = {}
+	for player, dmg in g.Damage do
+		if player.Parent and dmg > 0 then
+			table.insert(list, { P = player, D = dmg })
+		end
+	end
+	table.sort(list, function(a, b)
+		if a.D ~= b.D then
+			return a.D > b.D
+		end
+		return a.P.UserId < b.P.UserId
+	end)
+	local out = { Players = {}, Weights = {}, Total = 0 }
+	for _, e in list do
+		table.insert(out.Players, e.P)
+		table.insert(out.Weights, e.D)
+		out.Total += e.D
+	end
+	return out
 end
 
 -- Removes a ghost. reward=false for escapes/cleanup.
@@ -276,35 +312,25 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 		g.Model:Destroy()
 	end)
 
-	if reward and not g.Event then
-		-- helpers get their own drops; the bar to count as a helper drops when many crews pile on
-		local helpers = 0
-		for player in g.Damage do
-			if player.Parent then
-				helpers += 1
-			end
-		end
-		local minShare = g.Max * math.min(Config.Combat.ContributorShare, 0.5 / math.max(helpers, 1))
-		-- bosses (MiniBoss / Boss): the reward is split by damage, so each helper gets the
-		-- percentage of the reward that matches the percentage of the damage they dealt
-		local isBoss = g.Def.Kind ~= "Normal"
-		local totalDmg = 0
-		for player, dmg in g.Damage do
-			if player.Parent then
-				totalDmg += dmg
-			end
-		end
-		for player, dmg in g.Damage do
-			if player.Parent and (player == killer or dmg >= minShare or (isBoss and dmg > 0)) then
-				local d = DataService.Get(player)
-				if d then
-					local base = g.Def.Reward -- fixed per ghost type
-					if isBoss then
-						base *= Rules.DamageShare(dmg, totalDmg)
-					end
+	if reward and not g.Event and not g.Tower then
+		-- SHARED REWARD: the ghost's reward is one pool, split by each player's share of the
+		-- damage (all of their hunters; overkill never counts). Whole units, largest remainder,
+		-- so the base pool is always paid out exactly. No last-hit bonus; no damage, no reward.
+		-- Each share is then scaled by that player's own Ectoplasm multiplier (upgrades, passes,
+		-- boosts, pets, events).
+		local shares = GhostService.SplitDamage(g)
+		local pool = Rules.SplitPool(g.Def.Reward, shares.Weights)
+		for i, player in shares.Players do
+			local base = pool[i]
+			local d = DataService.Get(player)
+			if d and shares.Weights[i] > 0 then
+				d.Stats.Ghosts += 1
+				if base > 0 then
 					local total = math.max(1, math.floor(base * PlayerInfo.EctoMultiplier(player) + 0.5))
 					DropService.Spawn(player, pos, total, g.Def.Drops, nil)
-					d.Stats.Ghosts += 1
+					if #shares.Players > 1 or g.Def.Kind ~= "Normal" then
+						Fx.To(player, "Payout", { Name = g.Def.Name, Pct = shares.Weights[i] / shares.Total, Ecto = total })
+					end
 				end
 			end
 		end
@@ -347,7 +373,11 @@ local function onSelect(player: Player, uid: any)
 	if not g or not g.Alive or not d or not p then
 		return
 	end
-	if not d.Zones[g.Def.Zone] then
+	if g.Tower then
+		if not (g.Tower :: any).Members[player] then
+			return -- only the party that owns this tower room may fight its boss
+		end
+	elseif not d.Zones[g.Def.Zone] then
 		Fx.Toast(player, "Unlock " .. (Config.ZoneById[g.Def.Zone] :: Config.ZoneDef).Name .. " first!", "Bad")
 		return
 	end
@@ -403,7 +433,7 @@ local function damageTick(dt: number)
 		if power <= 0 then
 			continue
 		end
-		local dmg = power * dt
+		local dmg = Rules.Effective(power * dt, g.Spirit) -- overkill never counts
 		g.Spirit -= dmg
 		g.Damage[player] = (g.Damage[player] or 0) + dmg
 		g.DirtySpirit = true
@@ -415,6 +445,73 @@ local function damageTick(dt: number)
 		if g.DirtySpirit and g.Alive then
 			g.DirtySpirit = false
 			g.Model:SetAttribute("Spirit", math.max(0, math.ceil(g.Spirit)))
+		end
+	end
+end
+
+-- Players whose crews are attacking `g` right now (same condition that deals damage).
+local function attackers(g: Ghost, t: number, clock: number): { Player }
+	local out = {}
+	for player, tg in targets do
+		if tg.Uid == g.Uid and clock >= tg.Ready and player.Parent then
+			local p = rootPos(player)
+			if p and (GhostService.Position(g, t) - p).Magnitude <= Config.Combat.MaxRange then
+				table.insert(out, player)
+			end
+		end
+	end
+	return out
+end
+
+-- GHOST RETALIATION: a ghost only fights back against crews attacking it. Every Interval it
+-- telegraphs a hit on one hunter of one attacking crew (Fx "GhostWindup"); when the windup ends
+-- the hit only lands if that crew is STILL attacking this ghost (retreat or switching target
+-- dodges it). Other players and unrelated hunters are never hit.
+local function retaliationTick()
+	local t = now()
+	local clock = os.clock()
+	local RC = Config.Retaliation
+	for _, g in ghosts do
+		if not g.Alive then
+			continue
+		end
+		local pend = g.Pending
+		if pend and clock >= pend.Lands then
+			g.Pending = nil
+			local tg = targets[pend.Player]
+			local still = tg and tg.Uid == g.Uid and table.find(attackers(g, t, clock), pend.Player) ~= nil
+			if still and table.find(CrewService.Targets(pend.Player), pend.Uid) then
+				local maxHP = CrewService.MaxHP(pend.Player, pend.Uid)
+				local hit
+				if g.HitFrac then
+					hit = maxHP * g.HitFrac
+				else
+					local kind = g.Def.Kind
+					hit = Rules.RetaliationHit(g.Max, RC.HitPerSpirit[kind] or RC.HitPerSpirit.Normal, maxHP, RC.HitCap[kind] or RC.HitCap.Normal)
+				end
+				local ko = CrewService.Hit(pend.Player, pend.Uid, hit)
+				Fx.To(pend.Player, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Knocked = ko })
+			elseif pend.Player.Parent then
+				Fx.To(pend.Player, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Dodged = true })
+			end
+		end
+		if g.Pending == nil and clock >= g.NextAttack then
+			local list = attackers(g, t, clock)
+			if #list == 0 then
+				g.NextAttack = clock + 0.5 -- passive until someone attacks it
+				continue
+			end
+			local player = list[rng:NextInteger(1, #list)]
+			local crew = CrewService.Targets(player)
+			if #crew == 0 then
+				g.NextAttack = clock + 0.5
+				continue
+			end
+			local uid = crew[rng:NextInteger(1, #crew)]
+			local interval = if g.Tower then Config.Tower.Interval else RC.Interval
+			g.NextAttack = clock + interval
+			g.Pending = { Player = player, Uid = uid, Lands = clock + RC.Windup }
+			Fx.To(player, "GhostWindup", { Ghost = g.Uid, Hunter = uid, Time = RC.Windup })
 		end
 	end
 end
@@ -483,6 +580,7 @@ function GhostService.Start()
 			last = c
 			local ok, err = pcall(function()
 				damageTick(dt)
+				retaliationTick()
 				moveTick()
 				if c >= nextAuto then
 					nextAuto = c + Config.AutoAttack.ScanSeconds
