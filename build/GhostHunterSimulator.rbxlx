@@ -2167,7 +2167,7 @@ Config.Layout = {
 	TradeBooth = Vector3.new(31, 0, -89), -- TRADING booth: both players must stand near it to trade
 	-- Boss Tower entrance in the lobby, left of the Pet Hatchery, facing the spawn plaza: party
 	-- pad centre (TowerService pad checks use the built TowerPad part; Tutorial points here).
-	TowerEntrance = { Pad = Vector3.new(-66, 0, -82) },
+	TowerEntrance = { Pad = Vector3.new(-52, 0, -64) }, -- just left of the Pet Hatchery as seen from spawn
 	GhostAreas = {
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(0, 0, 70), Radius = 34, Count = 7 },
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(-80, 0, 80), Radius = 26, Count = 4 },
