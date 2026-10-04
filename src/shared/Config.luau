@@ -1679,7 +1679,7 @@ Config.Merge = {
 -- TRADING (v1.6): hunters only, both players in the same server
 --==================================================================
 Config.Trade = {
-	Enabled = false, -- trading is switched off for now (old trade records still settle on join)
+	Enabled = true, -- false switches trading off (old trade records still settle on join)
 	MaxOffer = 8, -- hunters per side
 	RequestSeconds = 30, -- a trade request expires after this
 	ConfirmCooldown = 2, -- seconds after the last offer change before CONFIRM is accepted
