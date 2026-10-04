@@ -1,5 +1,17 @@
 # Status
 
+## v1.6 (built, not yet published)
+- Shipped: ghost retaliation (telegraphed hits, 2:00 knockouts, Backup Rookie), hunter tiers + merge
+  (5 -> Shiny -> Mega, lock), hunter-only trading, endless Boss Tower (party of 4, Spirit Shards,
+  chests), Ghost Pets (shards shop, 3 equipped, followers), Rare Pet launch event (DEV-started),
+  fall safety, shared ghost rewards, new spawn kiosks. Checklist: STUDIO_TESTS.md "v1.6".
+- Knobs: `Config.Retaliation.RecoverySeconds` (120), `Config.Merge` (Count, CostMult), `Config.Tower`,
+  `Config.Pets` / `Config.PetRules` (MaxEquipped 3), `Config.RarePetEvent.Id` (needs a NEW id per
+  event) and `.AdminUserIds` (only these may start it live).
+- Owner to do (v1.6): 1. Studio test with the v1.6 checklist. 2. Publish + migrate (old saves are
+  kept). 3. Press START RARE PET EVENT in the DEV panel once the game is live. 4. Optional: pet /
+  tower icons later.
+
 **Version 1.4 (live-game update, not yet published): see the v1.4 list below.**
 
 ## Done

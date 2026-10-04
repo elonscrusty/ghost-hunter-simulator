@@ -1,5 +1,89 @@
 # Studio playtest checklist
 
+## v1.6 playtest (do this first)
+Open `build/GhostHunterSimulator.rbxlx`, turn on **Studio API access** (PUBLISHING.md step 2; without it saving does nothing and some checks below can't pass), press **Play**. Studio saves are real saves for your account: use a throwaway test later if you worry. Anything that fails: note what you saw (a phone photo is fine). Use the 🛠 DEV button (top right) for shortcuts (Ectoplasm, unlock areas, all hunters, START EVENT).
+
+### 1. Old save loads unchanged
+1. Press Play with your existing account. Expected: no errors in Output, your Ectoplasm, hunters, areas and pets-free inventory look exactly as before.
+2. Open HUNTERS. Expected: every hunter you owned is still there as NORMAL tier (no ✨ or 💎), same power as before.
+3. Stop and Play again. Expected: everything still there (Studio saves).
+
+### 2. Ghost retaliation
+1. Walk to a ghost and tap it once. Expected: your hunters attack it.
+2. Watch the ghost. Expected: a red ❗ appears over ONE of your attacking hunters for about 1 second, then that hunter takes a hit (health bar drops).
+3. Stand near the ghost without tapping it. Expected: nothing hits you or hunters that are not attacking.
+4. During the red ❗ warning, walk away so your crew gives up. Expected: the hit misses or never lands; crew heals back (after ~4 s).
+5. Let the hits keep landing until one hunter hits 0 HP. Expected: it is KNOCKED OUT (greyed, not deleted).
+
+### 3. Knockout timer and Backup Rookie
+1. Open HUNTERS. Expected: the knocked-out hunter shows a 2:00 countdown that ticks down. When it hits 0:00 the hunter is back at full health.
+2. Get ALL your equipped hunters knocked out (fight a strong ghost with only a weak crew). Expected: a temporary BACKUP Rookie fights for you, labelled BACKUP, and cannot be knocked out.
+3. Stop and Play again while a hunter is knocked out. Expected: the timer kept counting (real time).
+
+### 4. Merge: 5 -> Shiny -> Mega
+1. DEV > give all hunters, and Ectoplasm. Open HUNTERS and pick a hunter you have 5 copies of (give yourself more if needed).
+2. Press MERGE. Expected: a preview shows 5 copies -> 1 ✨ SHINY (about 2.5x power) and the Ectoplasm cost. CONFIRM. Expected: 5 copies become 1 Shiny, cost taken.
+3. Make 5 Shiny of the same hunter and merge again. Expected: 1 💎 MEGA (about 6.25x power). Mega cannot merge further.
+4. Press 🔒 LOCK on a hunter. Expected: it is skipped by merge (merge refuses or won't count it). 🔓 UNLOCK makes it usable again.
+
+### 5. Trading (needs 2 players)
+Studio: **Test** tab > **Clients and Servers** > 2 Players > Start. Two windows open, each its own account.
+1. Player A: go to the Trade kiosk (see 8), choose player B, send a request. Expected: B sees a TRADE REQUEST popup. If B does nothing for 30 s it expires.
+2. B accepts. Expected: both see a trade window.
+3. Each adds a hunter. Expected: both sides update live.
+4. A presses CONFIRM. Expected: CONFIRM works only after ~2 s since the last change; shows "CONFIRMED ✅".
+5. B changes the offer after A confirmed. Expected: A's confirmation RESETS (must confirm again).
+6. Both confirm. Expected: hunters swap, both players' HUNTERS lists correct.
+7. Start another trade and press CANCEL. Expected: trade closes, nobody loses anything.
+8. Start another trade and have B close the window / leave the game mid-trade. Expected: A's trade cancels and A keeps all hunters.
+
+### 6. Boss Tower
+1. Walk to the plaza east of spawn. Expected: the Boss Tower entrance with a glowing pad.
+2. Stand on the pad. Expected: you join the party; press START. A 6-second countdown shows, then you enter room 1.
+3. Fight the boss (tap it). Expected: it hits back with ❗ warnings like ghosts. Beat it. Expected: payout toast with Ectoplasm and Spirit Shards, a chest appears.
+4. Open the chest. Expected: bonus shown. Then ▶ CONTINUE or 🚪 LEAVE. Expected: Continue starts room 2 (30 s to choose, else run ends); Leave returns you to spawn with rewards kept.
+5. Let all your hunters get knocked out in a room. Expected: wipe, run ends, shards from earlier rooms are kept.
+6. Party of 2: both stand on the pad (2-player test). Expected: both enter; reward split follows damage dealt.
+7. Press DEV > START EVENT. Expected: the Giant Poltergeist still spawns in the courtyard as before.
+
+### 7. Pets
+1. Beat about 5 tower rooms (shards grow each room), then open PETS. Expected: shop lists Glow Wisp for 40 shards.
+2. Buy Glow Wisp. Expected: shards drop by 40, pet owned.
+3. EQUIP it. Expected: your Power goes up (~+5%) and a pet floats near you.
+4. Equip up to 3 pets (DEV does not give shards, so keep towering). Expected: 4th equip is refused (max 3). Followers are visible and follow you.
+5. Unequip one. Expected: Power goes back down.
+
+### 8. Rare Pet event (Studio never touches the live event)
+1. DEV > START RARE PET EVENT > CONFIRM. Expected: a 🏮 FREE RARE PET chip shows, DEV text says ACTIVE. Pressing it again says ALREADY STARTED.
+2. Press +5 MIN RARE PET PLAY six times. Expected: after 30 min total, "🏮 RARE PET EARNED!" and Lantern Spirit appears in PETS.
+3. Reminder: Studio uses a local test copy. It never starts or changes the live event.
+
+### 9. Fall safety
+You cannot fall off the map in Studio, so test it by command. While playing, switch to **Server** view (Test tab > Current: Client > Server), open the command bar (View > Command Bar) and run:
+`game.Players.LocalPlayer.Character:PivotTo(CFrame.new(0,-60,0))`
+If LocalPlayer is nil on the server, use `game.Players:GetPlayers()[1].Character:PivotTo(CFrame.new(0,-60,0))`. Expected: within ~1 s your character is put back on solid ground (rescued), not falling forever.
+
+### 10. Spawn changes
+1. Spawn. Expected: the signpost sits at its new spot and does not block the path.
+2. Find the 3 kiosks. Expected: they open the Trade panel, the Merge (HUNTERS) panel and the Pets panel.
+3. First prompt after joining. Expected: the first tutorial/next-goal prompt still shows.
+
+### 11. Shared rewards
+Two players (2-player test): both tap the SAME ghost. Expected: each gets a payout toast showing its % share and the split; totals add up to the normal reward.
+
+### Phone checks (do on the phone separately)
+- Red ❗ warning, knockout countdown, backup label readable and not overlapping.
+- Merge preview, Trade window, Pets panel and Tower buttons (CONTINUE / LEAVE) fit the screen and are tappable.
+- Tower pad prompt, kiosks and pet followers work by tap; frame rate stays smooth with 3 pets out.
+
+### Can only be checked live (not in Studio)
+- Rare Pet event syncing across servers, and the 48-hour timer.
+- Trade crash recovery (server dies mid-trade) and exactly-once delivery.
+- DataStore saves, migration of the real live saves, and the Rare Pet "Id never reused" lock.
+
+---
+
+
 Open `build/GhostHunterSimulator.rbxlx`, turn on API access (PUBLISHING.md step 2), press
 **Play**. Tick each box; anything that fails, note what you saw (a phone photo is fine).
 The 🛠 DEV button (top right, next to ⚙) has all test tools. Chat commands also work (Studio or owner only): `/ecto 5000`, `/event`, `/reset-daily`, `/autoattack`
