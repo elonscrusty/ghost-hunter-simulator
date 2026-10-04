@@ -5,6 +5,10 @@
 local Icons = {}
 
 Icons.Images = {
+	-- uploaded as Decals: shown through the asset thumbnail (works with a Decal id)
+	menu_pets = "rbxthumb://type=Asset&id=129763548691514&w=420&h=420",
+	menu_trade = "rbxthumb://type=Asset&id=117692734126738&w=420&h=420",
+	shards = "rbxthumb://type=Asset&id=134472965366566&w=420&h=420",
 	menu_hunters = "rbxassetid://78038914324289",
 	menu_worlds = "rbxassetid://84155230350180",
 	menu_index = "rbxassetid://84366853615865",
