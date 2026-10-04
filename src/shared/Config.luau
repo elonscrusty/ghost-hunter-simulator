@@ -1966,8 +1966,8 @@ export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string
 export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Storage: number?, Blurb: string?, Hidden: boolean? }
 
 Config.Products = {
-	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2500, ProductId = 3715910102, PriceLabel = "R$ 49" }, -- ~51 Ecto/R$ (x best-area multiplier),
-	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 15000, ProductId = 3715909987, PriceLabel = "R$ 199" }, -- ~75 Ecto/R$: the bigger pack is the better deal,
+	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 5000, ProductId = 3715910102, PriceLabel = "R$ 49" }, -- ~102 Ecto/R$ (x best-area multiplier),
+	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 30000, ProductId = 3715909987, PriceLabel = "R$ 199" }, -- ~151 Ecto/R$: the bigger pack is the better deal,
 	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 199" },
 	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 149" },
 	{ Key = "SingleSkip", Name = "SINGLE CRATE SKIP", Icon = "⏩", Kind = "CrateSkip", ProductId = nil, PriceLabel = "R$ 10", Blurb = "Skip one crate animation" },
