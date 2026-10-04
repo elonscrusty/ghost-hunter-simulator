@@ -29621,6 +29621,50 @@ function HuntersPanel.Init()
 			rebuild()
 		end,
 	})
+	-- select by rarity: every unequipped, unlocked, Normal-tier hunter of that rarity; tapping
+	-- again when they're all selected unselects them (higher rarities: tap hunters one by one)
+	local RARITY_BUTTONS = { { "Common", "Gray" }, { "Uncommon", "Green" }, { "Rare", "Blue" }, { "Epic", "Purple" }, { "Legendary", "Orange" } }
+	for i, rb in RARITY_BUTTONS do
+		local rarityId, color = rb[1], rb[2]
+		local col, row = (i - 1) % 2, (i - 1) // 2
+		Kit.Button(releaseBar, {
+			Text = Config.Rarities[rarityId].Name,
+			Color = color,
+			TextStyle = "Small",
+			Size = UDim2.new(0.5, -15, 0, 34),
+			Position = UDim2.new(col * 0.5, if col == 0 then 10 else 5, 0, 122 + row * 40),
+			ZIndex = 64,
+			OnClick = function()
+				local d = State.Data
+				if not d then
+					return
+				end
+				local matches = {}
+				for uid, h in d.Hunters do
+					local def = Config.Hunters[h.Id]
+					if def and def.Rarity == rarityId and not h.Locked and (h.Tier or 0) == 0 and not table.find(d.Equipped, uid) then
+						table.insert(matches, uid)
+					end
+				end
+				if #matches == 0 then
+					Kit.Toast("No " .. string.lower(rarityId) .. " hunters to select (locked, equipped and Shiny/Mega are skipped)", "Bad")
+					return
+				end
+				local all = true
+				for _, uid in matches do
+					all = all and selected[uid] == true
+				end
+				for _, uid in matches do
+					if all then
+						selected[uid] = nil
+					else
+						selected[uid] = true
+					end
+				end
+				rebuild()
+			end,
+		})
+	end
 	releaseConfirm = Kit.Button(releaseBar, {
 		Text = "RELEASE 0",
 		Color = "Gray",
