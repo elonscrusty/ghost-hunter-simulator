@@ -1,11 +1,16 @@
 -- Sanity checks on Config balance: early game must be fast, later zones must be goals.
 local Config = require("./_Config")
 local T = {}
--- the 4 base hunters of a zone (Common..Legendary), weakest first
+local Rules = require("../src/shared/Logic/Rules")
+-- the 4 base hunters of a zone (Common..Legendary), weakest first. Extra hunters that share a tier
+-- have the same power, so one per rarity is enough.
 local function zoneHunters(zone)
-	local out = {}
+	local out, seen = {}, {}
 	for id, h in Config.Hunters do
-		if h.Zone == zone and Config.Rarities[h.Rarity].Order <= 5 then table.insert(out, h) end
+		if h.Zone == zone and Config.Rarities[h.Rarity].Order <= 5 and not seen[h.Rarity] then
+			seen[h.Rarity] = true
+			table.insert(out, h)
+		end
 	end
 	table.sort(out, function(a, b) return a.Power < b.Power end)
 	return out
@@ -145,27 +150,68 @@ T.next_zone_ghosts_pay_more = function()
 		assert(avg(b.Reward) > avg(a.Reward) * 3, Config.Zones[i].Id .. " weakest ghost doesn't pay enough more")
 	end
 end
-T.each_zone_has_one_mythic_and_one_secret = function()
+T.each_zone_has_mythic_secret_and_one_ultra = function()
 	for _, z in Config.Zones do
-		local leg, myth, sec = nil, nil, nil
+		local leg, myth, sec, ultra = nil, nil, nil, nil
 		for _, h in Config.Hunters do
 			if h.Zone == z.Id then
 				if h.Rarity == "Legendary" then leg = h end
-				if h.Rarity == "Mythic" then assert(not myth, z.Id .. " two mythics"); myth = h end
+				if h.Rarity == "Mythic" then myth = h end
 				if h.Rarity == "Secret" then assert(not sec, z.Id .. " two secrets"); sec = h end
+				if h.Rarity == "Ultra" then assert(not ultra, z.Id .. " two ultras"); ultra = h end
 			end
 		end
-		assert(leg and myth and sec, z.Id .. " needs a legendary, mythic and secret")
-		assert(myth.Power > leg.Power and sec.Power > myth.Power, z.Id .. " rarity power order")
-		-- chase rewards: under 1% together
-		local crate = Config.Crates[z.Crate]
-		local total, rare = 0, 0
-		for _, e in crate.Pool do
-			total += e.Weight
-			if e.Hunter == myth.Id or e.Hunter == sec.Id then rare += e.Weight end
-		end
-		assert(rare / total < 0.01, z.Id .. " mythic/secret too common")
+		assert(leg and myth and sec and ultra, z.Id .. " needs a legendary, mythic, secret and ultra")
+		assert(myth.Power > leg.Power and sec.Power > myth.Power and ultra.Power > sec.Power, z.Id .. " rarity power order")
+		local r = ultra.Power / sec.Power
+		assert(r >= 2.4 and r <= 2.6, z.Id .. " ultra should be ~2.5x the secret, got x" .. r)
 	end
+end
+
+-- owner's agreed chest distribution (percent per rarity, every zone crate)
+local AGREED = { Common = 50, Uncommon = 35, Rare = 10, Legendary = 3.5, Mythic = 1, Secret = 0.4, Ultra = 0.1 }
+local function order(id: string): number return Config.Rarities[Config.Hunters[id].Rarity].Order end -- by hunter id, like the server
+
+T.crate_pools_match_agreed_distribution = function()
+	for _, z in Config.Zones do
+		local crate = Config.Crates[z.Crate]
+		local sum, cat, ultras, seen = 0, {}, 0, {}
+		for _, e in crate.Pool do
+			local h = Config.Hunters[e.Hunter]
+			assert(h, z.Crate .. ": missing hunter " .. e.Hunter)
+			assert(not seen[e.Hunter], z.Crate .. ": duplicate " .. e.Hunter); seen[e.Hunter] = true
+			assert(AGREED[h.Rarity], z.Crate .. ": unexpected rarity " .. h.Rarity)
+			assert(e.Weight > 0, z.Crate .. ": zero weight " .. e.Hunter)
+			sum += e.Weight
+			cat[h.Rarity] = (cat[h.Rarity] or 0) + e.Weight
+			if h.Rarity == "Ultra" then ultras += 1; assert(h.Zone == z.Id, z.Crate .. ": ultra zone") end
+		end
+		assert(math.abs(sum - 100) < 1e-9, z.Crate .. " pool sums to " .. sum)
+		for r, pct in AGREED do
+			assert(cat[r], z.Crate .. " has no " .. r)
+			assert(math.abs(cat[r] - pct) < 1e-9, z.Crate .. " " .. r .. " is " .. cat[r] .. "%, want " .. pct)
+		end
+		assert(ultras == 1, z.Crate .. " needs exactly one Ultra")
+		local odds, total = Rules.Odds(crate.Pool, order, 1, Config.LuckAffectsFromOrder), 0
+		for _, p in odds do total += p end
+		assert(math.abs(total - 1) < 1e-9, z.Crate .. " odds sum to " .. total)
+		assert(math.abs(odds[crate.Pool[1].Hunter] * 100 - crate.Pool[1].Weight) < 1e-9, z.Crate .. " weight is the exact percent")
+	end
+end
+
+T.seeded_roll_matches_distribution = function()
+	local pool = Config.Crates.Beginner.Pool
+	math.randomseed(20261004)
+	local nxt = math.random
+	local n, counts = 200000, {}
+	for _ = 1, n do
+		local r = Config.Hunters[Rules.Roll(pool, order, 1, Config.LuckAffectsFromOrder, nxt())].Rarity
+		counts[r] = (counts[r] or 0) + 1
+	end
+	local common = (counts.Common or 0) / n
+	assert(math.abs(common - 0.5) < 0.01, "Common rolled " .. common)
+	local ultra = counts.Ultra or 0
+	assert(ultra > 0 and ultra / n < 0.003, "Ultra rolled " .. ultra .. " / " .. n)
 end
 T.early_curve_is_smooth = function()
 	-- owner's targets: first area chest 600, second 5,000; no 1,500 -> 40,000 cliff

@@ -19,6 +19,7 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
 local Signal = require(GH.Signal)
+local Eggs = require(GH.Logic.Eggs)
 
 local DataService = {}
 
@@ -58,6 +59,7 @@ export type Data = {
 	TradesApplied: { string }, -- recent trade ids applied to this profile (exactly-once)
 	-- v1.7
 	TowerCheckpoint: number, -- highest checkpoint room cleared (5, 10, ...); next run may start after it
+	PendingHatch: { [string]: Eggs.Record }, -- v1.8: hatch request id -> result (last 20; exactly-once egg retries)
 	Variants: { [string]: boolean }, -- "HunterId:1" / "HunterId:2" = Shiny / Mega discovered (Normal stays in Discovered)
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
@@ -97,6 +99,7 @@ local function defaults(): Data
 		EventPlay = {},
 		TradesApplied = {},
 		TowerCheckpoint = 0,
+		PendingHatch = {},
 		Variants = {},
 		Orphans = {},
 		Extra = {},
@@ -233,6 +236,17 @@ local function migrate(raw: any): Data
 		end
 	end
 	d.EquippedPets = eqPets
+	-- egg hatch records (exactly-once retries): drop malformed entries, keep the newest 20
+	for id, rec in d.PendingHatch do
+		if not Eggs.ValidRequestId(id) or type(rec) ~= "table" or type(rec.Egg) ~= "string" or type(rec.Pet) ~= "string" or type(rec.Uid) ~= "string" then
+			d.PendingHatch[id] = nil
+		else
+			rec.T = num(rec.T, 0)
+		end
+	end
+	for _, id in Eggs.Prune(d.PendingHatch, Eggs.KEEP_RECORDS) do
+		d.PendingHatch[id] = nil
+	end
 	for id, ev in d.EventPlay do
 		if type(id) ~= "string" or type(ev) ~= "table" then
 			d.EventPlay[id] = nil

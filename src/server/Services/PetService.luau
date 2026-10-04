@@ -1,7 +1,7 @@
 --!strict
--- Ghost pets (v1.6): bought with Spirit Shards (Boss Tower only), up to Config.PetRules.MaxEquipped
--- equipped. Equipped pets boost ALL of the owner's hunters (Normal, Shiny, Mega) everywhere
--- (world and tower): Power, Ecto, HP or Recovery. Bonuses are recomputed from the saved
+-- Ghost pets (v1.6): hatched from eggs bought with Spirit Shards (Boss Tower only; v1.8 eggs
+-- replaced direct purchases), up to Config.PetRules.MaxEquipped equipped. Equipped pets boost
+-- ALL of the owner's hunters (Normal, Shiny, Mega) everywhere (world and tower): Power, Ecto, HP or Recovery. Bonuses are recomputed from the saved
 -- equipped list every time (PlayerInfo.PetBonuses), so nothing can stack twice.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,6 +10,7 @@ local TextService = game:GetService("TextService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Eggs = require(GH.Logic.Eggs)
 local DataService = require(script.Parent.DataService)
 local HunterService = require(script.Parent.HunterService)
 local Remotes = require(script.Parent.Remotes)
@@ -17,6 +18,7 @@ local Remotes = require(script.Parent.Remotes)
 local PetService = {}
 
 local lastBuy: { [Player]: number } = {}
+local rng = Random.new()
 
 local NICK_MAX = 20 -- characters
 
@@ -37,7 +39,7 @@ local function count(t: { [string]: any }): number
 	return n
 end
 
--- Adds a pet to a profile (purchase or event reward). Returns the new pet uid.
+-- Adds a pet to a profile (egg hatch or event reward). Returns the new pet uid.
 function PetService.Add(d: DataService.Data, petId: string): string?
 	if not Config.Pets[petId] then
 		return nil
@@ -58,37 +60,58 @@ end
 PetService.Refresh = refresh
 
 function PetService.Init()
-	Remotes.Register("BuyPet", "Default", function(player, petId)
+	-- Buy + hatch an egg (the only way to get pets with shards). Exactly-once: the client sends
+	-- a request id; a retry with the same id returns the stored result and never charges or
+	-- rolls again. Check + roll + spend + add + record happen in ONE non-yielding step and go
+	-- into the same profile write, so a crash either loses the whole hatch (nothing was saved)
+	-- or keeps all of it. The client's hatch animation is presentation only.
+	Remotes.Register("BuyEgg", "Default", function(player, eggId, requestId)
 		local d = DataService.Get(player)
 		if not d then
 			return Remotes.Fail("Loading...")
 		end
-		if type(petId) ~= "string" then
-			return Remotes.Fail("Unknown pet")
+		if type(eggId) ~= "string" or not Eggs.ValidRequestId(requestId) then
+			return Remotes.Fail("Unknown egg")
 		end
-		local def = Config.Pets[petId]
-		if not def or def.Price == nil then
-			return Remotes.Fail("That pet isn't for sale")
+		local egg = Config.Eggs[eggId]
+		if not egg then
+			return Remotes.Fail("Unknown egg")
 		end
-		-- a double tap can't buy twice by accident
+		local done = d.PendingHatch[requestId]
+		if done then
+			if done.Egg ~= eggId then
+				return Remotes.Fail("Unknown egg")
+			end
+			return { ok = true, Egg = done.Egg, Pet = done.Pet, Uid = done.Uid, Shards = d.Shards }
+		end
+		-- a double tap (two different ids) can't buy twice by accident
 		local now = os.clock()
 		if lastBuy[player] and now - lastBuy[player] < 1 then
 			return Remotes.Fail("One moment...")
 		end
+		if not Eggs.Unlocked(egg, d.TowerCheckpoint) then
+			return Remotes.Fail(string.format("Reach Boss Tower checkpoint %d to unlock the %s", egg.Unlock, egg.Name))
+		end
 		if count(d.Pets) >= Config.PetRules.MaxOwned then
 			return Remotes.Fail("Your pet room is full!")
 		end
-		local price = def.Price :: number
-		if d.Shards < price then
-			return Remotes.Fail(string.format("Needs %s Spirit Shards (earn them in the Boss Tower)", Format.Commas(price)))
+		if d.Shards < egg.Price then
+			return Remotes.Fail(string.format("Needs %s Spirit Shards (earn them in the Boss Tower)", Format.Commas(egg.Price)))
+		end
+		local petId = Eggs.Roll(egg, rng:NextNumber())
+		if not Config.Pets[petId] then
+			return Remotes.Fail("Something went wrong")
 		end
 		lastBuy[player] = now
-		-- check + spend + add happen in one step (no yield), so the same shards can't be spent twice
-		d.Shards -= price
-		local uid = PetService.Add(d, petId)
+		d.Shards -= egg.Price
+		local uid = PetService.Add(d, petId) :: string
+		d.PendingHatch[requestId] = { Egg = eggId, Pet = petId, Uid = uid, T = os.time() }
+		for _, id in Eggs.Prune(d.PendingHatch, Eggs.KEEP_RECORDS) do
+			d.PendingHatch[id] = nil
+		end
 		refresh(player)
 		DataService.Save(player)
-		return { ok = true, Uid = uid, Shards = d.Shards }
+		return { ok = true, Egg = eggId, Pet = petId, Uid = uid, Shards = d.Shards }
 	end)
 
 	Remotes.Register("EquipPet", "Inventory", function(player, uid, on)

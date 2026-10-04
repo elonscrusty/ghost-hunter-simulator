@@ -276,6 +276,25 @@ function Rules.PoolMembers(weights: { number }, minShare: number): number
 	return math.max(1, n)
 end
 
+-- Retaliation target rotation: given the eligible hunter keys (any order) and the key hit
+-- last time, returns the next key after it in sorted order (wrapping), so attacks spread over
+-- every eligible hunter instead of focusing one. nil when nobody is eligible.
+function Rules.NextTarget(keys: { string }, last: string?): string?
+	if #keys == 0 then
+		return nil
+	end
+	local sorted = table.clone(keys)
+	table.sort(sorted)
+	if last then
+		for _, k in sorted do
+			if k > last then
+				return k
+			end
+		end
+	end
+	return sorted[1]
+end
+
 -- Damage that really counts: never more than the Spirit the ghost had left (no overkill).
 function Rules.Effective(damage: number, spiritLeft: number): number
 	if damage ~= damage or damage <= 0 or spiritLeft <= 0 then

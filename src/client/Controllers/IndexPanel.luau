@@ -44,9 +44,19 @@ local lastKey = ""
 local function hunterList(zoneId: string): { Config.HunterDef }
 	local out = {}
 	local crate = Config.Crates[(Config.ZoneById[zoneId] :: Config.ZoneDef).Crate]
-	for _, e in crate.Pool do
+	local pos: { [string]: number } = {}
+	for i, e in crate.Pool do
 		table.insert(out, Config.Hunters[e.Hunter])
+		pos[e.Hunter] = i
 	end
+	-- weakest → strongest rarity (Ultra after Secret); pool order breaks ties
+	table.sort(out, function(a, b)
+		local ra, rb = Config.Rarities[a.Rarity].Order, Config.Rarities[b.Rarity].Order
+		if ra ~= rb then
+			return ra < rb
+		end
+		return pos[a.Id] < pos[b.Id]
+	end)
 	return out
 end
 

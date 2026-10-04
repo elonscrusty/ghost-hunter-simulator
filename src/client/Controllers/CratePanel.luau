@@ -31,6 +31,7 @@ local autoQueue: { any } = {}
 local autoPlaying = false
 local infoLabel: TextLabel
 local luckLabel: TextLabel
+local legendLabel: TextLabel -- per-RARITY totals (cards keep each hunter's own chance)
 local current: string? = nil
 local crateIcon: ImageLabel
 local busy = false
@@ -84,6 +85,27 @@ end
 
 function refreshCards(crateId: string, d: any, odds: { [string]: number }, luck: number)
 	local crate = Config.Crates[crateId]
+	-- category totals: sum every hunter of the same rarity; rarities absent from this crate are skipped
+	local totals: { [string]: number } = {}
+	local rars: { Config.RarityDef } = {}
+	for _, e in crate.Pool do
+		local rid = Config.Hunters[e.Hunter].Rarity
+		if totals[rid] == nil then
+			totals[rid] = 0
+			table.insert(rars, Config.Rarities[rid])
+		end
+		totals[rid] += odds[e.Hunter] or 0
+	end
+	table.sort(rars, function(a, b)
+		return a.Order < b.Order
+	end)
+	local parts = {}
+	for _, r in rars do
+		-- brighter of the pair so dark rarities (Secret) stay readable
+		local c = if r.Color.R + r.Color.G + r.Color.B >= r.Color2.R + r.Color2.G + r.Color2.B then r.Color else r.Color2
+		table.insert(parts, string.format('<font color="#%s">%s</font> %s', c:ToHex(), r.Name, Format.Percent(totals[r.Id])))
+	end
+	legendLabel.Text = if #parts > 0 then "BY RARITY: " .. table.concat(parts, "  ·  ") else ""
 	for _, c in list:GetChildren() do
 		if c:IsA("Frame") then
 			c:Destroy()
@@ -289,10 +311,12 @@ function CratePanel.Init()
 	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -400, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
+	legendLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 52), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62, Fit = true })
+	legendLabel.RichText = true
 	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
 	list = Kit.new("ScrollingFrame", {
-		Size = UDim2.new(1, 0, 1, -118),
-		Position = UDim2.fromOffset(0, 54),
+		Size = UDim2.new(1, 0, 1, -136),
+		Position = UDim2.fromOffset(0, 72),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,

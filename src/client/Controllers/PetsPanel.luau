@@ -1,7 +1,8 @@
 --!strict
--- GHOST PETS: buy pets with Spirit Shards (Boss Tower only) and equip up to 3. Each equipped
--- pet gives a crew-wide bonus; the server validates every buy/equip/rename. Nicknames shown
--- here come back from the server already text-filtered.
+-- GHOST PETS: owned pets, equip up to 3 and rename. Pets come from eggs at the PET HATCHERY
+-- near the Boss Tower (Controllers/Hatchery; v1.8 removed direct purchases). Each equipped
+-- pet gives a crew-wide bonus; the server validates every equip/rename. Nicknames shown here
+-- come back from the server already text-filtered.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -12,7 +13,6 @@ local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Hud = require(script.Parent.Hud)
-local Sound = require(script.Parent.Sound)
 
 local PetsPanel = {}
 
@@ -33,7 +33,6 @@ local renameTitle: TextLabel
 local renameBox: TextBox
 local renameUid: string? = nil
 local NICK_MAX = 20
-local buyButtons: { [string]: TextButton } = {}
 local busy = false
 
 local function bonusText(kind: string, value: number): string
@@ -47,6 +46,10 @@ local function bonusText(kind: string, value: number): string
 	end
 	return pct .. " FASTER RECOVERY"
 end
+
+-- shared with the egg panel (Controllers/Hatchery)
+PetsPanel.ShapeIcon = SHAPE_ICON
+PetsPanel.BonusText = bonusText
 
 local function rarityName(pet: Config.PetDef): string
 	local r = Config.Rarities[pet.Rarity]
@@ -116,9 +119,6 @@ local function refresh()
 		end
 	end
 	bonusLabel.Text = if #parts > 0 then "TO ALL HUNTERS: " .. table.concat(parts, "  •  ") else "No pet bonuses yet: equip a pet!"
-	for id, b in buyButtons do
-		b:SetAttribute("Color", if shards >= (Config.Pets[id].Price or math.huge) then "Green" else "Gray")
-	end
 	-- owned: rebuilt each refresh (at most MaxOwned small cards), equipped first
 	local equipped: { [string]: boolean } = {}
 	for _, uid in d.EquippedPets or {} do
@@ -221,20 +221,8 @@ function PetsPanel.Init()
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(160, 176), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		return l, row
 	end
-	local _, shopRow = section(10, "SHOP")
-	for i, id in Config.PetOrder do
-		local pet = Config.Pets[id]
-		if pet and pet.Price then
-			local f = card(shopRow, i, pet)
-			buyButtons[id] = cardButton(f, "🔮 " .. Format.Short(pet.Price), "Gray", function()
-				local res = request("BuyPet", id)
-				if res and res.ok then
-					Sound.Play("Upgrade")
-					Kit.Toast("You got " .. pet.Name .. "! Equip it below.", "Good")
-				end
-			end)
-		end
-	end
+	local hint = Kit.Label(scroll, "🥚 Get pets from eggs at the PET HATCHERY near the Boss Tower", { Size = UDim2.new(1, -6, 0, 36), Color = SHARD, Font = Theme.Body, Style = "Small", Wrap = true, ZIndex = 62 })
+	hint.LayoutOrder = 10
 	equippedLabel, ownedRow = section(20, "OWNED")
 	ownedRow.LayoutOrder = 22
 	-- rename bar (opened by a card's pencil button): text box + SAVE / DEFAULT / X

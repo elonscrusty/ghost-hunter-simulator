@@ -62,6 +62,7 @@ local Sunken = require(script.Parent.Sunken)
 local Clockwork = require(script.Parent.Clockwork)
 local Inferno = require(script.Parent.Inferno)
 local Throne = require(script.Parent.Throne)
+local Hatchery = require(script.Parent.Hatchery)
 
 local Builder = {}
 
@@ -83,6 +84,9 @@ local function registerKeepOuts()
 	-- spawn kiosk pockets behind the plaza (Trading | Merge + Pets, see Neighborhood.luau)
 	Kit.AddRect(-36, -36, -14, -12)
 	Kit.AddRect(14, -36, 36, -12)
+	-- Pet Hatchery near the Boss Tower (see Hatchery.luau) + its path to the cross street
+	Kit.AddRect(46, 65, 70, 90)
+	Kit.AddRect(49, 90, 56, 106, true)
 end
 
 -- Last resort when the build throws: a plain anchored floor under the whole main strip and a
@@ -159,6 +163,7 @@ local function buildAll(map: Folder)
 	Clockwork.Build(map)
 	Inferno.Build(map)
 	Throne.Build(map)
+	Hatchery.Build(map) -- last: uses no Kit.Rng, so other zones' random props don't shift
 
 	map.Parent = Workspace
 	local s = Kit.Stats

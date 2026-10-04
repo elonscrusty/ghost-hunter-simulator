@@ -132,6 +132,16 @@ T.pool_members_ignore_tiny_contributors = function()
 	eq(Rules.PoolMembers({ 50, 50 }, 0.1), 2)
 	eq(Rules.PoolMembers({}, 0.1), 1)
 end
+T.retaliation_rotates_targets = function()
+	eq(Rules.NextTarget({}, nil), nil)
+	eq(Rules.NextTarget({ "1:a" }, "1:a"), "1:a") -- only one hunter: always that one
+	local keys = { "2:b", "1:a", "1:c" }
+	eq(Rules.NextTarget(keys, nil), "1:a")
+	eq(Rules.NextTarget(keys, "1:a"), "1:c")
+	eq(Rules.NextTarget(keys, "1:c"), "2:b")
+	eq(Rules.NextTarget(keys, "2:b"), "1:a") -- wraps
+	eq(Rules.NextTarget({ "1:a", "2:b" }, "1:c"), "2:b") -- last target left: next one after it
+end
 T.overkill_not_counted = function()
 	eq(Rules.Effective(500, 20), 20)
 	eq(Rules.Effective(5, 20), 5)

@@ -47,6 +47,7 @@ export type Ghost = {
 	HitFrac: number?, -- tower bosses: hit = target max HP * this
 	NextAttack: number, -- os.clock of the next retaliation
 	Pending: { Player: Player, Uid: string, Lands: number }?, -- telegraphed hit in flight
+	LastKey: string?, -- "userId:uid" hit last (targets rotate)
 }
 
 local buildHitbox: (Config.GhostDef, Vector3) -> Model
@@ -479,7 +480,13 @@ local function retaliationTick()
 		if pend and clock >= pend.Lands then
 			g.Pending = nil
 			local tg = targets[pend.Player]
-			local still = tg and tg.Uid == g.Uid and table.find(attackers(g, t, clock), pend.Player) ~= nil
+			local list = attackers(g, t, clock)
+			local still = tg and tg.Uid == g.Uid and table.find(list, pend.Player) ~= nil
+			-- everyone fighting this ghost sees the bolt land (or fizzle); damage only if the SAME
+			-- hunter is still eligible (never redirected to someone else)
+			if not table.find(list, pend.Player) then
+				table.insert(list, pend.Player)
+			end
 			if still and table.find(CrewService.Targets(pend.Player), pend.Uid) then
 				local maxHP = CrewService.MaxHP(pend.Player, pend.Uid)
 				local hit
@@ -490,9 +497,15 @@ local function retaliationTick()
 					hit = Rules.RetaliationHit(g.Max, RC.HitPerSpirit[kind] or RC.HitPerSpirit.Normal, maxHP, RC.HitCap[kind] or RC.HitCap.Normal)
 				end
 				local ko = CrewService.Hit(pend.Player, pend.Uid, hit)
-				Fx.To(pend.Player, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Knocked = ko })
-			elseif pend.Player.Parent then
-				Fx.To(pend.Player, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Dodged = true })
+				for _, p in list do
+					Fx.To(p, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Owner = pend.Player.UserId, Knocked = ko })
+				end
+			else
+				for _, p in list do
+					if p.Parent then
+						Fx.To(p, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Owner = pend.Player.UserId, Dodged = true })
+					end
+				end
 			end
 		end
 		if g.Pending == nil and clock >= g.NextAttack then
@@ -501,17 +514,29 @@ local function retaliationTick()
 				g.NextAttack = clock + 0.5 -- passive until someone attacks it
 				continue
 			end
-			local player = list[rng:NextInteger(1, #list)]
-			local crew = CrewService.Targets(player)
-			if #crew == 0 then
+			-- every eligible hunter of every attacking player; rotate so hits spread out
+			local keys: { string } = {}
+			local who: { [string]: { P: Player, U: string } } = {}
+			for _, p in list do
+				for _, uid in CrewService.Targets(p) do
+					local key = p.UserId .. ":" .. uid
+					table.insert(keys, key)
+					who[key] = { P = p, U = uid }
+				end
+			end
+			local key = Rules.NextTarget(keys, g.LastKey)
+			if not key then
 				g.NextAttack = clock + 0.5
 				continue
 			end
-			local uid = crew[rng:NextInteger(1, #crew)]
+			local pick = who[key]
+			g.LastKey = key
 			local interval = if g.Tower then Config.Tower.Interval else RC.Interval
-			g.NextAttack = clock + interval
-			g.Pending = { Player = player, Uid = uid, Lands = clock + RC.Windup }
-			Fx.To(player, "GhostWindup", { Ghost = g.Uid, Hunter = uid, Time = RC.Windup })
+			g.NextAttack = clock + interval -- one attack per interval, whoever the target is
+			g.Pending = { Player = pick.P, Uid = pick.U, Lands = clock + RC.Windup }
+			for _, p in list do
+				Fx.To(p, "GhostWindup", { Ghost = g.Uid, Hunter = pick.U, Owner = pick.P.UserId, Time = RC.Windup })
+			end
 		end
 	end
 end

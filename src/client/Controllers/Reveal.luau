@@ -620,7 +620,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 		local wob = CFrame.Angles(math.sin(tt * 38) * 0.06 * k, math.sin(tt * 29) * 0.1 * k, math.sin(tt * 47) * 0.09 * k)
 		local lift = levitate * math.sin(math.min(a * 1.6, 1) * math.pi / 2)
 		placeCrate(base * CFrame.new(math.sin(tt * 53) * 0.12 * k, lift, 0) * wob)
-		raySpeed = 20 + 160 * a * rarity.Order / 5
+		raySpeed = 20 + 160 * a * math.min(rarity.Order, 8) / 5 -- capped: Ultra/Exclusive don't keep scaling
 		if charge then
 			charge.Rate = 15 + 110 * a
 		end
@@ -656,7 +656,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	if not skipping then
 		Sound.Play(rarity.Sound)
 		flash(rarity.Color, 0.45)
-		Effects.Flash(burstPos, rarity.Color, 3 + rarity.Order * 0.6, 0.4)
+		Effects.Flash(burstPos, rarity.Color, 3 + math.min(rarity.Order, 8) * 0.6, 0.4)
 		Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = math.floor(rarity.Particles * 0.6), Size = 0.65, Speed = 26, Life = 1.1, Gravity = 18 })
 		Effects.Ring(STAGE + Vector3.new(0, 0.2, 0), rarity.Color, 10, 0.6)
 		if cc then

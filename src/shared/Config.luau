@@ -72,8 +72,16 @@ Config.Rarities = {
 		RevealPause = 2.4, ShakeIntensity = 0.9, Particles = 220, Darken = 0.7, CameraPunch = true, Announce = true,
 		Sound = "RevealLegendary",
 	},
+	-- above Secret; light/particle levels stay near Secret's (the reveal was toned down)
+	Ultra = {
+		Id = "Ultra", Name = "ULTRA", Order = 8, Enabled = true,
+		Color = Color3.fromRGB(150, 70, 255), Color2 = Color3.fromRGB(40, 225, 255),
+		RevealPause = 2.6, ShakeIntensity = 0.95, Particles = 230, Darken = 0.7, CameraPunch = true, Announce = true,
+		Sound = "RevealLegendary",
+	},
+	-- Robux-only; stays the top Order
 	Exclusive = {
-		Id = "Exclusive", Name = "EXCLUSIVE", Order = 8, Enabled = true,
+		Id = "Exclusive", Name = "EXCLUSIVE", Order = 9, Enabled = true,
 		Color = Color3.fromRGB(80, 255, 230), Color2 = Color3.fromRGB(255, 90, 230),
 		RevealPause = 2.0, ShakeIntensity = 0.8, Particles = 200, Darken = 0.5, CameraPunch = true, Announce = true,
 		Sound = "RevealLegendary",
@@ -1206,6 +1214,139 @@ Config.Hunters = {
 		Look = { Skin = C(255, 225, 200), Hair = C(200, 140, 255), HairStyle = "Spiky", Shirt = C(255, 215, 90), Pants = C(200, 140, 255), Shoes = C(255, 215, 90),
 			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Wings", BackColor = C(200, 140, 255), Tool = "Orb", ToolColor = C(255, 215, 90), Beam = C(200, 140, 255), Aura = true },
 	},
+	-- NEW HUNTERS (extras + one Ultra per crate)
+	BowBelle = {
+		Id = "BowBelle", Name = "Bow Belle", Rarity = "Common", Zone = "Neighborhood", Power = 5,
+		Blurb = "Ties a bow on every ghost she catches. They secretly love it.",
+		Look = { Skin = C(255, 220, 195), Hair = C(255, 170, 200), HairStyle = "Puff", Shirt = C(255, 190, 215), Pants = C(255, 230, 240), Shoes = C(255, 140, 190),
+			Hat = "Bow", HatColor = C(255, 110, 170), Tool = "Flashlight", ToolColor = C(255, 200, 230), Beam = C(255, 180, 220) },
+	},
+	LilMoonWitch = {
+		Id = "LilMoonWitch", Name = "Lil' Moon Witch", Rarity = "Uncommon", Zone = "Cemetery", Power = 50,
+		Blurb = "Her first spell turned a ghost into a very confused moth.",
+		Look = { Skin = C(240, 215, 200), Hair = C(190, 160, 240), HairStyle = "Long", Shirt = C(200, 170, 240), Pants = C(120, 90, 180), Shoes = C(90, 60, 140),
+			Hat = "WitchHat", HatColor = C(130, 90, 200), Tool = "Wand", ToolColor = C(220, 200, 255), Beam = C(210, 180, 255) },
+	},
+	GloomyGus = {
+		Id = "GloomyGus", Name = "Gloomy Gus", Rarity = "Uncommon", Zone = "School", Power = 250,
+		Blurb = "A tiny monster who sighs a lot. Ghosts find it very relatable.",
+		Look = { Skin = C(140, 160, 200), Hair = C(90, 100, 140), HairStyle = "None", Shirt = C(110, 120, 170), Pants = C(70, 80, 120), Shoes = C(60, 60, 90),
+			Hat = "Beanie", HatColor = C(80, 90, 140), Tool = "Lantern", ToolColor = C(170, 200, 255), Beam = C(160, 190, 255) },
+	},
+	HeartlightHealer = {
+		Id = "HeartlightHealer", Name = "Heartlight Healer", Rarity = "Rare", Zone = "Carnival", Power = 2100,
+		Blurb = "Heals friends, hugs ghosts, wins every carnival kindness prize.",
+		Look = { Skin = C(255, 215, 190), Hair = C(255, 120, 160), HairStyle = "Bob", Shirt = C(255, 170, 200), Pants = C(255, 230, 240), Shoes = C(255, 90, 140),
+			Back = "HeartWings", BackColor = C(255, 140, 180), Tool = "HeartWand", ToolColor = C(255, 90, 150), Beam = C(255, 150, 200) },
+	},
+	StarlitHexPrincess = {
+		Id = "StarlitHexPrincess", Name = "Starlit Hex Princess", Rarity = "Legendary", Zone = "Hospital", Power = 25000,
+		Blurb = "Casts get-well-soon hexes. Ghosts get well, then get gone.",
+		Look = { Skin = C(245, 220, 205), Hair = C(60, 40, 110), HairStyle = "Long", Shirt = C(70, 40, 130), Pants = C(40, 25, 80), Shoes = C(200, 170, 255),
+			Hat = "Tiara", HatColor = C(255, 225, 120), Back = "Cape", BackColor = C(110, 70, 200), Tool = "Wand", ToolColor = C(255, 230, 150), Beam = C(220, 180, 255), Aura = true },
+	},
+	PumpkinKnight = {
+		Id = "PumpkinKnight", Name = "Pumpkin Knight", Rarity = "Mythic", Zone = "Castle", Power = 1550000,
+		Blurb = "Sworn to protect the castle patch. Smells faintly of pie.",
+		Look = { Skin = C(230, 200, 170), Hair = C(60, 40, 30), HairStyle = "Short", Shirt = C(150, 155, 170), Pants = C(100, 105, 120), Shoes = C(70, 70, 80),
+			Hat = "PumpkinHelm", HatColor = C(255, 140, 40), Back = "Shield", BackColor = C(170, 175, 190), Tool = "Sword", ToolColor = C(220, 225, 235), Beam = C(255, 170, 60), Aura = true },
+	},
+	CaptainBoo = {
+		Id = "CaptainBoo", Name = "Captain Boo", Rarity = "Ultra", Zone = "Neighborhood", Power = 600,
+		Blurb = "A friendly ghost who became a hero. Says BOO only to bad guys.",
+		Look = { Skin = C(240, 245, 255), Hair = C(230, 235, 255), HairStyle = "None", Shirt = C(70, 120, 255), Pants = C(40, 60, 170), Shoes = C(255, 210, 60),
+			Hat = "HeroMask", HatColor = C(255, 60, 80), Back = "HeroCape", BackColor = C(255, 60, 80), Tool = "Blaster", ToolColor = C(255, 210, 60), Beam = C(140, 200, 255), Aura = true },
+	},
+	PetalChomper = {
+		Id = "PetalChomper", Name = "Petal Chomper", Rarity = "Ultra", Zone = "Cemetery", Power = 3000,
+		Blurb = "Looks like a cute graveside flower. Has a LOT of teeth.",
+		Look = { Skin = C(120, 200, 110), Hair = C(60, 140, 70), HairStyle = "None", Shirt = C(80, 170, 90), Pants = C(50, 120, 60), Shoes = C(40, 90, 50),
+			Hat = "FlowerHead", HatColor = C(255, 120, 190), Tool = "Lantern", ToolColor = C(255, 170, 220), Beam = C(255, 130, 200), Aura = true },
+	},
+	CelestiaMoonwitch = {
+		Id = "CelestiaMoonwitch", Name = "Celestia Moonwitch", Rarity = "Ultra", Zone = "School", Power = 15000,
+		Blurb = "Top of every class, including the one about moon magic.",
+		Look = { Skin = C(250, 225, 215), Hair = C(220, 200, 255), HairStyle = "Long", Shirt = C(200, 185, 255), Pants = C(170, 210, 255), Shoes = C(255, 200, 230),
+			Hat = "MoonHood", HatColor = C(180, 160, 250), Back = "Wings", BackColor = C(230, 215, 255), Tool = "MoonStaff", ToolColor = C(255, 240, 180), Beam = C(200, 190, 255), Aura = true },
+	},
+	PumpkinKingJack = {
+		Id = "PumpkinKingJack", Name = "Pumpkin King Jack", Rarity = "Ultra", Zone = "Carnival", Power = 75000,
+		Blurb = "Rules the midway from a throne of hay bales. Long live the King!",
+		Look = { Skin = C(230, 200, 170), Hair = C(40, 30, 30), HairStyle = "None", Shirt = C(90, 40, 130), Pants = C(40, 25, 60), Shoes = C(255, 200, 60),
+			Hat = "PumpkinHelm", HatColor = C(255, 130, 30), Back = "Cape", BackColor = C(110, 40, 160), Tool = "PumpkinLance", ToolColor = C(255, 200, 60), Beam = C(255, 150, 40), Aura = true },
+	},
+	DoctorMiracle = {
+		Id = "DoctorMiracle", Name = "Doctor Miracle", Rarity = "Ultra", Zone = "Hospital", Power = 375000,
+		Blurb = "Masked surgeon by night. Patients feel better just seeing the cape.",
+		Look = { Skin = C(210, 160, 120), Hair = C(40, 40, 50), HairStyle = "Short", Shirt = C(240, 250, 255), Pants = C(100, 190, 255), Shoes = C(255, 255, 255),
+			Hat = "HeroMask", HatColor = C(80, 160, 255), Back = "HeroCape", BackColor = C(110, 200, 255), Tool = "Wand", ToolColor = C(160, 240, 255), Beam = C(130, 230, 255), Aura = true },
+	},
+	SirenSeraphina = {
+		Id = "SirenSeraphina", Name = "Siren Seraphina", Rarity = "Ultra", Zone = "Harbor", Power = 1900000,
+		Blurb = "Her song lures ghosts out of the fog and straight into the net.",
+		Look = { Skin = C(235, 215, 205), Hair = C(80, 220, 210), HairStyle = "Long", Shirt = C(110, 200, 220), Pants = C(60, 140, 190), Shoes = C(250, 240, 220),
+			Hat = "Tiara", HatColor = C(255, 230, 210), Back = "Orbs", BackColor = C(160, 240, 255), Tool = "Orb", ToolColor = C(200, 255, 250), Beam = C(120, 240, 230), Aura = true },
+	},
+	CountBatula = {
+		Id = "CountBatula", Name = "Count Batula", Rarity = "Ultra", Zone = "Castle", Power = 9500000,
+		Blurb = "A vampire bat with excellent manners and a terrible bedtime.",
+		Look = { Skin = C(200, 200, 225), Hair = C(30, 20, 40), HairStyle = "Spiky", Shirt = C(40, 20, 50), Pants = C(25, 15, 35), Shoes = C(150, 20, 40),
+			Hat = "TopHat", HatColor = C(30, 20, 40), Back = "BatWings", BackColor = C(120, 20, 50), Tool = "Wand", ToolColor = C(220, 30, 60), Beam = C(230, 50, 80), Aura = true },
+	},
+	StarfallValkyrie = {
+		Id = "StarfallValkyrie", Name = "Starfall Valkyrie", Rarity = "Ultra", Zone = "SpiritRealm", Power = 50000000,
+		Blurb = "Rides falling stars between worlds. Never misses a landing.",
+		Look = { Skin = C(250, 225, 205), Hair = C(255, 240, 180), HairStyle = "Long", Shirt = C(220, 230, 255), Pants = C(120, 140, 230), Shoes = C(255, 230, 140),
+			Hat = "Halo", HatColor = C(255, 240, 170), Back = "HeroCape", BackColor = C(140, 160, 255), Tool = "Sword", ToolColor = C(230, 240, 255), Beam = C(180, 200, 255), Aura = true },
+	},
+	Bogzilla = {
+		Id = "Bogzilla", Name = "Bogzilla", Rarity = "Ultra", Zone = "Swamp", Power = 250000000,
+		Blurb = "Rose from the swamp, stomped one ghost and decided he liked it.",
+		Look = { Skin = C(90, 140, 70), Hair = C(60, 100, 50), HairStyle = "None", Shirt = C(110, 150, 60), Pants = C(70, 100, 40), Shoes = C(50, 70, 30),
+			Hat = "Helmet", HatColor = C(80, 120, 50), Back = "Tank", BackColor = C(170, 255, 90), Tool = "Cannon", ToolColor = C(140, 220, 80), Beam = C(170, 255, 110), Aura = true },
+	},
+	CrystaliaSnowQueen = {
+		Id = "CrystaliaSnowQueen", Name = "Crystalia Snow Queen", Rarity = "Ultra", Zone = "Frost", Power = 1250000000,
+		Blurb = "Every snowflake is a tiny ghost trap. She made them all herself.",
+		Look = { Skin = C(245, 240, 255), Hair = C(220, 240, 255), HairStyle = "Long", Shirt = C(200, 230, 255), Pants = C(160, 200, 250), Shoes = C(240, 250, 255),
+			Hat = "Crystal", HatColor = C(170, 230, 255), Back = "Wings", BackColor = C(220, 245, 255), Tool = "MoonStaff", ToolColor = C(200, 240, 255), Beam = C(160, 230, 255), Aura = true },
+	},
+	JackalAvenger = {
+		Id = "JackalAvenger", Name = "Jackal Avenger", Rarity = "Ultra", Zone = "Tomb", Power = 6250000000,
+		Blurb = "Guardian of the tomb with a cape of gold and a nose for mummies.",
+		Look = { Skin = C(60, 50, 60), Hair = C(20, 20, 25), HairStyle = "None", Shirt = C(30, 30, 40), Pants = C(255, 200, 80), Shoes = C(255, 200, 80),
+			Hat = "Hood", HatColor = C(20, 20, 30), Back = "HeroCape", BackColor = C(255, 200, 80), Tool = "Staff", ToolColor = C(70, 200, 220), Beam = C(90, 220, 230), Aura = true },
+	},
+	PrincessPomPom = {
+		Id = "PrincessPomPom", Name = "Princess Pom-Pom", Rarity = "Ultra", Zone = "ToyFactory", Power = 31000000000,
+		Blurb = "Cutest toy on the shelf. Ghosts are hugged into submission.",
+		Look = { Skin = C(255, 225, 205), Hair = C(255, 190, 225), HairStyle = "Puff", Shirt = C(255, 200, 230), Pants = C(255, 240, 170), Shoes = C(255, 150, 200),
+			Hat = "Bow", HatColor = C(255, 120, 190), Back = "HeartWings", BackColor = C(255, 180, 220), Tool = "HeartWand", ToolColor = C(255, 240, 140), Beam = C(255, 170, 220), Aura = true },
+	},
+	GlubbleTheDeepOne = {
+		Id = "GlubbleTheDeepOne", Name = "Glubble the Deep One", Rarity = "Ultra", Zone = "Sunken", Power = 156000000000,
+		Blurb = "A tiny glowing sea monster with a lantern on its head. Very huggable. Maybe.",
+		Look = { Skin = C(60, 170, 180), Hair = C(40, 120, 140), HairStyle = "None", Shirt = C(50, 140, 160), Pants = C(30, 90, 120), Shoes = C(20, 70, 90),
+			Hat = "Crystal", HatColor = C(150, 255, 230), Back = "BatWings", BackColor = C(70, 190, 200), Tool = "Orb", ToolColor = C(160, 255, 240), Beam = C(120, 255, 230), Aura = true },
+	},
+	TickTockTitaness = {
+		Id = "TickTockTitaness", Name = "Tick-Tock Titaness", Rarity = "Ultra", Zone = "Clockwork", Power = 780000000000,
+		Blurb = "Stops time, catches the ghost, starts time. Nobody notices.",
+		Look = { Skin = C(240, 205, 175), Hair = C(180, 90, 50), HairStyle = "Bob", Shirt = C(200, 140, 70), Pants = C(110, 70, 40), Shoes = C(230, 200, 120),
+			Hat = "Visor", HatColor = C(120, 240, 255), Back = "HeroCape", BackColor = C(190, 110, 50), Tool = "Projector", ToolColor = C(230, 200, 120), Beam = C(120, 240, 255), Aura = true },
+	},
+	Scorchmaw = {
+		Id = "Scorchmaw", Name = "Scorchmaw", Rarity = "Ultra", Zone = "Inferno", Power = 3900000000000,
+		Blurb = "A lava monster with a fiery crown and a very hot temper.",
+		Look = { Skin = C(200, 60, 40), Hair = C(255, 140, 40), HairStyle = "Spiky", Shirt = C(60, 25, 25), Pants = C(40, 15, 15), Shoes = C(255, 120, 40),
+			Hat = "Crown", HatColor = C(255, 170, 50), Back = "Wings", BackColor = C(255, 90, 30), Tool = "Cannon", ToolColor = C(255, 150, 40), Beam = C(255, 110, 30), Aura = true },
+	},
+	SovereignSupreme = {
+		Id = "SovereignSupreme", Name = "Sovereign Supreme", Rarity = "Ultra", Zone = "Throne", Power = 19500000000000,
+		Blurb = "The hero every throne is waiting for. Ghosts bow before she asks.",
+		Look = { Skin = C(245, 220, 200), Hair = C(255, 235, 170), HairStyle = "Long", Shirt = C(250, 245, 255), Pants = C(200, 170, 255), Shoes = C(255, 215, 90),
+			Hat = "Tiara", HatColor = C(255, 215, 90), Back = "HeroCape", BackColor = C(255, 215, 90), Tool = "Sword", ToolColor = C(250, 245, 255), Beam = C(255, 230, 140), Aura = true },
+	},
 } :: { [string]: HunterDef }
 
 -- Exclusive Crate (Robux): you get the exclusive hunter of your furthest unlocked area
@@ -1231,7 +1372,8 @@ Config.Exclusives = {
 Config.StarterHunter = "RookieHunter"
 
 --==================================================================
--- CRATES (Weights don't need to sum to 100; odds are shown as %)
+-- CRATES (each zone crate's Weights are exact percents summing to 100:
+-- Common 50 / Uncommon 35 / Rare 10 / Legendary 3.5 / Mythic 1 / Secret 0.4 / Ultra 0.1)
 --==================================================================
 export type CrateDef = {
 	Id: string,
@@ -1251,192 +1393,214 @@ Config.Crates = {
 		Id = "Beginner", Name = "BEGINNER HUNTER CRATE", Zone = "Neighborhood", Price = 25,
 		Color = C(255, 150, 50), Trim = C(140, 255, 120), Style = "Basic",
 		Pool = {
-			{ Hunter = "RookieHunter", Weight = 60 },
-			{ Hunter = "ParanormalIntern", Weight = 28 },
-			{ Hunter = "GhostInvestigator", Weight = 10 },
-			{ Hunter = "SpectralSpecialist", Weight = 2 },
-			{ Hunter = "MoonlightMedium", Weight = 0.4 },
-			{ Hunter = "NightWatcher", Weight = 0.04 },
+			{ Hunter = "RookieHunter", Weight = 25 }, -- Common 50% (split 2 ways)
+			{ Hunter = "BowBelle", Weight = 25 }, -- Common 50% (split 2 ways)
+			{ Hunter = "ParanormalIntern", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "GhostInvestigator", Weight = 10 }, -- Rare 10%
+			{ Hunter = "SpectralSpecialist", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "MoonlightMedium", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "NightWatcher", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "CaptainBoo", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Haunted = {
 		Id = "Haunted", Name = "HAUNTED HUNTER CRATE", Zone = "Cemetery", Price = 600,
 		Color = C(110, 80, 200), Trim = C(90, 255, 180), Style = "Haunted",
 		Pool = {
-			{ Hunter = "GraveScout", Weight = 60 },
-			{ Hunter = "CryptInvestigator", Weight = 28 },
-			{ Hunter = "SpiritWarden", Weight = 10 },
-			{ Hunter = "PhantomExorcist", Weight = 2 },
-			{ Hunter = "GravelightOracle", Weight = 0.4 },
-			{ Hunter = "ReapersApprentice", Weight = 0.04 },
+			{ Hunter = "GraveScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "CryptInvestigator", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
+			{ Hunter = "LilMoonWitch", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
+			{ Hunter = "SpiritWarden", Weight = 10 }, -- Rare 10%
+			{ Hunter = "PhantomExorcist", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "GravelightOracle", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "ReapersApprentice", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "PetalChomper", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Elite = {
 		Id = "Elite", Name = "ELITE HUNTER CRATE", Zone = "School", Price = 5000,
 		Color = C(40, 30, 70), Trim = C(220, 120, 255), Style = "Elite",
 		Pool = {
-			{ Hunter = "SchoolInvestigator", Weight = 60 },
-			{ Hunter = "ParanormalProfessor", Weight = 28 },
-			{ Hunter = "EliteContainmentAgent", Weight = 10 },
-			{ Hunter = "VoidHunter", Weight = 2 },
-			{ Hunter = "SpiritValedictorian", Weight = 0.4 },
-			{ Hunter = "TheSubstitute", Weight = 0.04 },
+			{ Hunter = "SchoolInvestigator", Weight = 50 }, -- Common 50%
+			{ Hunter = "ParanormalProfessor", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
+			{ Hunter = "GloomyGus", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
+			{ Hunter = "EliteContainmentAgent", Weight = 10 }, -- Rare 10%
+			{ Hunter = "VoidHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "SpiritValedictorian", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheSubstitute", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "CelestiaMoonwitch", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Carnival = {
 		Id = "Carnival", Name = "CARNIVAL HUNTER CRATE", Zone = "Carnival", Price = 40000,
 		Color = C(230, 60, 70), Trim = C(255, 210, 70), Style = "Carnival",
 		Pool = {
-			{ Hunter = "CarnivalScout", Weight = 60 },
-			{ Hunter = "ParanormalPerformer", Weight = 28 },
-			{ Hunter = "SpectralRingmaster", Weight = 10 },
-			{ Hunter = "PhantomTamer", Weight = 2 },
-			{ Hunter = "GrandIllusionist", Weight = 0.4 },
-			{ Hunter = "TheLastClown", Weight = 0.04 },
+			{ Hunter = "CarnivalScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "ParanormalPerformer", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "SpectralRingmaster", Weight = 5 }, -- Rare 10% (split 2 ways)
+			{ Hunter = "HeartlightHealer", Weight = 5 }, -- Rare 10% (split 2 ways)
+			{ Hunter = "PhantomTamer", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "GrandIllusionist", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheLastClown", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "PumpkinKingJack", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Medical = {
 		Id = "Medical", Name = "PARANORMAL MEDICAL CRATE", Zone = "Hospital", Price = 400000,
 		Color = C(235, 240, 250), Trim = C(110, 200, 255), Style = "Medical",
 		Pool = {
-			{ Hunter = "MedicalInvestigator", Weight = 60 },
-			{ Hunter = "SpiritMedic", Weight = 28 },
-			{ Hunter = "ParanormalDoctor", Weight = 10 },
-			{ Hunter = "SpectralSurgeon", Weight = 2 },
-			{ Hunter = "ChiefOfSpiritMedicine", Weight = 0.4 },
-			{ Hunter = "NightShiftNurse", Weight = 0.04 },
+			{ Hunter = "MedicalInvestigator", Weight = 50 }, -- Common 50%
+			{ Hunter = "SpiritMedic", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "ParanormalDoctor", Weight = 10 }, -- Rare 10%
+			{ Hunter = "SpectralSurgeon", Weight = 1.75 }, -- Legendary 3.5% (split 2 ways)
+			{ Hunter = "StarlitHexPrincess", Weight = 1.75 }, -- Legendary 3.5% (split 2 ways)
+			{ Hunter = "ChiefOfSpiritMedicine", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "NightShiftNurse", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "DoctorMiracle", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Sailor = {
 		Id = "Sailor", Name = "SPECTRAL SAILOR CRATE", Zone = "Harbor", Price = 3500000,
 		Color = C(140, 95, 55), Trim = C(80, 230, 220), Style = "Sailor",
 		Pool = {
-			{ Hunter = "HarborHunter", Weight = 60 },
-			{ Hunter = "ParanormalSailor", Weight = 28 },
-			{ Hunter = "SpectralPirateHunter", Weight = 10 },
-			{ Hunter = "GhostCaptainHunter", Weight = 2 },
-			{ Hunter = "KrakenTamer", Weight = 0.4 },
-			{ Hunter = "FlyingDutchman", Weight = 0.04 },
+			{ Hunter = "HarborHunter", Weight = 50 }, -- Common 50%
+			{ Hunter = "ParanormalSailor", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "SpectralPirateHunter", Weight = 10 }, -- Rare 10%
+			{ Hunter = "GhostCaptainHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "KrakenTamer", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "FlyingDutchman", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "SirenSeraphina", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Royal = {
 		Id = "Royal", Name = "ROYAL HUNTER CRATE", Zone = "Castle", Price = 22000000,
 		Color = C(70, 40, 120), Trim = C(255, 200, 70), Style = "Royal",
 		Pool = {
-			{ Hunter = "CastleInvestigator", Weight = 60 },
-			{ Hunter = "SpiritKnight", Weight = 28 },
-			{ Hunter = "RoyalExorcist", Weight = 10 },
-			{ Hunter = "PhantomChampion", Weight = 2 },
-			{ Hunter = "PhantomMonarch", Weight = 0.4 },
-			{ Hunter = "HeadlessKnight", Weight = 0.04 },
+			{ Hunter = "CastleInvestigator", Weight = 50 }, -- Common 50%
+			{ Hunter = "SpiritKnight", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "RoyalExorcist", Weight = 10 }, -- Rare 10%
+			{ Hunter = "PhantomChampion", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "PhantomMonarch", Weight = 0.5 }, -- Mythic 1% (split 2 ways)
+			{ Hunter = "PumpkinKnight", Weight = 0.5 }, -- Mythic 1% (split 2 ways)
+			{ Hunter = "HeadlessKnight", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "CountBatula", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	SpiritRealm = {
 		Id = "SpiritRealm", Name = "SPIRIT REALM CRATE", Zone = "SpiritRealm", Price = 130000000,
 		Color = C(40, 35, 80), Trim = C(110, 240, 255), Style = "Spirit",
 		Pool = {
-			{ Hunter = "RealmExplorer", Weight = 60 },
-			{ Hunter = "SpiritWalker", Weight = 28 },
-			{ Hunter = "VoidInvestigator", Weight = 10 },
-			{ Hunter = "CelestialGhostHunter", Weight = 2 },
-			{ Hunter = "AstralGuardian", Weight = 0.4 },
-			{ Hunter = "GhostHunterZero", Weight = 0.04 },
+			{ Hunter = "RealmExplorer", Weight = 50 }, -- Common 50%
+			{ Hunter = "SpiritWalker", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "VoidInvestigator", Weight = 10 }, -- Rare 10%
+			{ Hunter = "CelestialGhostHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "AstralGuardian", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "GhostHunterZero", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "StarfallValkyrie", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Bog = {
 		Id = "Bog", Name = "BOG HUNTER CRATE", Zone = "Swamp", Price = 780000000,
 		Color = C(90, 120, 60), Trim = C(170, 255, 120), Style = "Swamp",
 		Pool = {
-			{ Hunter = "SwampScout", Weight = 60 },
-			{ Hunter = "BogTracker", Weight = 28 },
-			{ Hunter = "MarshMystic", Weight = 10 },
-			{ Hunter = "FireflySage", Weight = 2 },
-			{ Hunter = "FrogPrince", Weight = 0.4 },
-			{ Hunter = "GatorKing", Weight = 0.04 },
+			{ Hunter = "SwampScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "BogTracker", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "MarshMystic", Weight = 10 }, -- Rare 10%
+			{ Hunter = "FireflySage", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "FrogPrince", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "GatorKing", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "Bogzilla", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Frost = {
 		Id = "Frost", Name = "FROSTBITE CRATE", Zone = "Frost", Price = 4680000000,
 		Color = C(200, 230, 255), Trim = C(110, 200, 255), Style = "Frost",
 		Pool = {
-			{ Hunter = "SnowScout", Weight = 60 },
-			{ Hunter = "IceClimber", Weight = 28 },
-			{ Hunter = "FrostMage", Weight = 10 },
-			{ Hunter = "YetiWhisperer", Weight = 2 },
-			{ Hunter = "AuroraKnight", Weight = 0.4 },
-			{ Hunter = "TheAbominable", Weight = 0.04 },
+			{ Hunter = "SnowScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "IceClimber", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "FrostMage", Weight = 10 }, -- Rare 10%
+			{ Hunter = "YetiWhisperer", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "AuroraKnight", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheAbominable", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "CrystaliaSnowQueen", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Tomb = {
 		Id = "Tomb", Name = "PHARAOH CRATE", Zone = "Tomb", Price = 28100000000,
 		Color = C(220, 180, 100), Trim = C(70, 200, 220), Style = "Tomb",
 		Pool = {
-			{ Hunter = "TombExplorer", Weight = 60 },
-			{ Hunter = "ScarabSeeker", Weight = 28 },
-			{ Hunter = "SandMage", Weight = 10 },
-			{ Hunter = "PharaohHunter", Weight = 2 },
-			{ Hunter = "SunKeeper", Weight = 0.4 },
-			{ Hunter = "GoldenMummy", Weight = 0.04 },
+			{ Hunter = "TombExplorer", Weight = 50 }, -- Common 50%
+			{ Hunter = "ScarabSeeker", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "SandMage", Weight = 10 }, -- Rare 10%
+			{ Hunter = "PharaohHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "SunKeeper", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "GoldenMummy", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "JackalAvenger", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Toy = {
 		Id = "Toy", Name = "TOY BOX CRATE", Zone = "ToyFactory", Price = 168000000000,
 		Color = C(255, 120, 170), Trim = C(255, 220, 80), Style = "Toy",
 		Pool = {
-			{ Hunter = "ToyTinker", Weight = 60 },
-			{ Hunter = "WindUpKnight", Weight = 28 },
-			{ Hunter = "MarionetteMaster", Weight = 10 },
-			{ Hunter = "TeddyTitan", Weight = 2 },
-			{ Hunter = "JackInTheBoxer", Weight = 0.4 },
-			{ Hunter = "TheNutcracker", Weight = 0.04 },
+			{ Hunter = "ToyTinker", Weight = 50 }, -- Common 50%
+			{ Hunter = "WindUpKnight", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "MarionetteMaster", Weight = 10 }, -- Rare 10%
+			{ Hunter = "TeddyTitan", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "JackInTheBoxer", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheNutcracker", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "PrincessPomPom", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Sunken = {
 		Id = "Sunken", Name = "SUNKEN TREASURE CRATE", Zone = "Sunken", Price = 1010000000000,
 		Color = C(60, 140, 170), Trim = C(255, 220, 120), Style = "Sunken",
 		Pool = {
-			{ Hunter = "DeepDiver", Weight = 60 },
-			{ Hunter = "CoralKeeper", Weight = 28 },
-			{ Hunter = "TideCaller", Weight = 10 },
-			{ Hunter = "AtlanteanHunter", Weight = 2 },
-			{ Hunter = "PearlSovereign", Weight = 0.4 },
-			{ Hunter = "AbyssWalker", Weight = 0.04 },
+			{ Hunter = "DeepDiver", Weight = 50 }, -- Common 50%
+			{ Hunter = "CoralKeeper", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "TideCaller", Weight = 10 }, -- Rare 10%
+			{ Hunter = "AtlanteanHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "PearlSovereign", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "AbyssWalker", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "GlubbleTheDeepOne", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Clockwork = {
 		Id = "Clockwork", Name = "CLOCKWORK CRATE", Zone = "Clockwork", Price = 6070000000000,
 		Color = C(150, 110, 70), Trim = C(230, 200, 120), Style = "Clock",
 		Pool = {
-			{ Hunter = "GearScout", Weight = 60 },
-			{ Hunter = "ClockTinker", Weight = 28 },
-			{ Hunter = "ChronoMage", Weight = 10 },
-			{ Hunter = "TimeBender", Weight = 2 },
-			{ Hunter = "SteamTitan", Weight = 0.4 },
-			{ Hunter = "TheTimeless", Weight = 0.04 },
+			{ Hunter = "GearScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "ClockTinker", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "ChronoMage", Weight = 10 }, -- Rare 10%
+			{ Hunter = "TimeBender", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "SteamTitan", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheTimeless", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "TickTockTitaness", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Inferno = {
 		Id = "Inferno", Name = "INFERNO CRATE", Zone = "Inferno", Price = 36400000000000,
 		Color = C(80, 40, 40), Trim = C(255, 150, 60), Style = "Inferno",
 		Pool = {
-			{ Hunter = "EmberScout", Weight = 60 },
-			{ Hunter = "LavaDiver", Weight = 28 },
-			{ Hunter = "FireDancer", Weight = 10 },
-			{ Hunter = "PhoenixHunter", Weight = 2 },
-			{ Hunter = "DragonCaller", Weight = 0.4 },
-			{ Hunter = "TheEternalFlame", Weight = 0.04 },
+			{ Hunter = "EmberScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "LavaDiver", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "FireDancer", Weight = 10 }, -- Rare 10%
+			{ Hunter = "PhoenixHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "DragonCaller", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheEternalFlame", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "Scorchmaw", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Throne = {
 		Id = "Throne", Name = "KING'S CRATE", Zone = "Throne", Price = 218000000000000,
 		Color = C(250, 245, 255), Trim = C(255, 215, 90), Style = "Throne",
 		Pool = {
-			{ Hunter = "ThronePage", Weight = 60 },
-			{ Hunter = "ShadowGuard", Weight = 28 },
-			{ Hunter = "CrownMage", Weight = 10 },
-			{ Hunter = "KingsChampion", Weight = 2 },
-			{ Hunter = "EternalMonarch", Weight = 0.4 },
-			{ Hunter = "TheFinalHunter", Weight = 0.04 },
+			{ Hunter = "ThronePage", Weight = 50 }, -- Common 50%
+			{ Hunter = "ShadowGuard", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "CrownMage", Weight = 10 }, -- Rare 10%
+			{ Hunter = "KingsChampion", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "EternalMonarch", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheFinalHunter", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "SovereignSupreme", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Exclusive = {
@@ -1542,18 +1706,60 @@ Config.PetRules = {
 	Caps = { Power = 0.6, Ecto = 0.5, HP = 0.75, Recovery = 0.5 } :: { [string]: number },
 }
 Config.Pets = {
-	GlowWisp = { Id = "GlowWisp", Name = "Glow Wisp", Rarity = "Common", Price = 40, Bonus = { Kind = "Power", Value = 0.05 }, Color = Color3.fromRGB(200, 255, 220), Glow = Color3.fromRGB(120, 255, 170), Shape = "Wisp" },
-	BooBat = { Id = "BooBat", Name = "Boo Bat", Rarity = "Common", Price = 60, Bonus = { Kind = "Ecto", Value = 0.05 }, Color = Color3.fromRGB(130, 100, 190), Glow = Color3.fromRGB(200, 150, 255), Shape = "Bat" },
-	JellyGhost = { Id = "JellyGhost", Name = "Jelly Ghost", Rarity = "Uncommon", Price = 150, Bonus = { Kind = "HP", Value = 0.15 }, Color = Color3.fromRGB(255, 160, 220), Glow = Color3.fromRGB(255, 120, 200), Shape = "Blob" },
-	PhantomKitty = { Id = "PhantomKitty", Name = "Phantom Kitty", Rarity = "Uncommon", Price = 200, Bonus = { Kind = "Recovery", Value = 0.15 }, Color = Color3.fromRGB(230, 230, 255), Glow = Color3.fromRGB(170, 200, 255), Shape = "Cat" },
-	MoonOwl = { Id = "MoonOwl", Name = "Moon Owl", Rarity = "Rare", Price = 500, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(150, 190, 255), Glow = Color3.fromRGB(110, 200, 255), Shape = "Owl" },
-	SpiritFox = { Id = "SpiritFox", Name = "Spirit Fox", Rarity = "Rare", Price = 600, Bonus = { Kind = "Ecto", Value = 0.12 }, Color = Color3.fromRGB(255, 190, 120), Glow = Color3.fromRGB(255, 150, 80), Shape = "Fox" },
-	SpookyDrake = { Id = "SpookyDrake", Name = "Spooky Drake", Rarity = "Epic", Price = 2000, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(150, 110, 230), Glow = Color3.fromRGB(190, 120, 255), Shape = "Drake" },
-	GhostPhoenix = { Id = "GhostPhoenix", Name = "Ghost Phoenix", Rarity = "Legendary", Price = 8000, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 220, 140), Glow = Color3.fromRGB(255, 160, 60), Shape = "Phoenix" },
+	GlowWisp = { Id = "GlowWisp", Name = "Glow Wisp", Rarity = "Common", Price = nil, Bonus = { Kind = "Power", Value = 0.05 }, Color = Color3.fromRGB(200, 255, 220), Glow = Color3.fromRGB(120, 255, 170), Shape = "Wisp" },
+	BooBat = { Id = "BooBat", Name = "Boo Bat", Rarity = "Common", Price = nil, Bonus = { Kind = "Ecto", Value = 0.05 }, Color = Color3.fromRGB(130, 100, 190), Glow = Color3.fromRGB(200, 150, 255), Shape = "Bat" },
+	JellyGhost = { Id = "JellyGhost", Name = "Jelly Ghost", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "HP", Value = 0.15 }, Color = Color3.fromRGB(255, 160, 220), Glow = Color3.fromRGB(255, 120, 200), Shape = "Blob" },
+	PhantomKitty = { Id = "PhantomKitty", Name = "Phantom Kitty", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "Recovery", Value = 0.15 }, Color = Color3.fromRGB(230, 230, 255), Glow = Color3.fromRGB(170, 200, 255), Shape = "Cat" },
+	MoonOwl = { Id = "MoonOwl", Name = "Moon Owl", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(150, 190, 255), Glow = Color3.fromRGB(110, 200, 255), Shape = "Owl" },
+	SpiritFox = { Id = "SpiritFox", Name = "Spirit Fox", Rarity = "Rare", Price = nil, Bonus = { Kind = "Ecto", Value = 0.12 }, Color = Color3.fromRGB(255, 190, 120), Glow = Color3.fromRGB(255, 150, 80), Shape = "Fox" },
+	SpookyDrake = { Id = "SpookyDrake", Name = "Spooky Drake", Rarity = "Epic", Price = nil, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(150, 110, 230), Glow = Color3.fromRGB(190, 120, 255), Shape = "Drake" },
+	GhostPhoenix = { Id = "GhostPhoenix", Name = "Ghost Phoenix", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 220, 140), Glow = Color3.fromRGB(255, 160, 60), Shape = "Phoenix" },
 	-- launch event reward (not sold): a Rare with a useful mixed bonus
 	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Shape = "Lantern" },
 } :: { [string]: PetDef }
 Config.PetOrder = { "GlowWisp", "BooBat", "JellyGhost", "PhantomKitty", "MoonOwl", "SpiritFox", "SpookyDrake", "GhostPhoenix", "LanternSpirit" }
+
+-- PET EGGS (v1.8): the only way to get pets with Spirit Shards (direct pet purchases are gone;
+-- event pets such as LanternSpirit are never in eggs). Hatched at the PET HATCHERY near the
+-- Boss Tower. Egg tier is not pet rarity: each egg lists its pets with exact percent chances
+-- that must total 100 (tests/Eggs.spec.luau). Unlock = Tower checkpoint needed (0 = none).
+export type EggOdds = { Pet: string, Chance: number }
+export type EggDef = {
+	Id: string,
+	Name: string,
+	Price: number, -- Spirit Shards
+	Unlock: number, -- TowerCheckpoint required (0 = always open)
+	Odds: { EggOdds }, -- percent, rolled in this order
+	Color: Color3,
+	Accent: Color3,
+}
+Config.Eggs = {
+	HauntedEgg = {
+		Id = "HauntedEgg", Name = "Haunted Egg", Price = 200, Unlock = 0,
+		Odds = {
+			{ Pet = "GlowWisp", Chance = 40 }, { Pet = "BooBat", Chance = 35 }, { Pet = "JellyGhost", Chance = 15 },
+			{ Pet = "PhantomKitty", Chance = 8 }, { Pet = "MoonOwl", Chance = 2 },
+		},
+		Color = Color3.fromRGB(120, 60, 190), Accent = Color3.fromRGB(120, 255, 140),
+	},
+	PhantomEgg = {
+		Id = "PhantomEgg", Name = "Phantom Egg", Price = 1200, Unlock = 10,
+		Odds = {
+			{ Pet = "JellyGhost", Chance = 30 }, { Pet = "PhantomKitty", Chance = 30 }, { Pet = "MoonOwl", Chance = 20 },
+			{ Pet = "SpiritFox", Chance = 15 }, { Pet = "SpookyDrake", Chance = 5 },
+		},
+		Color = Color3.fromRGB(210, 230, 255), Accent = Color3.fromRGB(110, 180, 255),
+	},
+	MoonlightEgg = {
+		Id = "MoonlightEgg", Name = "Moonlight Egg", Price = 5000, Unlock = 25,
+		Odds = {
+			{ Pet = "MoonOwl", Chance = 30 }, { Pet = "SpiritFox", Chance = 30 }, { Pet = "SpookyDrake", Chance = 30 },
+			{ Pet = "GhostPhoenix", Chance = 10 },
+		},
+		Color = Color3.fromRGB(30, 40, 120), Accent = Color3.fromRGB(255, 235, 150),
+	},
+} :: { [string]: EggDef }
+Config.EggOrder = { "HauntedEgg", "PhantomEgg", "MoonlightEgg" }
 
 --==================================================================
 -- ENDLESS BOSS TOWER (v1.6). Party of up to 4 (pad at the entrance); every run starts at
@@ -1796,7 +2002,7 @@ Config.RateLimits = {
 
 -- Extra developer accounts (UserIds) that get the DEV button in live servers. The game's
 -- creator (or the owner of the creator group) and anyone in Studio always get it.
-Config.DevUserIds = {} :: { number }
+Config.DevUserIds = { 20194281 } :: { number } -- kcdrewcarter (only these get dev tools live)
 
 -- Player feedback (FEEDBACK button in Settings; read in the DEV panel)
 Config.Feedback = {

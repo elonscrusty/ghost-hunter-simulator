@@ -128,6 +128,12 @@ function Effects.Poof(pos: Vector3, color: Color3, scale: number, big: boolean)
 	Effects.Ring(pos, color, 7 * scale, 0.5)
 end
 
+-- Cute slime splat: a few green droplets + a soft puddle ring that fades in ~0.5 s (no flash).
+function Effects.Splat(pos: Vector3, groundY: number, color: Color3, scale: number)
+	Effects.Burst(pos, { Color = color, Color2 = color:Lerp(Color3.new(1, 1, 1), 0.35), Count = math.max(4, math.round(9 * scale)), Size = 0.45 * scale, Speed = 10 * scale, Life = 0.5, Spread = 70, Gravity = 35, LightEmission = 0.35 })
+	Effects.Ring(Vector3.new(pos.X, groundY + 0.08, pos.Z), color, 1.6 * scale, 0.5)
+end
+
 function Effects.Folder(): Folder
 	return folder
 end

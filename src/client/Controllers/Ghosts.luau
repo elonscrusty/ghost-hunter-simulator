@@ -50,12 +50,16 @@ export type Entry = {
 	Base: Vector3, -- centre without bob (for the ground ring)
 	Selected: boolean,
 	Culled: boolean,
-	-- incoming-attack telegraph (Fx "GhostWindup", only the attacked player sees it)
+	-- attack telegraph (driven by Crew on Fx "GhostWindup"): lean back + green glow at the
+	-- mouth, then a forward "spit" pop when the ectoplasm bolt leaves (Crew flies the bolt)
 	WindupEnd: number,
 	WindupLen: number,
 	LungeT: number,
 	LungeDir: Vector3,
-	Alert: TextLabel?,
+	Alert: TextLabel?, -- ❗ only while one of the local player's own hunters is the target
+	Mine: boolean,
+	Mouth: Part?, -- reused glow ball, made on the first windup
+	MouthPos: Vector3, -- where bolts leave from (updated every frame while drawn)
 }
 
 local entries: { [number]: Entry } = {}
@@ -67,7 +71,7 @@ Ghosts.Added = addedSignal -- (entry)
 local selectedUid = 0
 local ring: Part
 local ringStroke: UIStroke
-local lastWarnRing = 0 -- one windup ring at a time (several ghosts winding up at once = one flash)
+local MOUTH_GREEN = Color3.fromRGB(120, 255, 100)
 
 function Ghosts.Get(uid: number): Entry?
 	return entries[uid]
@@ -268,6 +272,9 @@ local function add(model: Instance)
 		LungeT = 0,
 		LungeDir = Vector3.zero,
 		Alert = nil,
+		Mine = false,
+		Mouth = nil,
+		MouthPos = core.Position,
 	}
 	readSegment(e)
 	buildLabel(e)
@@ -390,6 +397,7 @@ local function step()
 				-- keep the position fresh for readers (Targeting fallback, Crew, Boss)
 				e.Pos = base
 				e.Base = base
+				e.MouthPos = base
 				continue
 			end
 			e.Culled = false
@@ -401,6 +409,7 @@ local function step()
 			e.Gui.Enabled = false
 			e.Pos = base
 			e.Base = base
+			e.MouthPos = base
 			continue
 		end
 		WorldLabel.SetDistance(e.Gui, camDist)
@@ -413,17 +422,24 @@ local function step()
 			local k = (0.15 - since) / 0.15
 			pos += Vector3.new(math.sin(clock * 90) * 0.25 * k * s, 0, math.cos(clock * 80) * 0.2 * k * s)
 		end
-		-- attack telegraph: pull back during the windup, then lunge at the crew on the hit
+		-- attack telegraph: puff up + lean back during the windup, then a forward spit pop
+		local winding = clock < e.WindupEnd
+		local wk = 0 -- windup progress 0..1
+		local pitch = 0
+		if winding then
+			wk = 1 - (e.WindupEnd - clock) / e.WindupLen
+			pos += Vector3.new(0, 0.35 * s * wk, 0) - e.LungeDir * (0.7 * s * wk)
+			pitch = 0.3 * wk
+		elseif clock - e.LungeT < 0.25 then
+			local k = math.sin(math.pi * (clock - e.LungeT) / 0.25)
+			pos += e.LungeDir * (k * 1.2 * s)
+			pitch = -0.2 * k
+		end
 		local alert = e.Alert
 		if alert then
-			local winding = clock < e.WindupEnd
-			if alert.Visible ~= winding then
-				alert.Visible = winding -- steady, no blinking
-			end
-			if winding then
-				pos -= e.LungeDir * (0.8 * s * (1 - (e.WindupEnd - clock) / e.WindupLen))
-			elseif clock - e.LungeT < 0.25 then
-				pos += e.LungeDir * (math.sin(math.pi * (clock - e.LungeT) / 0.25) * 1.5 * s)
+			local show = winding and e.Mine
+			if alert.Visible ~= show then
+				alert.Visible = show -- steady, no blinking
 			end
 		end
 		-- face the camera horizontally (cute + readable), with a gentle sway
@@ -438,11 +454,25 @@ local function step()
 		local lean = if moving then 0.12 else 0
 		e.Pos = pos
 		e.Base = base
-		local cf = CFrame.new(pos) * CFrame.Angles(0, e.Yaw, 0) * CFrame.Angles(-lean, 0, sway)
+		local cf = CFrame.new(pos) * CFrame.Angles(0, e.Yaw, 0) * CFrame.Angles(pitch - lean, 0, sway)
+		e.MouthPos = cf * Vector3.new(0, -0.45 * s, -1.8 * s)
 		table.insert(parts, e.Core)
 		table.insert(cframes, CFrame.new(pos))
 		table.insert(parts, e.VisCore)
 		table.insert(cframes, cf)
+		-- green glow gathering at the mouth while winding up
+		local mouth = e.Mouth
+		if mouth then
+			if winding then
+				local d = (0.25 + 0.75 * wk) * math.sqrt(s)
+				mouth.Size = Vector3.new(d, d, d)
+				mouth.Transparency = 0.45 - 0.25 * wk
+				table.insert(parts, mouth)
+				table.insert(cframes, CFrame.new(e.MouthPos))
+			elseif mouth.Transparency < 1 then
+				mouth.Transparency = 1
+			end
+		end
 	end
 	-- ground ring under the selected ghost
 	local sel = entries[selectedUid]
@@ -486,6 +516,43 @@ function Ghosts.Init()
 	Kit.new("UIStroke", { Thickness = 3, Color = Color3.new(1, 1, 1), Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = inner })
 end
 
+-- Windup telegraph for one attack (Crew calls this on Fx "GhostWindup"; the server sends it to
+-- everyone fighting this ghost). `len` is the lean-back time before the spit leaves; `at` is the
+-- targeted hunter's position (nil if not drawn); `mine` shows the ❗ (own hunter targeted).
+function Ghosts.Windup(uid: number, len: number, at: Vector3?, mine: boolean)
+	local e = entries[uid]
+	if not e or e.Dying then
+		return
+	end
+	local clock = os.clock()
+	e.WindupLen = math.max(len, 0.1)
+	e.WindupEnd = clock + e.WindupLen
+	e.LungeT = e.WindupEnd -- spit pop right after the windup
+	e.Mine = mine
+	local flat = if at then Vector3.new(at.X - e.Base.X, 0, at.Z - e.Base.Z) else Vector3.zero
+	e.LungeDir = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zero
+	if mine and not e.Alert then
+		e.Alert = WorldLabel.Text(e.Gui, "❗", { Style = "Body", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, -0.85) })
+	end
+	if not e.Mouth then
+		local m = Instance.new("Part")
+		m.Name = "MouthGlow"
+		m.Shape = Enum.PartType.Ball
+		m.Anchored = true
+		m.CanCollide = false
+		m.CanQuery = false
+		m.CanTouch = false
+		m.CastShadow = false
+		m.Material = Enum.Material.Neon
+		m.Color = MOUTH_GREEN
+		m.Transparency = 1
+		m.Size = Vector3.new(0.3, 0.3, 0.3)
+		m.CFrame = CFrame.new(e.MouthPos)
+		m.Parent = e.Vis -- parked with the visual when culled, gone with the model
+		e.Mouth = m
+	end
+end
+
 function Ghosts.Start()
 	local folder = workspace:WaitForChild("Ghosts")
 	folder.ChildAdded:Connect(function(m)
@@ -495,34 +562,6 @@ function Ghosts.Start()
 		task.spawn(add, m)
 	end
 	State.OnFx("Poof", poof)
-	State.OnFx("GhostWindup", function(d: any)
-		local e = entries[d.Ghost]
-		if not e or e.Dying then
-			return
-		end
-		local t = tonumber(d.Time) or 0.9
-		local clock = os.clock()
-		local fresh = clock >= e.WindupEnd
-		e.WindupEnd = clock + t
-		e.WindupLen = math.max(t, 0.1)
-		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		local flat = if root then Vector3.new(root.Position.X - e.Base.X, 0, root.Position.Z - e.Base.Z) else Vector3.zero
-		e.LungeDir = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zero
-		if not e.Alert then
-			e.Alert = WorldLabel.Text(e.Gui, "❗", { Style = "Body", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, -0.85) })
-		end
-		if fresh and clock - lastWarnRing > 0.6 then
-			lastWarnRing = clock
-			Effects.Ring(e.Base - Vector3.new(0, e.Def.Hover - 0.2, 0), Theme.Bad, math.max(3, 2.5 * e.Def.Scale + 1), t)
-		end
-	end)
-	State.OnFx("GhostHit", function(d: any)
-		local e = entries[d.Ghost]
-		if e then
-			e.WindupEnd = 0
-			e.LungeT = if d.Dodged then 0 else os.clock()
-		end
-	end)
 	RunService.RenderStepped:Connect(step)
 end
 

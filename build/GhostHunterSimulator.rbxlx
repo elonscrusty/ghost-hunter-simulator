@@ -89,8 +89,16 @@ Config.Rarities = {
 		RevealPause = 2.4, ShakeIntensity = 0.9, Particles = 220, Darken = 0.7, CameraPunch = true, Announce = true,
 		Sound = "RevealLegendary",
 	},
+	-- above Secret; light/particle levels stay near Secret's (the reveal was toned down)
+	Ultra = {
+		Id = "Ultra", Name = "ULTRA", Order = 8, Enabled = true,
+		Color = Color3.fromRGB(150, 70, 255), Color2 = Color3.fromRGB(40, 225, 255),
+		RevealPause = 2.6, ShakeIntensity = 0.95, Particles = 230, Darken = 0.7, CameraPunch = true, Announce = true,
+		Sound = "RevealLegendary",
+	},
+	-- Robux-only; stays the top Order
 	Exclusive = {
-		Id = "Exclusive", Name = "EXCLUSIVE", Order = 8, Enabled = true,
+		Id = "Exclusive", Name = "EXCLUSIVE", Order = 9, Enabled = true,
 		Color = Color3.fromRGB(80, 255, 230), Color2 = Color3.fromRGB(255, 90, 230),
 		RevealPause = 2.0, ShakeIntensity = 0.8, Particles = 200, Darken = 0.5, CameraPunch = true, Announce = true,
 		Sound = "RevealLegendary",
@@ -1223,6 +1231,139 @@ Config.Hunters = {
 		Look = { Skin = C(255, 225, 200), Hair = C(200, 140, 255), HairStyle = "Spiky", Shirt = C(255, 215, 90), Pants = C(200, 140, 255), Shoes = C(255, 215, 90),
 			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Wings", BackColor = C(200, 140, 255), Tool = "Orb", ToolColor = C(255, 215, 90), Beam = C(200, 140, 255), Aura = true },
 	},
+	-- NEW HUNTERS (extras + one Ultra per crate)
+	BowBelle = {
+		Id = "BowBelle", Name = "Bow Belle", Rarity = "Common", Zone = "Neighborhood", Power = 5,
+		Blurb = "Ties a bow on every ghost she catches. They secretly love it.",
+		Look = { Skin = C(255, 220, 195), Hair = C(255, 170, 200), HairStyle = "Puff", Shirt = C(255, 190, 215), Pants = C(255, 230, 240), Shoes = C(255, 140, 190),
+			Hat = "Bow", HatColor = C(255, 110, 170), Tool = "Flashlight", ToolColor = C(255, 200, 230), Beam = C(255, 180, 220) },
+	},
+	LilMoonWitch = {
+		Id = "LilMoonWitch", Name = "Lil' Moon Witch", Rarity = "Uncommon", Zone = "Cemetery", Power = 50,
+		Blurb = "Her first spell turned a ghost into a very confused moth.",
+		Look = { Skin = C(240, 215, 200), Hair = C(190, 160, 240), HairStyle = "Long", Shirt = C(200, 170, 240), Pants = C(120, 90, 180), Shoes = C(90, 60, 140),
+			Hat = "WitchHat", HatColor = C(130, 90, 200), Tool = "Wand", ToolColor = C(220, 200, 255), Beam = C(210, 180, 255) },
+	},
+	GloomyGus = {
+		Id = "GloomyGus", Name = "Gloomy Gus", Rarity = "Uncommon", Zone = "School", Power = 250,
+		Blurb = "A tiny monster who sighs a lot. Ghosts find it very relatable.",
+		Look = { Skin = C(140, 160, 200), Hair = C(90, 100, 140), HairStyle = "None", Shirt = C(110, 120, 170), Pants = C(70, 80, 120), Shoes = C(60, 60, 90),
+			Hat = "Beanie", HatColor = C(80, 90, 140), Tool = "Lantern", ToolColor = C(170, 200, 255), Beam = C(160, 190, 255) },
+	},
+	HeartlightHealer = {
+		Id = "HeartlightHealer", Name = "Heartlight Healer", Rarity = "Rare", Zone = "Carnival", Power = 2100,
+		Blurb = "Heals friends, hugs ghosts, wins every carnival kindness prize.",
+		Look = { Skin = C(255, 215, 190), Hair = C(255, 120, 160), HairStyle = "Bob", Shirt = C(255, 170, 200), Pants = C(255, 230, 240), Shoes = C(255, 90, 140),
+			Back = "HeartWings", BackColor = C(255, 140, 180), Tool = "HeartWand", ToolColor = C(255, 90, 150), Beam = C(255, 150, 200) },
+	},
+	StarlitHexPrincess = {
+		Id = "StarlitHexPrincess", Name = "Starlit Hex Princess", Rarity = "Legendary", Zone = "Hospital", Power = 25000,
+		Blurb = "Casts get-well-soon hexes. Ghosts get well, then get gone.",
+		Look = { Skin = C(245, 220, 205), Hair = C(60, 40, 110), HairStyle = "Long", Shirt = C(70, 40, 130), Pants = C(40, 25, 80), Shoes = C(200, 170, 255),
+			Hat = "Tiara", HatColor = C(255, 225, 120), Back = "Cape", BackColor = C(110, 70, 200), Tool = "Wand", ToolColor = C(255, 230, 150), Beam = C(220, 180, 255), Aura = true },
+	},
+	PumpkinKnight = {
+		Id = "PumpkinKnight", Name = "Pumpkin Knight", Rarity = "Mythic", Zone = "Castle", Power = 1550000,
+		Blurb = "Sworn to protect the castle patch. Smells faintly of pie.",
+		Look = { Skin = C(230, 200, 170), Hair = C(60, 40, 30), HairStyle = "Short", Shirt = C(150, 155, 170), Pants = C(100, 105, 120), Shoes = C(70, 70, 80),
+			Hat = "PumpkinHelm", HatColor = C(255, 140, 40), Back = "Shield", BackColor = C(170, 175, 190), Tool = "Sword", ToolColor = C(220, 225, 235), Beam = C(255, 170, 60), Aura = true },
+	},
+	CaptainBoo = {
+		Id = "CaptainBoo", Name = "Captain Boo", Rarity = "Ultra", Zone = "Neighborhood", Power = 600,
+		Blurb = "A friendly ghost who became a hero. Says BOO only to bad guys.",
+		Look = { Skin = C(240, 245, 255), Hair = C(230, 235, 255), HairStyle = "None", Shirt = C(70, 120, 255), Pants = C(40, 60, 170), Shoes = C(255, 210, 60),
+			Hat = "HeroMask", HatColor = C(255, 60, 80), Back = "HeroCape", BackColor = C(255, 60, 80), Tool = "Blaster", ToolColor = C(255, 210, 60), Beam = C(140, 200, 255), Aura = true },
+	},
+	PetalChomper = {
+		Id = "PetalChomper", Name = "Petal Chomper", Rarity = "Ultra", Zone = "Cemetery", Power = 3000,
+		Blurb = "Looks like a cute graveside flower. Has a LOT of teeth.",
+		Look = { Skin = C(120, 200, 110), Hair = C(60, 140, 70), HairStyle = "None", Shirt = C(80, 170, 90), Pants = C(50, 120, 60), Shoes = C(40, 90, 50),
+			Hat = "FlowerHead", HatColor = C(255, 120, 190), Tool = "Lantern", ToolColor = C(255, 170, 220), Beam = C(255, 130, 200), Aura = true },
+	},
+	CelestiaMoonwitch = {
+		Id = "CelestiaMoonwitch", Name = "Celestia Moonwitch", Rarity = "Ultra", Zone = "School", Power = 15000,
+		Blurb = "Top of every class, including the one about moon magic.",
+		Look = { Skin = C(250, 225, 215), Hair = C(220, 200, 255), HairStyle = "Long", Shirt = C(200, 185, 255), Pants = C(170, 210, 255), Shoes = C(255, 200, 230),
+			Hat = "MoonHood", HatColor = C(180, 160, 250), Back = "Wings", BackColor = C(230, 215, 255), Tool = "MoonStaff", ToolColor = C(255, 240, 180), Beam = C(200, 190, 255), Aura = true },
+	},
+	PumpkinKingJack = {
+		Id = "PumpkinKingJack", Name = "Pumpkin King Jack", Rarity = "Ultra", Zone = "Carnival", Power = 75000,
+		Blurb = "Rules the midway from a throne of hay bales. Long live the King!",
+		Look = { Skin = C(230, 200, 170), Hair = C(40, 30, 30), HairStyle = "None", Shirt = C(90, 40, 130), Pants = C(40, 25, 60), Shoes = C(255, 200, 60),
+			Hat = "PumpkinHelm", HatColor = C(255, 130, 30), Back = "Cape", BackColor = C(110, 40, 160), Tool = "PumpkinLance", ToolColor = C(255, 200, 60), Beam = C(255, 150, 40), Aura = true },
+	},
+	DoctorMiracle = {
+		Id = "DoctorMiracle", Name = "Doctor Miracle", Rarity = "Ultra", Zone = "Hospital", Power = 375000,
+		Blurb = "Masked surgeon by night. Patients feel better just seeing the cape.",
+		Look = { Skin = C(210, 160, 120), Hair = C(40, 40, 50), HairStyle = "Short", Shirt = C(240, 250, 255), Pants = C(100, 190, 255), Shoes = C(255, 255, 255),
+			Hat = "HeroMask", HatColor = C(80, 160, 255), Back = "HeroCape", BackColor = C(110, 200, 255), Tool = "Wand", ToolColor = C(160, 240, 255), Beam = C(130, 230, 255), Aura = true },
+	},
+	SirenSeraphina = {
+		Id = "SirenSeraphina", Name = "Siren Seraphina", Rarity = "Ultra", Zone = "Harbor", Power = 1900000,
+		Blurb = "Her song lures ghosts out of the fog and straight into the net.",
+		Look = { Skin = C(235, 215, 205), Hair = C(80, 220, 210), HairStyle = "Long", Shirt = C(110, 200, 220), Pants = C(60, 140, 190), Shoes = C(250, 240, 220),
+			Hat = "Tiara", HatColor = C(255, 230, 210), Back = "Orbs", BackColor = C(160, 240, 255), Tool = "Orb", ToolColor = C(200, 255, 250), Beam = C(120, 240, 230), Aura = true },
+	},
+	CountBatula = {
+		Id = "CountBatula", Name = "Count Batula", Rarity = "Ultra", Zone = "Castle", Power = 9500000,
+		Blurb = "A vampire bat with excellent manners and a terrible bedtime.",
+		Look = { Skin = C(200, 200, 225), Hair = C(30, 20, 40), HairStyle = "Spiky", Shirt = C(40, 20, 50), Pants = C(25, 15, 35), Shoes = C(150, 20, 40),
+			Hat = "TopHat", HatColor = C(30, 20, 40), Back = "BatWings", BackColor = C(120, 20, 50), Tool = "Wand", ToolColor = C(220, 30, 60), Beam = C(230, 50, 80), Aura = true },
+	},
+	StarfallValkyrie = {
+		Id = "StarfallValkyrie", Name = "Starfall Valkyrie", Rarity = "Ultra", Zone = "SpiritRealm", Power = 50000000,
+		Blurb = "Rides falling stars between worlds. Never misses a landing.",
+		Look = { Skin = C(250, 225, 205), Hair = C(255, 240, 180), HairStyle = "Long", Shirt = C(220, 230, 255), Pants = C(120, 140, 230), Shoes = C(255, 230, 140),
+			Hat = "Halo", HatColor = C(255, 240, 170), Back = "HeroCape", BackColor = C(140, 160, 255), Tool = "Sword", ToolColor = C(230, 240, 255), Beam = C(180, 200, 255), Aura = true },
+	},
+	Bogzilla = {
+		Id = "Bogzilla", Name = "Bogzilla", Rarity = "Ultra", Zone = "Swamp", Power = 250000000,
+		Blurb = "Rose from the swamp, stomped one ghost and decided he liked it.",
+		Look = { Skin = C(90, 140, 70), Hair = C(60, 100, 50), HairStyle = "None", Shirt = C(110, 150, 60), Pants = C(70, 100, 40), Shoes = C(50, 70, 30),
+			Hat = "Helmet", HatColor = C(80, 120, 50), Back = "Tank", BackColor = C(170, 255, 90), Tool = "Cannon", ToolColor = C(140, 220, 80), Beam = C(170, 255, 110), Aura = true },
+	},
+	CrystaliaSnowQueen = {
+		Id = "CrystaliaSnowQueen", Name = "Crystalia Snow Queen", Rarity = "Ultra", Zone = "Frost", Power = 1250000000,
+		Blurb = "Every snowflake is a tiny ghost trap. She made them all herself.",
+		Look = { Skin = C(245, 240, 255), Hair = C(220, 240, 255), HairStyle = "Long", Shirt = C(200, 230, 255), Pants = C(160, 200, 250), Shoes = C(240, 250, 255),
+			Hat = "Crystal", HatColor = C(170, 230, 255), Back = "Wings", BackColor = C(220, 245, 255), Tool = "MoonStaff", ToolColor = C(200, 240, 255), Beam = C(160, 230, 255), Aura = true },
+	},
+	JackalAvenger = {
+		Id = "JackalAvenger", Name = "Jackal Avenger", Rarity = "Ultra", Zone = "Tomb", Power = 6250000000,
+		Blurb = "Guardian of the tomb with a cape of gold and a nose for mummies.",
+		Look = { Skin = C(60, 50, 60), Hair = C(20, 20, 25), HairStyle = "None", Shirt = C(30, 30, 40), Pants = C(255, 200, 80), Shoes = C(255, 200, 80),
+			Hat = "Hood", HatColor = C(20, 20, 30), Back = "HeroCape", BackColor = C(255, 200, 80), Tool = "Staff", ToolColor = C(70, 200, 220), Beam = C(90, 220, 230), Aura = true },
+	},
+	PrincessPomPom = {
+		Id = "PrincessPomPom", Name = "Princess Pom-Pom", Rarity = "Ultra", Zone = "ToyFactory", Power = 31000000000,
+		Blurb = "Cutest toy on the shelf. Ghosts are hugged into submission.",
+		Look = { Skin = C(255, 225, 205), Hair = C(255, 190, 225), HairStyle = "Puff", Shirt = C(255, 200, 230), Pants = C(255, 240, 170), Shoes = C(255, 150, 200),
+			Hat = "Bow", HatColor = C(255, 120, 190), Back = "HeartWings", BackColor = C(255, 180, 220), Tool = "HeartWand", ToolColor = C(255, 240, 140), Beam = C(255, 170, 220), Aura = true },
+	},
+	GlubbleTheDeepOne = {
+		Id = "GlubbleTheDeepOne", Name = "Glubble the Deep One", Rarity = "Ultra", Zone = "Sunken", Power = 156000000000,
+		Blurb = "A tiny glowing sea monster with a lantern on its head. Very huggable. Maybe.",
+		Look = { Skin = C(60, 170, 180), Hair = C(40, 120, 140), HairStyle = "None", Shirt = C(50, 140, 160), Pants = C(30, 90, 120), Shoes = C(20, 70, 90),
+			Hat = "Crystal", HatColor = C(150, 255, 230), Back = "BatWings", BackColor = C(70, 190, 200), Tool = "Orb", ToolColor = C(160, 255, 240), Beam = C(120, 255, 230), Aura = true },
+	},
+	TickTockTitaness = {
+		Id = "TickTockTitaness", Name = "Tick-Tock Titaness", Rarity = "Ultra", Zone = "Clockwork", Power = 780000000000,
+		Blurb = "Stops time, catches the ghost, starts time. Nobody notices.",
+		Look = { Skin = C(240, 205, 175), Hair = C(180, 90, 50), HairStyle = "Bob", Shirt = C(200, 140, 70), Pants = C(110, 70, 40), Shoes = C(230, 200, 120),
+			Hat = "Visor", HatColor = C(120, 240, 255), Back = "HeroCape", BackColor = C(190, 110, 50), Tool = "Projector", ToolColor = C(230, 200, 120), Beam = C(120, 240, 255), Aura = true },
+	},
+	Scorchmaw = {
+		Id = "Scorchmaw", Name = "Scorchmaw", Rarity = "Ultra", Zone = "Inferno", Power = 3900000000000,
+		Blurb = "A lava monster with a fiery crown and a very hot temper.",
+		Look = { Skin = C(200, 60, 40), Hair = C(255, 140, 40), HairStyle = "Spiky", Shirt = C(60, 25, 25), Pants = C(40, 15, 15), Shoes = C(255, 120, 40),
+			Hat = "Crown", HatColor = C(255, 170, 50), Back = "Wings", BackColor = C(255, 90, 30), Tool = "Cannon", ToolColor = C(255, 150, 40), Beam = C(255, 110, 30), Aura = true },
+	},
+	SovereignSupreme = {
+		Id = "SovereignSupreme", Name = "Sovereign Supreme", Rarity = "Ultra", Zone = "Throne", Power = 19500000000000,
+		Blurb = "The hero every throne is waiting for. Ghosts bow before she asks.",
+		Look = { Skin = C(245, 220, 200), Hair = C(255, 235, 170), HairStyle = "Long", Shirt = C(250, 245, 255), Pants = C(200, 170, 255), Shoes = C(255, 215, 90),
+			Hat = "Tiara", HatColor = C(255, 215, 90), Back = "HeroCape", BackColor = C(255, 215, 90), Tool = "Sword", ToolColor = C(250, 245, 255), Beam = C(255, 230, 140), Aura = true },
+	},
 } :: { [string]: HunterDef }
 
 -- Exclusive Crate (Robux): you get the exclusive hunter of your furthest unlocked area
@@ -1248,7 +1389,8 @@ Config.Exclusives = {
 Config.StarterHunter = "RookieHunter"
 
 --==================================================================
--- CRATES (Weights don't need to sum to 100; odds are shown as %)
+-- CRATES (each zone crate's Weights are exact percents summing to 100:
+-- Common 50 / Uncommon 35 / Rare 10 / Legendary 3.5 / Mythic 1 / Secret 0.4 / Ultra 0.1)
 --==================================================================
 export type CrateDef = {
 	Id: string,
@@ -1268,192 +1410,214 @@ Config.Crates = {
 		Id = "Beginner", Name = "BEGINNER HUNTER CRATE", Zone = "Neighborhood", Price = 25,
 		Color = C(255, 150, 50), Trim = C(140, 255, 120), Style = "Basic",
 		Pool = {
-			{ Hunter = "RookieHunter", Weight = 60 },
-			{ Hunter = "ParanormalIntern", Weight = 28 },
-			{ Hunter = "GhostInvestigator", Weight = 10 },
-			{ Hunter = "SpectralSpecialist", Weight = 2 },
-			{ Hunter = "MoonlightMedium", Weight = 0.4 },
-			{ Hunter = "NightWatcher", Weight = 0.04 },
+			{ Hunter = "RookieHunter", Weight = 25 }, -- Common 50% (split 2 ways)
+			{ Hunter = "BowBelle", Weight = 25 }, -- Common 50% (split 2 ways)
+			{ Hunter = "ParanormalIntern", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "GhostInvestigator", Weight = 10 }, -- Rare 10%
+			{ Hunter = "SpectralSpecialist", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "MoonlightMedium", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "NightWatcher", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "CaptainBoo", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Haunted = {
 		Id = "Haunted", Name = "HAUNTED HUNTER CRATE", Zone = "Cemetery", Price = 600,
 		Color = C(110, 80, 200), Trim = C(90, 255, 180), Style = "Haunted",
 		Pool = {
-			{ Hunter = "GraveScout", Weight = 60 },
-			{ Hunter = "CryptInvestigator", Weight = 28 },
-			{ Hunter = "SpiritWarden", Weight = 10 },
-			{ Hunter = "PhantomExorcist", Weight = 2 },
-			{ Hunter = "GravelightOracle", Weight = 0.4 },
-			{ Hunter = "ReapersApprentice", Weight = 0.04 },
+			{ Hunter = "GraveScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "CryptInvestigator", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
+			{ Hunter = "LilMoonWitch", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
+			{ Hunter = "SpiritWarden", Weight = 10 }, -- Rare 10%
+			{ Hunter = "PhantomExorcist", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "GravelightOracle", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "ReapersApprentice", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "PetalChomper", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Elite = {
 		Id = "Elite", Name = "ELITE HUNTER CRATE", Zone = "School", Price = 5000,
 		Color = C(40, 30, 70), Trim = C(220, 120, 255), Style = "Elite",
 		Pool = {
-			{ Hunter = "SchoolInvestigator", Weight = 60 },
-			{ Hunter = "ParanormalProfessor", Weight = 28 },
-			{ Hunter = "EliteContainmentAgent", Weight = 10 },
-			{ Hunter = "VoidHunter", Weight = 2 },
-			{ Hunter = "SpiritValedictorian", Weight = 0.4 },
-			{ Hunter = "TheSubstitute", Weight = 0.04 },
+			{ Hunter = "SchoolInvestigator", Weight = 50 }, -- Common 50%
+			{ Hunter = "ParanormalProfessor", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
+			{ Hunter = "GloomyGus", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
+			{ Hunter = "EliteContainmentAgent", Weight = 10 }, -- Rare 10%
+			{ Hunter = "VoidHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "SpiritValedictorian", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheSubstitute", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "CelestiaMoonwitch", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Carnival = {
 		Id = "Carnival", Name = "CARNIVAL HUNTER CRATE", Zone = "Carnival", Price = 40000,
 		Color = C(230, 60, 70), Trim = C(255, 210, 70), Style = "Carnival",
 		Pool = {
-			{ Hunter = "CarnivalScout", Weight = 60 },
-			{ Hunter = "ParanormalPerformer", Weight = 28 },
-			{ Hunter = "SpectralRingmaster", Weight = 10 },
-			{ Hunter = "PhantomTamer", Weight = 2 },
-			{ Hunter = "GrandIllusionist", Weight = 0.4 },
-			{ Hunter = "TheLastClown", Weight = 0.04 },
+			{ Hunter = "CarnivalScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "ParanormalPerformer", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "SpectralRingmaster", Weight = 5 }, -- Rare 10% (split 2 ways)
+			{ Hunter = "HeartlightHealer", Weight = 5 }, -- Rare 10% (split 2 ways)
+			{ Hunter = "PhantomTamer", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "GrandIllusionist", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheLastClown", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "PumpkinKingJack", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Medical = {
 		Id = "Medical", Name = "PARANORMAL MEDICAL CRATE", Zone = "Hospital", Price = 400000,
 		Color = C(235, 240, 250), Trim = C(110, 200, 255), Style = "Medical",
 		Pool = {
-			{ Hunter = "MedicalInvestigator", Weight = 60 },
-			{ Hunter = "SpiritMedic", Weight = 28 },
-			{ Hunter = "ParanormalDoctor", Weight = 10 },
-			{ Hunter = "SpectralSurgeon", Weight = 2 },
-			{ Hunter = "ChiefOfSpiritMedicine", Weight = 0.4 },
-			{ Hunter = "NightShiftNurse", Weight = 0.04 },
+			{ Hunter = "MedicalInvestigator", Weight = 50 }, -- Common 50%
+			{ Hunter = "SpiritMedic", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "ParanormalDoctor", Weight = 10 }, -- Rare 10%
+			{ Hunter = "SpectralSurgeon", Weight = 1.75 }, -- Legendary 3.5% (split 2 ways)
+			{ Hunter = "StarlitHexPrincess", Weight = 1.75 }, -- Legendary 3.5% (split 2 ways)
+			{ Hunter = "ChiefOfSpiritMedicine", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "NightShiftNurse", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "DoctorMiracle", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Sailor = {
 		Id = "Sailor", Name = "SPECTRAL SAILOR CRATE", Zone = "Harbor", Price = 3500000,
 		Color = C(140, 95, 55), Trim = C(80, 230, 220), Style = "Sailor",
 		Pool = {
-			{ Hunter = "HarborHunter", Weight = 60 },
-			{ Hunter = "ParanormalSailor", Weight = 28 },
-			{ Hunter = "SpectralPirateHunter", Weight = 10 },
-			{ Hunter = "GhostCaptainHunter", Weight = 2 },
-			{ Hunter = "KrakenTamer", Weight = 0.4 },
-			{ Hunter = "FlyingDutchman", Weight = 0.04 },
+			{ Hunter = "HarborHunter", Weight = 50 }, -- Common 50%
+			{ Hunter = "ParanormalSailor", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "SpectralPirateHunter", Weight = 10 }, -- Rare 10%
+			{ Hunter = "GhostCaptainHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "KrakenTamer", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "FlyingDutchman", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "SirenSeraphina", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Royal = {
 		Id = "Royal", Name = "ROYAL HUNTER CRATE", Zone = "Castle", Price = 22000000,
 		Color = C(70, 40, 120), Trim = C(255, 200, 70), Style = "Royal",
 		Pool = {
-			{ Hunter = "CastleInvestigator", Weight = 60 },
-			{ Hunter = "SpiritKnight", Weight = 28 },
-			{ Hunter = "RoyalExorcist", Weight = 10 },
-			{ Hunter = "PhantomChampion", Weight = 2 },
-			{ Hunter = "PhantomMonarch", Weight = 0.4 },
-			{ Hunter = "HeadlessKnight", Weight = 0.04 },
+			{ Hunter = "CastleInvestigator", Weight = 50 }, -- Common 50%
+			{ Hunter = "SpiritKnight", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "RoyalExorcist", Weight = 10 }, -- Rare 10%
+			{ Hunter = "PhantomChampion", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "PhantomMonarch", Weight = 0.5 }, -- Mythic 1% (split 2 ways)
+			{ Hunter = "PumpkinKnight", Weight = 0.5 }, -- Mythic 1% (split 2 ways)
+			{ Hunter = "HeadlessKnight", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "CountBatula", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	SpiritRealm = {
 		Id = "SpiritRealm", Name = "SPIRIT REALM CRATE", Zone = "SpiritRealm", Price = 130000000,
 		Color = C(40, 35, 80), Trim = C(110, 240, 255), Style = "Spirit",
 		Pool = {
-			{ Hunter = "RealmExplorer", Weight = 60 },
-			{ Hunter = "SpiritWalker", Weight = 28 },
-			{ Hunter = "VoidInvestigator", Weight = 10 },
-			{ Hunter = "CelestialGhostHunter", Weight = 2 },
-			{ Hunter = "AstralGuardian", Weight = 0.4 },
-			{ Hunter = "GhostHunterZero", Weight = 0.04 },
+			{ Hunter = "RealmExplorer", Weight = 50 }, -- Common 50%
+			{ Hunter = "SpiritWalker", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "VoidInvestigator", Weight = 10 }, -- Rare 10%
+			{ Hunter = "CelestialGhostHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "AstralGuardian", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "GhostHunterZero", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "StarfallValkyrie", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Bog = {
 		Id = "Bog", Name = "BOG HUNTER CRATE", Zone = "Swamp", Price = 780000000,
 		Color = C(90, 120, 60), Trim = C(170, 255, 120), Style = "Swamp",
 		Pool = {
-			{ Hunter = "SwampScout", Weight = 60 },
-			{ Hunter = "BogTracker", Weight = 28 },
-			{ Hunter = "MarshMystic", Weight = 10 },
-			{ Hunter = "FireflySage", Weight = 2 },
-			{ Hunter = "FrogPrince", Weight = 0.4 },
-			{ Hunter = "GatorKing", Weight = 0.04 },
+			{ Hunter = "SwampScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "BogTracker", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "MarshMystic", Weight = 10 }, -- Rare 10%
+			{ Hunter = "FireflySage", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "FrogPrince", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "GatorKing", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "Bogzilla", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Frost = {
 		Id = "Frost", Name = "FROSTBITE CRATE", Zone = "Frost", Price = 4680000000,
 		Color = C(200, 230, 255), Trim = C(110, 200, 255), Style = "Frost",
 		Pool = {
-			{ Hunter = "SnowScout", Weight = 60 },
-			{ Hunter = "IceClimber", Weight = 28 },
-			{ Hunter = "FrostMage", Weight = 10 },
-			{ Hunter = "YetiWhisperer", Weight = 2 },
-			{ Hunter = "AuroraKnight", Weight = 0.4 },
-			{ Hunter = "TheAbominable", Weight = 0.04 },
+			{ Hunter = "SnowScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "IceClimber", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "FrostMage", Weight = 10 }, -- Rare 10%
+			{ Hunter = "YetiWhisperer", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "AuroraKnight", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheAbominable", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "CrystaliaSnowQueen", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Tomb = {
 		Id = "Tomb", Name = "PHARAOH CRATE", Zone = "Tomb", Price = 28100000000,
 		Color = C(220, 180, 100), Trim = C(70, 200, 220), Style = "Tomb",
 		Pool = {
-			{ Hunter = "TombExplorer", Weight = 60 },
-			{ Hunter = "ScarabSeeker", Weight = 28 },
-			{ Hunter = "SandMage", Weight = 10 },
-			{ Hunter = "PharaohHunter", Weight = 2 },
-			{ Hunter = "SunKeeper", Weight = 0.4 },
-			{ Hunter = "GoldenMummy", Weight = 0.04 },
+			{ Hunter = "TombExplorer", Weight = 50 }, -- Common 50%
+			{ Hunter = "ScarabSeeker", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "SandMage", Weight = 10 }, -- Rare 10%
+			{ Hunter = "PharaohHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "SunKeeper", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "GoldenMummy", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "JackalAvenger", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Toy = {
 		Id = "Toy", Name = "TOY BOX CRATE", Zone = "ToyFactory", Price = 168000000000,
 		Color = C(255, 120, 170), Trim = C(255, 220, 80), Style = "Toy",
 		Pool = {
-			{ Hunter = "ToyTinker", Weight = 60 },
-			{ Hunter = "WindUpKnight", Weight = 28 },
-			{ Hunter = "MarionetteMaster", Weight = 10 },
-			{ Hunter = "TeddyTitan", Weight = 2 },
-			{ Hunter = "JackInTheBoxer", Weight = 0.4 },
-			{ Hunter = "TheNutcracker", Weight = 0.04 },
+			{ Hunter = "ToyTinker", Weight = 50 }, -- Common 50%
+			{ Hunter = "WindUpKnight", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "MarionetteMaster", Weight = 10 }, -- Rare 10%
+			{ Hunter = "TeddyTitan", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "JackInTheBoxer", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheNutcracker", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "PrincessPomPom", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Sunken = {
 		Id = "Sunken", Name = "SUNKEN TREASURE CRATE", Zone = "Sunken", Price = 1010000000000,
 		Color = C(60, 140, 170), Trim = C(255, 220, 120), Style = "Sunken",
 		Pool = {
-			{ Hunter = "DeepDiver", Weight = 60 },
-			{ Hunter = "CoralKeeper", Weight = 28 },
-			{ Hunter = "TideCaller", Weight = 10 },
-			{ Hunter = "AtlanteanHunter", Weight = 2 },
-			{ Hunter = "PearlSovereign", Weight = 0.4 },
-			{ Hunter = "AbyssWalker", Weight = 0.04 },
+			{ Hunter = "DeepDiver", Weight = 50 }, -- Common 50%
+			{ Hunter = "CoralKeeper", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "TideCaller", Weight = 10 }, -- Rare 10%
+			{ Hunter = "AtlanteanHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "PearlSovereign", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "AbyssWalker", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "GlubbleTheDeepOne", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Clockwork = {
 		Id = "Clockwork", Name = "CLOCKWORK CRATE", Zone = "Clockwork", Price = 6070000000000,
 		Color = C(150, 110, 70), Trim = C(230, 200, 120), Style = "Clock",
 		Pool = {
-			{ Hunter = "GearScout", Weight = 60 },
-			{ Hunter = "ClockTinker", Weight = 28 },
-			{ Hunter = "ChronoMage", Weight = 10 },
-			{ Hunter = "TimeBender", Weight = 2 },
-			{ Hunter = "SteamTitan", Weight = 0.4 },
-			{ Hunter = "TheTimeless", Weight = 0.04 },
+			{ Hunter = "GearScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "ClockTinker", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "ChronoMage", Weight = 10 }, -- Rare 10%
+			{ Hunter = "TimeBender", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "SteamTitan", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheTimeless", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "TickTockTitaness", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Inferno = {
 		Id = "Inferno", Name = "INFERNO CRATE", Zone = "Inferno", Price = 36400000000000,
 		Color = C(80, 40, 40), Trim = C(255, 150, 60), Style = "Inferno",
 		Pool = {
-			{ Hunter = "EmberScout", Weight = 60 },
-			{ Hunter = "LavaDiver", Weight = 28 },
-			{ Hunter = "FireDancer", Weight = 10 },
-			{ Hunter = "PhoenixHunter", Weight = 2 },
-			{ Hunter = "DragonCaller", Weight = 0.4 },
-			{ Hunter = "TheEternalFlame", Weight = 0.04 },
+			{ Hunter = "EmberScout", Weight = 50 }, -- Common 50%
+			{ Hunter = "LavaDiver", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "FireDancer", Weight = 10 }, -- Rare 10%
+			{ Hunter = "PhoenixHunter", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "DragonCaller", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheEternalFlame", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "Scorchmaw", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Throne = {
 		Id = "Throne", Name = "KING'S CRATE", Zone = "Throne", Price = 218000000000000,
 		Color = C(250, 245, 255), Trim = C(255, 215, 90), Style = "Throne",
 		Pool = {
-			{ Hunter = "ThronePage", Weight = 60 },
-			{ Hunter = "ShadowGuard", Weight = 28 },
-			{ Hunter = "CrownMage", Weight = 10 },
-			{ Hunter = "KingsChampion", Weight = 2 },
-			{ Hunter = "EternalMonarch", Weight = 0.4 },
-			{ Hunter = "TheFinalHunter", Weight = 0.04 },
+			{ Hunter = "ThronePage", Weight = 50 }, -- Common 50%
+			{ Hunter = "ShadowGuard", Weight = 35 }, -- Uncommon 35%
+			{ Hunter = "CrownMage", Weight = 10 }, -- Rare 10%
+			{ Hunter = "KingsChampion", Weight = 3.5 }, -- Legendary 3.5%
+			{ Hunter = "EternalMonarch", Weight = 1 }, -- Mythic 1%
+			{ Hunter = "TheFinalHunter", Weight = 0.4 }, -- Secret 0.4%
+			{ Hunter = "SovereignSupreme", Weight = 0.1 }, -- Ultra 0.1%
 		},
 	},
 	Exclusive = {
@@ -1559,18 +1723,60 @@ Config.PetRules = {
 	Caps = { Power = 0.6, Ecto = 0.5, HP = 0.75, Recovery = 0.5 } :: { [string]: number },
 }
 Config.Pets = {
-	GlowWisp = { Id = "GlowWisp", Name = "Glow Wisp", Rarity = "Common", Price = 40, Bonus = { Kind = "Power", Value = 0.05 }, Color = Color3.fromRGB(200, 255, 220), Glow = Color3.fromRGB(120, 255, 170), Shape = "Wisp" },
-	BooBat = { Id = "BooBat", Name = "Boo Bat", Rarity = "Common", Price = 60, Bonus = { Kind = "Ecto", Value = 0.05 }, Color = Color3.fromRGB(130, 100, 190), Glow = Color3.fromRGB(200, 150, 255), Shape = "Bat" },
-	JellyGhost = { Id = "JellyGhost", Name = "Jelly Ghost", Rarity = "Uncommon", Price = 150, Bonus = { Kind = "HP", Value = 0.15 }, Color = Color3.fromRGB(255, 160, 220), Glow = Color3.fromRGB(255, 120, 200), Shape = "Blob" },
-	PhantomKitty = { Id = "PhantomKitty", Name = "Phantom Kitty", Rarity = "Uncommon", Price = 200, Bonus = { Kind = "Recovery", Value = 0.15 }, Color = Color3.fromRGB(230, 230, 255), Glow = Color3.fromRGB(170, 200, 255), Shape = "Cat" },
-	MoonOwl = { Id = "MoonOwl", Name = "Moon Owl", Rarity = "Rare", Price = 500, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(150, 190, 255), Glow = Color3.fromRGB(110, 200, 255), Shape = "Owl" },
-	SpiritFox = { Id = "SpiritFox", Name = "Spirit Fox", Rarity = "Rare", Price = 600, Bonus = { Kind = "Ecto", Value = 0.12 }, Color = Color3.fromRGB(255, 190, 120), Glow = Color3.fromRGB(255, 150, 80), Shape = "Fox" },
-	SpookyDrake = { Id = "SpookyDrake", Name = "Spooky Drake", Rarity = "Epic", Price = 2000, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(150, 110, 230), Glow = Color3.fromRGB(190, 120, 255), Shape = "Drake" },
-	GhostPhoenix = { Id = "GhostPhoenix", Name = "Ghost Phoenix", Rarity = "Legendary", Price = 8000, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 220, 140), Glow = Color3.fromRGB(255, 160, 60), Shape = "Phoenix" },
+	GlowWisp = { Id = "GlowWisp", Name = "Glow Wisp", Rarity = "Common", Price = nil, Bonus = { Kind = "Power", Value = 0.05 }, Color = Color3.fromRGB(200, 255, 220), Glow = Color3.fromRGB(120, 255, 170), Shape = "Wisp" },
+	BooBat = { Id = "BooBat", Name = "Boo Bat", Rarity = "Common", Price = nil, Bonus = { Kind = "Ecto", Value = 0.05 }, Color = Color3.fromRGB(130, 100, 190), Glow = Color3.fromRGB(200, 150, 255), Shape = "Bat" },
+	JellyGhost = { Id = "JellyGhost", Name = "Jelly Ghost", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "HP", Value = 0.15 }, Color = Color3.fromRGB(255, 160, 220), Glow = Color3.fromRGB(255, 120, 200), Shape = "Blob" },
+	PhantomKitty = { Id = "PhantomKitty", Name = "Phantom Kitty", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "Recovery", Value = 0.15 }, Color = Color3.fromRGB(230, 230, 255), Glow = Color3.fromRGB(170, 200, 255), Shape = "Cat" },
+	MoonOwl = { Id = "MoonOwl", Name = "Moon Owl", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(150, 190, 255), Glow = Color3.fromRGB(110, 200, 255), Shape = "Owl" },
+	SpiritFox = { Id = "SpiritFox", Name = "Spirit Fox", Rarity = "Rare", Price = nil, Bonus = { Kind = "Ecto", Value = 0.12 }, Color = Color3.fromRGB(255, 190, 120), Glow = Color3.fromRGB(255, 150, 80), Shape = "Fox" },
+	SpookyDrake = { Id = "SpookyDrake", Name = "Spooky Drake", Rarity = "Epic", Price = nil, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(150, 110, 230), Glow = Color3.fromRGB(190, 120, 255), Shape = "Drake" },
+	GhostPhoenix = { Id = "GhostPhoenix", Name = "Ghost Phoenix", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 220, 140), Glow = Color3.fromRGB(255, 160, 60), Shape = "Phoenix" },
 	-- launch event reward (not sold): a Rare with a useful mixed bonus
 	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Shape = "Lantern" },
 } :: { [string]: PetDef }
 Config.PetOrder = { "GlowWisp", "BooBat", "JellyGhost", "PhantomKitty", "MoonOwl", "SpiritFox", "SpookyDrake", "GhostPhoenix", "LanternSpirit" }
+
+-- PET EGGS (v1.8): the only way to get pets with Spirit Shards (direct pet purchases are gone;
+-- event pets such as LanternSpirit are never in eggs). Hatched at the PET HATCHERY near the
+-- Boss Tower. Egg tier is not pet rarity: each egg lists its pets with exact percent chances
+-- that must total 100 (tests/Eggs.spec.luau). Unlock = Tower checkpoint needed (0 = none).
+export type EggOdds = { Pet: string, Chance: number }
+export type EggDef = {
+	Id: string,
+	Name: string,
+	Price: number, -- Spirit Shards
+	Unlock: number, -- TowerCheckpoint required (0 = always open)
+	Odds: { EggOdds }, -- percent, rolled in this order
+	Color: Color3,
+	Accent: Color3,
+}
+Config.Eggs = {
+	HauntedEgg = {
+		Id = "HauntedEgg", Name = "Haunted Egg", Price = 200, Unlock = 0,
+		Odds = {
+			{ Pet = "GlowWisp", Chance = 40 }, { Pet = "BooBat", Chance = 35 }, { Pet = "JellyGhost", Chance = 15 },
+			{ Pet = "PhantomKitty", Chance = 8 }, { Pet = "MoonOwl", Chance = 2 },
+		},
+		Color = Color3.fromRGB(120, 60, 190), Accent = Color3.fromRGB(120, 255, 140),
+	},
+	PhantomEgg = {
+		Id = "PhantomEgg", Name = "Phantom Egg", Price = 1200, Unlock = 10,
+		Odds = {
+			{ Pet = "JellyGhost", Chance = 30 }, { Pet = "PhantomKitty", Chance = 30 }, { Pet = "MoonOwl", Chance = 20 },
+			{ Pet = "SpiritFox", Chance = 15 }, { Pet = "SpookyDrake", Chance = 5 },
+		},
+		Color = Color3.fromRGB(210, 230, 255), Accent = Color3.fromRGB(110, 180, 255),
+	},
+	MoonlightEgg = {
+		Id = "MoonlightEgg", Name = "Moonlight Egg", Price = 5000, Unlock = 25,
+		Odds = {
+			{ Pet = "MoonOwl", Chance = 30 }, { Pet = "SpiritFox", Chance = 30 }, { Pet = "SpookyDrake", Chance = 30 },
+			{ Pet = "GhostPhoenix", Chance = 10 },
+		},
+		Color = Color3.fromRGB(30, 40, 120), Accent = Color3.fromRGB(255, 235, 150),
+	},
+} :: { [string]: EggDef }
+Config.EggOrder = { "HauntedEgg", "PhantomEgg", "MoonlightEgg" }
 
 --==================================================================
 -- ENDLESS BOSS TOWER (v1.6). Party of up to 4 (pad at the entrance); every run starts at
@@ -1813,7 +2019,7 @@ Config.RateLimits = {
 
 -- Extra developer accounts (UserIds) that get the DEV button in live servers. The game's
 -- creator (or the owner of the creator group) and anyone in Studio always get it.
-Config.DevUserIds = {} :: { number }
+Config.DevUserIds = { 20194281 } :: { number } -- kcdrewcarter (only these get dev tools live)
 
 -- Player feedback (FEEDBACK button in Settings; read in the DEV panel)
 Config.Feedback = {
@@ -2166,6 +2372,86 @@ return Icons
         </Properties>
         <Item class="ModuleScript" referent="6">
           <Properties>
+            <string name="Name">Eggs</string>
+            <string name="Source"><![CDATA[--!strict
+-- Pet egg rules (pure, tested in tests/Eggs.spec.luau). Egg definitions live in Config.Eggs;
+-- these functions only take the egg table, so the CLI tests can run them without Roblox.
+local Eggs = {}
+
+Eggs.REQUEST_ID_MAX = 40 -- characters in a client hatch request id
+Eggs.KEEP_RECORDS = 20 -- hatch results remembered per profile (retries return the stored result)
+
+export type Odds = { Pet: string, Chance: number }
+export type Egg = { Unlock: number, Odds: { Odds } }
+export type Record = { Egg: string, Pet: string, Uid: string, T: number }
+
+-- Sum of the egg's percent chances (must be exactly 100).
+function Eggs.Total(egg: Egg): number
+	local t = 0
+	for _, o in egg.Odds do
+		t += o.Chance
+	end
+	return t
+end
+
+-- Pet id for a uniform roll r in [0, 1). Walks the odds in their listed order.
+function Eggs.Roll(egg: Egg, r: number): string
+	local total = Eggs.Total(egg)
+	local x = math.clamp(r, 0, 1) * total
+	local acc = 0
+	for _, o in egg.Odds do
+		acc += o.Chance
+		if x < acc then
+			return o.Pet
+		end
+	end
+	return egg.Odds[#egg.Odds].Pet
+end
+
+-- True when the player's Boss Tower checkpoint opens this egg.
+function Eggs.Unlocked(egg: Egg, checkpoint: number): boolean
+	return (checkpoint or 0) >= (egg.Unlock or 0)
+end
+
+-- A client request id: 1..REQUEST_ID_MAX characters of letters, digits, "-", "_", "{", "}".
+function Eggs.ValidRequestId(id: any): boolean
+	return type(id) == "string" and #id >= 1 and #id <= Eggs.REQUEST_ID_MAX and string.find(id, "^[%w%-_{}]+$") ~= nil
+end
+
+-- Order key of a record: pet uids ("p12") only grow, so they give the hatch order; T breaks ties.
+local function order(rec: Record): number
+	return (tonumber(string.match(rec.Uid, "^p(%d+)$")) or 0) * 1e10 + rec.T
+end
+
+-- Request ids to drop so that only the newest `keep` records remain.
+function Eggs.Prune(records: { [string]: Record }, keep: number): { string }
+	local ids = {}
+	for id in records do
+		table.insert(ids, id)
+	end
+	if #ids <= keep then
+		return {}
+	end
+	table.sort(ids, function(a, b)
+		local oa, ob = order(records[a]), order(records[b])
+		if oa ~= ob then
+			return oa < ob
+		end
+		return a < b
+	end)
+	local out = {}
+	for i = 1, #ids - keep do
+		table.insert(out, ids[i])
+	end
+	return out
+end
+
+return Eggs
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="7">
+          <Properties>
             <string name="Name">Format</string>
             <string name="Source"><![CDATA[--!strict
 -- Number/time formatting shared by UI and signs (pure).
@@ -2228,7 +2514,7 @@ return Format
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="7">
+        <Item class="ModuleScript" referent="8">
           <Properties>
             <string name="Name">Rules</string>
             <string name="Source"><![CDATA[--!strict
@@ -2509,6 +2795,25 @@ function Rules.PoolMembers(weights: { number }, minShare: number): number
 	return math.max(1, n)
 end
 
+-- Retaliation target rotation: given the eligible hunter keys (any order) and the key hit
+-- last time, returns the next key after it in sorted order (wrapping), so attacks spread over
+-- every eligible hunter instead of focusing one. nil when nobody is eligible.
+function Rules.NextTarget(keys: { string }, last: string?): string?
+	if #keys == 0 then
+		return nil
+	end
+	local sorted = table.clone(keys)
+	table.sort(sorted)
+	if last then
+		for _, k in sorted do
+			if k > last then
+				return k
+			end
+		end
+	end
+	return sorted[1]
+end
+
 -- Damage that really counts: never more than the Spirit the ghost had left (no overkill).
 function Rules.Effective(damage: number, spiritLeft: number): number
 	if damage ~= damage or damage <= 0 or spiritLeft <= 0 then
@@ -2656,7 +2961,7 @@ return Rules
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="8">
+      <Item class="ModuleScript" referent="9">
         <Properties>
           <string name="Name">Net</string>
           <string name="Source"><![CDATA[--!strict
@@ -2710,11 +3015,11 @@ return Net
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="9">
+      <Item class="Folder" referent="10">
         <Properties>
           <string name="Name">Rigs</string>
         </Properties>
-        <Item class="ModuleScript" referent="10">
+        <Item class="ModuleScript" referent="11">
           <Properties>
             <string name="Name">CrateRig</string>
             <string name="Source"><![CDATA[--!strict
@@ -3333,7 +3638,7 @@ return CrateRig
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="11">
+        <Item class="ModuleScript" referent="12">
           <Properties>
             <string name="Name">GhostRig</string>
             <string name="Source"><![CDATA[--!strict
@@ -4771,7 +5076,7 @@ return GhostRig
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="12">
+        <Item class="ModuleScript" referent="13">
           <Properties>
             <string name="Name">HunterRig</string>
             <string name="Source"><![CDATA[--!strict
@@ -4932,8 +5237,10 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			block(head, Vector3.new(0.34, 0.08, 0.14), CFrame.new(0.34 * s, 0.37, -0.86) * CFrame.Angles(0.35, 0, -0.14 * s), U.Shade(look.Hair, 0.8))
 		end
 	end
-	-- little open smile: a WedgePart turned into a "▽"
-	wedge(head, Vector3.new(0.1, 0.26, 0.26), CFrame.new(0, -0.34, -0.88) * CFrame.Angles(-0.35, 0, 0) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, MOUTH)
+	-- little open smile: a WedgePart turned into a "▽" (FlowerHead draws its own toothy grin)
+	if hat ~= "FlowerHead" then
+		wedge(head, Vector3.new(0.1, 0.26, 0.26), CFrame.new(0, -0.34, -0.88) * CFrame.Angles(-0.35, 0, 0) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, MOUTH)
+	end
 
 	------------------------------------------------------------------ hair
 	local covered = hat == "Hood"
@@ -4946,6 +5253,9 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		or hat == "Nemes"
 		or hat == "Propeller"
 		or hat == "DivingHelmet"
+		or hat == "PumpkinHelm"
+		or hat == "MoonHood"
+		or hat == "FlowerHead"
 	local style = look.HairStyle
 	local hairTop = 1.25
 	local hairColor = look.Hair
@@ -5187,6 +5497,101 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		for _, p in U.Gear(0.45, 0.08, 6, head.CFrame * ccf * CFrame.new(0.74, 0.12, 0) * CFrame.Angles(0, math.pi / 2, 0), U.Shade(hatColor, 0.9), model, METAL_MAT) do
 			add(head, p)
 		end
+	elseif hat == "Bow" then
+		-- big ribbon bow perched on the top-right of the head
+		local c = look.HatColor or Color3.fromRGB(255, 110, 170)
+		local bcf = CFrame.new(0.45, hairTop - 0.12, 0.05) * CFrame.Angles(0, 0, -0.3)
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.7, 0.55, 0.24), bcf * CFrame.new(0.38 * s, 0.06, 0) * CFrame.Angles(0, 0, 0.3 * s), c) -- loop
+			block(head, Vector3.new(0.16, 0.45, 0.1), bcf * CFrame.new(0.16 * s, -0.3, -0.04) * CFrame.Angles(0, 0, 0.35 * s), U.Shade(c, 0.85)) -- tail
+		end
+		ball(head, 0.34, bcf, U.Shade(c, 0.85)) -- knot
+	elseif hat == "WitchHat" then
+		-- wide brim, banded cone and a floppy bent tip
+		local c = look.HatColor or Color3.fromRGB(70, 40, 110)
+		local wcf = CFrame.new(0, 0.85 + lift, 0.12) * CFrame.Angles(-0.1, 0, -0.08)
+		cyl(head, 0.1, 2.7, wcf * U.AxisY, c) -- brim
+		cyl(head, 0.22, 1.5, wcf * CFrame.new(0, 0.14, 0) * U.AxisY, U.Vivid(look.Beam)) -- band
+		block(head, Vector3.new(0.3, 0.26, 0.06), wcf * CFrame.new(0, 0.14, -0.76), GOLD, METAL_MAT) -- buckle
+		local tipCf = cone(head, wcf * CFrame.new(0, 0.05, 0), 1.45, 1.1, 3, c)
+		local floppy = cone(head, tipCf * CFrame.new(0, -0.08, 0) * CFrame.Angles(0, 0, -0.8), 0.48, 0.6, 2, c)
+		ball(head, 0.16, floppy, c)
+	elseif hat == "PumpkinHelm" then
+		-- whole-head pumpkin with a carved, warmly lit face, ribs and a curly stem
+		local c = look.HatColor or Color3.fromRGB(255, 140, 40)
+		local carve = Color3.fromRGB(255, 225, 90)
+		local pc = Vector3.new(0, 0.2, 0.05)
+		local r = 1.22
+		ball(head, r * 2, CFrame.new(pc), c)
+		for _, a in { -0.75, 0.75 } do
+			cyl(head, 0.08, r * 2 + 0.06, CFrame.new(pc) * CFrame.Angles(0, a, 0), U.Shade(c, 0.8)) -- ribs
+		end
+		cyl(head, 0.4, 0.22, CFrame.new(pc + Vector3.new(0, r + 0.12, 0)) * CFrame.Angles(0, 0, 0.2) * U.AxisY, Color3.fromRGB(90, 140, 60)) -- stem
+		wedge(head, Vector3.new(0.06, 0.2, 0.42), CFrame.new(pc + Vector3.new(0.22, r - 0.02, 0)) * CFrame.Angles(0, math.pi / 2, 0.3), Color3.fromRGB(110, 190, 80)) -- leaf
+		local function carved(dir: Vector3, size: Vector3, roll: number)
+			local n = dir.Unit
+			block(head, size, U.Facing(pc + n * (r - 0.02), n) * CFrame.Angles(0, 0, roll), carve)
+		end
+		for _, s in { -1, 1 } do
+			carved(Vector3.new(0.38 * s, 0.12, -1), Vector3.new(0.32, 0.32, 0.1), math.pi / 4) -- diamond eyes
+		end
+		carved(Vector3.new(0, -0.38, -1), Vector3.new(0.9, 0.24, 0.14), 0) -- grin
+		for _, x in { -0.18, 0.18 } do
+			local n = Vector3.new(0, -0.38, -1).Unit
+			block(head, Vector3.new(0.16, 0.12, 0.08), U.Facing(pc + n * (r + 0.03), n) * CFrame.new(x, 0.06, 0), c) -- teeth
+		end
+	elseif hat == "FlowerHead" then
+		-- ring of round petals framing the face; the toothy grin is drawn below
+		local c = look.HatColor or Color3.fromRGB(255, 120, 190)
+		local light = U.Mix(c, WHITE, 0.35)
+		for i = 0, 7 do
+			local pcf = CFrame.new(0, 0, -0.25) * CFrame.Angles(0, 0, i * math.pi / 4) * CFrame.new(0, 1.12, 0)
+			cyl(head, 0.12, 0.7, pcf * U.AxisZ, if i % 2 == 0 then c else light)
+		end
+		-- little toothy grin under the eyes (replaces the default smile)
+		local n = Vector3.new(0, -0.3, -0.9).Unit
+		local g = U.Facing(n * 0.93, n)
+		block(head, Vector3.new(0.5, 0.18, 0.08), g, MOUTH)
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.2, 0.13, 0.08), g * CFrame.new(0.3 * s, 0.04, 0.005) * CFrame.Angles(0, 0, 0.45 * s), MOUTH)
+		end
+		for _, x in { -0.14, 0, 0.14 } do
+			wedge(head, Vector3.new(0.04, 0.09, 0.09), g * CFrame.new(x, 0.085, -0.045) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, WHITE) -- fangs
+		end
+	elseif hat == "HeroMask" then
+		-- domino mask: two curved lenses round the eyes (eyes peek through), bridge and head band
+		local c = look.HatColor or Color3.fromRGB(40, 40, 60)
+		for _, s in { -1, 1 } do
+			local n = Vector3.new(0.36 * s, 0.05, -0.85).Unit
+			local mcf = U.Facing(n * 0.97, n)
+			block(head, Vector3.new(0.62, 0.42, 0.08), mcf, c)
+			wedge(head, Vector3.new(0.08, 0.22, 0.26), mcf * CFrame.new(0.38 * s, 0.1, 0) * CFrame.Angles(0, math.pi / 2 * s, 0), c) -- pointed tip
+		end
+		block(head, Vector3.new(0.3, 0.16, 0.1), U.Facing(Vector3.new(0, 0.12, -0.95), Vector3.new(0, 0.12, -1).Unit), c) -- bridge
+		cyl(head, 0.14, 2.04, CFrame.new(0, 0.08, 0) * U.AxisY, c) -- band
+	elseif hat == "Tiara" then
+		-- small metal tiara sitting on the front of the hair, with a centre gem
+		local c = look.HatColor or Color3.fromRGB(225, 225, 240)
+		local rf = CFrame.new(0, hairTop - 1.0, 0.2) * CFrame.Angles(-0.25, 0, 0)
+		for _, a in { -0.5, 0, 0.5 } do
+			block(head, Vector3.new(0.45, 0.08, 0.06), rf * CFrame.Angles(0, a, 0) * CFrame.new(0, 0.6, -0.8), c, METAL_MAT) -- band
+		end
+		for i = -2, 2 do
+			local sz = 0.34 - math.abs(i) * 0.08
+			block(head, Vector3.new(sz, sz, 0.05), rf * CFrame.Angles(0, i * 0.38, 0) * CFrame.new(0, 0.6 + sz * 0.45, -0.8) * CFrame.Angles(0, 0, math.pi / 4), c, METAL_MAT) -- points
+		end
+		ball(head, 0.2, rf * CFrame.new(0, 0.72, -0.84), U.Vivid(look.Beam), { Reflectance = 0.3 }) -- gem
+	elseif hat == "MoonHood" then
+		-- deep hood with a gold crescent moon (gold disc half-covered by a hood-coloured one)
+		local c = look.HatColor or Color3.fromRGB(45, 50, 110)
+		local hc = Vector3.new(0, 0.22, 0.3)
+		ball(head, 2.25, CFrame.new(hc), c)
+		wedge(head, Vector3.new(0.55, 0.9, 0.7), CFrame.new(0, 1.2, 0.75) * CFrame.Angles(-0.3, 0, 0), c)
+		local n = Vector3.new(0, 0.6, -0.8).Unit
+		local mcf = U.Facing(hc + n * 1.12, n)
+		cyl(head, 0.06, 0.52, mcf * U.AxisZ, GOLD)
+		cyl(head, 0.06, 0.44, mcf * CFrame.new(0.12, 0.07, -0.03) * U.AxisZ, c)
+		block(head, Vector3.new(0.12, 0.12, 0.05), mcf * CFrame.new(0.3, 0.22, -0.01) * CFrame.Angles(0, 0, math.pi / 4), GOLD) -- star
 	end
 
 	------------------------------------------------------------------ body accent / aura
@@ -5276,6 +5681,43 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			ball(torso, 0.55, CFrame.new(p), backColor, { Transparency = 0.65, Shadow = false })
 			ball(torso, 0.3, CFrame.new(p), backColor, NEON)
 		end
+	elseif back == "HeroCape" then
+		-- long two-panel cape flaring out at the hem, stand-up collar, gold clasps and a back emblem
+		local c = look.BackColor or Color3.fromRGB(220, 40, 60)
+		block(torso, Vector3.new(1.45, 1.2, 0.1), CFrame.new(0, -0.1, 0.55) * CFrame.Angles(-0.12, 0, 0), c)
+		block(torso, Vector3.new(1.75, 0.72, 0.1), CFrame.new(0, -1.0, 0.8) * CFrame.Angles(-0.3, 0, 0), c)
+		block(torso, Vector3.new(1.5, 0.42, 0.12), CFrame.new(0, 0.62, 0.4) * CFrame.Angles(0.3, 0, 0), U.Shade(c, 0.75)) -- collar
+		for _, s in { -1, 1 } do
+			ball(torso, 0.22, CFrame.new(0.5 * s, 0.42, -0.42), GOLD, METAL_MAT) -- clasps
+		end
+		cyl(torso, 0.06, 0.6, CFrame.new(0, -0.05, 0.62) * U.AxisZ, GOLD) -- emblem
+		block(torso, Vector3.new(0.3, 0.3, 0.06), CFrame.new(0, -0.05, 0.65) * CFrame.Angles(0, 0, math.pi / 4), U.Shade(c, 0.6))
+	elseif back == "BatWings" then
+		-- leathery wings: a bony top edge with a claw and two stepped membrane panels
+		local c = look.BackColor or Color3.fromRGB(70, 45, 90)
+		local boneC = U.Shade(c, 0.6)
+		for _, s in { -1, 1 } do
+			local flip = CFrame.Angles(0, math.pi / 2 * s, 0) * CFrame.Angles(0, 0, math.pi) -- flat top, sloping hem
+			wedge(torso, Vector3.new(0.08, 0.9, 0.72), CFrame.new(0.62 * s, 0.3, 0.6) * flip, c)
+			wedge(torso, Vector3.new(0.08, 1.0, 0.72), CFrame.new(1.3 * s, 0.55, 0.6) * flip, c)
+			rod(torso, Vector3.new(0.25 * s, 0.72, 0.6), Vector3.new(1.7 * s, 1.08, 0.6), 0.1, boneC)
+			ball(torso, 0.18, CFrame.new(1.72 * s, 1.12, 0.6), boneC) -- claw
+		end
+	elseif back == "HeartWings" then
+		-- pastel heart wings: each heart is a diamond plus two round lobes, tipped toward the spine
+		local c = look.BackColor or Color3.fromRGB(255, 175, 215)
+		local light = U.Mix(c, WHITE, 0.5)
+		local a = 0.75
+		local k = a / (2 * math.sqrt(2))
+		for _, s in { -1, 1 } do
+			local hcf = CFrame.new(0.95 * s, 0.5, 0.62) * CFrame.Angles(0, 0, -0.6 * s)
+			block(torso, Vector3.new(a, a, 0.1), hcf * CFrame.Angles(0, 0, math.pi / 4), c)
+			for _, x in { -1, 1 } do
+				cyl(torso, 0.1, a, hcf * CFrame.new(k * x, k, 0) * U.AxisZ, c) -- lobes
+			end
+			cyl(torso, 0.04, 0.26, hcf * CFrame.new(k * s, k + 0.08, 0.07) * U.AxisZ, light) -- shine
+		end
+		ball(torso, 0.3, CFrame.new(0, 0.2, 0.55), U.Shade(c, 0.85)) -- joint
 	end
 
 	------------------------------------------------------------------ tool (right hand)
@@ -5406,6 +5848,43 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		tpart(U.Cyl(0.2, 0.16, T(0, 0.05, -1.02) * U.AxisZ, U.Shade(tc, 0.6), model, metalOpts)) -- adjusting screw
 		muzzle = tpart(U.Ball(0.24, T(0, 0.05, -1.48), beam, model, NEON)) -- glow between the jaws
 		tipWorld = T(0, 0.05, -1.65)
+	elseif tool == "HeartWand" then
+		-- pale wand with a heart on top (heart faces sideways, points back down the shaft)
+		tpart(U.Cyl(1.15, 0.13, T(0, 0.05, -0.55) * U.AxisZ, U.Mix(tc, WHITE, 0.6), model))
+		local hf = T(0, 0.05, -1.4) * CFrame.Angles(-math.pi / 2, 0, 0) -- +Y = forward along the wand
+		local a = 0.4
+		local k = a / (2 * math.sqrt(2))
+		tpart(U.Block(Vector3.new(0.08, a, a), hf * CFrame.Angles(math.pi / 4, 0, 0), tc, model))
+		for _, z in { -k, k } do
+			tpart(U.Cyl(0.08, a, hf * CFrame.new(0, k, z), tc, model)) -- lobes
+		end
+		muzzle = tpart(U.Ball(0.17, hf * CFrame.new(0, 0.04, 0), beam, model, NEON)) -- heart gem
+		tipWorld = T(0, 0.05, -1.78)
+	elseif tool == "MoonStaff" then
+		-- tall staff topped by an upturned crescent cradling a glowing orb
+		local up = CFrame.Angles(-0.1, 0, 0)
+		local sf = grip * up
+		tpart(U.Cyl(3.0, 0.18, sf * CFrame.new(0, 0.55, 0) * U.AxisY, U.Shade(tc, 0.5), model))
+		tpart(U.Cyl(0.16, 0.4, sf * CFrame.new(0, 1.95, 0) * U.AxisY, GOLD, model, METAL_MAT)) -- collar
+		local mc = sf * CFrame.new(0, 2.5, 0)
+		for i = 0, 4 do
+			local phi = math.rad(-160 + i * 35)
+			local w = 0.22 - math.abs(i - 2) * 0.05
+			tpart(U.Block(Vector3.new(w, 0.34, 0.12), mc * CFrame.Angles(0, 0, phi) * CFrame.new(0.5, 0, 0), tc, model)) -- crescent
+		end
+		muzzle = tpart(U.Ball(0.42, mc, beam, model, NEON))
+		tipWorld = mc
+	elseif tool == "PumpkinLance" then
+		-- striped jousting lance with a pumpkin hand guard
+		local orange = Color3.fromRGB(255, 140, 40)
+		tpart(U.Cyl(0.6, 0.2, T(0, 0.05, 0.15) * U.AxisZ, Color3.fromRGB(95, 62, 40), model)) -- handle
+		tpart(U.Ball(0.8, T(0, 0.05, -0.42), orange, model))
+		tpart(U.Cyl(0.06, 0.84, T(0, 0.05, -0.42), U.Shade(orange, 0.8), model)) -- rib
+		tpart(U.Cyl(0.18, 0.12, T(0, 0.5, -0.42) * U.AxisY, Color3.fromRGB(90, 140, 60), model)) -- stem
+		local base = rArm.CFrame:ToObjectSpace(T(0, 0.05, -0.75) * CFrame.Angles(-math.pi / 2, 0, 0))
+		local tipCf = cone(rArm, base, 0.46, 1.7, 4, tc, U.Mix(tc, WHITE, 0.55))
+		muzzle = tpart(U.Ball(0.2, rArm.CFrame * tipCf, beam, model, NEON))
+		tipWorld = T(0, 0.05, -2.5)
 	else -- Flashlight (default)
 		tpart(U.Cyl(1.2, 0.36, T(0, 0, -0.3) * U.AxisZ, U.Shade(tc, 0.7), model))
 		tpart(U.Cyl(0.38, 0.62, T(0, 0, -1.05) * U.AxisZ, tc, model))
@@ -5614,7 +6093,7 @@ return HunterRig
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="13">
+        <Item class="ModuleScript" referent="14">
           <Properties>
             <string name="Name">RigUtil</string>
             <string name="Source"><![CDATA[--!strict
@@ -5818,7 +6297,7 @@ return RigUtil
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">Signal</string>
           <string name="Source"><![CDATA[--!strict
@@ -5876,7 +6355,7 @@ return Signal
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="15">
+      <Item class="ModuleScript" referent="16">
         <Properties>
           <string name="Name">Sounds</string>
           <string name="Source"><![CDATA[--!strict
@@ -5924,15 +6403,15 @@ return Sounds
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="16">
+  <Item class="ServerScriptService" referent="17">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="17">
+    <Item class="Folder" referent="18">
       <Properties>
         <string name="Name">GHServer</string>
       </Properties>
-      <Item class="Script" referent="18">
+      <Item class="Script" referent="19">
         <Properties>
           <string name="Name">Main</string>
           <token name="RunContext">0</token>
@@ -6020,11 +6499,11 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="19">
+      <Item class="Folder" referent="20">
         <Properties>
           <string name="Name">Services</string>
         </Properties>
-        <Item class="ModuleScript" referent="20">
+        <Item class="ModuleScript" referent="21">
           <Properties>
             <string name="Name">CrewService</string>
             <string name="Source"><![CDATA[--!strict
@@ -6214,7 +6693,7 @@ return CrewService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="21">
+        <Item class="ModuleScript" referent="22">
           <Properties>
             <string name="Name">DataService</string>
             <string name="Source"><![CDATA[--!strict
@@ -6238,6 +6717,7 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Net = require(GH.Net)
 local Signal = require(GH.Signal)
+local Eggs = require(GH.Logic.Eggs)
 
 local DataService = {}
 
@@ -6277,6 +6757,7 @@ export type Data = {
 	TradesApplied: { string }, -- recent trade ids applied to this profile (exactly-once)
 	-- v1.7
 	TowerCheckpoint: number, -- highest checkpoint room cleared (5, 10, ...); next run may start after it
+	PendingHatch: { [string]: Eggs.Record }, -- v1.8: hatch request id -> result (last 20; exactly-once egg retries)
 	Variants: { [string]: boolean }, -- "HunterId:1" / "HunterId:2" = Shiny / Mega discovered (Normal stays in Discovered)
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
@@ -6316,6 +6797,7 @@ local function defaults(): Data
 		EventPlay = {},
 		TradesApplied = {},
 		TowerCheckpoint = 0,
+		PendingHatch = {},
 		Variants = {},
 		Orphans = {},
 		Extra = {},
@@ -6452,6 +6934,17 @@ local function migrate(raw: any): Data
 		end
 	end
 	d.EquippedPets = eqPets
+	-- egg hatch records (exactly-once retries): drop malformed entries, keep the newest 20
+	for id, rec in d.PendingHatch do
+		if not Eggs.ValidRequestId(id) or type(rec) ~= "table" or type(rec.Egg) ~= "string" or type(rec.Pet) ~= "string" or type(rec.Uid) ~= "string" then
+			d.PendingHatch[id] = nil
+		else
+			rec.T = num(rec.T, 0)
+		end
+	end
+	for _, id in Eggs.Prune(d.PendingHatch, Eggs.KEEP_RECORDS) do
+		d.PendingHatch[id] = nil
+	end
 	for id, ev in d.EventPlay do
 		if type(id) ~= "string" or type(ev) ~= "table" then
 			d.EventPlay[id] = nil
@@ -7035,13 +7528,12 @@ return DataService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="22">
+        <Item class="ModuleScript" referent="23">
           <Properties>
             <string name="Name">DevService</string>
             <string name="Source"><![CDATA[--!strict
 -- Owner-only developer tools (DEV button + Studio chat commands). A player is a dev when the
--- game runs in Studio, when they created the game (or own the group that did), or when their
--- UserId is in Config.DevUserIds. Every command is re-checked here on the server, so the
+-- game runs in Studio, or when their UserId is listed in Config.DevUserIds (live servers). Every command is re-checked here on the server, so the
 -- button showing up on a client means nothing by itself.
 -- NOTE: in a live server these change the dev's REAL saved profile.
 local Players = game:GetService("Players")
@@ -7067,16 +7559,8 @@ local function checkDev(player: Player): boolean
 	if RunService:IsStudio() then
 		return true
 	end
-	if table.find(Config.DevUserIds, player.UserId) then
-		return true
-	end
-	if game.CreatorType == Enum.CreatorType.User then
-		return player.UserId == game.CreatorId
-	end
-	local ok, rank = pcall(function()
-		return player:GetRankInGroup(game.CreatorId)
-	end)
-	return ok and rank == 255
+	-- live servers: ONLY the explicitly allowed developer UserIds (Config.DevUserIds)
+	return table.find(Config.DevUserIds, player.UserId) ~= nil
 end
 
 function DevService.IsDev(player: Player): boolean
@@ -7303,7 +7787,7 @@ return DevService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="23">
+        <Item class="ModuleScript" referent="24">
           <Properties>
             <string name="Name">DropService</string>
             <string name="Source"><![CDATA[--!strict
@@ -7508,7 +7992,7 @@ return DropService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="24">
+        <Item class="ModuleScript" referent="25">
           <Properties>
             <string name="Name">EventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -7536,7 +8020,7 @@ return EventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="25">
+        <Item class="ModuleScript" referent="26">
           <Properties>
             <string name="Name">FeedbackService</string>
             <string name="Source"><![CDATA[--!strict
@@ -7698,7 +8182,7 @@ return FeedbackService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="26">
+        <Item class="ModuleScript" referent="27">
           <Properties>
             <string name="Name">Fx</string>
             <string name="Source"><![CDATA[--!strict
@@ -7739,7 +8223,7 @@ return Fx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="27">
+        <Item class="ModuleScript" referent="28">
           <Properties>
             <string name="Name">GhostService</string>
             <string name="Source"><![CDATA[--!strict
@@ -7791,6 +8275,7 @@ export type Ghost = {
 	HitFrac: number?, -- tower bosses: hit = target max HP * this
 	NextAttack: number, -- os.clock of the next retaliation
 	Pending: { Player: Player, Uid: string, Lands: number }?, -- telegraphed hit in flight
+	LastKey: string?, -- "userId:uid" hit last (targets rotate)
 }
 
 local buildHitbox: (Config.GhostDef, Vector3) -> Model
@@ -8223,7 +8708,13 @@ local function retaliationTick()
 		if pend and clock >= pend.Lands then
 			g.Pending = nil
 			local tg = targets[pend.Player]
-			local still = tg and tg.Uid == g.Uid and table.find(attackers(g, t, clock), pend.Player) ~= nil
+			local list = attackers(g, t, clock)
+			local still = tg and tg.Uid == g.Uid and table.find(list, pend.Player) ~= nil
+			-- everyone fighting this ghost sees the bolt land (or fizzle); damage only if the SAME
+			-- hunter is still eligible (never redirected to someone else)
+			if not table.find(list, pend.Player) then
+				table.insert(list, pend.Player)
+			end
 			if still and table.find(CrewService.Targets(pend.Player), pend.Uid) then
 				local maxHP = CrewService.MaxHP(pend.Player, pend.Uid)
 				local hit
@@ -8234,9 +8725,15 @@ local function retaliationTick()
 					hit = Rules.RetaliationHit(g.Max, RC.HitPerSpirit[kind] or RC.HitPerSpirit.Normal, maxHP, RC.HitCap[kind] or RC.HitCap.Normal)
 				end
 				local ko = CrewService.Hit(pend.Player, pend.Uid, hit)
-				Fx.To(pend.Player, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Knocked = ko })
-			elseif pend.Player.Parent then
-				Fx.To(pend.Player, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Dodged = true })
+				for _, p in list do
+					Fx.To(p, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Owner = pend.Player.UserId, Knocked = ko })
+				end
+			else
+				for _, p in list do
+					if p.Parent then
+						Fx.To(p, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Owner = pend.Player.UserId, Dodged = true })
+					end
+				end
 			end
 		end
 		if g.Pending == nil and clock >= g.NextAttack then
@@ -8245,17 +8742,29 @@ local function retaliationTick()
 				g.NextAttack = clock + 0.5 -- passive until someone attacks it
 				continue
 			end
-			local player = list[rng:NextInteger(1, #list)]
-			local crew = CrewService.Targets(player)
-			if #crew == 0 then
+			-- every eligible hunter of every attacking player; rotate so hits spread out
+			local keys: { string } = {}
+			local who: { [string]: { P: Player, U: string } } = {}
+			for _, p in list do
+				for _, uid in CrewService.Targets(p) do
+					local key = p.UserId .. ":" .. uid
+					table.insert(keys, key)
+					who[key] = { P = p, U = uid }
+				end
+			end
+			local key = Rules.NextTarget(keys, g.LastKey)
+			if not key then
 				g.NextAttack = clock + 0.5
 				continue
 			end
-			local uid = crew[rng:NextInteger(1, #crew)]
+			local pick = who[key]
+			g.LastKey = key
 			local interval = if g.Tower then Config.Tower.Interval else RC.Interval
-			g.NextAttack = clock + interval
-			g.Pending = { Player = player, Uid = uid, Lands = clock + RC.Windup }
-			Fx.To(player, "GhostWindup", { Ghost = g.Uid, Hunter = uid, Time = RC.Windup })
+			g.NextAttack = clock + interval -- one attack per interval, whoever the target is
+			g.Pending = { Player = pick.P, Uid = pick.U, Lands = clock + RC.Windup }
+			for _, p in list do
+				Fx.To(p, "GhostWindup", { Ghost = g.Uid, Hunter = pick.U, Owner = pick.P.UserId, Time = RC.Windup })
+			end
 		end
 	end
 end
@@ -8342,7 +8851,7 @@ return GhostService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="28">
+        <Item class="ModuleScript" referent="29">
           <Properties>
             <string name="Name">GlobalEventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -8510,7 +9019,7 @@ return GlobalEventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="29">
+        <Item class="ModuleScript" referent="30">
           <Properties>
             <string name="Name">HunterService</string>
             <string name="Source"><![CDATA[--!strict
@@ -9067,7 +9576,7 @@ return HunterService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="30">
+        <Item class="ModuleScript" referent="31">
           <Properties>
             <string name="Name">LeaderboardService</string>
             <string name="Source"><![CDATA[--!strict
@@ -9218,13 +9727,13 @@ return LeaderboardService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="31">
+        <Item class="ModuleScript" referent="32">
           <Properties>
             <string name="Name">PetService</string>
             <string name="Source"><![CDATA[--!strict
--- Ghost pets (v1.6): bought with Spirit Shards (Boss Tower only), up to Config.PetRules.MaxEquipped
--- equipped. Equipped pets boost ALL of the owner's hunters (Normal, Shiny, Mega) everywhere
--- (world and tower): Power, Ecto, HP or Recovery. Bonuses are recomputed from the saved
+-- Ghost pets (v1.6): hatched from eggs bought with Spirit Shards (Boss Tower only; v1.8 eggs
+-- replaced direct purchases), up to Config.PetRules.MaxEquipped equipped. Equipped pets boost
+-- ALL of the owner's hunters (Normal, Shiny, Mega) everywhere (world and tower): Power, Ecto, HP or Recovery. Bonuses are recomputed from the saved
 -- equipped list every time (PlayerInfo.PetBonuses), so nothing can stack twice.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9233,6 +9742,7 @@ local TextService = game:GetService("TextService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Eggs = require(GH.Logic.Eggs)
 local DataService = require(script.Parent.DataService)
 local HunterService = require(script.Parent.HunterService)
 local Remotes = require(script.Parent.Remotes)
@@ -9240,6 +9750,7 @@ local Remotes = require(script.Parent.Remotes)
 local PetService = {}
 
 local lastBuy: { [Player]: number } = {}
+local rng = Random.new()
 
 local NICK_MAX = 20 -- characters
 
@@ -9260,7 +9771,7 @@ local function count(t: { [string]: any }): number
 	return n
 end
 
--- Adds a pet to a profile (purchase or event reward). Returns the new pet uid.
+-- Adds a pet to a profile (egg hatch or event reward). Returns the new pet uid.
 function PetService.Add(d: DataService.Data, petId: string): string?
 	if not Config.Pets[petId] then
 		return nil
@@ -9281,37 +9792,58 @@ end
 PetService.Refresh = refresh
 
 function PetService.Init()
-	Remotes.Register("BuyPet", "Default", function(player, petId)
+	-- Buy + hatch an egg (the only way to get pets with shards). Exactly-once: the client sends
+	-- a request id; a retry with the same id returns the stored result and never charges or
+	-- rolls again. Check + roll + spend + add + record happen in ONE non-yielding step and go
+	-- into the same profile write, so a crash either loses the whole hatch (nothing was saved)
+	-- or keeps all of it. The client's hatch animation is presentation only.
+	Remotes.Register("BuyEgg", "Default", function(player, eggId, requestId)
 		local d = DataService.Get(player)
 		if not d then
 			return Remotes.Fail("Loading...")
 		end
-		if type(petId) ~= "string" then
-			return Remotes.Fail("Unknown pet")
+		if type(eggId) ~= "string" or not Eggs.ValidRequestId(requestId) then
+			return Remotes.Fail("Unknown egg")
 		end
-		local def = Config.Pets[petId]
-		if not def or def.Price == nil then
-			return Remotes.Fail("That pet isn't for sale")
+		local egg = Config.Eggs[eggId]
+		if not egg then
+			return Remotes.Fail("Unknown egg")
 		end
-		-- a double tap can't buy twice by accident
+		local done = d.PendingHatch[requestId]
+		if done then
+			if done.Egg ~= eggId then
+				return Remotes.Fail("Unknown egg")
+			end
+			return { ok = true, Egg = done.Egg, Pet = done.Pet, Uid = done.Uid, Shards = d.Shards }
+		end
+		-- a double tap (two different ids) can't buy twice by accident
 		local now = os.clock()
 		if lastBuy[player] and now - lastBuy[player] < 1 then
 			return Remotes.Fail("One moment...")
 		end
+		if not Eggs.Unlocked(egg, d.TowerCheckpoint) then
+			return Remotes.Fail(string.format("Reach Boss Tower checkpoint %d to unlock the %s", egg.Unlock, egg.Name))
+		end
 		if count(d.Pets) >= Config.PetRules.MaxOwned then
 			return Remotes.Fail("Your pet room is full!")
 		end
-		local price = def.Price :: number
-		if d.Shards < price then
-			return Remotes.Fail(string.format("Needs %s Spirit Shards (earn them in the Boss Tower)", Format.Commas(price)))
+		if d.Shards < egg.Price then
+			return Remotes.Fail(string.format("Needs %s Spirit Shards (earn them in the Boss Tower)", Format.Commas(egg.Price)))
+		end
+		local petId = Eggs.Roll(egg, rng:NextNumber())
+		if not Config.Pets[petId] then
+			return Remotes.Fail("Something went wrong")
 		end
 		lastBuy[player] = now
-		-- check + spend + add happen in one step (no yield), so the same shards can't be spent twice
-		d.Shards -= price
-		local uid = PetService.Add(d, petId)
+		d.Shards -= egg.Price
+		local uid = PetService.Add(d, petId) :: string
+		d.PendingHatch[requestId] = { Egg = eggId, Pet = petId, Uid = uid, T = os.time() }
+		for _, id in Eggs.Prune(d.PendingHatch, Eggs.KEEP_RECORDS) do
+			d.PendingHatch[id] = nil
+		end
 		refresh(player)
 		DataService.Save(player)
-		return { ok = true, Uid = uid, Shards = d.Shards }
+		return { ok = true, Egg = eggId, Pet = petId, Uid = uid, Shards = d.Shards }
 	end)
 
 	Remotes.Register("EquipPet", "Inventory", function(player, uid, on)
@@ -9417,7 +9949,7 @@ return PetService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="32">
+        <Item class="ModuleScript" referent="33">
           <Properties>
             <string name="Name">PlayerInfo</string>
             <string name="Source"><![CDATA[--!strict
@@ -9634,7 +10166,7 @@ return PlayerInfo
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="33">
+        <Item class="ModuleScript" referent="34">
           <Properties>
             <string name="Name">ProgressService</string>
             <string name="Source"><![CDATA[--!strict
@@ -9914,7 +10446,7 @@ return ProgressService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="34">
+        <Item class="ModuleScript" referent="35">
           <Properties>
             <string name="Name">RarePetEventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -10296,7 +10828,7 @@ return RarePetEventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="35">
+        <Item class="ModuleScript" referent="36">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -10398,7 +10930,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">SafetyService</string>
             <string name="Source"><![CDATA[--!strict
@@ -10574,7 +11106,7 @@ return SafetyService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">ShopService</string>
             <string name="Source"><![CDATA[--!strict
@@ -10876,7 +11408,7 @@ return ShopService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">StationService</string>
             <string name="Source"><![CDATA[--!strict
@@ -11029,7 +11561,7 @@ return StationService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">TowerService</string>
             <string name="Source"><![CDATA[--!strict
@@ -11874,7 +12406,7 @@ return TowerService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">TradeService</string>
             <string name="Source"><![CDATA[--!strict
@@ -12393,11 +12925,11 @@ return TradeService
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="41">
+      <Item class="Folder" referent="42">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">Arena</string>
             <string name="Source"><![CDATA[--!strict
@@ -12638,7 +13170,7 @@ return Arena
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Boundary</string>
             <string name="Source"><![CDATA[--!strict
@@ -12807,7 +13339,7 @@ return Boundary
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Builder</string>
             <string name="Source"><![CDATA[--!strict
@@ -12874,6 +13406,7 @@ local Sunken = require(script.Parent.Sunken)
 local Clockwork = require(script.Parent.Clockwork)
 local Inferno = require(script.Parent.Inferno)
 local Throne = require(script.Parent.Throne)
+local Hatchery = require(script.Parent.Hatchery)
 
 local Builder = {}
 
@@ -12895,6 +13428,9 @@ local function registerKeepOuts()
 	-- spawn kiosk pockets behind the plaza (Trading | Merge + Pets, see Neighborhood.luau)
 	Kit.AddRect(-36, -36, -14, -12)
 	Kit.AddRect(14, -36, 36, -12)
+	-- Pet Hatchery near the Boss Tower (see Hatchery.luau) + its path to the cross street
+	Kit.AddRect(46, 65, 70, 90)
+	Kit.AddRect(49, 90, 56, 106, true)
 end
 
 -- Last resort when the build throws: a plain anchored floor under the whole main strip and a
@@ -12971,6 +13507,7 @@ local function buildAll(map: Folder)
 	Clockwork.Build(map)
 	Inferno.Build(map)
 	Throne.Build(map)
+	Hatchery.Build(map) -- last: uses no Kit.Rng, so other zones' random props don't shift
 
 	map.Parent = Workspace
 	local s = Kit.Stats
@@ -12999,7 +13536,7 @@ return Builder
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Carnival</string>
             <string name="Source"><![CDATA[--!strict
@@ -13657,7 +14194,7 @@ return Carnival
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">Castle</string>
             <string name="Source"><![CDATA[--!strict
@@ -14227,7 +14764,7 @@ return Castle
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">Cemetery</string>
             <string name="Source"><![CDATA[--!strict
@@ -14462,7 +14999,7 @@ return Cemetery
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">Clockwork</string>
             <string name="Source"><![CDATA[--!strict
@@ -14900,7 +15437,7 @@ return Clockwork
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="49">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">Frost</string>
             <string name="Source"><![CDATA[--!strict
@@ -15389,7 +15926,7 @@ return Frost
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="50">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">Gates</string>
             <string name="Source"><![CDATA[--!strict
@@ -15519,7 +16056,7 @@ return Gates
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">Harbor</string>
             <string name="Source"><![CDATA[--!strict
@@ -16113,7 +16650,227 @@ return Harbor
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="53">
+          <Properties>
+            <string name="Name">Hatchery</string>
+            <string name="Source"><![CDATA[--!strict
+-- PET HATCHERY (workspace.Map.Hatchery): a small open pavilion in a graveyard garden near the
+-- Boss Tower, south of the cross street and west of the tower plaza (footprint X 48..68,
+-- Z 66..88; Builder reserves X 46..70, Z 65..90 plus the path X 50.5..54.5 to the street). Faces north
+-- (+Z) toward the cross street.
+--   Three pedestals (Config.EggOrder, west to east), each with a big egg, a price/unlock sign
+--   and an invisible PromptAnchor (attribute Egg = egg id) holding a "View" ProximityPrompt.
+--   The client (Controllers/Hatchery) opens the egg panel from the prompt; buying and rolling
+--   happen only on the server (PetService "BuyEgg").
+-- Built last in Builder and without Kit.Rng, so it never shifts other zones' random props.
+
+local Config = require(game:GetService("ReplicatedStorage").GH.Config)
+local Format = require(game:GetService("ReplicatedStorage").GH.Logic.Format)
+local Kit = require(script.Parent.Kit)
+local Props = require(script.Parent.Props)
+
+local Hatchery = {}
+
+local C = Color3.fromRGB
+local V = Vector3.new
+local NEON = Enum.Material.Neon
+
+local X1, X2, Z1, Z2 = 48, 68, 66, 88
+local PED_Z = 73 -- pedestal row
+local ROOF_Y = 14
+local STONE = C(96, 84, 120)
+local STONE_DARK = C(64, 54, 86)
+local MOSS = C(70, 92, 70)
+local SHARD = C(200, 160, 255)
+local NORTH = math.pi -- yaw that turns a part's Front face (local -Z) toward +Z
+
+-- Spirit Shard crystal (a diamond: a block turned 45 degrees), optionally floating.
+local function crystal(parent: Instance, pos: Vector3, s: number, color: Color3, float: boolean)
+	local p = Kit.Part(parent, V(s, s * 1.6, s), CFrame.new(pos) * CFrame.Angles(0, math.rad(45), math.rad(12)), color, { Mat = Enum.Material.Glass, Transp = 0.15, Refl = 0.2 })
+	if float then
+		Kit.Float(p, 0.6)
+	end
+	return p
+end
+
+-- The egg: two stacked balls (wide bottom, narrower top) read as an egg shape.
+local function eggShape(parent: Instance, x: number, y: number, z: number, color: Color3, opts: Kit.Opts?): Part
+	local low = Kit.Ball(parent, 4.2, V(x, y + 2.1, z), color, opts)
+	Kit.Ball(parent, 3.4, V(x, y + 3.6, z), color, opts)
+	return low
+end
+
+local function hauntedEgg(m: Instance, x: number, y: number, z: number, egg: Config.EggDef)
+	eggShape(m, x, y, z, Kit.Vivid(egg.Color))
+	-- green ecto cracks across the front (thin neon strips: the egg's one glowing accent)
+	local front = z + 2.05
+	local cracks = { { -0.9, 2.4, 25 }, { 0.2, 2.9, -35 }, { 0.9, 2.2, 40 }, { -0.2, 3.9, 60 } }
+	for _, c in cracks do
+		Kit.Part(m, V(0.18, 1.2, 0.2), CFrame.new(x + c[1], y + c[2], front) * CFrame.Angles(0, 0, math.rad(c[3])), egg.Accent, { Mat = NEON })
+	end
+	-- dark speckles
+	for _, sp in { { -1.3, 1.6 }, { 1.2, 3.4 }, { 0.6, 1.2 } } do
+		Kit.Ball(m, 0.6, V(x + sp[1], y + sp[2], z + 1.75), C(70, 30, 120))
+	end
+end
+
+local function phantomEgg(m: Instance, x: number, y: number, z: number, egg: Config.EggDef)
+	eggShape(m, x, y, z, egg.Color, { Mat = Enum.Material.Glass, Transp = 0.3, Refl = 0.1 })
+	-- inner soft core
+	Kit.Ball(m, 2.4, V(x, y + 2.5, z), egg.Accent, { Transp = 0.4 })
+	-- ghost face on the front
+	local dark = C(30, 30, 60)
+	Kit.Ball(m, 0.8, V(x - 0.7, y + 3.4, z + 1.55), dark)
+	Kit.Ball(m, 0.8, V(x + 0.7, y + 3.4, z + 1.55), dark)
+	Kit.Part(m, V(0.9, 0.6, 0.3), CFrame.new(x, y + 2.4, z + 2.0), dark)
+end
+
+local function moonlightEgg(m: Instance, x: number, y: number, z: number, egg: Config.EggDef)
+	eggShape(m, x, y, z, egg.Color, { Refl = 0.15 })
+	-- crescent moon: a pale disc partly covered by an egg-coloured disc
+	local front = z + 2.0
+	Kit.Part(m, V(0.2, 1.6, 1.6), CFrame.new(x - 0.2, y + 3.0, front) * CFrame.Angles(0, math.pi / 2, 0), egg.Accent, { Shape = Enum.PartType.Cylinder })
+	Kit.Part(m, V(0.2, 1.4, 1.4), CFrame.new(x + 0.2, y + 3.15, front + 0.08) * CFrame.Angles(0, math.pi / 2, 0), egg.Color, { Shape = Enum.PartType.Cylinder })
+	-- stars
+	for _, s in { { -1.2, 1.7 }, { 1.1, 2.0 }, { 0.8, 4.1 }, { -0.9, 4.0 }, { 0.1, 1.2 } } do
+		Kit.Ball(m, 0.35, V(x + s[1], y + s[2], z + 1.85), C(255, 245, 200), { Mat = NEON })
+	end
+end
+
+local EGG_LOOK: { [string]: (Instance, number, number, number, Config.EggDef) -> () } = {
+	HauntedEgg = hauntedEgg,
+	PhantomEgg = phantomEgg,
+	MoonlightEgg = moonlightEgg,
+}
+
+local function pedestal(parent: Instance, egg: Config.EggDef, x: number)
+	local m = Kit.Model(parent, "Pedestal_" .. egg.Id)
+	local z = PED_Z
+	-- stepped stone pedestal
+	local base = Kit.Disc(m, x, z, 0.8, 6.4, 0.6, STONE_DARK, { Mat = Enum.Material.Slate, Solid = true, Name = "Base" })
+	Kit.Cyl(m, 2.2, 4.2, CFrame.new(x, 1.9, z), STONE, { Mat = Enum.Material.Slate, Solid = true })
+	Kit.Disc(m, x, z, 3.3, 5.2, 0.4, Kit.Vivid(egg.Accent))
+	local look = EGG_LOOK[egg.Id]
+	if look then
+		look(m, x, 3.3, z, egg)
+	else
+		eggShape(m, x, 3.3, z, egg.Color)
+	end
+	-- soft glow under the egg (low brightness: no bloom spike)
+	local glow = Kit.Part(m, V(1, 1, 1), CFrame.new(x, 5, z + 2), egg.Accent, { Transp = 1, Name = "Glow" })
+	Kit.Light(glow, egg.Accent, 12, 0.7)
+	-- floating Spirit Shard crystals beside the egg
+	crystal(m, V(x - 2.6, 7.6, z), 0.7, SHARD, true)
+	crystal(m, V(x + 2.6, 8.2, z), 0.6, SHARD, true)
+
+	-- price / unlock sign in front of the pedestal, facing north
+	local signCF = CFrame.new(x, 2.1, z + 4.2) * CFrame.Angles(0, NORTH, 0) * CFrame.Angles(math.rad(-12), 0, 0)
+	local board = Kit.Part(m, V(5.6, 3.2, 0.4), signCF, C(35, 22, 60), { Name = "EggSign" })
+	Kit.Part(m, V(6.1, 3.7, 0.3), signCF * CFrame.new(0, 0, 0.3), Kit.Vivid(egg.Accent))
+	Kit.Box(m, V(x - 0.25, 0, z + 4.4), V(x + 0.25, 0.8, z + 4.9), STONE_DARK)
+	local g = Kit.Gui(board, Enum.NormalId.Front)
+	Kit.Label(g, string.upper(egg.Name), C(255, 255, 255), { Size = UDim2.fromScale(0.94, 0.34), Pos = UDim2.fromScale(0.03, 0.04) })
+	Kit.Label(g, "🔮 " .. Format.Commas(egg.Price), SHARD, { Size = UDim2.fromScale(0.8, 0.3), Pos = UDim2.fromScale(0.1, 0.38) })
+	local unlock = if egg.Unlock > 0 then "Unlock: Tower checkpoint " .. egg.Unlock else "Open to everyone"
+	Kit.Label(g, unlock, C(150, 255, 170), { Size = UDim2.fromScale(0.94, 0.22), Pos = UDim2.fromScale(0.03, 0.72) })
+
+	-- invisible prompt anchor in front of the sign
+	local anchor = Kit.Part(m, V(1, 1, 1), CFrame.new(x, 3, z + 5.5), egg.Color, { Transp = 1, Name = "PromptAnchor" })
+	anchor:SetAttribute("Egg", egg.Id)
+	-- pcall: the headless world simulator (tools/worldsim) has no ProximityPrompt class
+	pcall(function()
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "EggPrompt"
+		prompt.ActionText = "View"
+		prompt.ObjectText = egg.Name
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.GamepadKeyCode = Enum.KeyCode.ButtonY
+		prompt:SetAttribute("Egg", egg.Id)
+		prompt.Parent = anchor
+	end)
+	m.PrimaryPart = base
+end
+
+-- Small leaning tombstone (garden decoration).
+local function tomb(parent: Instance, x: number, z: number, tilt: number)
+	local cf = CFrame.new(x, 1.4, z) * CFrame.Angles(0, NORTH, math.rad(tilt))
+	Kit.Part(parent, V(2, 2.8, 0.6), cf, C(150, 145, 165), { Mat = Enum.Material.Slate, Solid = true })
+	Kit.Part(parent, V(0.6, 2, 2), cf * CFrame.new(0, 1.4, 0) * CFrame.Angles(0, math.pi / 2, 0), C(150, 145, 165), { Mat = Enum.Material.Slate, Shape = Enum.PartType.Cylinder })
+	Kit.Part(parent, V(2.4, 0.3, 1), CFrame.new(x, 0.15, z), MOSS)
+end
+
+function Hatchery.Build(map: Instance)
+	local m = Kit.Model(map, "Hatchery")
+
+	-- mossy flagstone floor (low: stepped onto, not a wall)
+	local floor = Kit.Box(m, V(X1, -0.4, Z1), V(X2, 0.2, Z2), C(80, 72, 100), { Mat = Enum.Material.Slate, Solid = true, Name = "Floor" })
+	Kit.Box(m, V(X1 + 1, 0.2, Z1 + 1), V(X2 - 1, 0.24, Z1 + 13), C(105, 92, 135), { Mat = Enum.Material.Cobblestone, Solid = true })
+	-- path to the cross street sidewalk (flat; west of the tower plaza's entrance arch pillar)
+	Kit.Box(m, V(50.5, -0.4, Z2), V(54.5, 0.16, 106), C(110, 90, 150), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "HatcheryPath" })
+
+	-- iron garden fence on the south, west and east sides (north stays open)
+	Props.Fence(m, V(X1, 0.2, Z1), V(X2, 0.2, Z1), "iron")
+	Props.Fence(m, V(X1, 0.2, Z1), V(X1, 0.2, Z2 - 2), "iron")
+	Props.Fence(m, V(X2, 0.2, Z1), V(X2, 0.2, Z2 - 2), "iron")
+
+	-- open pavilion: four stone pillars and a slate roof over the pedestals
+	local px1, px2, pz1, pz2 = X1 + 1.5, X2 - 1.5, Z1 + 1.5, PED_Z + 6
+	for _, px in { px1, px2 } do
+		for _, pz in { pz1, pz2 } do
+			Kit.Box(m, V(px - 0.9, 0.2, pz - 0.9), V(px + 0.9, ROOF_Y, pz + 0.9), STONE, { Mat = Enum.Material.Slate, Solid = true })
+			Kit.Box(m, V(px - 1.3, 0.2, pz - 1.3), V(px + 1.3, 1.2, pz + 1.3), STONE_DARK, { Mat = Enum.Material.Slate, Solid = true })
+		end
+	end
+	local cz = (pz1 + pz2) / 2
+	local depth = pz2 - pz1 + 4
+	Kit.Box(m, V(px1 - 2, ROOF_Y, pz1 - 2), V(px2 + 2, ROOF_Y + 1, pz2 + 2), STONE_DARK, { Mat = Enum.Material.Slate, Shadow = true })
+	local roofC = C(70, 40, 110)
+	Kit.Wedge(m, V(px2 - px1 + 4, 4, depth / 2), CFrame.new((px1 + px2) / 2, ROOF_Y + 3, cz - depth / 4), roofC, { Mat = Enum.Material.Slate })
+	Kit.Wedge(m, V(px2 - px1 + 4, 4, depth / 2), CFrame.new((px1 + px2) / 2, ROOF_Y + 3, cz + depth / 4) * CFrame.Angles(0, math.pi, 0), roofC, { Mat = Enum.Material.Slate })
+	-- back wall panel (south) so the eggs read against a dark backdrop
+	Kit.Box(m, V(px1, 0.2, pz1 - 0.4), V(px2, 9, pz1 + 0.4), C(45, 30, 75), { Mat = Enum.Material.Slate, Solid = true })
+
+	-- big sign over the front of the pavilion, facing the cross street
+	local signCF = CFrame.new((px1 + px2) / 2, ROOF_Y - 1.6, pz2 + 1.4) * CFrame.Angles(0, NORTH, 0)
+	local sign = Kit.Part(m, V(16, 3.4, 0.6), signCF, C(35, 22, 60), { Name = "HatcherySign" })
+	Kit.Part(m, V(17, 4.2, 0.4), signCF * CFrame.new(0, 0, 0.4), Kit.Vivid(SHARD))
+	Kit.Sign(sign, Enum.NormalId.Front, "🥚 PET HATCHERY 🥚", C(255, 240, 160))
+	-- side sign facing west (toward the main road and spawn)
+	Props.SignBoard(m, V(X1 - 0.6, 6, Z2 - 4), 9, 2.6, -1, 0, "PET HATCHERY", C(35, 22, 60), C(255, 240, 160), SHARD)
+	Kit.Box(m, V(X1 - 0.9, 0, Z2 - 4.3), V(X1 - 0.3, 4.7, Z2 - 3.7), STONE_DARK)
+
+	-- pedestals (Config.EggOrder, west to east)
+	local n = #Config.EggOrder
+	for i, id in Config.EggOrder do
+		local egg = Config.Eggs[id]
+		if egg then
+			pedestal(m, egg, (X1 + X2) / 2 + (i - (n + 1) / 2) * 6.5)
+		end
+	end
+
+	-- graveyard garden: tombstones, lanterns and a big shard cluster by the entrance
+	tomb(m, X1 + 3, Z2 - 6, 6)
+	tomb(m, X1 + 3.5, Z2 - 10, -5)
+	tomb(m, X2 - 3, Z2 - 7, -7)
+	Props.Lantern(m, V(X1 + 2, 0.2, Z2 - 1.5), SHARD, true, false)
+	Props.Lantern(m, V(X2 - 2, 0.2, Z2 - 1.5), SHARD, false, false)
+	local cluster = V(X2 - 3.5, 0.2, Z2 - 11.5)
+	crystal(m, cluster + V(0, 1.4, 0), 1.2, SHARD, false)
+	crystal(m, cluster + V(-0.9, 0.9, 0.6), 0.8, C(170, 130, 255), false)
+	crystal(m, cluster + V(0.8, 0.8, -0.5), 0.7, C(220, 190, 255), false)
+	crystal(m, cluster + V(0, 4.2, 0), 0.6, SHARD, true)
+
+	m.PrimaryPart = floor
+end
+
+return Hatchery
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">Hospital</string>
             <string name="Source"><![CDATA[--!strict
@@ -16805,7 +17562,7 @@ return Hospital
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="55">
           <Properties>
             <string name="Name">Inferno</string>
             <string name="Source"><![CDATA[--!strict
@@ -17222,7 +17979,7 @@ return Inferno
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="54">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">Kit</string>
             <string name="Source"><![CDATA[--!strict
@@ -17597,7 +18354,7 @@ return Kit
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="55">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -17662,7 +18419,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="58">
           <Properties>
             <string name="Name">Lighting</string>
             <string name="Source"><![CDATA[--!strict
@@ -17750,7 +18507,7 @@ return LightingSetup
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="57">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">Neighborhood</string>
             <string name="Source"><![CDATA[--!strict
@@ -18192,7 +18949,7 @@ return Neighborhood
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">Props</string>
             <string name="Source"><![CDATA[--!strict
@@ -18444,7 +19201,7 @@ return Props
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="61">
           <Properties>
             <string name="Name">School</string>
             <string name="Source"><![CDATA[--!strict
@@ -19003,7 +19760,7 @@ return School
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="62">
           <Properties>
             <string name="Name">SpiritRealm</string>
             <string name="Source"><![CDATA[--!strict
@@ -19568,7 +20325,7 @@ return SpiritRealm
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="61">
+        <Item class="ModuleScript" referent="63">
           <Properties>
             <string name="Name">Stations</string>
             <string name="Source"><![CDATA[--!strict
@@ -19757,7 +20514,7 @@ return Stations
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="62">
+        <Item class="ModuleScript" referent="64">
           <Properties>
             <string name="Name">Sunken</string>
             <string name="Source"><![CDATA[--!strict
@@ -20224,7 +20981,7 @@ return Sunken
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="63">
+        <Item class="ModuleScript" referent="65">
           <Properties>
             <string name="Name">Swamp</string>
             <string name="Source"><![CDATA[--!strict
@@ -20774,7 +21531,7 @@ return Swamp
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="64">
+        <Item class="ModuleScript" referent="66">
           <Properties>
             <string name="Name">TextFit</string>
             <string name="Source"><![CDATA[--!strict
@@ -20903,7 +21660,7 @@ return TextFit
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="65">
+        <Item class="ModuleScript" referent="67">
           <Properties>
             <string name="Name">Throne</string>
             <string name="Source"><![CDATA[--!strict
@@ -21306,7 +22063,7 @@ return Throne
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="66">
+        <Item class="ModuleScript" referent="68">
           <Properties>
             <string name="Name">Tomb</string>
             <string name="Source"><![CDATA[--!strict
@@ -21762,7 +22519,7 @@ return Tomb
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="67">
+        <Item class="ModuleScript" referent="69">
           <Properties>
             <string name="Name">TowerRoom</string>
             <string name="Source"><![CDATA[--!strict
@@ -21958,7 +22715,7 @@ return TowerRoom
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="68">
+        <Item class="ModuleScript" referent="70">
           <Properties>
             <string name="Name">ToyFactory</string>
             <string name="Source"><![CDATA[--!strict
@@ -22513,18 +23270,18 @@ return ToyFactory
       </Item>
     </Item>
   </Item>
-  <Item class="SoundService" referent="69">
+  <Item class="SoundService" referent="71">
     <Properties>
       <string name="Name">SoundService</string>
     </Properties>
   </Item>
-  <Item class="StarterGui" referent="70">
+  <Item class="StarterGui" referent="72">
     <Properties>
       <string name="Name">StarterGui</string>
       <token name="ScreenOrientation">2</token>
     </Properties>
   </Item>
-  <Item class="StarterPlayer" referent="71">
+  <Item class="StarterPlayer" referent="73">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">60</float>
@@ -22534,19 +23291,19 @@ return ToyFactory
       <float name="CharacterWalkSpeed">16</float>
       <bool name="LoadCharacterAppearance">true</bool>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="72">
+    <Item class="StarterPlayerScripts" referent="74">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="73">
+      <Item class="Folder" referent="75">
         <Properties>
           <string name="Name">GHClient</string>
         </Properties>
-        <Item class="Folder" referent="74">
+        <Item class="Folder" referent="76">
           <Properties>
             <string name="Name">Controllers</string>
           </Properties>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="77">
             <Properties>
               <string name="Name">Ambience</string>
               <string name="Source"><![CDATA[--!strict
@@ -22845,7 +23602,7 @@ return Ambience
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">Boss</string>
               <string name="Source"><![CDATA[--!strict
@@ -22862,7 +23619,7 @@ return Boss
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">CratePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -22898,6 +23655,7 @@ local autoQueue: { any } = {}
 local autoPlaying = false
 local infoLabel: TextLabel
 local luckLabel: TextLabel
+local legendLabel: TextLabel -- per-RARITY totals (cards keep each hunter's own chance)
 local current: string? = nil
 local crateIcon: ImageLabel
 local busy = false
@@ -22951,6 +23709,27 @@ end
 
 function refreshCards(crateId: string, d: any, odds: { [string]: number }, luck: number)
 	local crate = Config.Crates[crateId]
+	-- category totals: sum every hunter of the same rarity; rarities absent from this crate are skipped
+	local totals: { [string]: number } = {}
+	local rars: { Config.RarityDef } = {}
+	for _, e in crate.Pool do
+		local rid = Config.Hunters[e.Hunter].Rarity
+		if totals[rid] == nil then
+			totals[rid] = 0
+			table.insert(rars, Config.Rarities[rid])
+		end
+		totals[rid] += odds[e.Hunter] or 0
+	end
+	table.sort(rars, function(a, b)
+		return a.Order < b.Order
+	end)
+	local parts = {}
+	for _, r in rars do
+		-- brighter of the pair so dark rarities (Secret) stay readable
+		local c = if r.Color.R + r.Color.G + r.Color.B >= r.Color2.R + r.Color2.G + r.Color2.B then r.Color else r.Color2
+		table.insert(parts, string.format('<font color="#%s">%s</font> %s', c:ToHex(), r.Name, Format.Percent(totals[r.Id])))
+	end
+	legendLabel.Text = if #parts > 0 then "BY RARITY: " .. table.concat(parts, "  ·  ") else ""
 	for _, c in list:GetChildren() do
 		if c:IsA("Frame") then
 			c:Destroy()
@@ -23156,10 +23935,12 @@ function CratePanel.Init()
 	infoLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, -400, 0, 20), Position = UDim2.fromOffset(0, 12), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	luckLabel = Kit.Label(panel.Body, "🍀 LUCK BOOST: rare odds boosted!", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 32), Color = Theme.Ecto, Style = "Small", ZIndex = 62 })
 	luckLabel.Visible = false
+	legendLabel = Kit.Label(panel.Body, "", { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.fromOffset(0, 52), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62, Fit = true })
+	legendLabel.RichText = true
 	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
 	list = Kit.new("ScrollingFrame", {
-		Size = UDim2.new(1, 0, 1, -118),
-		Position = UDim2.fromOffset(0, 54),
+		Size = UDim2.new(1, 0, 1, -136),
+		Position = UDim2.fromOffset(0, 72),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,
@@ -23358,7 +24139,7 @@ return CratePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">Crew</string>
               <string name="Source"><![CDATA[--!strict
@@ -23370,7 +24151,6 @@ return CratePanel
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
@@ -23408,7 +24188,7 @@ type Member = {
 	Hp: number,
 	Alert: TextLabel?,
 	AlertUntil: number,
-	Chest: Attachment?, -- end point of incoming ghost bolts (own crew, made on first hit)
+	HitT: number, -- last slime hit (tiny squash/recoil in step)
 	Mark: Highlight?, -- red outline while a ghost winds up on this hunter
 	MarkUntil: number,
 }
@@ -23581,6 +24361,7 @@ local function newMember(id: string, tier: number, uid: string, at: Vector3, isL
 		Hp = 100,
 		AlertUntil = 0,
 		MarkUntil = 0,
+		HitT = 0,
 	}
 	makeBeam(m)
 	addTag(m, isLocal)
@@ -23739,6 +24520,213 @@ end
 local roots: { BasePart } = {}
 local cframes: { CFrame } = {}
 
+-- Ectoplasm spit (Fx "GhostWindup"/"GhostHit", sent to everyone fighting the ghost): a pooled
+-- glossy green blob flies from the ghost's mouth to the targeted hunter's chest along an arc,
+-- then splashes on the hunter (hit) or splats on the ground beside it (dodged).
+type Spit = {
+	Part: Part,
+	Trail: Trail,
+	Drip: ParticleEmitter,
+	Active: boolean,
+	Ghost: number,
+	Owner: number,
+	Hunter: string,
+	Member: Member,
+	Small: boolean,
+	From: Vector3,
+	To: Vector3,
+	Pos: Vector3,
+	Arc: number,
+	T0: number,
+	Arrive: number,
+	Result: string?, -- nil while waiting for GhostHit | "Hit" | "Knocked" | "Dodged"
+}
+local spits: { Spit } = {}
+local SPIT_FLIGHT = 0.35 -- leaves this long before the windup ends, so it lands with GhostHit
+local SPIT_WAIT = 0.5 -- how long a landed blob waits for a late GhostHit before fizzling
+local MAX_SPITS = 8
+local SLIME = Color3.fromRGB(120, 255, 100)
+
+local function chestPos(m: Member): Vector3
+	return m.Pos + Vector3.new(0, m.Rig.Height * 0.55, 0)
+end
+
+-- Resolves a hunter rig by (owner userId, hunter uid): uids are per player and can collide.
+local function memberOf(owner: any, uid: any): (Member?, boolean)
+	local pl = if type(owner) == "number" then Players:GetPlayerByUserId(owner) else nil
+	local mine = pl ~= nil and pl == player
+	local c = if pl then crews[pl] else nil
+	if c then
+		local key = tostring(uid)
+		for _, m in c.Members do
+			if m.Uid == key then
+				return m, mine
+			end
+		end
+	end
+	return nil, mine
+end
+
+local function takeSpit(): Spit?
+	for _, s in spits do
+		if not s.Active then
+			return s
+		end
+	end
+	if #spits >= MAX_SPITS then
+		return nil
+	end
+	local p = Instance.new("Part")
+	p.Name = "EctoSpit"
+	p.Shape = Enum.PartType.Ball
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Material = Enum.Material.SmoothPlastic
+	p.Reflectance = 0.25
+	p.Color = SLIME
+	local light = Instance.new("PointLight")
+	light.Color = SLIME
+	light.Range = 5
+	light.Brightness = 0.8
+	light.Shadows = false
+	light.Parent = p
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, 0.25, 0)
+	a0.Parent = p
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, -0.25, 0)
+	a1.Parent = p
+	local trail = Instance.new("Trail")
+	trail.Attachment0 = a0
+	trail.Attachment1 = a1
+	trail.Lifetime = 0.18
+	trail.Color = ColorSequence.new(SLIME)
+	trail.Transparency = NumberSequence.new(0.35, 1)
+	trail.WidthScale = NumberSequence.new(1, 0.2)
+	trail.FaceCamera = true
+	trail.LightEmission = 0.4
+	trail.Enabled = false
+	trail.Parent = p
+	local drip = Instance.new("ParticleEmitter")
+	drip.Color = ColorSequence.new(SLIME)
+	drip.LightEmission = 0.3
+	drip.Size = NumberSequence.new(0.18, 0)
+	drip.Lifetime = NumberRange.new(0.3, 0.45)
+	drip.Speed = NumberRange.new(0, 0.5)
+	drip.Acceleration = Vector3.new(0, -40, 0)
+	drip.Rate = 25
+	drip.Enabled = false
+	drip.Parent = p
+	local s: Spit = {
+		Part = p,
+		Trail = trail,
+		Drip = drip,
+		Active = false,
+		Ghost = 0,
+		Owner = 0,
+		Hunter = "",
+		Member = nil :: any,
+		Small = false,
+		From = Vector3.zero,
+		To = Vector3.zero,
+		Pos = Vector3.zero,
+		Arc = 0,
+		T0 = 0,
+		Arrive = 0,
+		Result = nil,
+	}
+	table.insert(spits, s)
+	return s
+end
+
+local function releaseSpit(s: Spit)
+	s.Active = false
+	s.Member = nil :: any
+	s.Trail.Enabled = false
+	s.Drip.Enabled = false
+	s.Part.Parent = nil
+end
+
+local function splashOn(m: Member, small: boolean)
+	Effects.Splat(chestPos(m), m.Pos.Y, SLIME, if small then 0.65 else 1)
+	m.HitT = os.clock()
+end
+
+local function launchSpit(ghostUid: number, owner: number, m: Member, mine: boolean, flight: number)
+	local e = Ghosts.Get(ghostUid)
+	if not e or e.Dying or e.Culled or m.Rig.Model.Parent == nil then
+		return
+	end
+	local s = takeSpit()
+	if not s then
+		return
+	end
+	local clock = os.clock()
+	local to = chestPos(m)
+	s.Active = true
+	s.Ghost = ghostUid
+	s.Owner = owner
+	s.Hunter = m.Uid
+	s.Member = m
+	s.Small = not mine
+	s.From = e.MouthPos
+	s.Pos = s.From
+	s.To = to
+	s.Arc = math.clamp(1.2 + (to - s.From).Magnitude * 0.12, 1.2, 4)
+	s.T0 = clock
+	s.Arrive = clock + math.max(flight, 0.15)
+	s.Result = nil
+	local d = if mine then 1 else 0.7
+	s.Part.Size = Vector3.new(d, d, d)
+	s.Part.CFrame = CFrame.new(s.From)
+	s.Part.Parent = folder
+	s.Trail:Clear()
+	s.Trail.Enabled = true
+	s.Drip.Enabled = true
+end
+
+-- Moves live blobs (into the step's BulkMoveTo lists) and resolves the ones that landed.
+local function stepSpits(clock: number)
+	for _, s in spits do
+		if not s.Active then
+			continue
+		end
+		local e = Ghosts.Get(s.Ghost)
+		local m = s.Member
+		local rigUp = m.Rig.Model.Parent ~= nil
+		if not e or e.Dying or (not rigUp and s.Result ~= "Dodged") then
+			releaseSpit(s) -- ghost or hunter gone mid-flight
+			continue
+		end
+		if s.Result ~= "Dodged" then
+			s.To = chestPos(m) -- home in on the (moving) hunter
+		end
+		if clock < s.Arrive then
+			local a = (clock - s.T0) / math.max(s.Arrive - s.T0, 0.01)
+			s.Pos = s.From:Lerp(s.To, a) + Vector3.new(0, s.Arc * 4 * a * (1 - a), 0)
+			table.insert(roots, s.Part)
+			table.insert(cframes, CFrame.new(s.Pos))
+			continue
+		end
+		local r = s.Result
+		if r == "Hit" then
+			splashOn(m, s.Small)
+		elseif r == "Dodged" then
+			Effects.Splat(s.To, s.To.Y, SLIME, if s.Small then 0.4 else 0.55)
+		elseif r == nil and clock < s.Arrive + SPIT_WAIT then
+			-- landed before the server's verdict: cling to the hunter for a moment
+			s.Pos = s.To
+			table.insert(roots, s.Part)
+			table.insert(cframes, CFrame.new(s.Pos))
+			continue
+		end
+		releaseSpit(s) -- "Knocked" (the knockout poof covers it) or no verdict in time
+	end
+end
+
 local function step(dt: number)
 	dt = math.min(dt, 0.1)
 	local clock = os.clock()
@@ -23888,7 +24876,14 @@ local function step(dt: number)
 			end
 
 			table.insert(roots, m.Rig.Root)
-			table.insert(cframes, CFrame.new(m.Pos) * CFrame.Angles(0, m.Yaw, 0))
+			local hk = clock - m.HitT
+			if hk < 0.3 then
+				-- slime hit: tiny squash down + lean back, then spring up
+				local k = math.sin(math.pi * hk / 0.3)
+				table.insert(cframes, CFrame.new(m.Pos.X, m.Pos.Y - 0.3 * k, m.Pos.Z) * CFrame.Angles(0, m.Yaw, 0) * CFrame.Angles(0.25 * k, 0, 0))
+			else
+				table.insert(cframes, CFrame.new(m.Pos) * CFrame.Angles(0, m.Yaw, 0))
+			end
 		end
 		c.Fighting = anyAttacking
 
@@ -23924,6 +24919,7 @@ local function step(dt: number)
 			table.insert(cframes, CFrame.new(ko.Pos) * CFrame.Angles(0, yaw, 0))
 		end
 	end
+	stepSpits(clock)
 	if #roots > 0 then
 		workspace:BulkMoveTo(roots, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 	end
@@ -24004,69 +25000,6 @@ local function syncKnocked()
 	end
 end
 
--- Ghost -> hunter bolt: a few reused beams from the ghost's core to the hit hunter's chest
--- (or, if the rig is already gone after a knockout, to where it stood). Shrinks out in 0.35 s.
-type Bolt = { Beam: Beam, End: Attachment, Token: number }
-local bolts: { Bolt } = {}
-local boltNext = 0
-local BOLT_RED = Color3.fromRGB(255, 60, 110)
-
-local function bolt(e: Ghosts.Entry, target: Attachment?, at: Vector3)
-	boltNext = boltNext % 3 + 1
-	local b = bolts[boltNext]
-	if not b then
-		local endAtt = Instance.new("Attachment")
-		endAtt.Name = "GhostBoltEnd"
-		endAtt.Parent = workspace.Terrain
-		local beam = Instance.new("Beam")
-		beam.Name = "GhostBolt"
-		beam.LightEmission = 1
-		beam.LightInfluence = 0
-		beam.FaceCamera = true
-		beam.Segments = 10
-		beam.Transparency = NumberSequence.new(0.05, 0.25)
-		beam.Enabled = false
-		beam.Parent = folder
-		b = { Beam = beam, End = endAtt, Token = 0 }
-		bolts[boltNext] = b
-	end
-	local beam = b.Beam
-	if target then
-		beam.Attachment1 = target
-	else
-		b.End.WorldPosition = at
-		beam.Attachment1 = b.End
-	end
-	beam.Attachment0 = centerAttachment(e)
-	beam.Color = ColorSequence.new(e.Def.Glow, BOLT_RED)
-	beam.CurveSize0 = (math.random() - 0.5) * 4
-	beam.CurveSize1 = (math.random() - 0.5) * 3
-	beam.Width0 = 1
-	beam.Width1 = 0.55
-	beam.Enabled = true
-	TweenService:Create(beam, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Width0 = 0, Width1 = 0 }):Play()
-	b.Token += 1
-	local token = b.Token
-	task.delay(0.36, function()
-		if b.Token == token then
-			beam.Enabled = false
-		end
-	end)
-end
-
-local function chestOf(m: Member): Attachment
-	local a = m.Chest
-	if not a then
-		local made = Instance.new("Attachment")
-		made.Name = "Chest"
-		made.Position = Vector3.new(0, m.Rig.Height * 0.55, 0)
-		made.Parent = m.Rig.Root
-		m.Chest = made
-		return made
-	end
-	return a
-end
-
 local function localMember(uid: any): Member?
 	local c = crews[player]
 	if c then
@@ -24140,33 +25073,50 @@ function Crew.Start()
 		end
 	end)
 	RunService.RenderStepped:Connect(step)
-	-- v1.6 retaliation (Fx only reaches the attacked player): telegraph, dodge, knockout poof
+	-- retaliation (Fx reaches everyone fighting the ghost; hunter uids are per player, so the
+	-- rig is always resolved by Owner + Hunter): windup telegraph, ectoplasm spit, splash/splat
 	State.OnFx("GhostWindup", function(d: any)
-		local m = localMember(d.Hunter)
-		if not m then
-			return
+		local t = tonumber(d.Time) or 0.9
+		local m, mine = memberOf(d.Owner, d.Hunter)
+		if m and mine then
+			mark(m, t) -- own hunter: quiet red outline (the ❗ sits on the ghost)
 		end
-		-- the ❗ + ring sit on the ghost (Ghosts.luau); the hunter only gets a quiet outline
-		mark(m, tonumber(d.Time) or 0.9)
+		local lead = math.max(0.1, t - SPIT_FLIGHT)
+		local drawn = m ~= nil and m.Rig.Model.Parent ~= nil
+		Ghosts.Windup(d.Ghost, lead, if m and drawn then m.Pos else nil, mine and m ~= nil)
+		if m and drawn then
+			task.delay(lead, launchSpit, d.Ghost, d.Owner, m, mine, t - lead)
+		end
 	end)
 	State.OnFx("GhostHit", function(d: any)
-		local m = localMember(d.Hunter)
-		if m then
+		local m, mine = memberOf(d.Owner, d.Hunter)
+		if m and mine then
 			mark(m, 0)
-		end
-		if d.Dodged then
-			if m then
+			if d.Dodged then
 				flash(m, "DODGED", Theme.Ecto, 0.8)
 			end
-			return
 		end
-		local e = Ghosts.Get(d.Ghost)
-		local pos = if m then m.Pos else gone[d.Hunter]
-		if e and not e.Dying and pos then
-			bolt(e, if m then chestOf(m) else nil, pos + Vector3.new(0, 2, 0))
+		local result = if d.Dodged then "Dodged" elseif d.Knocked then "Knocked" else "Hit"
+		local key = tostring(d.Hunter)
+		for _, s in spits do
+			if s.Active and s.Result == nil and s.Ghost == d.Ghost and s.Owner == d.Owner and s.Hunter == key then
+				s.Result = result
+				if result == "Dodged" then
+					-- veer off to the ground beside where the hunter stands now
+					local base = s.Member.Pos
+					local clock = os.clock()
+					s.From = s.Pos
+					s.To = Vector3.new(base.X + (math.random() - 0.5) * 2.5, base.Y + 0.1, base.Z + (math.random() - 0.5) * 2.5)
+					s.Arc = 0.6
+					s.T0 = clock
+					s.Arrive = clock + math.max(0.15, s.Arrive - clock)
+				end
+				return
+			end
 		end
-		if m and not d.Knocked then
-			Effects.Burst(m.Pos + Vector3.new(0, 2, 0), { Color = Theme.Bad, Count = 8, Size = 0.5, Speed = 8, Life = 0.4 })
+		-- no blob in flight (windup missed / pool full): still show the hit on a drawn rig
+		if result == "Hit" and m and m.Rig.Model.Parent ~= nil then
+			splashOn(m, not mine)
 		end
 	end)
 	-- knocked-out rigs + countdowns: resync on every snapshot and once a second
@@ -24196,7 +25146,7 @@ return Crew
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">DailyPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -24385,7 +25335,7 @@ return DailyPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="82">
             <Properties>
               <string name="Name">DevPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -24757,7 +25707,7 @@ return DevPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="83">
             <Properties>
               <string name="Name">Effects</string>
               <string name="Source"><![CDATA[--!strict
@@ -24890,6 +25840,12 @@ function Effects.Poof(pos: Vector3, color: Color3, scale: number, big: boolean)
 	Effects.Ring(pos, color, 7 * scale, 0.5)
 end
 
+-- Cute slime splat: a few green droplets + a soft puddle ring that fades in ~0.5 s (no flash).
+function Effects.Splat(pos: Vector3, groundY: number, color: Color3, scale: number)
+	Effects.Burst(pos, { Color = color, Color2 = color:Lerp(Color3.new(1, 1, 1), 0.35), Count = math.max(4, math.round(9 * scale)), Size = 0.45 * scale, Speed = 10 * scale, Life = 0.5, Spread = 70, Gravity = 35, LightEmission = 0.35 })
+	Effects.Ring(Vector3.new(pos.X, groundY + 0.08, pos.Z), color, 1.6 * scale, 0.5)
+end
+
 function Effects.Folder(): Folder
 	return folder
 end
@@ -24904,7 +25860,7 @@ return Effects
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">EventPopup</string>
               <string name="Source"><![CDATA[--!strict
@@ -24978,7 +25934,7 @@ return EventPopup
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">FeedbackPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -25098,7 +26054,7 @@ return FeedbackPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">GatePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -25222,7 +26178,7 @@ return GatePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">Ghosts</string>
               <string name="Source"><![CDATA[--!strict
@@ -25277,12 +26233,16 @@ export type Entry = {
 	Base: Vector3, -- centre without bob (for the ground ring)
 	Selected: boolean,
 	Culled: boolean,
-	-- incoming-attack telegraph (Fx "GhostWindup", only the attacked player sees it)
+	-- attack telegraph (driven by Crew on Fx "GhostWindup"): lean back + green glow at the
+	-- mouth, then a forward "spit" pop when the ectoplasm bolt leaves (Crew flies the bolt)
 	WindupEnd: number,
 	WindupLen: number,
 	LungeT: number,
 	LungeDir: Vector3,
-	Alert: TextLabel?,
+	Alert: TextLabel?, -- ❗ only while one of the local player's own hunters is the target
+	Mine: boolean,
+	Mouth: Part?, -- reused glow ball, made on the first windup
+	MouthPos: Vector3, -- where bolts leave from (updated every frame while drawn)
 }
 
 local entries: { [number]: Entry } = {}
@@ -25294,7 +26254,7 @@ Ghosts.Added = addedSignal -- (entry)
 local selectedUid = 0
 local ring: Part
 local ringStroke: UIStroke
-local lastWarnRing = 0 -- one windup ring at a time (several ghosts winding up at once = one flash)
+local MOUTH_GREEN = Color3.fromRGB(120, 255, 100)
 
 function Ghosts.Get(uid: number): Entry?
 	return entries[uid]
@@ -25495,6 +26455,9 @@ local function add(model: Instance)
 		LungeT = 0,
 		LungeDir = Vector3.zero,
 		Alert = nil,
+		Mine = false,
+		Mouth = nil,
+		MouthPos = core.Position,
 	}
 	readSegment(e)
 	buildLabel(e)
@@ -25617,6 +26580,7 @@ local function step()
 				-- keep the position fresh for readers (Targeting fallback, Crew, Boss)
 				e.Pos = base
 				e.Base = base
+				e.MouthPos = base
 				continue
 			end
 			e.Culled = false
@@ -25628,6 +26592,7 @@ local function step()
 			e.Gui.Enabled = false
 			e.Pos = base
 			e.Base = base
+			e.MouthPos = base
 			continue
 		end
 		WorldLabel.SetDistance(e.Gui, camDist)
@@ -25640,17 +26605,24 @@ local function step()
 			local k = (0.15 - since) / 0.15
 			pos += Vector3.new(math.sin(clock * 90) * 0.25 * k * s, 0, math.cos(clock * 80) * 0.2 * k * s)
 		end
-		-- attack telegraph: pull back during the windup, then lunge at the crew on the hit
+		-- attack telegraph: puff up + lean back during the windup, then a forward spit pop
+		local winding = clock < e.WindupEnd
+		local wk = 0 -- windup progress 0..1
+		local pitch = 0
+		if winding then
+			wk = 1 - (e.WindupEnd - clock) / e.WindupLen
+			pos += Vector3.new(0, 0.35 * s * wk, 0) - e.LungeDir * (0.7 * s * wk)
+			pitch = 0.3 * wk
+		elseif clock - e.LungeT < 0.25 then
+			local k = math.sin(math.pi * (clock - e.LungeT) / 0.25)
+			pos += e.LungeDir * (k * 1.2 * s)
+			pitch = -0.2 * k
+		end
 		local alert = e.Alert
 		if alert then
-			local winding = clock < e.WindupEnd
-			if alert.Visible ~= winding then
-				alert.Visible = winding -- steady, no blinking
-			end
-			if winding then
-				pos -= e.LungeDir * (0.8 * s * (1 - (e.WindupEnd - clock) / e.WindupLen))
-			elseif clock - e.LungeT < 0.25 then
-				pos += e.LungeDir * (math.sin(math.pi * (clock - e.LungeT) / 0.25) * 1.5 * s)
+			local show = winding and e.Mine
+			if alert.Visible ~= show then
+				alert.Visible = show -- steady, no blinking
 			end
 		end
 		-- face the camera horizontally (cute + readable), with a gentle sway
@@ -25665,11 +26637,25 @@ local function step()
 		local lean = if moving then 0.12 else 0
 		e.Pos = pos
 		e.Base = base
-		local cf = CFrame.new(pos) * CFrame.Angles(0, e.Yaw, 0) * CFrame.Angles(-lean, 0, sway)
+		local cf = CFrame.new(pos) * CFrame.Angles(0, e.Yaw, 0) * CFrame.Angles(pitch - lean, 0, sway)
+		e.MouthPos = cf * Vector3.new(0, -0.45 * s, -1.8 * s)
 		table.insert(parts, e.Core)
 		table.insert(cframes, CFrame.new(pos))
 		table.insert(parts, e.VisCore)
 		table.insert(cframes, cf)
+		-- green glow gathering at the mouth while winding up
+		local mouth = e.Mouth
+		if mouth then
+			if winding then
+				local d = (0.25 + 0.75 * wk) * math.sqrt(s)
+				mouth.Size = Vector3.new(d, d, d)
+				mouth.Transparency = 0.45 - 0.25 * wk
+				table.insert(parts, mouth)
+				table.insert(cframes, CFrame.new(e.MouthPos))
+			elseif mouth.Transparency < 1 then
+				mouth.Transparency = 1
+			end
+		end
 	end
 	-- ground ring under the selected ghost
 	local sel = entries[selectedUid]
@@ -25713,6 +26699,43 @@ function Ghosts.Init()
 	Kit.new("UIStroke", { Thickness = 3, Color = Color3.new(1, 1, 1), Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = inner })
 end
 
+-- Windup telegraph for one attack (Crew calls this on Fx "GhostWindup"; the server sends it to
+-- everyone fighting this ghost). `len` is the lean-back time before the spit leaves; `at` is the
+-- targeted hunter's position (nil if not drawn); `mine` shows the ❗ (own hunter targeted).
+function Ghosts.Windup(uid: number, len: number, at: Vector3?, mine: boolean)
+	local e = entries[uid]
+	if not e or e.Dying then
+		return
+	end
+	local clock = os.clock()
+	e.WindupLen = math.max(len, 0.1)
+	e.WindupEnd = clock + e.WindupLen
+	e.LungeT = e.WindupEnd -- spit pop right after the windup
+	e.Mine = mine
+	local flat = if at then Vector3.new(at.X - e.Base.X, 0, at.Z - e.Base.Z) else Vector3.zero
+	e.LungeDir = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zero
+	if mine and not e.Alert then
+		e.Alert = WorldLabel.Text(e.Gui, "❗", { Style = "Body", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, -0.85) })
+	end
+	if not e.Mouth then
+		local m = Instance.new("Part")
+		m.Name = "MouthGlow"
+		m.Shape = Enum.PartType.Ball
+		m.Anchored = true
+		m.CanCollide = false
+		m.CanQuery = false
+		m.CanTouch = false
+		m.CastShadow = false
+		m.Material = Enum.Material.Neon
+		m.Color = MOUTH_GREEN
+		m.Transparency = 1
+		m.Size = Vector3.new(0.3, 0.3, 0.3)
+		m.CFrame = CFrame.new(e.MouthPos)
+		m.Parent = e.Vis -- parked with the visual when culled, gone with the model
+		e.Mouth = m
+	end
+end
+
 function Ghosts.Start()
 	local folder = workspace:WaitForChild("Ghosts")
 	folder.ChildAdded:Connect(function(m)
@@ -25722,34 +26745,6 @@ function Ghosts.Start()
 		task.spawn(add, m)
 	end
 	State.OnFx("Poof", poof)
-	State.OnFx("GhostWindup", function(d: any)
-		local e = entries[d.Ghost]
-		if not e or e.Dying then
-			return
-		end
-		local t = tonumber(d.Time) or 0.9
-		local clock = os.clock()
-		local fresh = clock >= e.WindupEnd
-		e.WindupEnd = clock + t
-		e.WindupLen = math.max(t, 0.1)
-		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		local flat = if root then Vector3.new(root.Position.X - e.Base.X, 0, root.Position.Z - e.Base.Z) else Vector3.zero
-		e.LungeDir = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zero
-		if not e.Alert then
-			e.Alert = WorldLabel.Text(e.Gui, "❗", { Style = "Body", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, -0.85) })
-		end
-		if fresh and clock - lastWarnRing > 0.6 then
-			lastWarnRing = clock
-			Effects.Ring(e.Base - Vector3.new(0, e.Def.Hover - 0.2, 0), Theme.Bad, math.max(3, 2.5 * e.Def.Scale + 1), t)
-		end
-	end)
-	State.OnFx("GhostHit", function(d: any)
-		local e = entries[d.Ghost]
-		if e then
-			e.WindupEnd = 0
-			e.LungeT = if d.Dodged then 0 else os.clock()
-		end
-	end)
 	RunService.RenderStepped:Connect(step)
 end
 
@@ -25757,7 +26752,346 @@ return Ghosts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="88">
+            <Properties>
+              <string name="Name">Hatchery</string>
+              <string name="Source"><![CDATA[--!strict
+-- PET HATCHERY egg panel + hatch animation. The world pedestals (server World/Hatchery) carry a
+-- "View" ProximityPrompt with attribute Egg = egg id; triggering it opens this panel for that
+-- egg: price, lock state, every possible pet with its rarity, bonus and EXACT odds, and a
+-- BUY & HATCH button. The server ("BuyEgg") checks, rolls, charges and saves in one step;
+-- each purchase carries a request id, and a failed/timed-out request is retried ONCE with the
+-- SAME id, so a retry can never charge twice or roll again. The hatch animation only shows the
+-- result the server already saved.
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GH = ReplicatedStorage:WaitForChild("GH")
+local Config = require(GH.Config)
+local Format = require(GH.Logic.Format)
+local Eggs = require(GH.Logic.Eggs)
+local Client = script.Parent.Parent
+local State = require(Client.State)
+local Kit = require(Client.UI.Kit)
+local Theme = require(Client.UI.Theme)
+local Sound = require(script.Parent.Sound)
+local PetsPanel = require(script.Parent.PetsPanel)
+local Reveal = require(script.Parent.Reveal)
+
+local Hatchery = {}
+
+local SHARD = Color3.fromRGB(200, 160, 255)
+local REQUEST_TIMEOUT = 12 -- seconds before a buy request counts as lost and is retried
+-- errors worth one retry with the same request id (the server may or may not have hatched)
+local RETRY_ERRORS: { [string]: boolean } = {
+	["Connection hiccup, try again"] = true,
+	["Slow down!"] = true,
+	["Something went wrong"] = true,
+	["One moment..."] = true,
+	["Loading..."] = true,
+}
+
+local panel: Kit.Panel
+local priceLabel: TextLabel
+local lockLabel: TextLabel
+local list: ScrollingFrame
+local buyButton: TextButton
+local reasonLabel: TextLabel
+local currentEgg: string? = nil
+local busy = false
+local playing = false
+
+local function countPets(d: any): number
+	local n = 0
+	for _ in d.Pets or {} do
+		n += 1
+	end
+	return n
+end
+
+local function pct(chance: number): string
+	return string.format("%g%%", chance)
+end
+
+-- Why the egg can't be bought right now (nil = it can).
+local function blockReason(egg: Config.EggDef, d: any): string?
+	if not Eggs.Unlocked(egg, d.TowerCheckpoint or 0) then
+		return string.format("Locked: reach Boss Tower checkpoint %d", egg.Unlock)
+	end
+	if countPets(d) >= Config.PetRules.MaxOwned then
+		return "Your pet room is full!"
+	end
+	if (d.Shards or 0) < egg.Price then
+		return string.format("Needs %s more Spirit Shards (Boss Tower)", Format.Commas(egg.Price - (d.Shards or 0)))
+	end
+	return nil
+end
+
+local function petRow(order: number, pet: Config.PetDef, chance: number)
+	local r = Config.Rarities[pet.Rarity]
+	local rc = if r then r.Color else Theme.Text
+	local f: Frame = Kit.new("Frame", { Size = UDim2.new(1, -8, 0, 56), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ZIndex = 62, Parent = list })
+	Kit.Corner(f, UDim.new(0, 12))
+	Kit.Stroke(f, 2.5, rc, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(f, Theme.Panel3, Theme.Panel, 90)
+	local orb: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(42, 42), Position = UDim2.fromOffset(8, 7), BackgroundColor3 = pet.Color, ZIndex = 63, Parent = f })
+	Kit.Corner(orb, UDim.new(1, 0))
+	Kit.Stroke(orb, 2, pet.Glow, Enum.ApplyStrokeMode.Border)
+	Kit.Icon(orb, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 22, Stroke = 0, ZIndex = 64 })
+	Kit.Label(f, pet.Name, { Size = UDim2.new(1, -150, 0, 22), Position = UDim2.fromOffset(58, 5), Align = Enum.TextXAlignment.Left, Style = "Body", Fit = true, ZIndex = 63 })
+	local rarity = string.upper(r and r.Name or pet.Rarity)
+	Kit.Label(f, rarity, { Size = UDim2.new(0, 90, 0, 18), Position = UDim2.fromOffset(58, 30), Align = Enum.TextXAlignment.Left, Color = rc, Style = "Tiny", Fit = true, ZIndex = 63 })
+	Kit.Label(f, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -250, 0, 18), Position = UDim2.fromOffset(150, 30), Align = Enum.TextXAlignment.Left, Color = Theme.Ecto, Font = Theme.Body, Style = "Tiny", Fit = true, ZIndex = 63 })
+	Kit.Label(f, pct(chance), { Size = UDim2.new(0, 80, 1, 0), Position = UDim2.new(1, -10, 0, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 63 })
+end
+
+local function refresh()
+	local d = State.Data
+	local egg = currentEgg and Config.Eggs[currentEgg]
+	if not d or not egg then
+		return
+	end
+	panel.Title.Text = string.upper(egg.Name)
+	priceLabel.Text = string.format("🔮 %s  •  you have %s", Format.Commas(egg.Price), Format.Short(d.Shards or 0))
+	if Eggs.Unlocked(egg, d.TowerCheckpoint or 0) then
+		lockLabel.Text = if egg.Unlock > 0 then string.format("UNLOCKED (Tower checkpoint %d)", egg.Unlock) else "Open to everyone"
+		lockLabel.TextColor3 = Theme.Good
+	else
+		lockLabel.Text = string.format("🔒 LOCKED: clear Boss Tower checkpoint %d (yours: %d)", egg.Unlock, d.TowerCheckpoint or 0)
+		lockLabel.TextColor3 = Theme.Bad
+	end
+	local reason = blockReason(egg, d)
+	buyButton:SetAttribute("Color", if reason then "Gray" else "Green")
+	reasonLabel.Text = reason or "Odds are exact: every hatch is rolled by the server"
+	reasonLabel.TextColor3 = if reason then Theme.Bad else Theme.Muted
+end
+
+local function fill(eggId: string)
+	for _, c in list:GetChildren() do
+		if c:IsA("Frame") then
+			c:Destroy()
+		end
+	end
+	local egg = Config.Eggs[eggId]
+	for i, o in egg.Odds do
+		local pet = Config.Pets[o.Pet]
+		if pet then
+			petRow(i, pet, o.Chance)
+		end
+	end
+end
+
+-- Request with a timeout: a lost reply counts as a failure (the caller retries with the same id).
+local function requestBuy(eggId: string, requestId: string): any
+	local result: any = nil
+	task.spawn(function()
+		local r = State.Request("BuyEgg", eggId, requestId)
+		if result == nil then
+			result = r
+		end
+	end)
+	local t0 = os.clock()
+	while result == nil and os.clock() - t0 < REQUEST_TIMEOUT do
+		task.wait(0.1)
+	end
+	if result == nil then
+		result = { ok = false, err = "Connection hiccup, try again" }
+	end
+	return result
+end
+
+--------------------------------------------------------------------------------
+-- Hatch animation: egg wobbles, a soft crack, the pet appears. Brightness stays controlled
+-- (half-dim backdrop, a 30% flash at most) so nothing blooms on phones.
+--------------------------------------------------------------------------------
+local function playHatch(egg: Config.EggDef, pet: Config.PetDef)
+	playing = true
+	local r = Config.Rarities[pet.Rarity]
+	local rc = if r then r.Color else Theme.Text
+	local root: Frame = Kit.new("Frame", { Name = "HatchFx", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, ZIndex = 80, Parent = Kit.Overlay() })
+	Kit.Tween(root, 0.3, { BackgroundTransparency = 0.45 })
+	local eggFrame: Frame = Kit.new("Frame", {
+		Size = UDim2.fromOffset(150, 190),
+		Position = UDim2.fromScale(0.5, 0.48),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = egg.Color,
+		ZIndex = 81,
+		Parent = root,
+	})
+	Kit.Corner(eggFrame, UDim.new(0.5, 0))
+	Kit.Stroke(eggFrame, 4, egg.Accent, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(eggFrame, egg.Color:Lerp(Color3.new(1, 1, 1), 0.25), egg.Color, 90)
+	local scale = Kit.new("UIScale", { Scale = 0.6, Parent = eggFrame })
+	Kit.Tween(scale, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+	task.wait(0.4)
+	-- wobble, getting stronger
+	for i = 1, 6 do
+		Sound.Play("CrateShake", 0.05)
+		local a = 4 + i * 2
+		Kit.Tween(eggFrame, 0.09, { Rotation = if i % 2 == 0 then a else -a })
+		task.wait(0.1)
+		Kit.Tween(eggFrame, 0.09, { Rotation = 0 })
+		task.wait(0.12 + (6 - i) * 0.03)
+	end
+	-- soft crack: a zigzag line across the egg
+	local crack = Kit.Label(eggFrame, "⚡", { Size = UDim2.fromScale(1, 0.4), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 44, Stroke = 0, ZIndex = 82 })
+	crack.TextColor3 = egg.Accent
+	task.wait(0.35)
+	local flash: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, ZIndex = 83, Parent = root })
+	Kit.Tween(flash, 0.5, { BackgroundTransparency = 1 })
+	Kit.Tween(scale, 0.2, { Scale = 0.2 })
+	Kit.Tween(eggFrame, 0.2, { BackgroundTransparency = 1 })
+	if r and r.Sound then
+		Sound.Play(r.Sound)
+	else
+		Sound.Play("Upgrade")
+	end
+	task.wait(0.2)
+	eggFrame:Destroy()
+	-- the pet card
+	local card: Frame = Kit.new("Frame", {
+		Size = UDim2.fromOffset(300, 290),
+		Position = UDim2.fromScale(0.5, 0.48),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		ZIndex = 84,
+		Parent = root,
+	})
+	Kit.Corner(card, UDim.new(0, 18))
+	Kit.Stroke(card, 4, rc, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(card, Theme.Panel3, Theme.Panel, 90)
+	local cardScale = Kit.new("UIScale", { Scale = 0.5, Parent = card })
+	Kit.Tween(cardScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+	Kit.Label(card, "YOU HATCHED", { Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 10), Color = Theme.Muted, Style = "Small", Fit = true, ZIndex = 85 })
+	local orb: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(84, 84), Position = UDim2.new(0.5, 0, 0, 38), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = pet.Color, ZIndex = 85, Parent = card })
+	Kit.Corner(orb, UDim.new(1, 0))
+	Kit.Stroke(orb, 3, pet.Glow, Enum.ApplyStrokeMode.Border)
+	Kit.Icon(orb, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 44, Stroke = 0, ZIndex = 86 })
+	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 128), Style = "Title", Fit = true, ZIndex = 85 })
+	Kit.Label(card, string.upper(r and r.Name or pet.Rarity), { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 160), Color = rc, Style = "Heading", Fit = true, ZIndex = 85 })
+	Kit.Label(card, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 186), Color = Theme.Ecto, Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 85 })
+	local closed = false
+	local function close()
+		if closed then
+			return
+		end
+		closed = true
+		Kit.Tween(root, 0.2, { BackgroundTransparency = 1 })
+		Kit.Tween(cardScale, 0.15, { Scale = 0.7 })
+		task.delay(0.2, function()
+			root:Destroy()
+			playing = false
+		end)
+	end
+	Kit.Button(card, { Text = "NICE!", Color = "Green", Size = UDim2.fromOffset(160, 44), Position = UDim2.new(0.5, 0, 1, -12), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 86, OnClick = close })
+	task.delay(8, close)
+end
+
+local function buy()
+	local eggId = currentEgg
+	local d = State.Data
+	local egg = eggId and Config.Eggs[eggId]
+	if busy or playing or not eggId or not egg or not d then
+		return
+	end
+	local reason = blockReason(egg, d)
+	if reason then
+		Kit.Toast(reason, "Bad")
+		return
+	end
+	busy = true
+	Kit.SetButtonText(buyButton, "HATCHING...")
+	local requestId = HttpService:GenerateGUID(false)
+	local res = requestBuy(eggId, requestId)
+	if not res.ok and RETRY_ERRORS[tostring(res.err)] then
+		task.wait(1.2)
+		res = requestBuy(eggId, requestId) -- same id: the server returns the saved result if it already hatched
+	end
+	busy = false
+	Kit.SetButtonText(buyButton, "🥚 BUY & HATCH")
+	if not res.ok then
+		Kit.Toast(res.err or "Can't do that right now", "Bad")
+		return
+	end
+	local pet: Config.PetDef? = if type(res.Pet) == "string" then Config.Pets[res.Pet] else nil
+	panel:Close()
+	if pet then
+		playHatch(egg, pet)
+		Kit.Toast("You got " .. pet.Name .. "! Equip it in PETS.", "Good")
+	end
+end
+
+function Hatchery.Open(eggId: string)
+	if not Config.Eggs[eggId] or playing then
+		return
+	end
+	currentEgg = eggId
+	fill(eggId)
+	panel:Open()
+	refresh()
+end
+
+function Hatchery.Init()
+	panel = Kit.Panel("Hatchery", "PET HATCHERY", Vector2.new(600, 480), "Purple")
+	local body = panel.Body
+	priceLabel = Kit.Label(body, "", { Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 10), Color = SHARD, Style = "Currency", Fit = true, ZIndex = 62 })
+	lockLabel = Kit.Label(body, "", { Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 40), Style = "Small", Fit = true, ZIndex = 62 })
+	list = Kit.new("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, -142),
+		Position = UDim2.fromOffset(0, 66),
+		BackgroundTransparency = 1,
+		ScrollBarThickness = 6,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		BorderSizePixel = 0,
+		ZIndex = 61,
+		Parent = body,
+	})
+	Kit.new("UIListLayout", { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
+	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), Parent = list })
+	reasonLabel = Kit.Label(body, "", { Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0, 0, 1, -72), Font = Theme.Body, Style = "Small", Fit = true, Stroke = 0, ZIndex = 62 })
+	buyButton = Kit.Button(body, {
+		Text = "🥚 BUY & HATCH",
+		Color = "Gray",
+		Size = UDim2.fromOffset(240, 46),
+		Position = UDim2.new(0.5, 0, 1, -2),
+		AnchorPoint = Vector2.new(0.5, 1),
+		ZIndex = 63,
+		OnClick = function()
+			task.spawn(buy)
+		end,
+	})
+	panel.Primary = buyButton
+end
+
+function Hatchery.Start()
+	local player = Players.LocalPlayer
+	ProximityPromptService.PromptTriggered:Connect(function(prompt: ProximityPrompt, who: Player)
+		if who ~= player or Reveal.IsPlaying() then
+			return
+		end
+		local eggId = prompt:GetAttribute("Egg")
+		if eggId == nil and prompt.Parent then
+			eggId = prompt.Parent:GetAttribute("Egg")
+		end
+		if type(eggId) == "string" then
+			Hatchery.Open(eggId)
+		end
+	end)
+	State.Changed:Connect(function()
+		if panel.IsOpen then
+			refresh()
+		end
+	end)
+end
+
+return Hatchery
+]]></string>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="89">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -26559,7 +27893,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="87">
+          <Item class="ModuleScript" referent="90">
             <Properties>
               <string name="Name">HuntersPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -27376,7 +28710,7 @@ return HuntersPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="88">
+          <Item class="ModuleScript" referent="91">
             <Properties>
               <string name="Name">IndexPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -27425,9 +28759,19 @@ local lastKey = ""
 local function hunterList(zoneId: string): { Config.HunterDef }
 	local out = {}
 	local crate = Config.Crates[(Config.ZoneById[zoneId] :: Config.ZoneDef).Crate]
-	for _, e in crate.Pool do
+	local pos: { [string]: number } = {}
+	for i, e in crate.Pool do
 		table.insert(out, Config.Hunters[e.Hunter])
+		pos[e.Hunter] = i
 	end
+	-- weakest → strongest rarity (Ultra after Secret); pool order breaks ties
+	table.sort(out, function(a, b)
+		local ra, rb = Config.Rarities[a.Rarity].Order, Config.Rarities[b.Rarity].Order
+		if ra ~= rb then
+			return ra < rb
+		end
+		return pos[a.Id] < pos[b.Id]
+	end)
 	return out
 end
 
@@ -27772,7 +29116,7 @@ return IndexPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="89">
+          <Item class="ModuleScript" referent="92">
             <Properties>
               <string name="Name">LikeReminder</string>
               <string name="Source"><![CDATA[--!strict
@@ -27797,7 +29141,7 @@ return LikeReminder
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="90">
+          <Item class="ModuleScript" referent="93">
             <Properties>
               <string name="Name">Orbs</string>
               <string name="Source"><![CDATA[--!strict
@@ -28157,7 +29501,7 @@ return Orbs
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="91">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">Payouts</string>
               <string name="Source"><![CDATA[--!strict
@@ -28193,7 +29537,7 @@ return Payouts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="92">
+          <Item class="ModuleScript" referent="95">
             <Properties>
               <string name="Name">PetFollowers</string>
               <string name="Source"><![CDATA[--!strict
@@ -28485,13 +29829,14 @@ return PetFollowers
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="93">
+          <Item class="ModuleScript" referent="96">
             <Properties>
               <string name="Name">PetsPanel</string>
               <string name="Source"><![CDATA[--!strict
--- GHOST PETS: buy pets with Spirit Shards (Boss Tower only) and equip up to 3. Each equipped
--- pet gives a crew-wide bonus; the server validates every buy/equip/rename. Nicknames shown
--- here come back from the server already text-filtered.
+-- GHOST PETS: owned pets, equip up to 3 and rename. Pets come from eggs at the PET HATCHERY
+-- near the Boss Tower (Controllers/Hatchery; v1.8 removed direct purchases). Each equipped
+-- pet gives a crew-wide bonus; the server validates every equip/rename. Nicknames shown here
+-- come back from the server already text-filtered.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -28502,7 +29847,6 @@ local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Hud = require(script.Parent.Hud)
-local Sound = require(script.Parent.Sound)
 
 local PetsPanel = {}
 
@@ -28523,7 +29867,6 @@ local renameTitle: TextLabel
 local renameBox: TextBox
 local renameUid: string? = nil
 local NICK_MAX = 20
-local buyButtons: { [string]: TextButton } = {}
 local busy = false
 
 local function bonusText(kind: string, value: number): string
@@ -28537,6 +29880,10 @@ local function bonusText(kind: string, value: number): string
 	end
 	return pct .. " FASTER RECOVERY"
 end
+
+-- shared with the egg panel (Controllers/Hatchery)
+PetsPanel.ShapeIcon = SHAPE_ICON
+PetsPanel.BonusText = bonusText
 
 local function rarityName(pet: Config.PetDef): string
 	local r = Config.Rarities[pet.Rarity]
@@ -28606,9 +29953,6 @@ local function refresh()
 		end
 	end
 	bonusLabel.Text = if #parts > 0 then "TO ALL HUNTERS: " .. table.concat(parts, "  •  ") else "No pet bonuses yet: equip a pet!"
-	for id, b in buyButtons do
-		b:SetAttribute("Color", if shards >= (Config.Pets[id].Price or math.huge) then "Green" else "Gray")
-	end
 	-- owned: rebuilt each refresh (at most MaxOwned small cards), equipped first
 	local equipped: { [string]: boolean } = {}
 	for _, uid in d.EquippedPets or {} do
@@ -28711,20 +30055,8 @@ function PetsPanel.Init()
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(160, 176), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		return l, row
 	end
-	local _, shopRow = section(10, "SHOP")
-	for i, id in Config.PetOrder do
-		local pet = Config.Pets[id]
-		if pet and pet.Price then
-			local f = card(shopRow, i, pet)
-			buyButtons[id] = cardButton(f, "🔮 " .. Format.Short(pet.Price), "Gray", function()
-				local res = request("BuyPet", id)
-				if res and res.ok then
-					Sound.Play("Upgrade")
-					Kit.Toast("You got " .. pet.Name .. "! Equip it below.", "Good")
-				end
-			end)
-		end
-	end
+	local hint = Kit.Label(scroll, "🥚 Get pets from eggs at the PET HATCHERY near the Boss Tower", { Size = UDim2.new(1, -6, 0, 36), Color = SHARD, Font = Theme.Body, Style = "Small", Wrap = true, ZIndex = 62 })
+	hint.LayoutOrder = 10
 	equippedLabel, ownedRow = section(20, "OWNED")
 	ownedRow.LayoutOrder = 22
 	-- rename bar (opened by a card's pencil button): text box + SAVE / DEFAULT / X
@@ -28798,7 +30130,7 @@ return PetsPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="94">
+          <Item class="ModuleScript" referent="97">
             <Properties>
               <string name="Name">RarePetEvent</string>
               <string name="Source"><![CDATA[--!strict
@@ -28981,7 +30313,7 @@ return RarePetEvent
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="95">
+          <Item class="ModuleScript" referent="98">
             <Properties>
               <string name="Name">Reveal</string>
               <string name="Source"><![CDATA[--!strict
@@ -29606,7 +30938,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 		local wob = CFrame.Angles(math.sin(tt * 38) * 0.06 * k, math.sin(tt * 29) * 0.1 * k, math.sin(tt * 47) * 0.09 * k)
 		local lift = levitate * math.sin(math.min(a * 1.6, 1) * math.pi / 2)
 		placeCrate(base * CFrame.new(math.sin(tt * 53) * 0.12 * k, lift, 0) * wob)
-		raySpeed = 20 + 160 * a * rarity.Order / 5
+		raySpeed = 20 + 160 * a * math.min(rarity.Order, 8) / 5 -- capped: Ultra/Exclusive don't keep scaling
 		if charge then
 			charge.Rate = 15 + 110 * a
 		end
@@ -29642,7 +30974,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	if not skipping then
 		Sound.Play(rarity.Sound)
 		flash(rarity.Color, 0.45)
-		Effects.Flash(burstPos, rarity.Color, 3 + rarity.Order * 0.6, 0.4)
+		Effects.Flash(burstPos, rarity.Color, 3 + math.min(rarity.Order, 8) * 0.6, 0.4)
 		Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = math.floor(rarity.Particles * 0.6), Size = 0.65, Speed = 26, Life = 1.1, Gravity = 18 })
 		Effects.Ring(STAGE + Vector3.new(0, 0.2, 0), rarity.Color, 10, 0.6)
 		if cc then
@@ -29774,7 +31106,7 @@ return Reveal
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="96">
+          <Item class="ModuleScript" referent="99">
             <Properties>
               <string name="Name">ShopPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -29950,7 +31282,7 @@ return ShopPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="97">
+          <Item class="ModuleScript" referent="100">
             <Properties>
               <string name="Name">Sound</string>
               <string name="Source"><![CDATA[--!strict
@@ -30068,7 +31400,7 @@ return Sound
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="98">
+          <Item class="ModuleScript" referent="101">
             <Properties>
               <string name="Name">Targeting</string>
               <string name="Source"><![CDATA[--!strict
@@ -30345,7 +31677,7 @@ return Targeting
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="99">
+          <Item class="ModuleScript" referent="102">
             <Properties>
               <string name="Name">TowerHud</string>
               <string name="Source"><![CDATA[--!strict
@@ -30894,7 +32226,7 @@ return TowerHud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="100">
+          <Item class="ModuleScript" referent="103">
             <Properties>
               <string name="Name">TradePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -31308,7 +32640,7 @@ return TradePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="101">
+          <Item class="ModuleScript" referent="104">
             <Properties>
               <string name="Name">Tutorial</string>
               <string name="Source"><![CDATA[--!strict
@@ -31852,7 +33184,7 @@ return Tutorial
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="102">
+          <Item class="ModuleScript" referent="105">
             <Properties>
               <string name="Name">UpgradesPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -32013,7 +33345,7 @@ return UpgradesPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="103">
+          <Item class="ModuleScript" referent="106">
             <Properties>
               <string name="Name">WorldsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -32183,7 +33515,7 @@ return WorldsPanel
             </Properties>
           </Item>
         </Item>
-        <Item class="LocalScript" referent="104">
+        <Item class="LocalScript" referent="107">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -32225,6 +33557,7 @@ local order = {
 	"UpgradesPanel",
 	"ShopPanel",
 	"PetsPanel",
+	"Hatchery",
 	"DailyPanel",
 	"GatePanel",
 	"WorldsPanel",
@@ -32255,7 +33588,7 @@ end
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="105">
+        <Item class="ModuleScript" referent="108">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -32403,11 +33736,11 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="106">
+        <Item class="Folder" referent="109">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="107">
+          <Item class="ModuleScript" referent="110">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!strict
@@ -33156,7 +34489,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="108">
+          <Item class="ModuleScript" referent="111">
             <Properties>
               <string name="Name">Portrait</string>
               <string name="Source"><![CDATA[--!strict
@@ -33560,7 +34893,7 @@ return Portrait
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="109">
+          <Item class="ModuleScript" referent="112">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -33641,7 +34974,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="110">
+          <Item class="ModuleScript" referent="113">
             <Properties>
               <string name="Name">WorldLabel</string>
               <string name="Source"><![CDATA[--!strict
@@ -33823,7 +35156,7 @@ return WorldLabel
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="111">
+  <Item class="Workspace" referent="114">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

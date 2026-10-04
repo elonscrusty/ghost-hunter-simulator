@@ -156,8 +156,10 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			block(head, Vector3.new(0.34, 0.08, 0.14), CFrame.new(0.34 * s, 0.37, -0.86) * CFrame.Angles(0.35, 0, -0.14 * s), U.Shade(look.Hair, 0.8))
 		end
 	end
-	-- little open smile: a WedgePart turned into a "▽"
-	wedge(head, Vector3.new(0.1, 0.26, 0.26), CFrame.new(0, -0.34, -0.88) * CFrame.Angles(-0.35, 0, 0) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, MOUTH)
+	-- little open smile: a WedgePart turned into a "▽" (FlowerHead draws its own toothy grin)
+	if hat ~= "FlowerHead" then
+		wedge(head, Vector3.new(0.1, 0.26, 0.26), CFrame.new(0, -0.34, -0.88) * CFrame.Angles(-0.35, 0, 0) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, MOUTH)
+	end
 
 	------------------------------------------------------------------ hair
 	local covered = hat == "Hood"
@@ -170,6 +172,9 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		or hat == "Nemes"
 		or hat == "Propeller"
 		or hat == "DivingHelmet"
+		or hat == "PumpkinHelm"
+		or hat == "MoonHood"
+		or hat == "FlowerHead"
 	local style = look.HairStyle
 	local hairTop = 1.25
 	local hairColor = look.Hair
@@ -411,6 +416,101 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		for _, p in U.Gear(0.45, 0.08, 6, head.CFrame * ccf * CFrame.new(0.74, 0.12, 0) * CFrame.Angles(0, math.pi / 2, 0), U.Shade(hatColor, 0.9), model, METAL_MAT) do
 			add(head, p)
 		end
+	elseif hat == "Bow" then
+		-- big ribbon bow perched on the top-right of the head
+		local c = look.HatColor or Color3.fromRGB(255, 110, 170)
+		local bcf = CFrame.new(0.45, hairTop - 0.12, 0.05) * CFrame.Angles(0, 0, -0.3)
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.7, 0.55, 0.24), bcf * CFrame.new(0.38 * s, 0.06, 0) * CFrame.Angles(0, 0, 0.3 * s), c) -- loop
+			block(head, Vector3.new(0.16, 0.45, 0.1), bcf * CFrame.new(0.16 * s, -0.3, -0.04) * CFrame.Angles(0, 0, 0.35 * s), U.Shade(c, 0.85)) -- tail
+		end
+		ball(head, 0.34, bcf, U.Shade(c, 0.85)) -- knot
+	elseif hat == "WitchHat" then
+		-- wide brim, banded cone and a floppy bent tip
+		local c = look.HatColor or Color3.fromRGB(70, 40, 110)
+		local wcf = CFrame.new(0, 0.85 + lift, 0.12) * CFrame.Angles(-0.1, 0, -0.08)
+		cyl(head, 0.1, 2.7, wcf * U.AxisY, c) -- brim
+		cyl(head, 0.22, 1.5, wcf * CFrame.new(0, 0.14, 0) * U.AxisY, U.Vivid(look.Beam)) -- band
+		block(head, Vector3.new(0.3, 0.26, 0.06), wcf * CFrame.new(0, 0.14, -0.76), GOLD, METAL_MAT) -- buckle
+		local tipCf = cone(head, wcf * CFrame.new(0, 0.05, 0), 1.45, 1.1, 3, c)
+		local floppy = cone(head, tipCf * CFrame.new(0, -0.08, 0) * CFrame.Angles(0, 0, -0.8), 0.48, 0.6, 2, c)
+		ball(head, 0.16, floppy, c)
+	elseif hat == "PumpkinHelm" then
+		-- whole-head pumpkin with a carved, warmly lit face, ribs and a curly stem
+		local c = look.HatColor or Color3.fromRGB(255, 140, 40)
+		local carve = Color3.fromRGB(255, 225, 90)
+		local pc = Vector3.new(0, 0.2, 0.05)
+		local r = 1.22
+		ball(head, r * 2, CFrame.new(pc), c)
+		for _, a in { -0.75, 0.75 } do
+			cyl(head, 0.08, r * 2 + 0.06, CFrame.new(pc) * CFrame.Angles(0, a, 0), U.Shade(c, 0.8)) -- ribs
+		end
+		cyl(head, 0.4, 0.22, CFrame.new(pc + Vector3.new(0, r + 0.12, 0)) * CFrame.Angles(0, 0, 0.2) * U.AxisY, Color3.fromRGB(90, 140, 60)) -- stem
+		wedge(head, Vector3.new(0.06, 0.2, 0.42), CFrame.new(pc + Vector3.new(0.22, r - 0.02, 0)) * CFrame.Angles(0, math.pi / 2, 0.3), Color3.fromRGB(110, 190, 80)) -- leaf
+		local function carved(dir: Vector3, size: Vector3, roll: number)
+			local n = dir.Unit
+			block(head, size, U.Facing(pc + n * (r - 0.02), n) * CFrame.Angles(0, 0, roll), carve)
+		end
+		for _, s in { -1, 1 } do
+			carved(Vector3.new(0.38 * s, 0.12, -1), Vector3.new(0.32, 0.32, 0.1), math.pi / 4) -- diamond eyes
+		end
+		carved(Vector3.new(0, -0.38, -1), Vector3.new(0.9, 0.24, 0.14), 0) -- grin
+		for _, x in { -0.18, 0.18 } do
+			local n = Vector3.new(0, -0.38, -1).Unit
+			block(head, Vector3.new(0.16, 0.12, 0.08), U.Facing(pc + n * (r + 0.03), n) * CFrame.new(x, 0.06, 0), c) -- teeth
+		end
+	elseif hat == "FlowerHead" then
+		-- ring of round petals framing the face; the toothy grin is drawn below
+		local c = look.HatColor or Color3.fromRGB(255, 120, 190)
+		local light = U.Mix(c, WHITE, 0.35)
+		for i = 0, 7 do
+			local pcf = CFrame.new(0, 0, -0.25) * CFrame.Angles(0, 0, i * math.pi / 4) * CFrame.new(0, 1.12, 0)
+			cyl(head, 0.12, 0.7, pcf * U.AxisZ, if i % 2 == 0 then c else light)
+		end
+		-- little toothy grin under the eyes (replaces the default smile)
+		local n = Vector3.new(0, -0.3, -0.9).Unit
+		local g = U.Facing(n * 0.93, n)
+		block(head, Vector3.new(0.5, 0.18, 0.08), g, MOUTH)
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.2, 0.13, 0.08), g * CFrame.new(0.3 * s, 0.04, 0.005) * CFrame.Angles(0, 0, 0.45 * s), MOUTH)
+		end
+		for _, x in { -0.14, 0, 0.14 } do
+			wedge(head, Vector3.new(0.04, 0.09, 0.09), g * CFrame.new(x, 0.085, -0.045) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, WHITE) -- fangs
+		end
+	elseif hat == "HeroMask" then
+		-- domino mask: two curved lenses round the eyes (eyes peek through), bridge and head band
+		local c = look.HatColor or Color3.fromRGB(40, 40, 60)
+		for _, s in { -1, 1 } do
+			local n = Vector3.new(0.36 * s, 0.05, -0.85).Unit
+			local mcf = U.Facing(n * 0.97, n)
+			block(head, Vector3.new(0.62, 0.42, 0.08), mcf, c)
+			wedge(head, Vector3.new(0.08, 0.22, 0.26), mcf * CFrame.new(0.38 * s, 0.1, 0) * CFrame.Angles(0, math.pi / 2 * s, 0), c) -- pointed tip
+		end
+		block(head, Vector3.new(0.3, 0.16, 0.1), U.Facing(Vector3.new(0, 0.12, -0.95), Vector3.new(0, 0.12, -1).Unit), c) -- bridge
+		cyl(head, 0.14, 2.04, CFrame.new(0, 0.08, 0) * U.AxisY, c) -- band
+	elseif hat == "Tiara" then
+		-- small metal tiara sitting on the front of the hair, with a centre gem
+		local c = look.HatColor or Color3.fromRGB(225, 225, 240)
+		local rf = CFrame.new(0, hairTop - 1.0, 0.2) * CFrame.Angles(-0.25, 0, 0)
+		for _, a in { -0.5, 0, 0.5 } do
+			block(head, Vector3.new(0.45, 0.08, 0.06), rf * CFrame.Angles(0, a, 0) * CFrame.new(0, 0.6, -0.8), c, METAL_MAT) -- band
+		end
+		for i = -2, 2 do
+			local sz = 0.34 - math.abs(i) * 0.08
+			block(head, Vector3.new(sz, sz, 0.05), rf * CFrame.Angles(0, i * 0.38, 0) * CFrame.new(0, 0.6 + sz * 0.45, -0.8) * CFrame.Angles(0, 0, math.pi / 4), c, METAL_MAT) -- points
+		end
+		ball(head, 0.2, rf * CFrame.new(0, 0.72, -0.84), U.Vivid(look.Beam), { Reflectance = 0.3 }) -- gem
+	elseif hat == "MoonHood" then
+		-- deep hood with a gold crescent moon (gold disc half-covered by a hood-coloured one)
+		local c = look.HatColor or Color3.fromRGB(45, 50, 110)
+		local hc = Vector3.new(0, 0.22, 0.3)
+		ball(head, 2.25, CFrame.new(hc), c)
+		wedge(head, Vector3.new(0.55, 0.9, 0.7), CFrame.new(0, 1.2, 0.75) * CFrame.Angles(-0.3, 0, 0), c)
+		local n = Vector3.new(0, 0.6, -0.8).Unit
+		local mcf = U.Facing(hc + n * 1.12, n)
+		cyl(head, 0.06, 0.52, mcf * U.AxisZ, GOLD)
+		cyl(head, 0.06, 0.44, mcf * CFrame.new(0.12, 0.07, -0.03) * U.AxisZ, c)
+		block(head, Vector3.new(0.12, 0.12, 0.05), mcf * CFrame.new(0.3, 0.22, -0.01) * CFrame.Angles(0, 0, math.pi / 4), GOLD) -- star
 	end
 
 	------------------------------------------------------------------ body accent / aura
@@ -500,6 +600,43 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			ball(torso, 0.55, CFrame.new(p), backColor, { Transparency = 0.65, Shadow = false })
 			ball(torso, 0.3, CFrame.new(p), backColor, NEON)
 		end
+	elseif back == "HeroCape" then
+		-- long two-panel cape flaring out at the hem, stand-up collar, gold clasps and a back emblem
+		local c = look.BackColor or Color3.fromRGB(220, 40, 60)
+		block(torso, Vector3.new(1.45, 1.2, 0.1), CFrame.new(0, -0.1, 0.55) * CFrame.Angles(-0.12, 0, 0), c)
+		block(torso, Vector3.new(1.75, 0.72, 0.1), CFrame.new(0, -1.0, 0.8) * CFrame.Angles(-0.3, 0, 0), c)
+		block(torso, Vector3.new(1.5, 0.42, 0.12), CFrame.new(0, 0.62, 0.4) * CFrame.Angles(0.3, 0, 0), U.Shade(c, 0.75)) -- collar
+		for _, s in { -1, 1 } do
+			ball(torso, 0.22, CFrame.new(0.5 * s, 0.42, -0.42), GOLD, METAL_MAT) -- clasps
+		end
+		cyl(torso, 0.06, 0.6, CFrame.new(0, -0.05, 0.62) * U.AxisZ, GOLD) -- emblem
+		block(torso, Vector3.new(0.3, 0.3, 0.06), CFrame.new(0, -0.05, 0.65) * CFrame.Angles(0, 0, math.pi / 4), U.Shade(c, 0.6))
+	elseif back == "BatWings" then
+		-- leathery wings: a bony top edge with a claw and two stepped membrane panels
+		local c = look.BackColor or Color3.fromRGB(70, 45, 90)
+		local boneC = U.Shade(c, 0.6)
+		for _, s in { -1, 1 } do
+			local flip = CFrame.Angles(0, math.pi / 2 * s, 0) * CFrame.Angles(0, 0, math.pi) -- flat top, sloping hem
+			wedge(torso, Vector3.new(0.08, 0.9, 0.72), CFrame.new(0.62 * s, 0.3, 0.6) * flip, c)
+			wedge(torso, Vector3.new(0.08, 1.0, 0.72), CFrame.new(1.3 * s, 0.55, 0.6) * flip, c)
+			rod(torso, Vector3.new(0.25 * s, 0.72, 0.6), Vector3.new(1.7 * s, 1.08, 0.6), 0.1, boneC)
+			ball(torso, 0.18, CFrame.new(1.72 * s, 1.12, 0.6), boneC) -- claw
+		end
+	elseif back == "HeartWings" then
+		-- pastel heart wings: each heart is a diamond plus two round lobes, tipped toward the spine
+		local c = look.BackColor or Color3.fromRGB(255, 175, 215)
+		local light = U.Mix(c, WHITE, 0.5)
+		local a = 0.75
+		local k = a / (2 * math.sqrt(2))
+		for _, s in { -1, 1 } do
+			local hcf = CFrame.new(0.95 * s, 0.5, 0.62) * CFrame.Angles(0, 0, -0.6 * s)
+			block(torso, Vector3.new(a, a, 0.1), hcf * CFrame.Angles(0, 0, math.pi / 4), c)
+			for _, x in { -1, 1 } do
+				cyl(torso, 0.1, a, hcf * CFrame.new(k * x, k, 0) * U.AxisZ, c) -- lobes
+			end
+			cyl(torso, 0.04, 0.26, hcf * CFrame.new(k * s, k + 0.08, 0.07) * U.AxisZ, light) -- shine
+		end
+		ball(torso, 0.3, CFrame.new(0, 0.2, 0.55), U.Shade(c, 0.85)) -- joint
 	end
 
 	------------------------------------------------------------------ tool (right hand)
@@ -630,6 +767,43 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		tpart(U.Cyl(0.2, 0.16, T(0, 0.05, -1.02) * U.AxisZ, U.Shade(tc, 0.6), model, metalOpts)) -- adjusting screw
 		muzzle = tpart(U.Ball(0.24, T(0, 0.05, -1.48), beam, model, NEON)) -- glow between the jaws
 		tipWorld = T(0, 0.05, -1.65)
+	elseif tool == "HeartWand" then
+		-- pale wand with a heart on top (heart faces sideways, points back down the shaft)
+		tpart(U.Cyl(1.15, 0.13, T(0, 0.05, -0.55) * U.AxisZ, U.Mix(tc, WHITE, 0.6), model))
+		local hf = T(0, 0.05, -1.4) * CFrame.Angles(-math.pi / 2, 0, 0) -- +Y = forward along the wand
+		local a = 0.4
+		local k = a / (2 * math.sqrt(2))
+		tpart(U.Block(Vector3.new(0.08, a, a), hf * CFrame.Angles(math.pi / 4, 0, 0), tc, model))
+		for _, z in { -k, k } do
+			tpart(U.Cyl(0.08, a, hf * CFrame.new(0, k, z), tc, model)) -- lobes
+		end
+		muzzle = tpart(U.Ball(0.17, hf * CFrame.new(0, 0.04, 0), beam, model, NEON)) -- heart gem
+		tipWorld = T(0, 0.05, -1.78)
+	elseif tool == "MoonStaff" then
+		-- tall staff topped by an upturned crescent cradling a glowing orb
+		local up = CFrame.Angles(-0.1, 0, 0)
+		local sf = grip * up
+		tpart(U.Cyl(3.0, 0.18, sf * CFrame.new(0, 0.55, 0) * U.AxisY, U.Shade(tc, 0.5), model))
+		tpart(U.Cyl(0.16, 0.4, sf * CFrame.new(0, 1.95, 0) * U.AxisY, GOLD, model, METAL_MAT)) -- collar
+		local mc = sf * CFrame.new(0, 2.5, 0)
+		for i = 0, 4 do
+			local phi = math.rad(-160 + i * 35)
+			local w = 0.22 - math.abs(i - 2) * 0.05
+			tpart(U.Block(Vector3.new(w, 0.34, 0.12), mc * CFrame.Angles(0, 0, phi) * CFrame.new(0.5, 0, 0), tc, model)) -- crescent
+		end
+		muzzle = tpart(U.Ball(0.42, mc, beam, model, NEON))
+		tipWorld = mc
+	elseif tool == "PumpkinLance" then
+		-- striped jousting lance with a pumpkin hand guard
+		local orange = Color3.fromRGB(255, 140, 40)
+		tpart(U.Cyl(0.6, 0.2, T(0, 0.05, 0.15) * U.AxisZ, Color3.fromRGB(95, 62, 40), model)) -- handle
+		tpart(U.Ball(0.8, T(0, 0.05, -0.42), orange, model))
+		tpart(U.Cyl(0.06, 0.84, T(0, 0.05, -0.42), U.Shade(orange, 0.8), model)) -- rib
+		tpart(U.Cyl(0.18, 0.12, T(0, 0.5, -0.42) * U.AxisY, Color3.fromRGB(90, 140, 60), model)) -- stem
+		local base = rArm.CFrame:ToObjectSpace(T(0, 0.05, -0.75) * CFrame.Angles(-math.pi / 2, 0, 0))
+		local tipCf = cone(rArm, base, 0.46, 1.7, 4, tc, U.Mix(tc, WHITE, 0.55))
+		muzzle = tpart(U.Ball(0.2, rArm.CFrame * tipCf, beam, model, NEON))
+		tipWorld = T(0, 0.05, -2.5)
 	else -- Flashlight (default)
 		tpart(U.Cyl(1.2, 0.36, T(0, 0, -0.3) * U.AxisZ, U.Shade(tc, 0.7), model))
 		tpart(U.Cyl(0.38, 0.62, T(0, 0, -1.05) * U.AxisZ, tc, model))

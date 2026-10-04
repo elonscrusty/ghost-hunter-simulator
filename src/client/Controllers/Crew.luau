@@ -7,7 +7,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
@@ -45,7 +44,7 @@ type Member = {
 	Hp: number,
 	Alert: TextLabel?,
 	AlertUntil: number,
-	Chest: Attachment?, -- end point of incoming ghost bolts (own crew, made on first hit)
+	HitT: number, -- last slime hit (tiny squash/recoil in step)
 	Mark: Highlight?, -- red outline while a ghost winds up on this hunter
 	MarkUntil: number,
 }
@@ -218,6 +217,7 @@ local function newMember(id: string, tier: number, uid: string, at: Vector3, isL
 		Hp = 100,
 		AlertUntil = 0,
 		MarkUntil = 0,
+		HitT = 0,
 	}
 	makeBeam(m)
 	addTag(m, isLocal)
@@ -376,6 +376,213 @@ end
 local roots: { BasePart } = {}
 local cframes: { CFrame } = {}
 
+-- Ectoplasm spit (Fx "GhostWindup"/"GhostHit", sent to everyone fighting the ghost): a pooled
+-- glossy green blob flies from the ghost's mouth to the targeted hunter's chest along an arc,
+-- then splashes on the hunter (hit) or splats on the ground beside it (dodged).
+type Spit = {
+	Part: Part,
+	Trail: Trail,
+	Drip: ParticleEmitter,
+	Active: boolean,
+	Ghost: number,
+	Owner: number,
+	Hunter: string,
+	Member: Member,
+	Small: boolean,
+	From: Vector3,
+	To: Vector3,
+	Pos: Vector3,
+	Arc: number,
+	T0: number,
+	Arrive: number,
+	Result: string?, -- nil while waiting for GhostHit | "Hit" | "Knocked" | "Dodged"
+}
+local spits: { Spit } = {}
+local SPIT_FLIGHT = 0.35 -- leaves this long before the windup ends, so it lands with GhostHit
+local SPIT_WAIT = 0.5 -- how long a landed blob waits for a late GhostHit before fizzling
+local MAX_SPITS = 8
+local SLIME = Color3.fromRGB(120, 255, 100)
+
+local function chestPos(m: Member): Vector3
+	return m.Pos + Vector3.new(0, m.Rig.Height * 0.55, 0)
+end
+
+-- Resolves a hunter rig by (owner userId, hunter uid): uids are per player and can collide.
+local function memberOf(owner: any, uid: any): (Member?, boolean)
+	local pl = if type(owner) == "number" then Players:GetPlayerByUserId(owner) else nil
+	local mine = pl ~= nil and pl == player
+	local c = if pl then crews[pl] else nil
+	if c then
+		local key = tostring(uid)
+		for _, m in c.Members do
+			if m.Uid == key then
+				return m, mine
+			end
+		end
+	end
+	return nil, mine
+end
+
+local function takeSpit(): Spit?
+	for _, s in spits do
+		if not s.Active then
+			return s
+		end
+	end
+	if #spits >= MAX_SPITS then
+		return nil
+	end
+	local p = Instance.new("Part")
+	p.Name = "EctoSpit"
+	p.Shape = Enum.PartType.Ball
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Material = Enum.Material.SmoothPlastic
+	p.Reflectance = 0.25
+	p.Color = SLIME
+	local light = Instance.new("PointLight")
+	light.Color = SLIME
+	light.Range = 5
+	light.Brightness = 0.8
+	light.Shadows = false
+	light.Parent = p
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, 0.25, 0)
+	a0.Parent = p
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, -0.25, 0)
+	a1.Parent = p
+	local trail = Instance.new("Trail")
+	trail.Attachment0 = a0
+	trail.Attachment1 = a1
+	trail.Lifetime = 0.18
+	trail.Color = ColorSequence.new(SLIME)
+	trail.Transparency = NumberSequence.new(0.35, 1)
+	trail.WidthScale = NumberSequence.new(1, 0.2)
+	trail.FaceCamera = true
+	trail.LightEmission = 0.4
+	trail.Enabled = false
+	trail.Parent = p
+	local drip = Instance.new("ParticleEmitter")
+	drip.Color = ColorSequence.new(SLIME)
+	drip.LightEmission = 0.3
+	drip.Size = NumberSequence.new(0.18, 0)
+	drip.Lifetime = NumberRange.new(0.3, 0.45)
+	drip.Speed = NumberRange.new(0, 0.5)
+	drip.Acceleration = Vector3.new(0, -40, 0)
+	drip.Rate = 25
+	drip.Enabled = false
+	drip.Parent = p
+	local s: Spit = {
+		Part = p,
+		Trail = trail,
+		Drip = drip,
+		Active = false,
+		Ghost = 0,
+		Owner = 0,
+		Hunter = "",
+		Member = nil :: any,
+		Small = false,
+		From = Vector3.zero,
+		To = Vector3.zero,
+		Pos = Vector3.zero,
+		Arc = 0,
+		T0 = 0,
+		Arrive = 0,
+		Result = nil,
+	}
+	table.insert(spits, s)
+	return s
+end
+
+local function releaseSpit(s: Spit)
+	s.Active = false
+	s.Member = nil :: any
+	s.Trail.Enabled = false
+	s.Drip.Enabled = false
+	s.Part.Parent = nil
+end
+
+local function splashOn(m: Member, small: boolean)
+	Effects.Splat(chestPos(m), m.Pos.Y, SLIME, if small then 0.65 else 1)
+	m.HitT = os.clock()
+end
+
+local function launchSpit(ghostUid: number, owner: number, m: Member, mine: boolean, flight: number)
+	local e = Ghosts.Get(ghostUid)
+	if not e or e.Dying or e.Culled or m.Rig.Model.Parent == nil then
+		return
+	end
+	local s = takeSpit()
+	if not s then
+		return
+	end
+	local clock = os.clock()
+	local to = chestPos(m)
+	s.Active = true
+	s.Ghost = ghostUid
+	s.Owner = owner
+	s.Hunter = m.Uid
+	s.Member = m
+	s.Small = not mine
+	s.From = e.MouthPos
+	s.Pos = s.From
+	s.To = to
+	s.Arc = math.clamp(1.2 + (to - s.From).Magnitude * 0.12, 1.2, 4)
+	s.T0 = clock
+	s.Arrive = clock + math.max(flight, 0.15)
+	s.Result = nil
+	local d = if mine then 1 else 0.7
+	s.Part.Size = Vector3.new(d, d, d)
+	s.Part.CFrame = CFrame.new(s.From)
+	s.Part.Parent = folder
+	s.Trail:Clear()
+	s.Trail.Enabled = true
+	s.Drip.Enabled = true
+end
+
+-- Moves live blobs (into the step's BulkMoveTo lists) and resolves the ones that landed.
+local function stepSpits(clock: number)
+	for _, s in spits do
+		if not s.Active then
+			continue
+		end
+		local e = Ghosts.Get(s.Ghost)
+		local m = s.Member
+		local rigUp = m.Rig.Model.Parent ~= nil
+		if not e or e.Dying or (not rigUp and s.Result ~= "Dodged") then
+			releaseSpit(s) -- ghost or hunter gone mid-flight
+			continue
+		end
+		if s.Result ~= "Dodged" then
+			s.To = chestPos(m) -- home in on the (moving) hunter
+		end
+		if clock < s.Arrive then
+			local a = (clock - s.T0) / math.max(s.Arrive - s.T0, 0.01)
+			s.Pos = s.From:Lerp(s.To, a) + Vector3.new(0, s.Arc * 4 * a * (1 - a), 0)
+			table.insert(roots, s.Part)
+			table.insert(cframes, CFrame.new(s.Pos))
+			continue
+		end
+		local r = s.Result
+		if r == "Hit" then
+			splashOn(m, s.Small)
+		elseif r == "Dodged" then
+			Effects.Splat(s.To, s.To.Y, SLIME, if s.Small then 0.4 else 0.55)
+		elseif r == nil and clock < s.Arrive + SPIT_WAIT then
+			-- landed before the server's verdict: cling to the hunter for a moment
+			s.Pos = s.To
+			table.insert(roots, s.Part)
+			table.insert(cframes, CFrame.new(s.Pos))
+			continue
+		end
+		releaseSpit(s) -- "Knocked" (the knockout poof covers it) or no verdict in time
+	end
+end
+
 local function step(dt: number)
 	dt = math.min(dt, 0.1)
 	local clock = os.clock()
@@ -525,7 +732,14 @@ local function step(dt: number)
 			end
 
 			table.insert(roots, m.Rig.Root)
-			table.insert(cframes, CFrame.new(m.Pos) * CFrame.Angles(0, m.Yaw, 0))
+			local hk = clock - m.HitT
+			if hk < 0.3 then
+				-- slime hit: tiny squash down + lean back, then spring up
+				local k = math.sin(math.pi * hk / 0.3)
+				table.insert(cframes, CFrame.new(m.Pos.X, m.Pos.Y - 0.3 * k, m.Pos.Z) * CFrame.Angles(0, m.Yaw, 0) * CFrame.Angles(0.25 * k, 0, 0))
+			else
+				table.insert(cframes, CFrame.new(m.Pos) * CFrame.Angles(0, m.Yaw, 0))
+			end
 		end
 		c.Fighting = anyAttacking
 
@@ -561,6 +775,7 @@ local function step(dt: number)
 			table.insert(cframes, CFrame.new(ko.Pos) * CFrame.Angles(0, yaw, 0))
 		end
 	end
+	stepSpits(clock)
 	if #roots > 0 then
 		workspace:BulkMoveTo(roots, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 	end
@@ -641,69 +856,6 @@ local function syncKnocked()
 	end
 end
 
--- Ghost -> hunter bolt: a few reused beams from the ghost's core to the hit hunter's chest
--- (or, if the rig is already gone after a knockout, to where it stood). Shrinks out in 0.35 s.
-type Bolt = { Beam: Beam, End: Attachment, Token: number }
-local bolts: { Bolt } = {}
-local boltNext = 0
-local BOLT_RED = Color3.fromRGB(255, 60, 110)
-
-local function bolt(e: Ghosts.Entry, target: Attachment?, at: Vector3)
-	boltNext = boltNext % 3 + 1
-	local b = bolts[boltNext]
-	if not b then
-		local endAtt = Instance.new("Attachment")
-		endAtt.Name = "GhostBoltEnd"
-		endAtt.Parent = workspace.Terrain
-		local beam = Instance.new("Beam")
-		beam.Name = "GhostBolt"
-		beam.LightEmission = 1
-		beam.LightInfluence = 0
-		beam.FaceCamera = true
-		beam.Segments = 10
-		beam.Transparency = NumberSequence.new(0.05, 0.25)
-		beam.Enabled = false
-		beam.Parent = folder
-		b = { Beam = beam, End = endAtt, Token = 0 }
-		bolts[boltNext] = b
-	end
-	local beam = b.Beam
-	if target then
-		beam.Attachment1 = target
-	else
-		b.End.WorldPosition = at
-		beam.Attachment1 = b.End
-	end
-	beam.Attachment0 = centerAttachment(e)
-	beam.Color = ColorSequence.new(e.Def.Glow, BOLT_RED)
-	beam.CurveSize0 = (math.random() - 0.5) * 4
-	beam.CurveSize1 = (math.random() - 0.5) * 3
-	beam.Width0 = 1
-	beam.Width1 = 0.55
-	beam.Enabled = true
-	TweenService:Create(beam, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Width0 = 0, Width1 = 0 }):Play()
-	b.Token += 1
-	local token = b.Token
-	task.delay(0.36, function()
-		if b.Token == token then
-			beam.Enabled = false
-		end
-	end)
-end
-
-local function chestOf(m: Member): Attachment
-	local a = m.Chest
-	if not a then
-		local made = Instance.new("Attachment")
-		made.Name = "Chest"
-		made.Position = Vector3.new(0, m.Rig.Height * 0.55, 0)
-		made.Parent = m.Rig.Root
-		m.Chest = made
-		return made
-	end
-	return a
-end
-
 local function localMember(uid: any): Member?
 	local c = crews[player]
 	if c then
@@ -777,33 +929,50 @@ function Crew.Start()
 		end
 	end)
 	RunService.RenderStepped:Connect(step)
-	-- v1.6 retaliation (Fx only reaches the attacked player): telegraph, dodge, knockout poof
+	-- retaliation (Fx reaches everyone fighting the ghost; hunter uids are per player, so the
+	-- rig is always resolved by Owner + Hunter): windup telegraph, ectoplasm spit, splash/splat
 	State.OnFx("GhostWindup", function(d: any)
-		local m = localMember(d.Hunter)
-		if not m then
-			return
+		local t = tonumber(d.Time) or 0.9
+		local m, mine = memberOf(d.Owner, d.Hunter)
+		if m and mine then
+			mark(m, t) -- own hunter: quiet red outline (the ❗ sits on the ghost)
 		end
-		-- the ❗ + ring sit on the ghost (Ghosts.luau); the hunter only gets a quiet outline
-		mark(m, tonumber(d.Time) or 0.9)
+		local lead = math.max(0.1, t - SPIT_FLIGHT)
+		local drawn = m ~= nil and m.Rig.Model.Parent ~= nil
+		Ghosts.Windup(d.Ghost, lead, if m and drawn then m.Pos else nil, mine and m ~= nil)
+		if m and drawn then
+			task.delay(lead, launchSpit, d.Ghost, d.Owner, m, mine, t - lead)
+		end
 	end)
 	State.OnFx("GhostHit", function(d: any)
-		local m = localMember(d.Hunter)
-		if m then
+		local m, mine = memberOf(d.Owner, d.Hunter)
+		if m and mine then
 			mark(m, 0)
-		end
-		if d.Dodged then
-			if m then
+			if d.Dodged then
 				flash(m, "DODGED", Theme.Ecto, 0.8)
 			end
-			return
 		end
-		local e = Ghosts.Get(d.Ghost)
-		local pos = if m then m.Pos else gone[d.Hunter]
-		if e and not e.Dying and pos then
-			bolt(e, if m then chestOf(m) else nil, pos + Vector3.new(0, 2, 0))
+		local result = if d.Dodged then "Dodged" elseif d.Knocked then "Knocked" else "Hit"
+		local key = tostring(d.Hunter)
+		for _, s in spits do
+			if s.Active and s.Result == nil and s.Ghost == d.Ghost and s.Owner == d.Owner and s.Hunter == key then
+				s.Result = result
+				if result == "Dodged" then
+					-- veer off to the ground beside where the hunter stands now
+					local base = s.Member.Pos
+					local clock = os.clock()
+					s.From = s.Pos
+					s.To = Vector3.new(base.X + (math.random() - 0.5) * 2.5, base.Y + 0.1, base.Z + (math.random() - 0.5) * 2.5)
+					s.Arc = 0.6
+					s.T0 = clock
+					s.Arrive = clock + math.max(0.15, s.Arrive - clock)
+				end
+				return
+			end
 		end
-		if m and not d.Knocked then
-			Effects.Burst(m.Pos + Vector3.new(0, 2, 0), { Color = Theme.Bad, Count = 8, Size = 0.5, Speed = 8, Life = 0.4 })
+		-- no blob in flight (windup missed / pool full): still show the hit on a drawn rig
+		if result == "Hit" and m and m.Rig.Model.Parent ~= nil then
+			splashOn(m, not mine)
 		end
 	end)
 	-- knocked-out rigs + countdowns: resync on every snapshot and once a second

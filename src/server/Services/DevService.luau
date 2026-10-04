@@ -1,7 +1,6 @@
 --!strict
 -- Owner-only developer tools (DEV button + Studio chat commands). A player is a dev when the
--- game runs in Studio, when they created the game (or own the group that did), or when their
--- UserId is in Config.DevUserIds. Every command is re-checked here on the server, so the
+-- game runs in Studio, or when their UserId is listed in Config.DevUserIds (live servers). Every command is re-checked here on the server, so the
 -- button showing up on a client means nothing by itself.
 -- NOTE: in a live server these change the dev's REAL saved profile.
 local Players = game:GetService("Players")
@@ -27,16 +26,8 @@ local function checkDev(player: Player): boolean
 	if RunService:IsStudio() then
 		return true
 	end
-	if table.find(Config.DevUserIds, player.UserId) then
-		return true
-	end
-	if game.CreatorType == Enum.CreatorType.User then
-		return player.UserId == game.CreatorId
-	end
-	local ok, rank = pcall(function()
-		return player:GetRankInGroup(game.CreatorId)
-	end)
-	return ok and rank == 255
+	-- live servers: ONLY the explicitly allowed developer UserIds (Config.DevUserIds)
+	return table.find(Config.DevUserIds, player.UserId) ~= nil
 end
 
 function DevService.IsDev(player: Player): boolean
