@@ -1989,8 +1989,8 @@ Config.GamePasses = {
 	{ Key = "VIP", Name = "VIP", Icon = "👑", PassId = 2005856286, PriceLabel = "R$ 249", Multiplier = 1.1, Blurb = "VIP tag, gold name, +10% Ectoplasm" },
 	{ Key = "Storage", Name = "+50 HUNTER STORAGE", Icon = "🗃️", PassId = 2005124303, PriceLabel = "R$ 99", Storage = 50, Blurb = "Keep 50 more hunters" },
 	{ Key = "RainbowBeams", Name = "RAINBOW BEAMS", Icon = "🌈", PassId = 2004968300, PriceLabel = "R$ 149", Blurb = "Your crew fires rainbow beams (looks only)" },
-	{ Key = "PermanentSkip", Name = "PERMANENT CRATE SKIP", Icon = "⏩", PassId = nil, PriceLabel = "R$ 49", Blurb = "Skip every crate animation, forever" },
-	{ Key = "AutoOpen", Name = "AUTO OPEN", Icon = "🔁", PassId = nil, PriceLabel = "R$ 99", Blurb = "Crates open by themselves while you stand at them" },
+	{ Key = "PermanentSkip", Name = "PERMANENT CRATE SKIP", Icon = "⏩", PassId = 2005971344, PriceLabel = "R$ 49", Blurb = "Skip every crate animation, forever" },
+	{ Key = "AutoOpen", Name = "AUTO OPEN", Icon = "🔁", PassId = 2006061299, PriceLabel = "R$ 49", Blurb = "Crates open by themselves while you stand at them" },
 	{ Key = "SparkleTrail", Name = "SPARKLE TRAIL", Icon = "✨", PassId = 2006036302, PriceLabel = "R$ 99", Blurb = "A sparkly trail follows you (looks only)" },
 } :: { PassDef }
 

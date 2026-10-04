@@ -133,12 +133,20 @@ local function skipProductOnSale(): boolean
 	return false
 end
 
+-- the Permanent Crate Skip pass, when it's on sale: offered on the SKIP button to non-owners
+local PERMANENT_SKIP: any = nil
+for _, pass in Config.GamePasses do
+	if pass.Key == "PermanentSkip" and pass.PassId then
+		PERMANENT_SKIP = pass
+	end
+end
+
 local function canSkip(): boolean
 	if petMode or hasPermanentSkip() then
 		return true
 	end
 	local d = State.Data
-	return (d ~= nil and (d.SkipTokens or 0) > 0) or skipProductOnSale()
+	return (d ~= nil and (d.SkipTokens or 0) > 0) or skipProductOnSale() or PERMANENT_SKIP ~= nil
 end
 
 local function skipLabel(): string
@@ -150,7 +158,11 @@ local function skipLabel(): string
 		return "SKIP ⏩"
 	end
 	local tokens = if d then d.SkipTokens or 0 else 0
-	return if tokens > 0 then "SKIP ⏩ (" .. tokens .. ")" else "SKIP ⏩ " .. string.gsub(SINGLE_SKIP_PRICE, " ", "")
+	if tokens > 0 then
+		return "SKIP ⏩ (" .. tokens .. ")"
+	end
+	local price = if skipProductOnSale() then SINGLE_SKIP_PRICE elseif PERMANENT_SKIP then PERMANENT_SKIP.PriceLabel else SINGLE_SKIP_PRICE
+	return "SKIP ⏩ " .. string.gsub(price, " ", "")
 end
 
 local function requestSkip()
@@ -180,7 +192,13 @@ local function requestSkip()
 		skipping = true
 		return
 	end
-	if res.err == "NeedSkip" then
+	if res.err == "NeedSkip" and not skipProductOnSale() and PERMANENT_SKIP then
+		-- no single skips for sale: offer the Permanent Crate Skip pass (skips from then on)
+		local buy = State.Request("Buy", PERMANENT_SKIP.Key)
+		if not buy.ok then
+			Kit.Toast(buy.err or "Skip isn't available", "Bad")
+		end
+	elseif res.err == "NeedSkip" then
 		local buy = State.Request("Buy", Config.CrateSkip.Product)
 		if buy.ok then
 			pendingSkip = true -- the purchase arrives as a SkipGranted message
