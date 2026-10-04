@@ -125,6 +125,10 @@ function PetService.Init()
 		if type(text) ~= "string" or #text > 200 then
 			return Remotes.Fail("Bad name")
 		end
+		-- invisible characters (zero-width, direction marks) can't make a "blank" name
+		for _, cp in { 0x200B, 0x200C, 0x200D, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2060, 0x2061, 0x2062, 0x2063, 0x2064, 0xFEFF } do
+			text = string.gsub(text, utf8.char(cp), "")
+		end
 		text = string.match(string.gsub(text, "%c", " "), "^%s*(.-)%s*$") or ""
 		local n = utf8.len(text)
 		if not n or n > NICK_MAX or #text > 40 then
@@ -134,11 +138,7 @@ function PetService.Init()
 		if n > 0 then
 			nick = filterNick(player, text) -- yields
 			if not nick then
-				local pet = d.Pets[uid]
-				if pet then
-					pet.Nick = nil
-					refresh(player)
-				end
+				-- filter unavailable: keep the current (already filtered) name, store nothing new
 				return Remotes.Fail("Couldn't check that name right now, try again later")
 			end
 		end

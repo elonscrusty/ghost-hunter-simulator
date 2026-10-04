@@ -572,7 +572,7 @@ local function runLobby(l: Lobby)
 		-- a checkpoint start uses the party's lowest common checkpoint (skipped rooms pay nothing)
 		local first = 1
 		if l.StartRoom > 1 then
-			first = commonCheckpoint(party) + 1
+			first = math.min(l.StartRoom, commonCheckpoint(party) + 1)
 			if first ~= l.StartRoom then
 				for _, p in party do
 					Fx.Toast(p, if first > 1

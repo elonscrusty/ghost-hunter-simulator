@@ -69,14 +69,18 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 		end
 	elseif p.Kind == "SummonEvent" then
 		-- RETIRED product (the Giant Poltergeist event is gone and it is no longer sold). An old
-		-- or delayed receipt still gets something fair: 15 minutes of SERVER LUCK for everyone.
-		PlayerInfo.AddServerLuck(LEGACY_SUMMON_LUCK_SECONDS)
-		Fx.All("Announce", { Text = player.DisplayName .. " turned on SERVER LUCK for everyone! 🍀", Color = "Rare" })
-		for _, other in Players:GetPlayers() do
-			DataService.Changed(other)
+		-- or delayed receipt still gets something fair that can never be capped away: the
+		-- biggest Ectoplasm pack for the buyer.
+		local _ = LEGACY_SUMMON_LUCK_SECONDS
+		local pack = 0
+		for _, q in Config.Products do
+			if q.Kind == "Ecto" and q.Amount and q.Amount > pack then
+				pack = q.Amount
+			end
 		end
+		DataService.AddEcto(player, pack * PlayerInfo.ZoneMultiplier(player))
 		DataService.Changed(player)
-		Fx.Toast(player, "Thanks! The Giant Poltergeist event was retired, so you got 15 min SERVER LUCK instead!", "Good")
+		Fx.Toast(player, "Thanks! The Giant Poltergeist event was retired, so you got a big Ectoplasm pack instead!", "Good")
 		return
 	end
 	DataService.Changed(player)

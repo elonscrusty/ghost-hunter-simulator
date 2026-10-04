@@ -1,3 +1,17 @@
+# v1.7 Studio checks
+
+1. HUD: on desktop and the Studio phone device, the left and right button groups sit a bit higher, nothing overlaps, and the top bar shows Ectoplasm, Power and a 🔮 Spirit Shards counter.
+2. DEV menu: GIVE ALL PETS (press twice: no duplicates), HEAL ALL HUNTERS (knocked hunters come back), GIVE SHARDS (type 500: the shard counter goes up), TOWER ROOM (type 12: you start a solo run at Room 12 marked "DEV RUN - no rewards"; beating it gives nothing). Start Rare Pet Event is still there.
+3. Fight a ghost: bars above your hunters drop when hit, a beam goes from the ghost to the hunter that was hit, walking away shows DODGED. Knocked hunters appear faded behind you with a 💤 countdown.
+4. Open a crate: the hunter that pops out is clearly visible in front of the chest.
+5. Index: each hunter shows Normal / ✨ Shiny / 💎 Mega chips; merge 5 copies and the Shiny chip unlocks. Shiny hunters look golden and sparkly in the world, inventory and index; Mega look bigger with a halo.
+6. No giant poltergeist appears near the Boss Tower (wait 5+ minutes); the shop has no Summon item.
+7. Tower: beat Room 1 -> "BOSS DEFEATED! Rewards collected" with your personal shards/ectoplasm and %, shard orbs fly to you and to the top counter. Clear Room 5 -> checkpoint toast; next time the pad offers START AT ROOM 1 and START AT ROOM 6. Rooms get noticeably harder each time (about +15%, extra jump after every 5).
+8. Pets: they look like small cute ghosts with names above them. Rename one in the Pets panel; the new name shows above it. The panel shows the combined bonus of equipped pets.
+9. Spawn: the plaza lamps no longer block the paths to the crate, upgrade booth or kiosks.
+
+Only verifiable live: nickname text filtering (Studio filtering can behave differently), checkpoint saving across real sessions.
+
 # Studio playtest checklist
 
 ## v1.6 playtest (do this first)
