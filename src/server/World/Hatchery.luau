@@ -1,9 +1,9 @@
 --!strict
 -- PET HATCHERY (workspace.Map.Hatchery): a small open pavilion in the left pocket behind the
 -- spawn plaza (beside Ghost Hunter HQ), turned to face the plaza. Built in a local frame `base`
--- (origin CENTER, local -Z = front, toward the spawn): footprint 21 x 13 studs, which lands at
--- about X -39..-14, Z -36..-11 (Builder reserves X -40..-12, Z -38..-8; PetService's BuyEgg
--- near check uses CENTER).
+-- (origin CENTER = Config.Layout.Hatchery, local -Z = front, toward the spawn): footprint 21 x 13
+-- studs, which lands at about X -39..-14, Z -106..-81 in the lobby (Builder reserves the pocket;
+-- PetService's BuyEgg near check uses the same point).
 --   Three pedestals (Config.EggOrder, left to right as seen from the plaza), each with a big egg,
 --   a price/unlock sign and an invisible PromptAnchor (attribute Egg = egg id) holding a "View"
 --   ProximityPrompt. The client (Controllers/Hatchery) opens the egg panel from the prompt;
@@ -12,6 +12,7 @@
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Format = require(game:GetService("ReplicatedStorage").GH.Logic.Format)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
 
@@ -21,7 +22,7 @@ local C = Color3.fromRGB
 local V = Vector3.new
 local NEON = Enum.Material.Neon
 
-local CENTER = V(-27, 0, -23) -- PetService BuyEgg near check uses this spot
+local CENTER: Vector3 = Config.Layout.Hatchery -- PetService BuyEgg near check uses this spot
 local HW, HD = 10.5, 6.5 -- floor half width (local X) / half depth (local Z)
 local PED_Z = 1.5 -- pedestal row (local Z, behind the middle)
 local PED_GAP = 6
@@ -126,7 +127,24 @@ local function pedestal(parent: Instance, base: CFrame, egg: Config.EggDef, x: n
 	Kit.Part(m, V(0.5, 0.8, 0.5), at(0, 0.4, 3.9), STONE_DARK)
 	local g = Kit.Gui(board, Enum.NormalId.Front)
 	Kit.Label(g, string.upper(egg.Name), C(255, 255, 255), { Size = UDim2.fromScale(0.94, 0.34), Pos = UDim2.fromScale(0.03, 0.04) })
-	Kit.Label(g, "🔮 " .. Format.Commas(egg.Price), SHARD, { Size = UDim2.fromScale(0.8, 0.3), Pos = UDim2.fromScale(0.1, 0.38) })
+	-- price: the Spirit Shards icon image left of the number (emoji only without an image id);
+	-- the icon is square at the row height (0.3 of the 3-stud board = 0.18 of its 5-stud width)
+	local price = Format.Commas(egg.Price)
+	local shards = Icons.Get("shards")
+	if shards then
+		local img = Instance.new("ImageLabel")
+		img.Name = "ShardIcon"
+		img.BackgroundTransparency = 1
+		img.Image = shards
+		img.ScaleType = Enum.ScaleType.Fit
+		img.Position = UDim2.fromScale(0.14, 0.38)
+		img.Size = UDim2.fromScale(0.18, 0.3)
+		img.Parent = g
+		local label = Kit.Label(g, price, SHARD, { Name = "Price", Size = UDim2.fromScale(0.52, 0.3), Pos = UDim2.fromScale(0.34, 0.38) })
+		label.TextXAlignment = Enum.TextXAlignment.Left
+	else
+		Kit.Label(g, "🔮 " .. price, SHARD, { Name = "Price", Size = UDim2.fromScale(0.8, 0.3), Pos = UDim2.fromScale(0.1, 0.38) })
+	end
 	local unlock = if egg.Unlock > 0 then "Unlock: Tower checkpoint " .. egg.Unlock else "Open to everyone"
 	Kit.Label(g, unlock, C(150, 255, 170), { Size = UDim2.fromScale(0.94, 0.22), Pos = UDim2.fromScale(0.03, 0.72) })
 

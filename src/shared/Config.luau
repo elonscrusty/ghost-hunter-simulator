@@ -110,7 +110,7 @@ Config.Zones = {
 	{
 		Id = "Neighborhood", Name = "HAUNTED NEIGHBORHOOD", Order = 1, Cost = 0, Crate = "Beginner",
 		Ambient = Color3.fromRGB(150, 120, 200), FogColor = Color3.fromRGB(120, 80, 170), Accent = Color3.fromRGB(150, 255, 120),
-		MinZ = -60, MaxZ = 260,
+		MinZ = -140, MaxZ = 260, -- includes the lobby (Z -130..-37), always open
 	},
 	{
 		Id = "Cemetery", Name = "CEMETERY", Order = 2, Cost = 1500, Crate = "Haunted",
@@ -1698,7 +1698,7 @@ export type PetDef = {
 	Bonus: { Kind: string, Value: number }, -- Kind: Power | Ecto | HP | Recovery
 	Color: Color3,
 	Glow: Color3,
-	Shape: string, -- visual: Wisp | Bat | Blob | Cat | Owl | Fox | Drake | Phoenix | Lantern
+	Icon: string, -- emoji shown in the pets list (the 3D look is in PetFollowers, one builder per Id)
 }
 Config.PetRules = {
 	MaxEquipped = 3,
@@ -1707,18 +1707,32 @@ Config.PetRules = {
 	Caps = { Power = 0.6, Ecto = 0.5, HP = 0.75, Recovery = 0.5 } :: { [string]: number },
 }
 Config.Pets = {
-	GlowWisp = { Id = "GlowWisp", Name = "Glow Wisp", Rarity = "Common", Price = nil, Bonus = { Kind = "Power", Value = 0.05 }, Color = Color3.fromRGB(200, 255, 220), Glow = Color3.fromRGB(120, 255, 170), Shape = "Wisp" },
-	BooBat = { Id = "BooBat", Name = "Boo Bat", Rarity = "Common", Price = nil, Bonus = { Kind = "Ecto", Value = 0.05 }, Color = Color3.fromRGB(130, 100, 190), Glow = Color3.fromRGB(200, 150, 255), Shape = "Bat" },
-	JellyGhost = { Id = "JellyGhost", Name = "Jelly Ghost", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "HP", Value = 0.15 }, Color = Color3.fromRGB(255, 160, 220), Glow = Color3.fromRGB(255, 120, 200), Shape = "Blob" },
-	PhantomKitty = { Id = "PhantomKitty", Name = "Phantom Kitty", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "Recovery", Value = 0.15 }, Color = Color3.fromRGB(230, 230, 255), Glow = Color3.fromRGB(170, 200, 255), Shape = "Cat" },
-	MoonOwl = { Id = "MoonOwl", Name = "Moon Owl", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(150, 190, 255), Glow = Color3.fromRGB(110, 200, 255), Shape = "Owl" },
-	SpiritFox = { Id = "SpiritFox", Name = "Spirit Fox", Rarity = "Rare", Price = nil, Bonus = { Kind = "Ecto", Value = 0.12 }, Color = Color3.fromRGB(255, 190, 120), Glow = Color3.fromRGB(255, 150, 80), Shape = "Fox" },
-	SpookyDrake = { Id = "SpookyDrake", Name = "Spooky Drake", Rarity = "Epic", Price = nil, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(150, 110, 230), Glow = Color3.fromRGB(190, 120, 255), Shape = "Drake" },
-	GhostPhoenix = { Id = "GhostPhoenix", Name = "Ghost Phoenix", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 220, 140), Glow = Color3.fromRGB(255, 160, 60), Shape = "Phoenix" },
-	-- launch event reward (not sold): a Rare with a useful mixed bonus
-	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Shape = "Lantern" },
+	-- ids, rarities and bonuses of the first nine pets are save data: never change them (v2 only
+	-- renamed them and gave them new looks)
+	GlowWisp = { Id = "GlowWisp", Name = "Wisp Candle", Rarity = "Common", Price = nil, Bonus = { Kind = "Power", Value = 0.05 }, Color = Color3.fromRGB(236, 226, 255), Glow = Color3.fromRGB(120, 255, 150), Icon = "🕯️" },
+	BooBat = { Id = "BooBat", Name = "Boo Brew", Rarity = "Common", Price = nil, Bonus = { Kind = "Ecto", Value = 0.05 }, Color = Color3.fromRGB(255, 160, 200), Glow = Color3.fromRGB(205, 160, 255), Icon = "☕" },
+	EctoSlime = { Id = "EctoSlime", Name = "Ecto Slime", Rarity = "Common", Price = nil, Bonus = { Kind = "Ecto", Value = 0.05 }, Color = Color3.fromRGB(120, 235, 140), Glow = Color3.fromRGB(120, 255, 150), Icon = "💚" },
+	BooBalloon = { Id = "BooBalloon", Name = "Boo Balloon", Rarity = "Common", Price = nil, Bonus = { Kind = "Power", Value = 0.05 }, Color = Color3.fromRGB(150, 210, 255), Glow = Color3.fromRGB(170, 220, 255), Icon = "🎈" },
+	JellyGhost = { Id = "JellyGhost", Name = "Pumpkin Sprite", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "HP", Value = 0.15 }, Color = Color3.fromRGB(255, 145, 45), Glow = Color3.fromRGB(255, 170, 60), Icon = "🎃" },
+	PhantomKitty = { Id = "PhantomKitty", Name = "Witch Kitty", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "Recovery", Value = 0.15 }, Color = Color3.fromRGB(78, 62, 112), Glow = Color3.fromRGB(150, 230, 170), Icon = "🐱" },
+	CursedTeddy = { Id = "CursedTeddy", Name = "Cursed Teddy", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "HP", Value = 0.15 }, Color = Color3.fromRGB(160, 120, 200), Glow = Color3.fromRGB(190, 150, 255), Icon = "🧸" },
+	MiniMummy = { Id = "MiniMummy", Name = "Mini Mummy", Rarity = "Uncommon", Price = nil, Bonus = { Kind = "Recovery", Value = 0.15 }, Color = Color3.fromRGB(235, 225, 195), Glow = Color3.fromRGB(200, 255, 120), Icon = "🩹" },
+	MoonOwl = { Id = "MoonOwl", Name = "Grimoire", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(105, 70, 190), Glow = Color3.fromRGB(140, 140, 255), Icon = "📖" },
+	SpiritFox = { Id = "SpiritFox", Name = "Cauldron Imp", Rarity = "Rare", Price = nil, Bonus = { Kind = "Ecto", Value = 0.12 }, Color = Color3.fromRGB(62, 52, 82), Glow = Color3.fromRGB(120, 255, 150), Icon = "🧪" },
+	HauntedMirror = { Id = "HauntedMirror", Name = "Haunted Mirror", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(255, 205, 60), Glow = Color3.fromRGB(200, 150, 255), Icon = "🔮" },
+	TreasureMimic = { Id = "TreasureMimic", Name = "Treasure Mimic", Rarity = "Rare", Price = nil, Bonus = { Kind = "Ecto", Value = 0.12 }, Color = Color3.fromRGB(150, 90, 50), Glow = Color3.fromRGB(120, 255, 150), Icon = "💰" },
+	SpookyDrake = { Id = "SpookyDrake", Name = "Boo-FO", Rarity = "Epic", Price = nil, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(200, 196, 230), Glow = Color3.fromRGB(180, 130, 255), Icon = "🛸" },
+	HauntedClock = { Id = "HauntedClock", Name = "Haunted Clock", Rarity = "Epic", Price = nil, Bonus = { Kind = "Ecto", Value = 0.22 }, Color = Color3.fromRGB(120, 70, 200), Glow = Color3.fromRGB(255, 120, 210), Icon = "⏰" },
+	GhostTrain = { Id = "GhostTrain", Name = "Ghost Express", Rarity = "Epic", Price = nil, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(130, 60, 190), Glow = Color3.fromRGB(120, 255, 150), Icon = "🚂" },
+	GhostPhoenix = { Id = "GhostPhoenix", Name = "Tiny Reaper", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(92, 70, 150), Glow = Color3.fromRGB(255, 200, 90), Icon = "💀" },
+	CrystalSkull = { Id = "CrystalSkull", Name = "Crystal Skull", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Ecto", Value = 0.35 }, Color = Color3.fromRGB(150, 230, 255), Glow = Color3.fromRGB(130, 230, 255), Icon = "💎" },
+	-- launch event reward (never in eggs): a Rare with a useful mixed bonus
+	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Icon = "🏮" },
 } :: { [string]: PetDef }
-Config.PetOrder = { "GlowWisp", "BooBat", "JellyGhost", "PhantomKitty", "MoonOwl", "SpiritFox", "SpookyDrake", "GhostPhoenix", "LanternSpirit" }
+Config.PetOrder = {
+	"GlowWisp", "BooBat", "EctoSlime", "BooBalloon", "JellyGhost", "PhantomKitty", "CursedTeddy", "MiniMummy", "MoonOwl",
+	"SpiritFox", "HauntedMirror", "TreasureMimic", "SpookyDrake", "HauntedClock", "GhostTrain", "GhostPhoenix", "CrystalSkull", "LanternSpirit",
+}
 
 -- PET EGGS (v1.8): the only way to get pets with Spirit Shards (direct pet purchases are gone;
 -- event pets such as LanternSpirit are never in eggs). Hatched at the PET HATCHERY near the
@@ -1738,24 +1752,27 @@ Config.Eggs = {
 	HauntedEgg = {
 		Id = "HauntedEgg", Name = "Haunted Egg", Price = 200, Unlock = 0,
 		Odds = {
-			{ Pet = "GlowWisp", Chance = 40 }, { Pet = "BooBat", Chance = 35 }, { Pet = "JellyGhost", Chance = 15 },
-			{ Pet = "PhantomKitty", Chance = 8 }, { Pet = "MoonOwl", Chance = 2 },
+			{ Pet = "GlowWisp", Chance = 20 }, { Pet = "BooBat", Chance = 19 }, { Pet = "EctoSlime", Chance = 19 },
+			{ Pet = "BooBalloon", Chance = 17 }, { Pet = "JellyGhost", Chance = 9 }, { Pet = "CursedTeddy", Chance = 8 },
+			{ Pet = "PhantomKitty", Chance = 6 }, { Pet = "MoonOwl", Chance = 2 },
 		},
 		Color = Color3.fromRGB(120, 60, 190), Accent = Color3.fromRGB(120, 255, 140),
 	},
 	PhantomEgg = {
 		Id = "PhantomEgg", Name = "Phantom Egg", Price = 1200, Unlock = 10,
 		Odds = {
-			{ Pet = "JellyGhost", Chance = 30 }, { Pet = "PhantomKitty", Chance = 30 }, { Pet = "MoonOwl", Chance = 20 },
-			{ Pet = "SpiritFox", Chance = 15 }, { Pet = "SpookyDrake", Chance = 5 },
+			{ Pet = "JellyGhost", Chance = 20 }, { Pet = "PhantomKitty", Chance = 20 }, { Pet = "MiniMummy", Chance = 20 },
+			{ Pet = "MoonOwl", Chance = 13 }, { Pet = "HauntedMirror", Chance = 12 }, { Pet = "SpiritFox", Chance = 10 },
+			{ Pet = "SpookyDrake", Chance = 3 }, { Pet = "HauntedClock", Chance = 2 },
 		},
 		Color = Color3.fromRGB(210, 230, 255), Accent = Color3.fromRGB(110, 180, 255),
 	},
 	MoonlightEgg = {
 		Id = "MoonlightEgg", Name = "Moonlight Egg", Price = 5000, Unlock = 25,
 		Odds = {
-			{ Pet = "MoonOwl", Chance = 30 }, { Pet = "SpiritFox", Chance = 30 }, { Pet = "SpookyDrake", Chance = 30 },
-			{ Pet = "GhostPhoenix", Chance = 10 },
+			{ Pet = "MoonOwl", Chance = 20 }, { Pet = "SpiritFox", Chance = 20 }, { Pet = "TreasureMimic", Chance = 20 },
+			{ Pet = "SpookyDrake", Chance = 15 }, { Pet = "GhostTrain", Chance = 15 }, { Pet = "GhostPhoenix", Chance = 6 },
+			{ Pet = "CrystalSkull", Chance = 4 },
 		},
 		Color = Color3.fromRGB(30, 40, 120), Accent = Color3.fromRGB(255, 235, 150),
 	},
@@ -2023,6 +2040,8 @@ Config.Feedback = {
 -- Spawn leaderboard (all-time Ectoplasm, OrderedDataStore)
 Config.Leaderboard = {
 	DataStoreName = "GhostHunterTopEcto_v1",
+	-- second board: each player's best-ever crew power (written only when it rises)
+	PowerDataStoreName = "GhostHunterTopPower_v1",
 	Rows = 10,
 	RefreshSeconds = 120,
 }
@@ -2039,7 +2058,11 @@ Config.Data = {
 export type GhostArea = { Ghost: string, Center: Vector3, Radius: number, Count: number }
 
 Config.Layout = {
-	Spawn = Vector3.new(0, 3, 0),
+	-- Lobby (spawn plaza, HQ, booths, hatchery, boards) sits behind the Neighborhood: X -64..64,
+	-- Z BackZ..FrontZ, no ghosts. A hedge wall centred on FrontZ (6 thick) closes it, with a free
+	-- open arch (EntranceWidth, centred on X = 0) leading into the Neighborhood.
+	Lobby = { BackZ = -130, FrontZ = -37, HalfWidth = 64, EntranceWidth = 34 },
+	Spawn = Vector3.new(0, 3, -70),
 	HalfWidth = 140, -- playable area spans X -HalfWidth..HalfWidth
 	Gates = {
 		-- gate that unlocks Zone Id, centred on X=0 at this Z
@@ -2060,7 +2083,7 @@ Config.Layout = {
 		Throne = { Z = 5200, Width = 34 },
 	},
 	CrateStations = {
-		Beginner = Vector3.new(-28, 0, 28),
+		Beginner = Vector3.new(-28, 0, -6), -- just inside the lobby entrance
 		Haunted = Vector3.new(-28, 0, 292),
 		Elite = Vector3.new(-28, 0, 572),
 		Carnival = Vector3.new(-28, 0, 912),
@@ -2080,7 +2103,7 @@ Config.Layout = {
 	-- Fast Travel (WORLDS menu) arrival points: open ground beside each zone's path, clear of
 	-- ghost areas, stations and props (the builders keep a circle around each one free).
 	ZoneSpawns = {
-		Neighborhood = Vector3.new(0, 3, 0),
+		Neighborhood = Vector3.new(0, 3, -70), -- the lobby spawn
 		Cemetery = Vector3.new(26, 3, 296),
 		School = Vector3.new(26, 3, 572),
 		Carnival = Vector3.new(26, 3, 912),
@@ -2097,9 +2120,12 @@ Config.Layout = {
 		Inferno = Vector3.new(26, 3, 4872),
 		Throne = Vector3.new(26, 3, 5232),
 	},
-	UpgradeStation = Vector3.new(28, 0, 28),
-	-- TOP GHOST HUNTERS board beside the spawn plaza, turned toward the plaza
-	Leaderboard = { Position = Vector3.new(42, 0, 4), Yaw = math.rad(72) },
+	UpgradeStation = Vector3.new(28, 0, -6),
+	-- lobby boards on the right of the spawn plaza, side by side, turned toward the plaza:
+	-- TOP GHOST HUNTERS (all-time Ectoplasm) and TOP POWER (best crew power)
+	Leaderboard = { Position = Vector3.new(45.6, 0, -76.9), Yaw = math.rad(72) },
+	PowerBoard = { Position = Vector3.new(38.4, 0, -55.1), Yaw = math.rad(72) },
+	Hatchery = Vector3.new(-27, 0, -93), -- Pet Hatchery centre (PetService BuyEgg near check)
 	EventArena = { Center = Vector3.new(95, 0, 110), Radius = 32 },
 	GhostAreas = {
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(0, 0, 70), Radius = 34, Count = 7 },

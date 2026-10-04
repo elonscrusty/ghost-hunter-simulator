@@ -1,8 +1,13 @@
 --!strict
--- Fills the spawn TOP GHOST HUNTERS board: every RefreshSeconds it writes each online player's
--- all-time Ectoplasm to an OrderedDataStore and reads the top rows back. Without DataStore
--- access (Studio with API off) it ranks the players in this server instead. Studio never
--- writes, and developer accounts stay off the public board.
+-- Fills the two lobby boards every RefreshSeconds:
+--   TOP GHOST HUNTERS: each online player's all-time Ectoplasm (current value) in
+--     Config.Leaderboard.DataStoreName.
+--   TOP POWER: each player's best-ever crew power (HunterService.CrewPower) in
+--     Config.Leaderboard.PowerDataStoreName; written with UpdateAsync only when it rises above
+--     the stored best, so the entry never goes down.
+-- Then the top rows are read back. Without DataStore access (Studio with API off) a board ranks
+-- the players in this server instead. Studio never writes, and developer accounts stay off the
+-- public boards.
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -12,14 +17,17 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
 local DataService = require(script.Parent.DataService)
+local HunterService = require(script.Parent.HunterService)
 
 local LeaderboardService = {}
 
 type Row = { Name: string, Value: number }
 
 local store: OrderedDataStore? = nil
+local powerStore: OrderedDataStore? = nil
 local names: { [number]: string } = {}
 local written: { [number]: number } = {} -- userId -> value this server last wrote
+local bestPower: { [number]: number } = {} -- userId -> best power known to be stored
 local MAX_VALUE = 2 ^ 53
 local IS_STUDIO = RunService:IsStudio()
 
@@ -52,10 +60,21 @@ local function valueOf(player: Player): number?
 	return math.clamp(math.floor(d.TotalEcto), 0, MAX_VALUE)
 end
 
-local function localRows(): { Row }
+local function powerOf(player: Player): number?
+	if not DataService.Get(player) then
+		return nil
+	end
+	local p = HunterService.CrewPower(player)
+	if p ~= p then
+		return 0
+	end
+	return math.clamp(math.floor(p), 0, MAX_VALUE)
+end
+
+local function localRows(get: (Player) -> number?): { Row }
 	local rows: { Row } = {}
 	for _, pl in Players:GetPlayers() do
-		local v = valueOf(pl)
+		local v = get(pl)
 		if v then
 			table.insert(rows, { Name = pl.Name, Value = v })
 		end
@@ -65,6 +84,8 @@ local function localRows(): { Row }
 	end)
 	return rows
 end
+
+local readTop: (OrderedDataStore) -> { Row }?
 
 local function globalRows(): { Row }?
 	local s = store
@@ -84,6 +105,38 @@ local function globalRows(): { Row }?
 			end
 		end
 	end
+	return readTop(s)
+end
+
+-- Best-ever power: UpdateAsync keeps the larger of the stored and current values, and is only
+-- called when the current power beats the best this server knows about.
+local function globalPowerRows(): { Row }?
+	local s = powerStore
+	if not s then
+		return nil
+	end
+	for _, pl in Players:GetPlayers() do
+		local id = pl.UserId
+		local v = powerOf(pl)
+		if v and v > 0 and canWrite(id) and v > (bestPower[id] or 0) then
+			names[id] = pl.Name
+			-- returning nil cancels the write, so the stored best never goes down
+			local keep: any = function(old: any): number?
+				local prev = tonumber(old) or 0
+				return if v > prev then v else nil
+			end
+			local ok, stored = pcall(function(): any
+				return s:UpdateAsync(tostring(id), keep)
+			end)
+			if ok then
+				bestPower[id] = math.max(v, tonumber(stored) or 0)
+			end
+		end
+	end
+	return readTop(s)
+end
+
+function readTop(s: OrderedDataStore): { Row }?
 	local ok, pages = pcall(function()
 		return s:GetSortedAsync(false, Config.Leaderboard.Rows + #Config.DevUserIds)
 	end)
@@ -100,9 +153,11 @@ local function globalRows(): { Row }?
 	return rows
 end
 
-local function render(rows: { Row })
+local function render(modelName: string, rows: { Row })
 	local map = workspace:FindFirstChild("Map")
-	local board = map and map:FindFirstChild("Board", true)
+	local folder = map and map:FindFirstChild("Leaderboard")
+	local model = folder and folder:FindFirstChild(modelName)
+	local board = model and model:FindFirstChild("Board")
 	local gui = board and board:FindFirstChild("BoardGui")
 	if not gui then
 		return
@@ -127,9 +182,18 @@ local function render(rows: { Row })
 	end
 end
 
-local function refresh()
-	local rows = globalRows() or localRows()
-	render(rows)
+-- One board per pcall, so a DataStore error on one never blanks the other.
+local function refreshBoard(modelName: string, global: () -> { Row }?, get: (Player) -> number?)
+	local ok, err = pcall(function()
+		render(modelName, global() or localRows(get))
+	end)
+	if not ok then
+		warn("[Leaderboard] " .. modelName .. ": " .. tostring(err))
+		-- e.g. no API access in Studio: show this server's players
+		pcall(function()
+			render(modelName, localRows(get))
+		end)
+	end
 end
 
 function LeaderboardService.Init()
@@ -137,6 +201,10 @@ function LeaderboardService.Init()
 		return DataStoreService:GetOrderedDataStore(Config.Leaderboard.DataStoreName)
 	end)
 	store = if ok then ds else nil
+	local okP, dsP = pcall(function()
+		return DataStoreService:GetOrderedDataStore(Config.Leaderboard.PowerDataStoreName)
+	end)
+	powerStore = if okP then dsP else nil
 	-- a progress reset removes the entry right away (the next refresh writes the new value)
 	DataService.ProgressReset:Connect(function(player: Player)
 		local s = store
@@ -150,6 +218,7 @@ function LeaderboardService.Init()
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		written[player.UserId] = nil
+		bestPower[player.UserId] = nil
 	end)
 end
 
@@ -157,16 +226,8 @@ function LeaderboardService.Start()
 	task.spawn(function()
 		task.wait(8) -- let the first profiles load
 		while true do
-			local ok, err = pcall(function()
-				refresh()
-			end)
-			if not ok then
-				warn("[Leaderboard] " .. tostring(err))
-				-- e.g. no API access in Studio: show this server's players
-				pcall(function()
-					render(localRows())
-				end)
-			end
+			refreshBoard("TopHunters", globalRows, valueOf)
+			refreshBoard("TopPower", globalPowerRows, powerOf)
 			task.wait(Config.Leaderboard.RefreshSeconds)
 		end
 	end)

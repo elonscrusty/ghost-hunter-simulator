@@ -50,16 +50,16 @@ function LightingSetup.Apply()
 	atmo.Offset = 0.15
 	atmo.Color = Color3.fromRGB(190, 150, 255)
 	atmo.Decay = Color3.fromRGB(110, 70, 180)
-	atmo.Glare = 0.25
-	atmo.Haze = 1.0
+	atmo.Glare = 0 -- glare smeared bright lights
+	atmo.Haze = 0.6
 	atmo.Parent = L
 
 	clear("GHBloom")
 	local bloom = Instance.new("BloomEffect")
 	bloom.Name = "GHBloom"
-	bloom.Intensity = 0.2
-	bloom.Size = 16
-	bloom.Threshold = 2.3
+	bloom.Intensity = 0.08 -- owner: light pieces glowed too much (was 0.2)
+	bloom.Size = 4 -- small radius: lights stay crisp, no blurry halo
+	bloom.Threshold = 2.8
 	bloom.Parent = L
 
 	clear("GHColor")

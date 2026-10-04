@@ -60,15 +60,16 @@ T.distribution_matches_odds = function()
 			assert(math.abs(pct - o.Chance) < 0.05, string.format("%s %s %.2f vs %d", id, o.Pet, pct, o.Chance))
 		end
 	end
-	-- random sanity: rare pets stay rare
+	-- random sanity: Legendary pets stay rare (Moonlight Egg: 10% in total)
 	math.randomseed(7)
-	local phoenix = 0
+	local legendary = 0
 	for _ = 1, 20000 do
-		if Eggs.Roll(Config.Eggs.MoonlightEgg, math.random()) == "GhostPhoenix" then
-			phoenix += 1
+		local pet = Config.Pets[Eggs.Roll(Config.Eggs.MoonlightEgg, math.random())]
+		if pet.Rarity == "Legendary" then
+			legendary += 1
 		end
 	end
-	assert(phoenix > 1700 and phoenix < 2300, "phoenix ~10%: " .. phoenix)
+	assert(legendary > 1700 and legendary < 2300, "legendary ~10%: " .. legendary)
 end
 
 T.unlock_gates = function()
@@ -118,6 +119,17 @@ T.every_pet_obtainable = function()
 		assert(inEgg[id] or id == Config.RarePetEvent.Pet, id .. " is in no egg and is not the event pet")
 	end
 	assert(Config.Pets[Config.RarePetEvent.Pet], "event pet exists")
+	-- PetOrder (Index, dev tools) lists every pet exactly once; ids match their keys
+	local seen, n = {}, 0
+	for _, id in Config.PetOrder do
+		assert(Config.Pets[id] and not seen[id], "PetOrder " .. id)
+		seen[id] = true
+	end
+	for id, pet in Config.Pets do
+		n += 1
+		eq(pet.Id, id, "pet id")
+	end
+	eq(#Config.PetOrder, n, "PetOrder lists every pet")
 	-- egg prices rise in EggOrder
 	local prevPrice = 0
 	for _, id in Config.EggOrder do

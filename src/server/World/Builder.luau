@@ -4,12 +4,15 @@
 
 	Layout (studs, +Z forward; ground top is Y = 0 everywhere walkable; play area |X| <= 140):
 
-	  Z -60 ........ hedge wall behind spawn
-	  Z -60..-36     Ghost Hunter HQ building (behind spawn); Pet Hatchery (left) and the
+	  LOBBY (Config.Layout.Lobby: X -64..64, Z -130..-37, hedges all round, no ghosts)
+	  Z -130 ....... hedge wall behind the lobby
+	  Z -130..-106   Ghost Hunter HQ building (behind spawn); Pet Hatchery (left) and the
 	                 Merge + Trading kiosks (right) in the pockets between HQ and the plaza
-	  Z   0          Spawn plaza (SpawnLocation at Config.Layout.Spawn, faces +Z)
-	  Z  28          Beginner crate station (X -28, beacon) | Upgrade booth (X +28)
-	  Z -36..260     ZONE 1 NEIGHBORHOOD: main road X -10..10 up to the gate, cross street
+	  Z  -70         Spawn plaza (SpawnLocation at Config.Layout.Spawn, faces +Z); TOP GHOST
+	                 HUNTERS + TOP POWER boards on its right
+	  Z  -37         Lobby hedge wall with the free "THE NEIGHBORHOOD" arch (X -17..17)
+	  Z   -6         Beginner crate station (X -28, beacon) | Upgrade booth (X +28)
+	  Z -37..260     ZONE 1 NEIGHBORHOOD: main road X -10..10 up to the gate, cross street
 	                 Z 110..124 east to the Event Arena (95, 110, r32); houses on a 30-stud grid
 	                 wherever ghost areas / roads / stations leave room.
 	  Z 260          Stone wall + Gate_Cemetery (34-wide opening at X = 0)
@@ -82,10 +85,15 @@ local function registerKeepOuts()
 	end
 	-- main path along X = 0 through zones 4-8 (zones 1-3 register their own roads)
 	Kit.AddRect(-10, 880, 10, Config.Zones[#Config.Zones].MaxZ, true)
+	-- the whole lobby plus its front hedge wall: nothing random grows in there
+	local lobby = Config.Layout.Lobby
+	Kit.AddRect(-lobby.HalfWidth - 6, lobby.BackZ - 6, lobby.HalfWidth + 6, lobby.FrontZ + 3)
+	Kit.AddRect(-146, lobby.FrontZ - 3, 146, lobby.FrontZ + 5)
 	-- pockets behind the plaza: Pet Hatchery on the left (Hatchery.luau), the Merge + Trading
 	-- kiosks on the right (Neighborhood.luau)
-	Kit.AddRect(-40, -38, -12, -8)
-	Kit.AddRect(14, -36, 36, -12)
+	local sz = spawnPos.Z
+	Kit.AddRect(-40, sz - 38, -12, sz - 8)
+	Kit.AddRect(14, sz - 36, 36, sz - 12)
 end
 
 -- Last resort when the build throws: a plain anchored floor under the whole main strip and a
@@ -104,7 +112,7 @@ local function emergencyGround()
 		maxZ = lastZone + 40
 	end
 	-- parts are capped at 2048 studs per axis, so tile the strip along Z
-	local z = -120
+	local z = -200
 	while z < maxZ do
 		local len = math.min(2000, maxZ - z)
 		local plate = Instance.new("Part")

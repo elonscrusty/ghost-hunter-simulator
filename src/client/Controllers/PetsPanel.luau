@@ -17,9 +17,6 @@ local Hud = require(script.Parent.Hud)
 
 local PetsPanel = {}
 
-local SHAPE_ICON: { [string]: string } = {
-	Wisp = "✨", Bat = "🦇", Blob = "👻", Cat = "🐱", Owl = "🦉", Fox = "🦊", Drake = "🐉", Phoenix = "🔥", Lantern = "🏮",
-}
 local SHARD = Color3.fromRGB(200, 160, 255)
 
 local panel: Kit.Panel
@@ -56,7 +53,7 @@ local function rarityName(pet: Config.PetDef): string
 	return string.upper(r and r.Name or pet.Rarity)
 end
 
--- "Spooky (Boo Bat · RARE)" or just "Boo Bat"
+-- "Spooky (Boo Brew · COMMON)" or just "Boo Brew"
 local function displayName(pet: Config.PetDef, nick: string?): string
 	return if nick and nick ~= "" then nick .. " (" .. pet.Name .. " · " .. rarityName(pet) .. ")" else pet.Name
 end
@@ -135,7 +132,7 @@ local function refresh()
 		local rec = d.Pets and d.Pets[uid]
 		local pet = rec and Config.Pets[rec.Id]
 		if rec and pet then
-			table.insert(names, (SHAPE_ICON[pet.Shape] or "👻") .. " " .. displayName(pet, rec.Nick))
+			table.insert(names, pet.Icon .. " " .. displayName(pet, rec.Nick))
 		end
 	end
 	equippedNames.Text = if #names > 0 then table.concat(names, "   ") else "None: equip pets below"

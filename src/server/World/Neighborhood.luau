@@ -1,6 +1,9 @@
 --!strict
--- ZONE 1: Haunted Neighborhood (Z -60..260). Spawn plaza + Ghost Hunter HQ at the south end,
--- a main road along X = 0 to the Cemetery gate, a cross street at Z 110..124 leading east to
+-- ZONE 1: Haunted Neighborhood (Z -37..260) and the LOBBY behind it (Config.Layout.Lobby,
+-- Z -130..-37, no ghosts): spawn plaza, Ghost Hunter HQ, Merge/Trading booths (the Hatchery and
+-- the boards are built in their own files). Players walk from the plaza through the free
+-- "THE NEIGHBORHOOD" arch in the lobby's front hedge, past the Beginner crate station and the
+-- upgrade booth, then down a main road along X = 0 to the Cemetery gate, a cross street at Z 110..124 leading east to
 -- the event arena, and candy-coloured houses placed on a grid wherever the keep-out map allows.
 -- Palette: bright grass, warm houses, orange accents, purple paranormal touches, ectoplasm
 -- green. Glow is reserved for the front windows, street lamps, car headlights and the HQ
@@ -9,6 +12,7 @@
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Kit = require(script.Parent.Kit)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 local Props = require(script.Parent.Props)
 
 local Neighborhood = {}
@@ -25,6 +29,9 @@ local ROOFS = { C(120, 60, 170), C(60, 120, 190), C(200, 70, 110), C(70, 150, 11
 local WINDOWS = { C(255, 235, 120), C(150, 255, 140), C(205, 140, 255), C(255, 200, 90) }
 local DOORS = { C(140, 70, 200), C(255, 110, 70), C(60, 170, 150), C(230, 70, 120) }
 local TRIM = C(255, 250, 245)
+-- lobby offset: everything in the lobby was laid out around a spawn at Z = 0
+local LZ = Config.Layout.Spawn.Z
+local LOBBY = Config.Layout.Lobby
 
 --==================================================================
 -- HOUSE
@@ -188,12 +195,12 @@ local function plaza(f: Instance)
 			chevron(f, V(sx, 0.55, sz) + dir * (8 + i * 4.5), dir, if target == beg then C(255, 180, 60) else C(90, 210, 255))
 		end
 	end
-	-- signpost at the roadside (left of the main road as seen from spawn) so the path straight
-	-- ahead to the first ghosts stays clear; the boards still face spawn
-	local post = V(sx - 17, 0, sz + 22)
+	-- signpost beside the walkway (right of it as seen from spawn) so the path straight ahead to
+	-- the entrance arch stays clear; the boards still face spawn
+	local post = V(sx - 17, 0, sz + 14)
 	Kit.Box(f, post - V(0.4, 0, 0.4), post + V(0.4, 11, 0.4), C(110, 80, 60), { Mat = Enum.Material.Wood })
 	local boards = {
-		{ Y = 10, Off = 0, Text = "👻 GHOSTS AHEAD", Col = C(150, 255, 140) },
+		{ Y = 10, Off = 0, Text = "👻 GHOSTS AHEAD ▲", Col = C(150, 255, 140) },
 		-- the player faces +Z, so -X is on their right
 		{ Y = 7.6, Off = -3, Text = "CRATES ▶", Col = C(255, 190, 70) },
 		{ Y = 5.2, Off = 3, Text = "◀ UPGRADES", Col = C(110, 220, 255) },
@@ -205,39 +212,39 @@ end
 
 local function hq(f: Instance)
 	local purple, dark = C(120, 75, 210), C(60, 40, 110)
-	Kit.Box(f, V(-24, 0, -58), V(24, 16, -40), purple, { Mat = Enum.Material.Concrete, Solid = true, Name = "HQ" })
-	Kit.Box(f, V(-26, 16, -60), V(26, 17.5, -38), dark, { Mat = Enum.Material.Slate, Solid = true })
-	Kit.Ball(f, 18, V(0, 17.5, -50), C(190, 160, 255), { Shadow = true })
-	Kit.Box(f, V(-24.3, 5.6, -39.9), V(24.3, 6.4, -39.6), Kit.Vivid(C(150, 255, 140)))
-	Kit.Box(f, V(-24.3, 15, -39.9), V(24.3, 15.6, -39.6), Kit.Vivid(C(255, 150, 60)))
+	Kit.Box(f, V(-24, 0, LZ - 58), V(24, 16, LZ - 40), purple, { Mat = Enum.Material.Concrete, Solid = true, Name = "HQ" })
+	Kit.Box(f, V(-26, 16, LZ - 60), V(26, 17.5, LZ - 38), dark, { Mat = Enum.Material.Slate, Solid = true })
+	Kit.Ball(f, 18, V(0, 17.5, LZ - 50), C(190, 160, 255), { Shadow = true })
+	Kit.Box(f, V(-24.3, 5.6, LZ - 39.9), V(24.3, 6.4, LZ - 39.6), Kit.Vivid(C(150, 255, 140)))
+	Kit.Box(f, V(-24.3, 15, LZ - 39.9), V(24.3, 15.6, LZ - 39.6), Kit.Vivid(C(255, 150, 60)))
 	-- big mint door
-	Kit.Box(f, V(-7, 0, -39.85), V(7, 12, -39.6), TRIM)
-	Kit.Box(f, V(-6, 0, -39.7), V(6, 11, -39.35), Kit.Vivid(C(150, 255, 160)), { Refl = 0.1 })
+	Kit.Box(f, V(-7, 0, LZ - 39.85), V(7, 12, LZ - 39.6), TRIM)
+	Kit.Box(f, V(-6, 0, LZ - 39.7), V(6, 11, LZ - 39.35), Kit.Vivid(C(150, 255, 160)), { Refl = 0.1 })
 	-- windows
 	for _, x in { -17, -11, 11, 17 } do
-		Kit.Box(f, V(x - 2, 8, -39.8), V(x + 2, 12.5, -39.4), C(255, 235, 120), { Mat = NEON })
+		Kit.Box(f, V(x - 2, 8, LZ - 39.8), V(x + 2, 12.5, LZ - 39.4), C(255, 235, 120), { Mat = NEON })
 	end
 	-- sign facing +Z (toward spawn)
-	local signCF = CFrame.new(0, 21.5, -39) * CFrame.Angles(0, Kit.FaceYaw(0, 1), 0)
+	local signCF = CFrame.new(0, 21.5, LZ - 39) * CFrame.Angles(0, Kit.FaceYaw(0, 1), 0)
 	local sign = Kit.Part(f, V(32, 6, 1), signCF, C(45, 25, 80))
 	Kit.Part(f, V(33.5, 7.5, 0.5), signCF * CFrame.new(0, 0, 0.6), Kit.Vivid(C(150, 255, 140)))
 	Kit.Sign(sign, Enum.NormalId.Front, "GHOST HUNTER HQ", C(255, 230, 90))
 	-- antenna + dish
-	Kit.Cyl(f, 18, 0.8, CFrame.new(16, 26.5, -50), C(200, 200, 220), { Mat = Enum.Material.Metal })
-	local orb = Kit.Ball(f, 2.6, V(16, 36, -50), C(255, 90, 160), { Mat = NEON })
+	Kit.Cyl(f, 18, 0.8, CFrame.new(16, 26.5, LZ - 50), C(200, 200, 220), { Mat = Enum.Material.Metal })
+	local orb = Kit.Ball(f, 2.6, V(16, 36, LZ - 50), C(255, 90, 160), { Mat = NEON })
 	Kit.Light(orb, C(255, 120, 190), 30, 1.2)
-	Kit.Cyl(f, 0.8, 9, CFrame.new(-16, 21, -50) * CFrame.Angles(math.rad(35), 0, 0), C(230, 230, 245))
-	Kit.Cyl(f, 3, 1, CFrame.new(-16, 19, -50), C(150, 150, 170))
+	Kit.Cyl(f, 0.8, 9, CFrame.new(-16, 21, LZ - 50) * CFrame.Angles(math.rad(35), 0, 0), C(230, 230, 245))
+	Kit.Cyl(f, 3, 1, CFrame.new(-16, 19, LZ - 50), C(150, 150, 170))
 	-- containment tanks with captured ghosts
 	for _, s in { -1, 1 } do
 		local x = s * 30
-		Kit.Cyl(f, 1, 9, CFrame.new(x, 0.5, -46), dark, { Mat = Enum.Material.Metal, Solid = true })
-		local tank = Kit.Cyl(f, 12, 8, CFrame.new(x, 7, -46), Kit.Vivid(C(130, 255, 170)), { Transp = 0.55, Refl = 0.2 })
-		Kit.Cyl(f, 1, 9, CFrame.new(x, 13.5, -46), dark, { Mat = Enum.Material.Metal })
-		Kit.Ball(f, 3.6, V(x, 7.5, -46), C(240, 245, 255))
+		Kit.Cyl(f, 1, 9, CFrame.new(x, 0.5, LZ - 46), dark, { Mat = Enum.Material.Metal, Solid = true })
+		local tank = Kit.Cyl(f, 12, 8, CFrame.new(x, 7, LZ - 46), Kit.Vivid(C(130, 255, 170)), { Transp = 0.55, Refl = 0.2 })
+		Kit.Cyl(f, 1, 9, CFrame.new(x, 13.5, LZ - 46), dark, { Mat = Enum.Material.Metal })
+		Kit.Ball(f, 3.6, V(x, 7.5, LZ - 46), C(240, 245, 255))
 		Kit.Emitter(tank, C(150, 255, 180), 2, 2, 0.5)
 	end
-	Kit.AddRect(-36, -60, 36, -36)
+	Kit.AddRect(-36, LZ - 60, 36, LZ - 36)
 end
 
 --==================================================================
@@ -249,11 +256,11 @@ end
 -- orbs about to merge). Each has an invisible PromptAnchor part carrying attribute
 -- Kiosk = "Trade" | "Merge" and a ProximityPrompt; the client opens the matching panel from
 -- ProximityPromptService.PromptTriggered (prompt.Parent:GetAttribute("Kiosk")).
--- The pocket (X 14..36, Z -36..-12) is reserved in Builder.registerKeepOuts; the left pocket
+-- The pocket (X 14..36, Z LZ-36..LZ-12) is reserved in Builder.registerKeepOuts; the left pocket
 -- holds the Pet Hatchery (Hatchery.luau).
 local KIOSKS = {
-	{ Id = "Merge", Title = "✨ MERGE", Pos = V(20, 0, -29), Main = C(190, 110, 255), Accent = C(255, 230, 90) },
-	{ Id = "Trade", Title = "🤝 TRADING", Pos = V(31, 0, -19), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
+	{ Id = "Merge", Title = "MERGE", Emoji = "✨", Icon = "menu_merge", Pos = V(20, 0, LZ - 29), Main = C(190, 110, 255), Accent = C(255, 230, 90) },
+	{ Id = "Trade", Title = "TRADING", Emoji = "🤝", Icon = "menu_trade", Pos = V(31, 0, LZ - 19), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
 }
 
 local KIOSK_DARK = C(55, 35, 90)
@@ -351,7 +358,22 @@ local function kiosk(parent: Instance, k: typeof(KIOSKS[1]))
 	-- sign board above the awning, facing the plaza
 	local board = Kit.Part(m, V(8, 2.2, 0.5), base * CFrame.new(0, 10.8, -1.2), KIOSK_DARK, { Name = "KioskSign" })
 	Kit.Part(m, V(8.8, 3, 0.3), base * CFrame.new(0, 10.8, -0.85), Kit.Vivid(k.Accent))
-	Kit.Sign(board, Enum.NormalId.Front, k.Title, C(255, 255, 255))
+	-- the same icon image as the menu button, left of the title (emoji only without an image id)
+	local icon = Icons.Get(k.Icon)
+	if icon then
+		local g = Kit.Gui(board, Enum.NormalId.Front)
+		local img = Instance.new("ImageLabel")
+		img.Name = "KioskIcon"
+		img.BackgroundTransparency = 1
+		img.Image = icon
+		img.ScaleType = Enum.ScaleType.Fit
+		img.Position = UDim2.fromScale(0.03, 0.06)
+		img.Size = UDim2.fromScale(0.24, 0.88) -- square on the 8 x 2.2 board
+		img.Parent = g
+		Kit.Label(g, k.Title, C(255, 255, 255), { Size = UDim2.fromScale(0.68, 0.8), Pos = UDim2.fromScale(0.29, 0.1) })
+	else
+		Kit.Sign(board, Enum.NormalId.Front, k.Emoji .. " " .. k.Title, C(255, 255, 255))
+	end
 	-- lantern hanging from the front-left post (accent glow, meaning "open")
 	Kit.Part(m, V(0.15, 0.9, 0.15), base * CFrame.new(-4.7, 7.25, -4.1), KIOSK_DARK)
 	local lantern = Kit.Ball(m, 0.9, (base * CFrame.new(-4.7, 6.5, -4.1)).Position, k.Accent, { Mat = NEON })
@@ -388,15 +410,51 @@ local function kiosks(f: Instance)
 end
 
 --==================================================================
+-- LOBBY ENTRANCE: open arch (no barrier, no cost) in the lobby's front hedge
+--==================================================================
+local function entrance(f: Instance)
+	local m = Kit.Model(f, "LobbyEntrance")
+	local z = LOBBY.FrontZ
+	local half = LOBBY.EntranceWidth / 2
+	local pw = 8
+	local stone, trim = C(150, 125, 200), Kit.Vivid(C(150, 255, 140))
+	for _, s in { -1, 1 } do
+		local x1, x2 = s * half, s * (half + pw)
+		Kit.Box(m, V(x1, 0, z - 5), V(x2, 26, z + 5), stone, { Mat = Enum.Material.Slate, Solid = true })
+		Kit.Box(m, V(s * (half + 0.01), 0, z - 6), V(s * (half + pw + 1), 3, z + 6), C(120, 100, 165), { Mat = Enum.Material.Slate, Solid = true })
+		for _, fz in { -1, 1 } do
+			Kit.Box(m, V(s * (half + 0.6) - 0.3, 3, z + fz * 5), V(s * (half + 0.6) + 0.3, 24, z + fz * 5.3), trim)
+		end
+		Props.Pumpkin(m, V(s * (half + pw / 2), 30, z), 6, 0, -1, true)
+		Props.StreetLamp(m, V(s * (half + pw / 2), 0.2, z - 9), C(200, 160, 240), false, true)
+	end
+	-- top beam (Y 24..30) spanning the opening, sign above it facing the lobby (-Z)
+	Kit.Box(m, V(-(half + pw + 1), 24, z - 4), V(half + pw + 1, 30, z + 4), stone, { Mat = Enum.Material.Slate, Solid = true })
+	for _, fz in { -1, 1 } do
+		Kit.Box(m, V(-(half + pw + 1), 24, z + fz * 4), V(half + pw + 1, 24.6, z + fz * 4.3), trim)
+	end
+	local sign = Kit.Part(m, V(40, 9, 1), CFrame.new(0, 36, z - 3), C(45, 25, 80), { Name = "EntranceSign" })
+	Kit.Part(m, V(42, 11, 0.6), CFrame.new(0, 36, z - 2.3), trim)
+	local zone = Config.Zones[1]
+	local gui = Kit.Gui(sign, Enum.NormalId.Front, 30)
+	Kit.Label(gui, "THE NEIGHBORHOOD", zone.Accent, { Name = "ZoneLabel", Pos = UDim2.fromScale(0.03, 0.06), Size = UDim2.fromScale(0.94, 0.52) })
+	Kit.Label(gui, "👻 GHOSTS AHEAD", C(255, 230, 120), { Name = "SubLabel", Pos = UDim2.fromScale(0.15, 0.6), Size = UDim2.fromScale(0.7, 0.34) })
+	Kit.AddRect(-(half + pw + 2), z - 10, half + pw + 2, z + 6)
+end
+
+--==================================================================
 -- ROADS
 --==================================================================
 local function roads(f: Instance)
 	local asphalt = C(72, 64, 92)
 	local walk = C(200, 185, 230)
-	-- main road X -10..10 from HQ to the gate
+	local front = LOBBY.FrontZ
+	-- lobby walkway (cobbles) from the HQ door through the arch, then the main road X -10..10
+	-- from the arch to the gate
 	local pave: Kit.Opts = { Mat = Enum.Material.Concrete, Solid = true }
-	Kit.Box(f, V(-10, -0.4, -36), V(10, 0.1, 260), asphalt, { Mat = Enum.Material.Asphalt, Solid = true, Name = "MainRoad" })
-	for z = 34, 250, 12 do
+	Kit.Box(f, V(-10, -0.4, LZ - 36), V(10, 0.1, front + 3), C(165, 140, 205), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "LobbyWalk" })
+	Kit.Box(f, V(-10, -0.4, front + 3), V(10, 0.1, 260), asphalt, { Mat = Enum.Material.Asphalt, Solid = true, Name = "MainRoad" })
+	for z = front + 9, 250, 12 do
 		Kit.Box(f, V(-0.4, 0.1, z), V(0.4, 0.14, z + 6), C(255, 210, 80))
 	end
 	-- cross street toward the arena
@@ -408,12 +466,12 @@ local function roads(f: Instance)
 	end
 	-- sidewalks
 	for _, s in { -1, 1 } do
-		Kit.Box(f, V(s * 10, -0.4, 26), V(s * 14, 0.22, 106), walk, pave)
+		Kit.Box(f, V(s * 10, -0.4, front + 3), V(s * 14, 0.22, 106), walk, pave)
 		Kit.Box(f, V(s * 10, -0.4, 128), V(s * 14, 0.22, 257), walk, pave)
 		Kit.Box(f, V(-136, -0.4, if s < 0 then 106 else 124), V(-14, 0.22, if s < 0 then 110 else 128), walk, pave)
 		Kit.Box(f, V(14, -0.4, if s < 0 then 106 else 124), V(61, 0.22, if s < 0 then 110 else 128), walk, pave)
 	end
-	Kit.AddRect(-14, -36, 14, 260, true)
+	Kit.AddRect(-14, LZ - 36, 14, 260, true)
 	Kit.AddRect(-136, 106, 63, 128, true)
 end
 
@@ -426,6 +484,7 @@ function Neighborhood.Build(map: Instance)
 
 	plaza(f)
 	hq(f)
+	entrance(f)
 	roads(f)
 	kiosks(f)
 
@@ -441,7 +500,7 @@ function Neighborhood.Build(map: Instance)
 
 	-- Street lamps along the main road (skipped inside ghost areas)
 	local lit = 0
-	for z = 34, 250, 24 do
+	for z = LOBBY.FrontZ + 11, 250, 24 do
 		for _, s in { -1, 1 } do
 			local x = s * 12.5
 			if Kit.IsFree(x, z, 1, true) then
@@ -459,7 +518,7 @@ function Neighborhood.Build(map: Instance)
 	-- Parked cars (curbside)
 	local cars = {
 		{ -6, 150, 0, 1 }, { 6, 186, 0, -1 }, { -105, 113.5, 1, 0 }, { -42, 113.5, 1, 0 }, { 40, 120.5, -1, 0 },
-		{ 70, -30, 0, 1 }, { -70, 20, 0, -1 },
+		{ 70, -20, 0, 1 }, { -70, 20, 0, -1 },
 	}
 	for _, c in cars do
 		if Kit.IsFree(c[1], c[2], 7.5, true) then
@@ -473,7 +532,7 @@ function Neighborhood.Build(map: Instance)
 		if trees >= 30 then
 			break
 		end
-		local x, z = rng:NextNumber(-132, 132), rng:NextNumber(-54, 250)
+		local x, z = rng:NextNumber(-132, 132), rng:NextNumber(LOBBY.FrontZ + 6, 250)
 		if Kit.IsFree(x, z, 5) then
 			trees += 1
 			Props.Tree(f, V(x, 0, z), rng:NextNumber(10, 17))
@@ -484,7 +543,7 @@ function Neighborhood.Build(map: Instance)
 		if pumpkins >= 26 then
 			break
 		end
-		local x, z = rng:NextNumber(-134, 134), rng:NextNumber(-54, 254)
+		local x, z = rng:NextNumber(-134, 134), rng:NextNumber(LOBBY.FrontZ + 6, 254)
 		if Kit.IsFree(x, z, 2.5) then
 			pumpkins += 1
 			Props.Pumpkin(f, V(x, 0, z), rng:NextNumber(2.4, 4.6), -x, -z + 100)
@@ -496,7 +555,7 @@ function Neighborhood.Build(map: Instance)
 		if floats >= 3 then
 			break
 		end
-		local x, z = rng:NextNumber(-130, 130), rng:NextNumber(-40, 240)
+		local x, z = rng:NextNumber(-130, 130), rng:NextNumber(LOBBY.FrontZ + 6, 240)
 		if Kit.IsFree(x, z, 3) then
 			floats += 1
 			Props.FloatingPumpkin(f, V(x, rng:NextNumber(8, 13), z))

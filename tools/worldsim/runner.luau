@@ -466,6 +466,8 @@ if MAP then
 	header("4. Main route X = 0 / +-6 (solid blockers Y 0.3..7, ground)")
 	print("  (steps with top <= 1.6 are walkable; side lanes X=+-6 are notes when X=0 is clear)")
 	local endZ = Config.Zones[#Config.Zones].MaxZ - 5
+	-- start in the lobby plaza just in front of the spawn pad
+	local START_Z = math.floor(Config.Layout.Spawn.Z) + 10
 	local gateZ = {}
 	for _, g in Config.Layout.Gates do
 		table.insert(gateZ, g.Z)
@@ -521,7 +523,7 @@ if MAP then
 		local blockedRuns = {}
 		local noGround = {}
 		local cur: any = nil
-		local z = -30
+		local z = START_Z
 		while z <= endZ do
 			local bl = {}
 			for _, p in blockersAt(lane, z) do
@@ -546,7 +548,7 @@ if MAP then
 			z += 4
 		end
 		if #blockedRuns == 0 and #noGround == 0 then
-			print(string.format("  ok    lane X=%d clear from Z -30 to %d", lane, endZ))
+			print(string.format("  ok    lane X=%d clear from Z %d to %d", lane, START_Z, endZ))
 		end
 		for _, run in blockedRuns do
 			local names = {}
@@ -619,7 +621,7 @@ if MAP then
 		for _, sx in { -1, 1 } do
 			local gaps = {}
 			local cur: any = nil
-			local z = -58
+			local z = Config.Layout.Lobby.FrontZ - 2
 			while z <= endWall - 2 do
 				local walled = false
 				for _, p in query(math.min(sx * 146, sx * 140), z, math.max(sx * 146, sx * 140), z) do
@@ -639,7 +641,7 @@ if MAP then
 				z += 4
 			end
 			if #gaps == 0 then
-				print(string.format("  ok    edge X=%d walled from Z -58 to %d", sx * 143, endWall - 2))
+				print(string.format("  ok    edge X=%d walled from Z %d to %d", sx * 143, Config.Layout.Lobby.FrontZ - 2, endWall - 2))
 			else
 				local list = {}
 				for _, g in gaps do
@@ -648,19 +650,51 @@ if MAP then
 				issue(string.format("edge X=%d: no solid wall (Y <1 .. >8) at %s", sx * 143, table.concat(list, ", ")))
 			end
 		end
+		-- lobby: walled on both sides (|X| LW..LW+6) and behind (Z BackZ-6..BackZ)
+		local lobby = Config.Layout.Lobby
+		local function walledAt(x: number, z: number): boolean
+			for _, p in query(x, z, x, z) do
+				if p.Solid and p.Y1 < 1 and p.Y2 > 8 and hitsCircle(p, x, z, 0.01) then
+					return true
+				end
+			end
+			return false
+		end
+		local lobbyGaps = {}
+		for _, sx in { -1, 1 } do
+			local z = lobby.BackZ - 4
+			while z <= lobby.FrontZ - 4 do
+				if not walledAt(sx * (lobby.HalfWidth + 3), z) then
+					table.insert(lobbyGaps, string.format("(%d, %d)", sx * (lobby.HalfWidth + 3), z))
+				end
+				z += 4
+			end
+		end
+		local x = -lobby.HalfWidth
+		while x <= lobby.HalfWidth do
+			if not walledAt(x, lobby.BackZ - 3) then
+				table.insert(lobbyGaps, string.format("(%d, %d)", x, lobby.BackZ - 3))
+			end
+			x += 4
+		end
+		if #lobbyGaps == 0 then
+			print("  ok    lobby walled on both sides and behind")
+		else
+			issue("lobby wall gaps at " .. table.concat(lobbyGaps, " "))
+		end
 	end
 
 	-- Reachability: flood fill on a 2-stud grid over X -40..40 from the spawn plaza to the far end.
 	local STEP = 2
 	local XS = 40
 	local cols = XS * 2 // STEP + 1
-	local rowsN = math.floor((endZ - -30) / STEP) + 1
+	local rowsN = math.floor((endZ - START_Z) / STEP) + 1
 	local walk = {}
 	local function idx(ci: number, ri: number): number
 		return ri * cols + ci
 	end
 	for ri = 0, rowsN - 1 do
-		local z = -30 + ri * STEP
+		local z = START_Z + ri * STEP
 		for ci = 0, cols - 1 do
 			local x = -XS + ci * STEP
 			walk[idx(ci, ri)] = clearAt(x, z)
@@ -699,11 +733,11 @@ if MAP then
 		end
 	end
 	if #queue == 0 then
-		issue("reachability: no walkable start cell near (0, -30)")
+		issue(string.format("reachability: no walkable start cell near (0, %d)", START_Z))
 	elseif maxRow == rowsN - 1 then
-		print(string.format("  ok    reachability: walkable path (|X| <= %d, gates open) from Z -30 to Z %d", XS, endZ))
+		print(string.format("  ok    reachability: walkable path (|X| <= %d, gates open) from Z %d to Z %d", XS, START_Z, endZ))
 	else
-		issue(string.format("reachability: walking from Z -30 (|X| <= %d, gates open) stops at Z %d (goal %d)", XS, -30 + maxRow * STEP, endZ))
+		issue(string.format("reachability: walking from Z %d (|X| <= %d, gates open) stops at Z %d (goal %d)", START_Z, XS, START_Z + maxRow * STEP, endZ))
 	end
 end
 

@@ -1,5 +1,5 @@
 --!strict
--- Ground slabs (top at Y=0), themed outer walls, the two zone-separation walls and the
+-- Ground slabs (top at Y=0), lobby + themed outer walls, the two zone-separation walls and the
 -- invisible collision walls up to Y=80 that keep players inside and in front of locked gates.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
@@ -13,6 +13,7 @@ local V = Vector3.new
 local INVIS_TOP = 80
 local HW = Config.Layout.HalfWidth -- 140
 local END = Config.Zones[#Config.Zones].MaxZ -- far end of the map
+local LOBBY = Config.Layout.Lobby
 
 -- Zone-separation wall look per gate (wall / cap stone / cap ball / painted band).
 type WallLook = { Wall: Color3, Cap: Color3, Ball: Color3, Band: Color3, Pumpkins: boolean }
@@ -94,14 +95,24 @@ function Boundary.Build(map: Instance)
 	local W = HW + 6 -- outer face of the visible walls
 
 	-- Ground (top surface Y = 0), wider than the play area so the walls sit on grass.
-	Kit.Box(f, V(-190, -4, -100), V(190, 0, 260), C(105, 195, 100), { Mat = Enum.Material.Grass, Solid = true, Name = "Ground_Neighborhood" })
+	Kit.Box(f, V(-190, -4, -190), V(190, 0, 260), C(105, 195, 100), { Mat = Enum.Material.Grass, Solid = true, Name = "Ground_Neighborhood" }) -- lobby too
 	Kit.Box(f, V(-190, -4, 260), V(190, 0, 540), C(80, 160, 120), { Mat = Enum.Material.Grass, Solid = true, Name = "Ground_Cemetery" })
 	Kit.Box(f, V(-190, -4, 540), V(190, 0, 880), C(115, 195, 110), { Mat = Enum.Material.Grass, Solid = true, Name = "Ground_School" })
 
-	-- Neighborhood: hedges (sides + behind spawn)
-	hedgeRun(f, V(-W, 0, -66), V(-HW, 14, 260))
-	hedgeRun(f, V(HW, 0, -66), V(W, 14, 260))
-	hedgeRun(f, V(-W, 0, -66), V(W, 14, -60))
+	-- Neighborhood: side hedges + the lobby's front hedge (open arch at X = 0, built in
+	-- Neighborhood.luau, whose pillars fill |X| half..half+8)
+	local front = LOBBY.FrontZ
+	local eh = LOBBY.EntranceWidth / 2
+	hedgeRun(f, V(-W, 0, front - 3), V(-HW, 14, 260))
+	hedgeRun(f, V(HW, 0, front - 3), V(W, 14, 260))
+	for _, s in { -1, 1 } do
+		hedgeRun(f, V(s * (eh + 8), 0, front - 3), V(s * (HW - 0.01), 14, front + 3))
+	end
+	-- Lobby: hedges on both sides and behind HQ
+	local LW = LOBBY.HalfWidth
+	hedgeRun(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(-LW, 14, front - 3))
+	hedgeRun(f, V(LW, 0, LOBBY.BackZ - 6), V(LW + 6, 14, front - 3))
+	hedgeRun(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(LW + 6, 14, LOBBY.BackZ))
 	-- Cemetery: mossy stone with mint cap balls
 	stoneRun(f, V(-W, 0, 263), V(-HW, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
 	stoneRun(f, V(HW, 0, 263), V(W, 12, 537), C(120, 110, 150), C(170, 160, 200), C(110, 255, 170), 28)
@@ -138,11 +149,16 @@ function Boundary.Build(map: Instance)
 		end
 	end
 
-	-- Invisible outer walls (play area is |X| <= 140, Z -60..END)
-	invisible(f, V(-W, 0, -66), V(-HW, INVIS_TOP, END + 6))
-	invisible(f, V(HW, 0, -66), V(W, INVIS_TOP, END + 6))
-	invisible(f, V(-W, 0, -66), V(W, INVIS_TOP, -60))
+	-- Invisible outer walls (play area is |X| <= 140, Z front..END, plus the lobby)
+	invisible(f, V(-W, 0, front - 3), V(-HW, INVIS_TOP, END + 6))
+	invisible(f, V(HW, 0, front - 3), V(W, INVIS_TOP, END + 6))
 	invisible(f, V(-W, 0, END), V(W, INVIS_TOP, END + 6))
+	for _, s in { -1, 1 } do
+		invisible(f, V(s * eh, 0, front - 3), V(s * W, INVIS_TOP, front + 3))
+		invisible(f, V(s * LW, 0, LOBBY.BackZ - 6), V(s * (LW + 6), INVIS_TOP, front - 3))
+	end
+	invisible(f, V(-eh, 30, front - 3), V(eh, INVIS_TOP, front + 3)) -- above the arch beam
+	invisible(f, V(-LW - 6, 0, LOBBY.BackZ - 6), V(LW + 6, INVIS_TOP, LOBBY.BackZ))
 
 	-- Outer scenery: soft purple hills and big trees just beyond the walls.
 	local hill = { C(120, 90, 190), C(100, 150, 120), C(150, 100, 200) }
@@ -156,6 +172,13 @@ function Boundary.Build(map: Instance)
 		local z = -30 + i * 140
 		for _, s in { -1, 1 } do
 			Props.Tree(f, V(s * 156, 0, z), 22 + Kit.Rng:NextNumber(0, 10))
+		end
+	end
+	-- outside the lobby hedges: a few big trees on the grass either side
+	-- (fixed sizes: no Kit.Rng here, so the other zones' random props don't shift)
+	for i, p in { { 92, -70 }, { 122, -112 }, { 84, -122 }, { 128, -62 } } do
+		for _, s in { -1, 1 } do
+			Props.Tree(f, V(s * p[1], 0, p[2]), 18 + (i % 3) * 3)
 		end
 	end
 end
