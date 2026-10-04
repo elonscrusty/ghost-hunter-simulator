@@ -2,7 +2,7 @@
 -- TOWER PLAZA (workspace.Map.EventArena) on the old event-arena plot at the end of the cross
 -- street. Two parts:
 --   * an open courtyard around Config.Layout.EventArena.Center (the retired Giant Poltergeist
---     event used to spawn there; kept as open space): flat rune paint only, nothing taller than 0.35 studs within CLEAR_R studs of
+--     event used to spawn there; kept as open space): nothing tall near
 --     the centre (so nothing solid there up to Y = 30 or higher);
 --   * the ENDLESS BOSS TOWER on the east side of the plot (backed against the east hedge) with
 --     the party pad (part "TowerPad", radius Config.Tower.PadRadius) in front of its door.
@@ -25,19 +25,7 @@ local STONE_DARK = C(62, 44, 96)
 local STONE_LIGHT = C(128, 98, 178)
 local ROOF = C(70, 40, 110)
 local ECTO = C(110, 255, 160)
-local CLEAR_R = 22 -- courtyard: only flat paint inside this radius
 local PAD_OFFSET = 19 -- pad centre is this far east of the courtyard centre
-
-local function ring(parent: Instance, cx: number, cz: number, r: number, n: number, w: number, color: Color3, topY: number)
-	local segLen = 2 * math.pi * r / n + 0.4
-	local paint = Kit.Vivid(color)
-	for i = 0, n - 1 do
-		local a = (i + 0.5) / n * math.pi * 2
-		local p = V(cx + math.cos(a) * r, topY - 0.1, cz + math.sin(a) * r)
-		local tangent = V(-math.sin(a), 0, math.cos(a))
-		Kit.Part(parent, V(w, 0.2, segLen), CFrame.lookAt(p, p + tangent), paint)
-	end
-end
 
 -- A stone post with a small glowing ghost lantern on top (optionally lit).
 local function lantern(parent: Instance, x: number, z: number, h: number, light: boolean)
@@ -162,22 +150,7 @@ function Arena.Build(map: Instance)
 	local cx, cz, r = ea.Center.X, ea.Center.Z, ea.Radius
 	local m = Kit.Model(map, "EventArena")
 
-	-- COURTYARD (flat, top 0.12): open space in front of the tower (old event spot)
-	local field = Kit.Disc(m, cx, cz, 0.12, CLEAR_R * 2 + 6, 0.4, C(90, 60, 140), { Mat = Enum.Material.Slate, Solid = true, Name = "Field" })
-	Kit.Disc(m, cx, cz, 0.16, CLEAR_R * 2 - 2, 0.1, C(115, 80, 180), { Solid = true })
-	ring(m, cx, cz, CLEAR_R - 1, 30, 1.2, ECTO, 0.32)
-	ring(m, cx, cz, CLEAR_R * 0.55, 20, 0.8, C(255, 110, 220), 0.3)
-	Kit.Disc(m, cx, cz, 0.3, 8, 0.12, Kit.Vivid(C(150, 255, 160)))
-	local spoke, dot = Kit.Vivid(C(190, 120, 255)), Kit.Vivid(C(255, 230, 90))
-	for i = 0, 5 do
-		local a = i / 6 * math.pi * 2
-		local rr = CLEAR_R * 0.55
-		local p1 = V(cx + math.cos(a) * rr, 0.25, cz + math.sin(a) * rr)
-		local a2 = a + math.pi * 2 / 6 * 2
-		local p2 = V(cx + math.cos(a2) * rr, 0.25, cz + math.sin(a2) * rr)
-		Props.Beam(m, p1, p2, 0.5, 0.12, spoke)
-		Kit.Disc(m, cx + math.cos(a) * (CLEAR_R - 4), cz + math.sin(a) * (CLEAR_R - 4), 0.3, 2.6, 0.12, dot)
-	end
+	-- (the old event courtyard's floor circles were removed: they overlapped the tower pad)
 	-- cobble path from the cross street, across the courtyard, to the pad (flat)
 	local px = cx + PAD_OFFSET
 	Kit.Box(m, V(cx - r - 2, -0.4, cz - 3), V(px - Config.Tower.PadRadius, 0.14, cz + 3), C(110, 90, 150), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "TowerPath" })
@@ -219,17 +192,10 @@ function Arena.Build(map: Instance)
 	Kit.Part(m, V(25, 6, 0.4), archCF * CFrame.new(0, 0, 0.5), Kit.Vivid(C(190, 120, 255)))
 	Kit.Sign(arch, Enum.NormalId.Front, "👻 BOSS TOWER 👻", C(150, 255, 170))
 
-	-- low, faint haze over the courtyard
-	local haze = Kit.Emitter(field, C(200, 140, 255), 1.2, 6, 0.3)
-	if haze then
-		haze.LightEmission = 0.25
-	end
-
 	-- keep-out reservations of the old arena plot (circle + the two former bleacher strips)
 	Kit.AddCircle(cx, cz, r + 6)
 	Kit.AddRect(cx - 15, cz + r + 4, cx + 15, cz + r + 16)
 	Kit.AddRect(cx - 15, cz - r - 4, cx + 15, cz - r - 16)
-	m.PrimaryPart = field
 end
 
 return Arena

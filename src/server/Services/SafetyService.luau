@@ -131,8 +131,8 @@ local function check(player: Player, now: number)
 end
 
 function SafetyService.Init()
-	-- the rescue at MinY (-40) must always fire before Roblox destroys falling parts
-	Workspace.FallenPartsDestroyHeight = -400
+	-- (scripts may not set Workspace.FallenPartsDestroyHeight; the default -500 is far below the
+	-- MinY -40 rescue line, so the rescue always fires first)
 end
 
 function SafetyService.Start()
