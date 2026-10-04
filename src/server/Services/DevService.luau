@@ -93,16 +93,61 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		end
 		DataService.Changed(player)
 	elseif cmd == "Hunters" then
-		local count = 0
-		for _ in d.Hunters do
-			count += 1
+		-- one of every hunter the dev doesn't own yet (all areas, incl. new ones; storage cap ignored)
+		local owned: { [string]: boolean } = {}
+		for _, h in d.Hunters do
+			owned[h.Id] = true
 		end
 		for id in Config.Hunters do
-			if count >= PlayerInfo.MaxHunters(player) then
-				break
+			if not owned[id] then
+				markDevHunter(d, (HunterService.Add(player, id)))
 			end
-			markDevHunter(d, (HunterService.Add(player, id)))
-			count += 1
+		end
+		HunterService.Refresh(player)
+	elseif cmd == "IndexAll" then
+		-- complete the Index: every hunter in Normal, Shiny and Mega + every pet seen
+		for id in Config.Hunters do
+			d.Discovered[id] = true
+			d.Variants[id .. ":1"] = true
+			d.Variants[id .. ":2"] = true
+		end
+		DataService.Changed(player)
+	elseif cmd == "MegaCrew" then
+		-- equipped hunters become Mega (tests tiers, power and HP without merging)
+		for _, uid in d.Equipped do
+			local h = d.Hunters[uid]
+			if h then
+				(h :: any).Tier = Config.Merge.MaxTier
+				d.Variants[h.Id .. ":" .. Config.Merge.MaxTier] = true
+				markDevHunter(d, uid)
+			end
+		end
+		HunterService.Refresh(player)
+	elseif cmd == "UnlockEggs" then
+		-- the tower checkpoint every egg needs (checkpoint and best room only ever go up)
+		local need = 0
+		for _, egg in Config.Eggs do
+			need = math.max(need, egg.Unlock)
+		end
+		d.TowerCheckpoint = math.max(d.TowerCheckpoint, need)
+		d.TowerBest = math.max(d.TowerBest, need)
+		DataService.Changed(player)
+	elseif cmd == "LuckyOpens" then
+		for id in Config.Crates do
+			d.LuckyOpens[id] = Config.LuckyOpens.MaxStack
+		end
+		DataService.Changed(player)
+	elseif cmd == "SkipTokens" then
+		d.SkipTokens += 10
+		DataService.Changed(player)
+	elseif cmd == "Boosts" then
+		PlayerInfo.AddBoost(d, "Ecto", 1800)
+		PlayerInfo.AddBoost(d, "Luck", 1800)
+		DataService.Changed(player)
+	elseif cmd == "KnockCrew" then
+		-- knock out the equipped crew for 30 s (tests knockouts, countdowns and recovery)
+		for _, uid in d.Equipped do
+			d.Knocked[uid] = os.time() + 30
 		end
 		HunterService.Refresh(player)
 	elseif cmd == "MaxUpgrades" then

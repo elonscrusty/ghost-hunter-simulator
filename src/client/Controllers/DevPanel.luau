@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Format = require(GH.Logic.Format)
+local Config = require(GH.Config)
 local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
@@ -63,6 +64,11 @@ local function showInbox()
 	inbox:Open()
 end
 
+local HUNTER_COUNT = 0
+for _ in Config.Hunters do
+	HUNTER_COUNT += 1
+end
+
 type Action = { Text: string, Cmd: string, Arg: any?, Color: string, Confirm: boolean?, StudioOnly: boolean? }
 local ACTIONS: { Action } = {
 	{ Text = "+10K ECTO", Cmd = "Ecto", Arg = 10000, Color = "Green" },
@@ -70,9 +76,16 @@ local ACTIONS: { Action } = {
 	{ Text = "+1B ECTO", Cmd = "Ecto", Arg = 1000000000, Color = "Green" },
 	{ Text = "+1T ECTO", Cmd = "Ecto", Arg = 1000000000000, Color = "Green" },
 	{ Text = "UNLOCK ALL AREAS", Cmd = "Zones", Color = "Blue" },
-	{ Text = "ALL 32 HUNTERS", Cmd = "Hunters", Color = "Orange" },
+	{ Text = "ALL " .. HUNTER_COUNT .. " HUNTERS", Cmd = "Hunters", Color = "Orange" },
+	{ Text = "COMPLETE INDEX (ALL FORMS)", Cmd = "IndexAll", Color = "Orange" },
+	{ Text = "EQUIPPED CREW → MEGA", Cmd = "MegaCrew", Color = "Purple" },
+	{ Text = "KNOCK OUT CREW (30S)", Cmd = "KnockCrew", Color = "Red" },
 	{ Text = "MAX UPGRADES", Cmd = "MaxUpgrades", Color = "Teal" },
 	{ Text = "GIVE ALL PETS", Cmd = "AllPets", Color = "Pink" },
+	{ Text = "UNLOCK ALL EGGS", Cmd = "UnlockEggs", Color = "Pink" },
+	{ Text = "MAX LUCKY OPENS", Cmd = "LuckyOpens", Color = "Green" },
+	{ Text = "+10 SKIP TOKENS", Cmd = "SkipTokens", Color = "Teal" },
+	{ Text = "2X ECTO + LUCK BOOSTS 30M", Cmd = "Boosts", Color = "Green" },
 	{ Text = "HEAL ALL HUNTERS", Cmd = "HealAll", Color = "Green" },
 	{ Text = "2X ECTOPLASM: 2 DAYS", Cmd = "Ecto2x", Arg = 48, Color = "Green" },
 	{ Text = "2X ECTOPLASM: ON (48H)", Cmd = "Ecto2x", Arg = true, Color = "Green" },

@@ -646,7 +646,9 @@ function HuntersPanel.Init()
 		Position = UDim2.fromOffset(10, 74),
 		ZIndex = 64,
 		OnClick = function()
-			-- every unequipped, unlocked, Normal-tier hunter weaker than your weakest equipped one
+			-- every unequipped, unlocked, Normal-tier hunter no stronger than your weakest equipped
+			-- one (spare copies of equipped hunters count: they used to be skipped, so it often
+			-- picked nothing)
 			-- (Shiny / Mega hunters cost merges: never bulk-picked, tap them to release one)
 			local d = State.Data
 			if not d then
@@ -661,9 +663,12 @@ function HuntersPanel.Init()
 			end
 			table.clear(selected)
 			for uid, h in d.Hunters do
-				if not h.Locked and (h.Tier or 0) == 0 and not table.find(d.Equipped, uid) and powerOf(h) < weakest then
+				if not h.Locked and (h.Tier or 0) == 0 and not table.find(d.Equipped, uid) and powerOf(h) <= weakest then
 					selected[uid] = true
 				end
+			end
+			if next(selected) == nil then
+				Kit.Toast("No weak hunters to select (locked, equipped and Shiny/Mega hunters are skipped)", "Bad")
 			end
 			rebuild()
 		end,
