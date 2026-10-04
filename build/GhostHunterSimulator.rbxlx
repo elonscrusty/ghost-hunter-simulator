@@ -2297,7 +2297,7 @@ Icons.Images = {
 	menu_pets = "rbxthumb://type=Asset&id=129763548691514&w=420&h=420",
 	menu_trade = "rbxthumb://type=Asset&id=117692734126738&w=420&h=420",
 	menu_merge = "rbxthumb://type=Asset&id=98848723239234&w=420&h=420", -- MERGE booth sign
-	-- tower = "rbxthumb://type=Asset&id=<decal id>&w=420&h=420", -- BOSS TOWER arch (shards icon until then)
+	tower = "rbxthumb://type=Asset&id=87355452772157&w=420&h=420", -- BOSS TOWER arch sign
 	shards = "rbxthumb://type=Asset&id=134472965366566&w=420&h=420",
 	menu_hunters = "rbxassetid://78038914324289",
 	menu_worlds = "rbxassetid://84155230350180",
