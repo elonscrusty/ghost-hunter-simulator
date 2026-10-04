@@ -78,6 +78,7 @@ local hunterState = "Idle"
 local hunterT0 = 0
 local idleFn: ((number) -> ())? = nil -- per-frame idle of a hatched pet
 local againFn: (() -> ())? = nil
+local petEggId: string? = nil -- egg of the current hatch (HATCH AGAIN price)
 local liveTweens: { Tween } = {}
 local shakeToken = 0
 local cardShown = false
@@ -590,12 +591,29 @@ local function petCard(g: ScreenGui, pet: Config.PetDef, rarity: Config.RarityDe
 	Kit.Corner(pic, UDim.new(1, 0))
 	Kit.Stroke(pic, 2.5, pet.Glow, Enum.ApplyStrokeMode.Border)
 	PetPortrait.New(pic, pet.Id)
+	-- HATCH AGAIN (same egg) between the portrait and OK, like the crates' AGAIN button
+	local fnAgain = againFn
+	if fnAgain then
+		local egg = Config.Eggs[petEggId or ""]
+		Kit.Button(card, {
+			Text = "HATCH AGAIN" .. (if egg then " 🔮" .. Format.Short(egg.Price) else ""),
+			Color = "Purple",
+			TextStyle = "Small",
+			Size = UDim2.fromOffset(150, 44),
+			Position = UDim2.new(0, 92, 1, -12),
+			AnchorPoint = Vector2.new(0, 1),
+			ZIndex = 12,
+			OnClick = function()
+				fnAgain()
+			end,
+		})
+	end
 	okButton = Kit.Button(card, {
 		Text = "OK",
 		Color = "Blue",
-		Size = UDim2.fromOffset(120, 44),
-		Position = UDim2.new(0.5, 0, 1, -12),
-		AnchorPoint = Vector2.new(0.5, 1),
+		Size = UDim2.fromOffset(if fnAgain then 90 else 120, 44),
+		Position = if fnAgain then UDim2.new(1, -14, 1, -12) else UDim2.new(0.5, 0, 1, -12),
+		AnchorPoint = if fnAgain then Vector2.new(1, 1) else Vector2.new(0.5, 1),
 		ZIndex = 12,
 		OnClick = function()
 			Reveal.Close()
@@ -1005,7 +1023,7 @@ end
 export type PetResult = { Egg: string, Pet: string }
 
 -- Hatch cinematic for a pet the server already granted (presentation only).
-function Reveal.PlayPet(res: PetResult)
+function Reveal.PlayPet(res: PetResult, again: (() -> ())?)
 	local egg = Config.Eggs[res.Egg]
 	local pet = Config.Pets[res.Pet]
 	local rarity = pet and Config.Rarities[pet.Rarity]
@@ -1013,7 +1031,8 @@ function Reveal.PlayPet(res: PetResult)
 		return
 	end
 	autoMode = false
-	againFn = nil
+	againFn = again
+	petEggId = res.Egg
 	petMode = true
 	local g, skip, cam, camCF, f = begin(rarity)
 	local my = stage

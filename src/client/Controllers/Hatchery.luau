@@ -152,11 +152,12 @@ local function requestBuy(eggId: string, requestId: string): any
 	return result
 end
 
-local function buy()
-	local eggId = currentEgg
+local hatch: (string?, boolean) -> ()
+hatch = function(eggId: string?, fromAgain: boolean)
 	local d = State.Data
 	local egg = eggId and Config.Eggs[eggId]
-	if busy or Reveal.IsPlaying() or not eggId or not egg or not d then
+	-- HATCH AGAIN runs while the reveal card is still up; the BUY button never does
+	if busy or (not fromAgain and Reveal.IsPlaying()) or not eggId or not egg or not d then
 		return
 	end
 	local reason = blockReason(egg, d)
@@ -185,8 +186,15 @@ local function buy()
 	local pet: Config.PetDef? = if type(res.Pet) == "string" then Config.Pets[res.Pet] else nil
 	panel:Close()
 	if pet then
-		Reveal.PlayPet({ Egg = eggId, Pet = pet.Id })
+		local id = eggId :: string
+		Reveal.PlayPet({ Egg = id, Pet = pet.Id }, function()
+			hatch(id, true)
+		end)
 	end
+end
+
+local function buy()
+	hatch(currentEgg, false)
 end
 
 function Hatchery.Open(eggId: string)
