@@ -185,6 +185,25 @@ local function gatePos(): Vector3?
 	return if g then Vector3.new(0, 10, g.Z - 4) else nil
 end
 
+-- Boss Tower intro goal (after the tutorial): grants nothing, just points the way once the
+-- player is strong enough. Hidden for good after their first tower run.
+local TOWER_GUIDE_SECONDS = 15
+local TOWER_CYCLE = 30 -- the chip shows the tower for the first TOWER_SHOW s of each cycle
+local TOWER_SHOW = 10
+local towerPointed = false
+
+local function towerPos(): Vector3?
+	return Config.Layout.EventArena.Center + Vector3.new(30, 8, 0)
+end
+
+local function wantsTowerGoal(d: any): boolean
+	if (tonumber(d.TowerRuns) or 0) > 0 then
+		return false
+	end
+	local school = Config.Zones[3]
+	return (school ~= nil and d.Zones[school.Id] == true) or State.CountOwned() >= 6
+end
+
 local function advance(to: number)
 	if to <= step then
 		return
@@ -274,7 +293,17 @@ local function tick()
 			end
 		end
 		local bossState = Boss.State()
-		if nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
+		local calm = not panel and bossState == "Idle" and not Reveal.IsPlaying()
+		if calm and wantsTowerGoal(d) and (not towerPointed or os.clock() % TOWER_CYCLE < TOWER_SHOW) then
+			goalChip.Visible = true
+			goalLabel.Text = "TRY THE BOSS TOWER (east of spawn)!"
+			goalFill.Size = UDim2.fromScale(1, 1)
+			if not towerPointed then
+				-- point the trail at it once per session; it then fades on its own
+				towerPointed = true
+				setGuide(towerPos, TOWER_GUIDE_SECONDS)
+			end
+		elseif nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
 			goalChip.Visible = true
 			goalLabel.Text = "NEXT: UNLOCK " .. nextZone.Name .. "  " .. Format.Short(math.min(d.Ecto, nextZone.Cost)) .. " / " .. Format.Short(nextZone.Cost)
 			goalFill.Size = UDim2.fromScale(math.clamp(d.Ecto / nextZone.Cost, 0.02, 1), 1)
@@ -305,7 +334,7 @@ local function tick()
 	end
 	local target = (player:GetAttribute("Target") :: number?) or 0
 	if step == 1 then
-		setPrompt(tapWord())
+		setPrompt(tapWord(), "to send your hunters!")
 		setGuide(nearestGhost)
 		if target ~= 0 then
 			advance(2)

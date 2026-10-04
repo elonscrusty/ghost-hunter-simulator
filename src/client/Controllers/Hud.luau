@@ -8,6 +8,7 @@ local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
@@ -31,6 +32,9 @@ local ectoPill: Frame
 local powerLabel: TextLabel
 local powerPrefix = "⚡ "
 local boostHolder: Frame
+local shardChip: Frame
+local shardLabel: TextLabel
+local tradeButton: TextButton
 local dailyBadge: Frame
 local autoButton: TextButton
 local shownEcto = 0
@@ -191,17 +195,22 @@ local function buildTop(screen: ScreenGui)
 		Parent = stack,
 	})
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Parent = boostHolder })
+	-- Spirit Shards chip (only once the player has some)
+	shardChip = Kit.new("Frame", { Size = UDim2.fromOffset(110, 22), BackgroundColor3 = Theme.Panel2, BackgroundTransparency = 0.1, LayoutOrder = 4, Visible = false, Parent = stack })
+	Kit.Corner(shardChip, UDim.new(1, 0))
+	shardLabel = Kit.Label(shardChip, "", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Color = Color3.fromRGB(200, 160, 255), Style = "Tiny", Fit = true })
 end
 
 -- HUD layout
---   LEFT  (vertical): HUNTERS, WORLDS, INDEX
+--   LEFT  (vertical): HUNTERS, WORLDS, INDEX, PETS (PETS appears once Boss Tower/shards start)
 --   RIGHT (vertical, bottom-anchored stack): UPGRADES, SHOP, DAILY, then the free AUTO ATTACK
---   toggle, then the lower-right row: [DEV] FEEDBACK SETTINGS. On touch screens the stack sits
+--   toggle, then the lower-right row: [DEV] [TRADE] FEEDBACK SETTINGS. On touch screens the stack sits
 --   above the Roblox jump button; on desktop the left column starts under the chat window.
 local MENU_LEFT = {
 	{ Name = "Hunters", Icon = "🔦", Text = "HUNTERS", Color = "Orange" },
 	{ Name = "Worlds", Icon = "🌍", Text = "WORLDS", Color = "Teal" },
 	{ Name = "Index", Icon = "📖", Text = "INDEX", Color = "Blue" },
+	{ Name = "Pets", Icon = "🐾", Text = "PETS", Color = "Purple" },
 }
 local MENU_RIGHT = {
 	{ Name = "Upgrades", Icon = "🧲", Text = "UPGRADES", Color = "Green" },
@@ -210,7 +219,8 @@ local MENU_RIGHT = {
 }
 local CELL_MAX = 84
 local GAP = 6
-local SMALL = 44 -- settings / feedback / dev buttons
+local SMALL = 44 -- settings / feedback / trade / dev buttons
+local ROW_W = SMALL * 4 + GAP * 3
 local AUTO_W, AUTO_H = 132, 40
 
 local menu: Frame -- left column
@@ -267,7 +277,7 @@ local function layoutMenu()
 	-- right stack (anchored bottom-right, above the jump button on touch screens)
 	local reserve = bottomReserve()
 	local rightH = columnHeight(#MENU_RIGHT) + GAP * 2 + AUTO_H + GAP * 2 + SMALL
-	local rightW = math.max(CELL_MAX, AUTO_W, SMALL * 3 + GAP * 2)
+	local rightW = math.max(CELL_MAX, AUTO_W, ROW_W)
 	local rfit = math.clamp((logical.Y - reserve - 8) / rightH, 0.5, 1)
 	rightScale.Scale = rfit
 	rightStack.Size = UDim2.fromOffset(rightW, rightH)
@@ -324,7 +334,7 @@ local function buildMenu(screen: ScreenGui)
 	for i, m in MENU_RIGHT do
 		menuButton(col, i, m)
 	end
-	lowerRow = Kit.new("Frame", { Name = "LowerRow", BackgroundTransparency = 1, Size = UDim2.fromOffset(SMALL * 3 + GAP * 2, SMALL), LayoutOrder = 3, Parent = rightStack })
+	lowerRow = Kit.new("Frame", { Name = "LowerRow", BackgroundTransparency = 1, Size = UDim2.fromOffset(ROW_W, SMALL), LayoutOrder = 3, Parent = rightStack })
 	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, SortOrder = Enum.SortOrder.LayoutOrder, Parent = lowerRow })
 	Hud.LowerRow = lowerRow
 	Hud.RightStack = rightStack
@@ -409,8 +419,20 @@ local function buildSettings(screen: ScreenGui)
 	Hud.RegisterPanel("Settings", function()
 		panel:Toggle()
 	end)
-	-- lower-right row: FEEDBACK then SETTINGS (the DEV button, for developers, goes first)
+	-- lower-right row: [TRADE] FEEDBACK SETTINGS (the DEV button, for developers, goes first)
 	local _ = screen
+	tradeButton = Kit.Button(lowerRow, {
+		Text = "🤝",
+		Color = "Teal",
+		Size = UDim2.fromOffset(SMALL, SMALL),
+		TextStyle = "Heading",
+		OnClick = function()
+			Hud.Open("Trade")
+		end,
+	})
+	tradeButton.LayoutOrder = 2
+	tradeButton.Visible = false
+	Hud.Buttons.Trade = tradeButton
 	local feedback = Kit.Button(lowerRow, {
 		Text = "💬",
 		Color = "Blue",
@@ -420,7 +442,7 @@ local function buildSettings(screen: ScreenGui)
 			Hud.Open("Feedback")
 		end,
 	})
-	feedback.LayoutOrder = 2
+	feedback.LayoutOrder = 3
 	local gear = Kit.Button(lowerRow, {
 		Text = "",
 		Color = "Gray",
@@ -430,7 +452,7 @@ local function buildSettings(screen: ScreenGui)
 			panel:Toggle()
 		end,
 	})
-	gear.LayoutOrder = 3
+	gear.LayoutOrder = 4
 	Kit.Icon(gear, "menu_settings", "⚙", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Heading", Stroke = 0, ZIndex = 3 })
 end
 
@@ -641,6 +663,12 @@ local function onData(d: any)
 		ectoLabel.Text = Format.Short(d.Ecto)
 	end
 	refreshBoosts()
+	-- gradual reveal: PETS once the Boss Tower/shards start, TRADE once the player has 5+ hunters
+	local shards = d.Shards or 0
+	Hud.Buttons.Pets.Visible = shards > 0 or (d.Pets ~= nil and next(d.Pets) ~= nil) or (d.TowerRuns or 0) > 0
+	tradeButton.Visible = State.CountOwned() >= 5
+	shardChip.Visible = shards > 0
+	shardLabel.Text = "🔮 " .. Format.Short(shards)
 end
 
 local lastZone = 0
@@ -659,6 +687,16 @@ function Hud.Init()
 	buildSettings(screen)
 	buildAuto(screen)
 	buildBanners()
+	Hud.Buttons.Pets.Visible = false
+	-- world kiosks open their panels (always, even before the menu buttons are revealed)
+	local KIOSK_PANELS: { [string]: string } = { Trade = "Trade", Pets = "Pets", Merge = "Hunters" }
+	ProximityPromptService.PromptTriggered:Connect(function(prompt: ProximityPrompt)
+		local parent = prompt.Parent
+		local name = parent and KIOSK_PANELS[tostring(parent:GetAttribute("Kiosk"))]
+		if name then
+			Hud.Open(name)
+		end
+	end)
 	-- TopStack lives in the top-bar ScreenGui (drawn above the HUD screen), so hide it while a
 	-- panel is open (it would cover the panel's title) or the HUD is hidden (crate reveal)
 	local stack = Hud.TopStack

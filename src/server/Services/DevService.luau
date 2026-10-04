@@ -15,6 +15,7 @@ local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
 local EventService = require(script.Parent.EventService)
 local GlobalEventService = require(script.Parent.GlobalEventService)
+local RarePetEventService = require(script.Parent.RarePetEventService)
 local Remotes = require(script.Parent.Remotes)
 
 local DevService = {}
@@ -43,8 +44,22 @@ end
 
 local MAX_ECTO_GRANT = 1e12
 
--- Runs one dev command; returns an error text or nil.
-function DevService.Run(player: Player, cmd: string, arg: any): string?
+-- Runs one dev command; returns an error text or nil (+ optional extra result fields).
+function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
+	if cmd == "StartRarePetEvent" then
+		-- GLOBAL launch event: ONLY Config.RarePetEvent.AdminUserIds (any tester in Studio, where it
+		-- stays in memory). Checked here AND inside the service; dev status alone is not enough.
+		if not RarePetEventService.IsAdmin(player) then
+			return "Not allowed"
+		end
+		local res = RarePetEventService.Activate(player)
+		return (if res.ok then nil else res.err or "Failed"), { Event = res.Event, Created = res.Created }
+	elseif cmd == "RarePetStatus" then
+		if not RarePetEventService.IsAdmin(player) then
+			return "Not allowed"
+		end
+		return nil, { Event = RarePetEventService.Status() }
+	end
 	if not devs[player] then
 		return "Not allowed"
 	end
@@ -127,6 +142,12 @@ function DevService.Run(player: Player, cmd: string, arg: any): string?
 		end
 	elseif cmd == "Exclusive" then
 		HunterService.GrantExclusive(player)
+	elseif cmd == "RarePetAddMinutes" then
+		-- Studio only: +N minutes of rare pet event play time (tests the reward without waiting)
+		local err = RarePetEventService.StudioAddMinutes(player, tonumber(arg) or 5)
+		if err then
+			return err
+		end
 	elseif cmd == "Tutorial" then
 		d.Tutorial = 1
 		DataService.Changed(player)
@@ -141,11 +162,14 @@ function DevService.Init()
 		if type(cmd) ~= "string" then
 			return Remotes.Fail("Bad command")
 		end
-		local err = DevService.Run(player, cmd, arg)
-		if err then
-			return Remotes.Fail(err)
+		local err, extra = DevService.Run(player, cmd, arg)
+		local res: { [string]: any } = if err then Remotes.Fail(err) else { ok = true }
+		if type(extra) == "table" then
+			for k, v in extra do
+				res[k] = v
+			end
 		end
-		return { ok = true }
+		return res
 	end)
 end
 

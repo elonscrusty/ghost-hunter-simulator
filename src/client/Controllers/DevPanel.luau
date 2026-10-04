@@ -1,7 +1,10 @@
 --!strict
 -- DEV panel: owner-only test tools. The 🛠 button appears only when the server marked this
 -- player as a developer (attribute "IsDev"); every action is checked again on the server.
+-- Rare pet launch event admins (attribute "RarePetAdmin", Config.RarePetEvent.AdminUserIds) also
+-- get the button, with the START RARE PET EVENT control + status at the top of the panel.
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -19,6 +22,15 @@ local panel: Kit.Panel
 local inbox: Kit.Panel
 local inboxList: ScrollingFrame
 local devButton: TextButton
+local list: ScrollingFrame
+local actionButtons: { TextButton } = {}
+local rareRow: Frame
+local rareStatus: TextLabel
+local rareButton: TextButton
+local rareConfirm: Kit.Panel
+local rareBusy = false
+local rareMsg: string? = nil -- last error / result line from the server
+local rareMsgBad = false
 
 local function showInbox()
 	local res = State.Request("FeedbackInbox")
@@ -51,7 +63,7 @@ local function showInbox()
 	inbox:Open()
 end
 
-type Action = { Text: string, Cmd: string, Arg: any?, Color: string, Confirm: boolean? }
+type Action = { Text: string, Cmd: string, Arg: any?, Color: string, Confirm: boolean?, StudioOnly: boolean? }
 local ACTIONS: { Action } = {
 	{ Text = "+10K ECTO", Cmd = "Ecto", Arg = 10000, Color = "Green" },
 	{ Text = "+1M ECTO", Cmd = "Ecto", Arg = 1000000, Color = "Green" },
@@ -70,6 +82,7 @@ local ACTIONS: { Action } = {
 	{ Text = "SERVER LUCK 15M", Cmd = "ServerLuck", Color = "Green" },
 	{ Text = "EXCLUSIVE HUNTER", Cmd = "Exclusive", Color = "Teal" },
 	{ Text = "REPLAY TUTORIAL", Cmd = "Tutorial", Color = "Gray" },
+	{ Text = "+5 MIN RARE PET PLAY", Cmd = "RarePetAddMinutes", Arg = 5, Color = "Orange", StudioOnly = true },
 	{ Text = "💬 READ FEEDBACK", Cmd = "Inbox", Color = "Blue" },
 	{ Text = "⚠️ RESET MY PROGRESS", Cmd = "ResetProgress", Color = "Red", Confirm = true },
 }
@@ -98,9 +111,129 @@ local function run(a: Action)
 	end
 end
 
+--------------------------------------------------------------------------------
+-- Rare pet launch event (admins only; the server checks again)
+--------------------------------------------------------------------------------
+local RARE_ROW_H = 58
+
+local function utc(t: number): string
+	return os.date("!%Y-%m-%d %H:%M UTC", t)
+end
+
+local function refreshRare()
+	if not rareStatus then
+		return
+	end
+	local startT = workspace:GetAttribute("RarePetStart")
+	local endT = workspace:GetAttribute("RarePetEnd")
+	local checked = workspace:GetAttribute("RarePetChecked") == true
+	local text: string
+	local color = Theme.Muted
+	local canStart = false
+	if type(startT) == "number" and type(endT) == "number" then
+		local active = State.Now() < endT
+		text = (if active then "🏮 RARE PET EVENT: ACTIVE" else "🏮 RARE PET EVENT: ENDED") .. "\nStart " .. utc(startT) .. "  ·  End " .. utc(endT)
+		color = if active then Theme.Good else Theme.Muted
+	elseif rareBusy then
+		text = "🏮 RARE PET EVENT: Starting..."
+	elseif not checked then
+		text = "🏮 RARE PET EVENT: Checking..."
+	else
+		text = "🏮 RARE PET EVENT: Not started"
+		canStart = true
+	end
+	if rareMsg then
+		text ..= "\n" .. (rareMsg :: string)
+		if rareMsgBad then
+			color = Theme.Bad
+		end
+	end
+	rareStatus.Text = text
+	rareStatus.TextColor3 = color
+	canStart = canStart and not rareBusy
+	rareButton:SetAttribute("Color", if canStart then "Orange" else "Gray")
+	rareButton.Active = canStart
+	rareButton.AutoButtonColor = false
+	local label = if canStart then "START RARE PET EVENT" elseif type(startT) == "number" then "ALREADY STARTED" elseif rareBusy then "STARTING..." else "CHECKING..."
+	Kit.SetButtonText(rareButton, label)
+end
+
+local function startRare()
+	if rareBusy then
+		return
+	end
+	rareBusy = true
+	rareMsg = nil
+	refreshRare()
+	local res = State.Request("Dev", "StartRarePetEvent")
+	rareBusy = false
+	if res.ok then
+		rareMsg = "Started on all servers."
+		rareMsgBad = false
+		Kit.Toast("Rare Pet Event started ✅", "Good")
+	else
+		rareMsg = res.err or "Failed"
+		rareMsgBad = true
+		Kit.Toast(rareMsg :: string, "Bad")
+	end
+	refreshRare()
+	panel:Open()
+end
+
+local function buildRare()
+	rareRow = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, RARE_ROW_H), Position = UDim2.fromOffset(0, 6), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.3, Visible = false, ZIndex = 61, Parent = panel.Body })
+	Kit.Corner(rareRow, UDim.new(0, 10))
+	rareStatus = Kit.Label(rareRow, "🏮 RARE PET EVENT: Checking...", { Size = UDim2.new(1, -212, 1, -6), Position = UDim2.fromOffset(10, 3), Align = Enum.TextXAlignment.Left, Font = Theme.Body, Style = "Tiny", Stroke = 0, Wrap = true, ZIndex = 62 })
+	rareButton = Kit.Button(rareRow, {
+		Text = "START RARE PET EVENT",
+		Color = "Orange",
+		Size = UDim2.fromOffset(190, 42),
+		Position = UDim2.new(1, -6, 0.5, 0),
+		AnchorPoint = Vector2.new(1, 0.5),
+		TextStyle = "Small",
+		ZIndex = 62,
+		OnClick = function()
+			if not rareButton.Active then
+				refreshRare()
+				return
+			end
+			rareConfirm:Open()
+		end,
+	})
+
+	rareConfirm = Kit.Panel("RarePetConfirm", "START RARE PET EVENT?", Vector2.new(480, 270), "Orange")
+	Kit.Label(rareConfirm.Body, "This starts ONE global 48-hour event on ALL servers immediately. It can't be undone or restarted.", { Size = UDim2.new(1, -20, 0, 90), Position = UDim2.fromOffset(10, 16), Style = "Body", Wrap = true, ZIndex = 62 })
+	Kit.Label(rareConfirm.Body, "Players who play 30 active minutes before it ends get the Rare pet.", { Size = UDim2.new(1, -20, 0, 36), Position = UDim2.fromOffset(10, 110), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, Wrap = true, ZIndex = 62 })
+	Kit.Button(rareConfirm.Body, {
+		Text = "CANCEL",
+		Color = "Gray",
+		Size = UDim2.fromOffset(170, 46),
+		Position = UDim2.new(0.5, -8, 1, -4),
+		AnchorPoint = Vector2.new(1, 1),
+		ZIndex = 63,
+		OnClick = function()
+			rareConfirm:Close()
+			panel:Open()
+		end,
+	})
+	local confirm = Kit.Button(rareConfirm.Body, {
+		Text = "CONFIRM",
+		Color = "Red",
+		Size = UDim2.fromOffset(170, 46),
+		Position = UDim2.new(0.5, 8, 1, -4),
+		AnchorPoint = Vector2.new(0, 1),
+		ZIndex = 63,
+		OnClick = function()
+			rareConfirm:Close()
+			task.spawn(startRare)
+		end,
+	})
+	rareConfirm.Primary = confirm
+end
+
 function DevPanel.Init()
-	panel = Kit.Panel("Dev", "🛠 DEV TOOLS", Vector2.new(620, 360), "Gray")
-	local list: ScrollingFrame = Kit.new("ScrollingFrame", {
+	panel = Kit.Panel("Dev", "🛠 DEV TOOLS", Vector2.new(620, 400), "Gray")
+	list = Kit.new("ScrollingFrame", {
 		Size = UDim2.new(1, 0, 1, -34),
 		Position = UDim2.fromOffset(0, 8),
 		BackgroundTransparency = 1,
@@ -114,14 +247,19 @@ function DevPanel.Init()
 	Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(180, 46), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
 	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), Parent = list })
 	for i, a in ACTIONS do
+		if a.StudioOnly and not RunService:IsStudio() then
+			continue
+		end
 		local b = Kit.Button(list, { Text = a.Text, Color = a.Color, TextStyle = "Small", ZIndex = 62, OnClick = function()
 			run(a)
 		end })
 		b.LayoutOrder = i
+		table.insert(actionButtons, b)
 		if i == 1 then
 			panel.Primary = b
 		end
 	end
+	buildRare()
 	Kit.Label(panel.Body, "Only you can see this. In a live server these change your real save.", { Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, -22), Color = Theme.Muted, Font = Theme.Body, Style = "Tiny", Stroke = 0, ZIndex = 62 })
 
 	inbox = Kit.Panel("DevInbox", "💬 PLAYER FEEDBACK", Vector2.new(760, 460), "Blue")
@@ -154,10 +292,33 @@ end
 
 function DevPanel.Start()
 	local function refresh()
-		devButton.Visible = player:GetAttribute("IsDev") == true
+		local isDev = player:GetAttribute("IsDev") == true
+		local isAdmin = player:GetAttribute("RarePetAdmin") == true
+		devButton.Visible = isDev or isAdmin
+		for _, b in actionButtons do
+			b.Visible = isDev
+		end
+		rareRow.Visible = isAdmin
+		local top = if isAdmin then RARE_ROW_H + 12 else 8
+		list.Position = UDim2.fromOffset(0, top)
+		list.Size = UDim2.new(1, 0, 1, -26 - top)
+		refreshRare()
 	end
 	player:GetAttributeChangedSignal("IsDev"):Connect(refresh)
+	player:GetAttributeChangedSignal("RarePetAdmin"):Connect(refresh)
+	for _, attr in { "RarePetStart", "RarePetEnd", "RarePetChecked" } do
+		workspace:GetAttributeChangedSignal(attr):Connect(refreshRare)
+	end
 	refresh()
+	-- Active -> Ended needs no message: re-check the clock while the panel is open
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			if panel.IsOpen and rareRow.Visible then
+				refreshRare()
+			end
+		end
+	end)
 end
 
 return DevPanel

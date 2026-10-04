@@ -50,6 +50,12 @@ export type Entry = {
 	Base: Vector3, -- centre without bob (for the ground ring)
 	Selected: boolean,
 	Culled: boolean,
+	-- incoming-attack telegraph (Fx "GhostWindup", only the attacked player sees it)
+	WindupEnd: number,
+	WindupLen: number,
+	LungeT: number,
+	LungeDir: Vector3,
+	Alert: TextLabel?,
 }
 
 local entries: { [number]: Entry } = {}
@@ -256,6 +262,11 @@ local function add(model: Instance)
 		Base = core.Position,
 		Selected = false,
 		Culled = false,
+		WindupEnd = 0,
+		WindupLen = 1,
+		LungeT = 0,
+		LungeDir = Vector3.zero,
+		Alert = nil,
 	}
 	readSegment(e)
 	buildLabel(e)
@@ -401,6 +412,17 @@ local function step()
 			local k = (0.15 - since) / 0.15
 			pos += Vector3.new(math.sin(clock * 90) * 0.25 * k * s, 0, math.cos(clock * 80) * 0.2 * k * s)
 		end
+		-- attack telegraph: pull back during the windup, then lunge at the crew on the hit
+		local alert = e.Alert
+		if alert then
+			local winding = clock < e.WindupEnd
+			alert.Visible = winding and math.sin(clock * 20) > -0.6
+			if winding then
+				pos -= e.LungeDir * (0.8 * s * (1 - (e.WindupEnd - clock) / e.WindupLen))
+			elseif clock - e.LungeT < 0.25 then
+				pos += e.LungeDir * (math.sin(math.pi * (clock - e.LungeT) / 0.25) * 1.5 * s)
+			end
+		end
 		-- face the camera horizontally (cute + readable), with a gentle sway
 		local dx, dz = camPos.X - pos.X, camPos.Z - pos.Z
 		if dx * dx + dz * dz > 1 then
@@ -470,6 +492,30 @@ function Ghosts.Start()
 		task.spawn(add, m)
 	end
 	State.OnFx("Poof", poof)
+	State.OnFx("GhostWindup", function(d: any)
+		local e = entries[d.Ghost]
+		if not e or e.Dying then
+			return
+		end
+		local t = tonumber(d.Time) or 0.9
+		local clock = os.clock()
+		e.WindupEnd = clock + t
+		e.WindupLen = math.max(t, 0.1)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local flat = if root then Vector3.new(root.Position.X - e.Base.X, 0, root.Position.Z - e.Base.Z) else Vector3.zero
+		e.LungeDir = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zero
+		if not e.Alert then
+			e.Alert = WorldLabel.Text(e.Gui, "❗", { Style = "Body", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, -0.85) })
+		end
+		Effects.Ring(e.Base - Vector3.new(0, e.Def.Hover - 0.2, 0), Theme.Bad, math.max(3, 2.5 * e.Def.Scale + 1), t)
+	end)
+	State.OnFx("GhostHit", function(d: any)
+		local e = entries[d.Ghost]
+		if e then
+			e.WindupEnd = 0
+			e.LungeT = if d.Dodged then 0 else os.clock()
+		end
+	end)
 	RunService.RenderStepped:Connect(step)
 end
 

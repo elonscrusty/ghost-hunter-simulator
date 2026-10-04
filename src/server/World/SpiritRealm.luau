@@ -222,6 +222,9 @@ end
 local function ground(f: Instance)
 	-- void glass: walkable everywhere in the play area, dark and see-through
 	Kit.Box(f, V(-W, -1, Z0), V(W, 0, Z1), C(16, 12, 34), { Solid = true, Transp = 0.3, Refl = 0.15, Name = "VoidGlass" })
+	-- invisible backing slab: the glass alone is only 1 stud thick while every other zone floor
+	-- is 4, so this brings the realm floor to 4 studs and fast characters can't tunnel through.
+	Kit.Box(f, V(-W, -4, Z0), V(W, -1, Z1), C(16, 12, 34), { Solid = true, Transp = 1, Shadow = false, Name = "VoidGlassBacking" })
 	-- islands sunk into the glass (tops alternate 0.04 / 0.06 so overlaps never flicker)
 	local islands = {
 		{ 0, 2320, 92, 0.04 }, { 6, 2382, 70, 0.06 }, { -82, 2400, 66, 0.06 }, { 92, 2352, 46, 0.04 },

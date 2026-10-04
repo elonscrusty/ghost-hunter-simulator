@@ -94,6 +94,9 @@ function ProgressService.Init()
 		if not d.Zones[zone.Id] then
 			return Remotes.Fail("Unlock " .. zone.Name .. " first!")
 		end
+		if player:GetAttribute("InTower") == true then
+			return Remotes.Fail("Leave the Boss Tower first!")
+		end
 		local now = os.clock()
 		if now - (lastTravel[player] or -math.huge) < TRAVEL_COOLDOWN then
 			return Remotes.Fail("Wait a moment...")
@@ -193,8 +196,8 @@ local function zoneGuardTick()
 	for _, player in Players:GetPlayers() do
 		local d = DataService.Get(player)
 		local root = Remotes.Root(player)
-		if not d or not root then
-			continue
+		if not d or not root or player:GetAttribute("InTower") == true then
+			continue -- Boss Tower rooms are outside the zone strip; TowerService moves them
 		end
 		local idx = Rules.ZoneIndexAt(root.Position.Z, zoneRanges)
 		local zone = Config.Zones[idx]

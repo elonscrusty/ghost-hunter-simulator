@@ -80,18 +80,62 @@ local function registerKeepOuts()
 	end
 	-- main path along X = 0 through zones 4-8 (zones 1-3 register their own roads)
 	Kit.AddRect(-10, 880, 10, Config.Zones[#Config.Zones].MaxZ, true)
+	-- spawn kiosk pockets behind the plaza (Trading | Merge + Pets, see Neighborhood.luau)
+	Kit.AddRect(-36, -36, -14, -12)
+	Kit.AddRect(14, -36, 36, -12)
 end
 
-function Builder.Build()
-	local old = Workspace:FindFirstChild("Map")
-	if old then
-		old:Destroy()
+-- Last resort when the build throws: a plain anchored floor under the whole main strip and a
+-- SpawnLocation at Config.Layout.Spawn, so players never spawn into (or fall through) nothing.
+local function emergencyGround()
+	if Workspace:FindFirstChild("EmergencyGround") then
+		return
 	end
+	local f = Instance.new("Folder")
+	f.Name = "EmergencyGround"
+	local maxZ = 5600
+	local okZones, lastZone = pcall(function()
+		return Config.Zones[#Config.Zones].MaxZ
+	end)
+	if okZones and type(lastZone) == "number" then
+		maxZ = lastZone + 40
+	end
+	-- parts are capped at 2048 studs per axis, so tile the strip along Z
+	local z = -120
+	while z < maxZ do
+		local len = math.min(2000, maxZ - z)
+		local plate = Instance.new("Part")
+		plate.Name = "EmergencyFloor"
+		plate.Anchored = true
+		plate.CanCollide = true
+		plate.Size = Vector3.new(320, 4, len)
+		-- top at Y = -0.05: just under the normal ground top (no z-fighting if part of the map exists)
+		plate.CFrame = CFrame.new(0, -2.05, z + len / 2)
+		plate.Color = Color3.fromRGB(90, 140, 80)
+		plate.Material = Enum.Material.Grass
+		plate.TopSurface = Enum.SurfaceType.Smooth
+		plate.BottomSurface = Enum.SurfaceType.Smooth
+		plate.Parent = f
+		z += len
+	end
+	local spawnPos = Config.Layout.Spawn
+	local sp = Instance.new("SpawnLocation")
+	sp.Name = "EmergencySpawn"
+	sp.Anchored = true
+	sp.Neutral = true
+	sp.Duration = 0
+	sp.Size = Vector3.new(14, 1, 14)
+	sp.CFrame = CFrame.new(spawnPos.X, 0.5, spawnPos.Z) * CFrame.Angles(0, math.pi, 0)
+	sp.Color = Color3.fromRGB(130, 70, 220)
+	sp.TopSurface = Enum.SurfaceType.Smooth
+	sp.Parent = f
+	f.Parent = Workspace
+	warn("[GH World] build failed: emergency ground + spawn created")
+end
+
+local function buildAll(map: Folder)
 	Kit.Reset()
 	registerKeepOuts()
-
-	local map: Folder = Instance.new("Folder")
-	map.Name = "Map"
 
 	LightingSetup.Apply()
 	Boundary.Build(map)
@@ -119,6 +163,24 @@ function Builder.Build()
 	map.Parent = Workspace
 	local s = Kit.Stats
 	print(string.format("[GH World] built %d parts (%d neon), %d lights, %d emitters, %d floating, %d flicker", s.Parts, s.Neon, s.Lights, s.Emitters, s.Floating, s.Flicker))
+end
+
+function Builder.Build()
+	local old = Workspace:FindFirstChild("Map")
+	if old then
+		old:Destroy()
+	end
+	local map: Folder = Instance.new("Folder")
+	map.Name = "Map"
+	local ok, err = pcall(function()
+		buildAll(map)
+	end)
+	if not ok then
+		-- keep whatever did get built, add a safety floor, then let Main log the error
+		map.Parent = Workspace
+		emergencyGround()
+		error(err, 0)
+	end
 end
 
 return Builder

@@ -4,6 +4,7 @@
 -- run to a ring around the ghost, aim and fire a wobbly energy beam, celebrate on the poof,
 -- then come back. All crews update in ONE RenderStepped loop: BulkMoveTo for roots, Motor6D
 -- transforms for poses, staggered ground raycasts, and far-away crews are hidden.
+local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -12,6 +13,8 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local HunterRig = require(GH.Rigs.HunterRig)
 local Client = script.Parent.Parent
+local Kit = require(Client.UI.Kit)
+local State = require(Client.State)
 local Theme = require(Client.UI.Theme)
 local WorldLabel = require(Client.UI.WorldLabel)
 local Ghosts = require(script.Parent.Ghosts)
@@ -23,6 +26,8 @@ local Crew = {}
 
 type Member = {
 	Id: string,
+	Uid: string,
+	Tier: number,
 	Rig: HunterRig.Rig,
 	Pos: Vector3,
 	Yaw: number,
@@ -33,6 +38,11 @@ type Member = {
 	CelebrateUntil: number,
 	Phase: number,
 	Color: Color3,
+	-- own crew only: HP bar and a short alert line ("!", "DODGED") over the tag
+	HpBar: Frame?,
+	HpFill: Frame?,
+	Alert: TextLabel?,
+	AlertAt: number,
 }
 
 type CrewData = {
@@ -52,6 +62,7 @@ local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 rayParams.IgnoreWater = true
 local nextFilter = 0
+local gone: { [string]: Vector3 } = {} -- last spot of local rigs removed by the latest rebuild (knockout poof)
 
 local VISIBLE_RANGE = 170
 local HUNTER_SCALE = 0.88 -- rigs are ~4-4.6 studs; this puts them at a player's chest height
@@ -95,6 +106,7 @@ end
 local function addTag(m: Member, isLocal: boolean)
 	local def = Config.Hunters[m.Id]
 	local rar = Config.Rarities[def.Rarity]
+	local backup = m.Uid == "backup"
 	local gui = WorldLabel.New({
 		Name = "Tag",
 		Adornee = m.Rig.Root,
@@ -104,9 +116,21 @@ local function addTag(m: Member, isLocal: boolean)
 		MaxDistance = if isLocal then Theme.World.CrewMaxDistance else Theme.World.CrewMaxDistance * 0.6,
 		AlwaysOnTop = true, -- never cut by walls / the hunter's own body
 	})
-	WorldLabel.Text(gui, string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name, { Style = "Tiny", Color = rar.Color })
+	local tier = Config.Tiers[m.Tier]
+	local text = if backup then "BACKUP" else (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
+	WorldLabel.Text(gui, text, { Style = "Tiny", Color = if backup then Color3.fromRGB(190, 190, 200) else rar.Color })
+	if isLocal then
+		-- HP bar under the name (hidden at full HP) + alert line above it
+		local bar: Frame = Kit.new("Frame", { Size = UDim2.fromScale(0.5, 0.3), Position = UDim2.fromScale(0.5, 1), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.fromRGB(30, 15, 50), Visible = false, Parent = gui })
+		Kit.Corner(bar, UDim.new(1, 0))
+		local fill: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Ecto, Parent = bar })
+		Kit.Corner(fill, UDim.new(1, 0))
+		m.HpBar = bar
+		m.HpFill = fill
+		m.Alert = WorldLabel.Text(gui, "", { Style = "Small", Color = Theme.Bad, Size = UDim2.fromScale(1, 1.2), Position = UDim2.fromScale(0, -1.2) })
+	end
 	-- rare+ hunters stand on a soft rarity-coloured disc
-	if rar.Order >= 3 then
+	if rar.Order >= 3 and not backup then
 		local disc = Instance.new("Part")
 		disc.Name = "RarityDisc"
 		disc.Shape = Enum.PartType.Cylinder
@@ -128,22 +152,53 @@ local function addTag(m: Member, isLocal: boolean)
 	end
 end
 
-local function newMember(id: string, at: Vector3, isLocal: boolean): Member
+-- Cheap tier aura: a few slow sparkles rising off the hunter.
+local function addAura(rig: HunterRig.Rig, color: ColorSequence)
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = Effects.Textures.Sparkle
+	e.Color = color
+	e.Size = NumberSequence.new(0.35, 0)
+	e.Lifetime = NumberRange.new(0.6, 1)
+	e.Rate = 5
+	e.Speed = NumberRange.new(1, 2)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Acceleration = Vector3.new(0, 3, 0)
+	e.LightEmission = 1
+	e.Parent = rig.Root
+end
+
+local function newMember(id: string, tier: number, uid: string, at: Vector3, isLocal: boolean): Member
 	local rig = HunterRig.Build(id)
-	rig.Model:ScaleTo(HUNTER_SCALE)
-	rig.Height *= HUNTER_SCALE
+	local scale = if tier >= 2 then HUNTER_SCALE * 1.2 else HUNTER_SCALE
+	rig.Model:ScaleTo(scale)
+	rig.Height *= scale
+	local backup = uid == "backup"
 	for _, p in rig.Model:GetDescendants() do
 		if p:IsA("BasePart") then
 			p.CanCollide = false
 			p.CanQuery = false
 			p.CanTouch = false
+			if backup then
+				p.Transparency = math.max(p.Transparency, 0.45)
+			end
 		end
+	end
+	if tier == 1 then
+		addAura(rig, ColorSequence.new(Config.Tiers[1].Color))
+	elseif tier >= 2 then
+		addAura(rig, ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Config.Tiers[2].Color),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 120, 230)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 230, 110)),
+		}))
 	end
 	rig.Model:PivotTo(CFrame.new(at))
 	rig.Model.Parent = folder
 	local def = Config.Hunters[id]
 	local m: Member = {
 		Id = id,
+		Uid = uid,
+		Tier = tier,
 		Rig = rig,
 		Pos = at,
 		Yaw = 0,
@@ -154,6 +209,7 @@ local function newMember(id: string, at: Vector3, isLocal: boolean): Member
 		CelebrateUntil = 0,
 		Phase = math.random() * 10,
 		Color = def.Look.Beam,
+		AlertAt = 0,
 	}
 	makeBeam(m)
 	addTag(m, isLocal)
@@ -166,40 +222,77 @@ local function rootOf(pl: Player): BasePart?
 	return if root and root:IsA("BasePart") then root else nil
 end
 
-local function rebuild(c: CrewData)
-	local raw = c.Player:GetAttribute("Crew")
-	local ids = {}
-	if type(raw) == "string" and raw ~= "" then
-		for id in raw:gmatch("[^,]+") do
-			if Config.Hunters[id] and #ids < 12 then
-				table.insert(ids, id)
-			end
+-- Shows each own rig's HP from "uid=pct,uid=pct" (bar hidden at 100%).
+local function applyHP(c: CrewData)
+	local hp: { [string]: number } = {}
+	local raw = c.Player:GetAttribute("CrewHP")
+	if type(raw) == "string" then
+		for uid, pct in raw:gmatch("([^,=]+)=(%d+)") do
+			hp[uid] = tonumber(pct) or 100
 		end
 	end
+	for _, m in c.Members do
+		local bar, fill = m.HpBar, m.HpFill
+		if bar and fill then
+			local pct = hp[m.Uid] or 100
+			bar.Visible = pct < 100
+			fill.Size = UDim2.fromScale(pct / 100, 1)
+			fill.BackgroundColor3 = if pct > 50 then Theme.Ecto elseif pct > 25 then Theme.Gold else Theme.Bad
+		end
+	end
+end
+
+-- "Crew" is "HunterId|tier|uid,..." (old "HunterId,..." still works); rigs are kept per uid.
+local function rebuild(c: CrewData)
+	local raw = c.Player:GetAttribute("Crew")
 	local root = rootOf(c.Player)
 	local at = if root then root.Position - Vector3.new(0, 3, 0) else Vector3.zero
 	local isLocal = c.Player == player
-	for i, id in ids do
-		local m = c.Members[i]
-		if not m or m.Id ~= id then
-			if m then
-				m.Rig.Model:Destroy()
-			end
-			local spawnAt = if m then m.Pos else at + Vector3.new((i - 2.5) * 2, 0, 3)
-			c.Members[i] = newMember(id, spawnAt, isLocal)
-			if isLocal and m == nil and os.clock() > 3 then
-				Effects.Burst(spawnAt + Vector3.new(0, 2, 0), { Color = Config.Rarities[Config.Hunters[id].Rarity].Color, Count = 14, Size = 0.7, Speed = 10 })
+	local old: { [string]: Member } = {}
+	for _, m in c.Members do
+		old[m.Uid] = m
+	end
+	local members: { Member } = {}
+	if type(raw) == "string" then
+		for item in raw:gmatch("[^,]+") do
+			local p = item:split("|")
+			local id = p[1]
+			if Config.Hunters[id] and #members < 12 then
+				local i = #members + 1
+				local tier = tonumber(p[2]) or 0
+				local uid = p[3] or (id .. "#" .. i)
+				local m = old[uid]
+				old[uid] = nil
+				if not m or m.Id ~= id or m.Tier ~= tier then
+					local spawnAt = if m then m.Pos else at + Vector3.new((i - 2.5) * 2, 0, 3)
+					if m then
+						m.Rig.Model:Destroy()
+					elseif isLocal and os.clock() > 3 then
+						Effects.Burst(spawnAt + Vector3.new(0, 2, 0), { Color = Config.Rarities[Config.Hunters[id].Rarity].Color, Count = 14, Size = 0.7, Speed = 10 })
+					end
+					m = newMember(id, tier, uid, spawnAt, isLocal)
+				end
+				members[i] = m :: Member
 			end
 		end
 	end
-	for i = #c.Members, #ids + 1, -1 do
-		c.Members[i].Rig.Model:Destroy()
-		c.Members[i] = nil
+	if isLocal then
+		table.clear(gone)
 	end
+	for uid, m in old do
+		if isLocal then
+			gone[uid] = m.Pos
+		end
+		m.Rig.Model:Destroy()
+	end
+	c.Members = members
 	if not c.Visible then
 		for _, m in c.Members do
 			m.Rig.Model.Parent = nil
 		end
+	end
+	if isLocal then
+		applyHP(c)
 	end
 end
 
@@ -220,6 +313,11 @@ local function addPlayer(pl: Player)
 	table.insert(c.Conns, pl:GetAttributeChangedSignal("Crew"):Connect(function()
 		rebuild(c)
 	end))
+	if pl == player then
+		table.insert(c.Conns, pl:GetAttributeChangedSignal("CrewHP"):Connect(function()
+			applyHP(c)
+		end))
+	end
 	rebuild(c)
 end
 
@@ -430,6 +528,35 @@ local function step(dt: number)
 	end
 end
 
+local function localMember(uid: any): Member?
+	local c = crews[player]
+	if c then
+		for _, m in c.Members do
+			if m.Uid == uid then
+				return m
+			end
+		end
+	end
+	return nil
+end
+
+-- Short line over an own rig's tag ("!", "DODGED"); a newer flash wins.
+local function flash(m: Member, text: string, color: Color3, t: number)
+	local a = m.Alert
+	if not a then
+		return
+	end
+	a.Text = text
+	a.TextColor3 = color
+	local token = os.clock()
+	m.AlertAt = token
+	task.delay(t, function()
+		if m.AlertAt == token then
+			a.Text = ""
+		end
+	end)
+end
+
 function Crew.Init()
 	folder = Instance.new("Folder")
 	folder.Name = "GHCrews"
@@ -456,6 +583,39 @@ function Crew.Start()
 		end
 	end)
 	RunService.RenderStepped:Connect(step)
+	-- v1.6 retaliation (Fx only reaches the attacked player): telegraph, dodge, knockout poof
+	State.OnFx("GhostWindup", function(d: any)
+		local m = localMember(d.Hunter)
+		if not m then
+			return
+		end
+		local t = tonumber(d.Time) or 0.9
+		local hl = Instance.new("Highlight")
+		hl.FillColor = Theme.Bad
+		hl.OutlineColor = Theme.Bad
+		hl.FillTransparency = 0.55
+		hl.Parent = m.Rig.Model
+		Debris:AddItem(hl, t)
+		flash(m, "❗", Theme.Bad, t)
+	end)
+	State.OnFx("GhostHit", function(d: any)
+		local m = localMember(d.Hunter)
+		if not m then
+			return
+		end
+		if d.Dodged then
+			flash(m, "DODGED", Theme.Ecto, 0.8)
+		elseif not d.Knocked then
+			Effects.Burst(m.Pos + Vector3.new(0, 2, 0), { Color = Theme.Bad, Count = 8, Size = 0.5, Speed = 8, Life = 0.4 })
+		end
+	end)
+	State.OnFx("Knocked", function(d: any)
+		local m = localMember(d.Uid)
+		local pos = if m then m.Pos else gone[d.Uid]
+		if pos then
+			Effects.Poof(pos + Vector3.new(0, 2, 0), Color3.fromRGB(200, 200, 215), 0.6, false)
+		end
+	end)
 end
 
 -- Local crew members (for the crate reveal / tutorial).

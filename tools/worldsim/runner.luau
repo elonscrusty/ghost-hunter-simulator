@@ -390,6 +390,30 @@ if MAP then
 	end
 	print(string.format("  %d/%d ghost areas clear", #Config.Layout.GhostAreas - bad, #Config.Layout.GhostAreas))
 
+	-- Giant Poltergeist courtyard (Tower Plaza): the event boss spawns over the centre, so
+	-- nothing taller than the flat paint may stand within 20 studs of it up to Y = 30.
+	do
+		local c = Config.Layout.EventArena.Center
+		local R = 20
+		local hits = {}
+		for _, p in query(c.X - R, c.Z - R, c.X + R, c.Z + R) do
+			if (p.Visible or p.Solid) and p.Y2 > 0.4 and p.Y1 < 30 and hitsCircle(p, c.X, c.Z, R) then
+				table.insert(hits, p)
+			end
+		end
+		if #hits > 0 then
+			issue(string.format("event courtyard (%d, %d) r=%d: %d part(s) inside", c.X, c.Z, R, #hits))
+			for j, p in hits do
+				if j > MAX_LIST and not VERBOSE then
+					break
+				end
+				print("      " .. describe(p) .. (if p.Solid then " SOLID" else ""))
+			end
+		else
+			print("  event courtyard clear (r=20, Y 0.4..30)")
+		end
+	end
+
 	--==================================================================
 	-- 3. Fast Travel arrival points
 	--==================================================================

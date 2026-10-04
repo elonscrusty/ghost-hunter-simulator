@@ -1,7 +1,8 @@
 --!strict
 -- HUNTERS inventory: grid of cards (portrait, name, rarity, Capture Power, equipped/locked
 -- badges), an inspect pane with a 3D preview, EQUIP / UNEQUIP / EQUIP BEST / LOCK / RELEASE,
--- sort by power or rarity, and a release mode with "select weak" for clearing storage.
+-- sort by power or rarity, a release mode with "select weak" for clearing storage, and a merge
+-- mode (5 identical hunters -> 1 of the next tier). Knocked hunters show a recovery countdown.
 -- Cards are cached per hunter uid, so data updates only touch what changed.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -23,6 +24,9 @@ type Card = {
 	Equip: Frame,
 	Lock: TextLabel,
 	Select: Frame,
+	SelectLabel: TextLabel,
+	Knock: Frame,
+	KnockLabel: TextLabel,
 }
 
 local panel: Kit.Panel
@@ -33,6 +37,7 @@ local powerLabel: TextLabel
 local storageLabel: TextLabel
 local sortButton: TextButton
 local releaseButton: TextButton
+local mergeButton: TextButton
 local equipBestButton: TextButton
 local top: Frame
 local actionsRow: Frame
@@ -53,26 +58,46 @@ local emptyHint: TextLabel
 local releaseBar: Frame
 local releaseConfirm: TextButton
 local releaseMode = false
+-- merge mode
+local mergeBar: Frame
+local mergeInfo: TextLabel
+local mergeConfirm: TextButton
+local mergeMode = false
+local pickId: string? = nil
+local pickTier = 0
 local selected: { [string]: boolean } = {}
 local inspectUid: string? = nil
 local sortMode = "Power"
 local spinModel: Model? = nil
 local spinConn: RBXScriptConnection? = nil
 
-local function powerOf(id: string): number
-	local h = Config.Hunters[id]
-	return if h then h.Power else 0
+local function tierOf(h: any): Config.TierDef
+	return Config.Tiers[h.Tier or 0] or Config.Tiers[0]
+end
+
+-- tiered Capture Power of one owned hunter record
+local function powerOf(h: any): number
+	local def = Config.Hunters[h.Id]
+	return if def then def.Power * tierOf(h).Mult else 0
+end
+
+local function knockLeft(d: any, uid: string): number
+	return ((d.Knocked and d.Knocked[uid]) or 0) - State.Now()
 end
 
 local function rarityOf(id: string): Config.RarityDef
 	return Config.Rarities[Config.Hunters[id].Rarity]
 end
 
-local function crateRefund(id: string): number
+local function cratePrice(id: string): number
 	local def = Config.Hunters[id]
 	local zone = Config.ZoneById[def.Zone]
 	local crate = zone and Config.Crates[zone.Crate]
-	return if crate then math.floor(crate.Price * Config.Inventory.ReleaseRefund) else 0
+	return if crate then crate.Price else 0
+end
+
+local function crateRefund(id: string): number
+	return math.floor(cratePrice(id) * Config.Inventory.ReleaseRefund)
 end
 
 local function sortedUids(d: any): { string }
@@ -89,7 +114,7 @@ local function sortedUids(d: any): { string }
 			return eq[a] == true
 		end
 		local ha, hb = d.Hunters[a].Id, d.Hunters[b].Id
-		local pa, pb = powerOf(ha), powerOf(hb)
+		local pa, pb = powerOf(d.Hunters[a]), powerOf(d.Hunters[b])
 		local ra, rb = rarityOf(ha).Order, rarityOf(hb).Order
 		if sortMode == "Rarity" and ra ~= rb then
 			return ra > rb
@@ -106,6 +131,7 @@ local function sortedUids(d: any): { string }
 end
 
 local previewUid: string? = nil
+local rebuild: () -> ()
 
 local function clearPreview()
 	if spinConn then
@@ -125,8 +151,8 @@ local function setInspect(uid: string?)
 	inspectUid = uid
 	local d = State.Data
 	local h = uid and d and d.Hunters[uid]
-	inspect.Visible = h ~= nil and not releaseMode
-	emptyHint.Visible = not inspect.Visible and not releaseMode
+	inspect.Visible = h ~= nil and not releaseMode and not mergeMode
+	emptyHint.Visible = not inspect.Visible and not releaseMode and not mergeMode
 	if not h or not d or not uid then
 		clearPreview()
 		return
@@ -148,11 +174,13 @@ local function setInspect(uid: string?)
 			end)
 		end
 	end
-	nameLabel.Text = string.upper(def.Name)
+	local tier = tierOf(h)
+	nameLabel.Text = (if (h.Tier or 0) > 0 then tier.Icon .. " " .. tier.Name .. " " else "") .. string.upper(def.Name)
+	nameLabel.TextColor3 = tier.Color
 	rarityLabel.Text = rar.Name
 	local g = rarityRibbon:FindFirstChildOfClass("UIGradient") :: UIGradient
 	g.Color = ColorSequence.new(rar.Color, rar.Color2)
-	statLabel.Text = "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER"
+	statLabel.Text = "⚡ " .. Format.Commas(powerOf(h)) .. " CAPTURE POWER"
 	blurbLabel.Text = def.Blurb
 	local isEq = table.find(d.Equipped, uid) ~= nil
 	Kit.SetButtonText(equipButton, if isEq then "UNEQUIP" else "EQUIP")
@@ -180,9 +208,82 @@ local function updateReleaseBar()
 	releaseConfirm:SetAttribute("Color", if n > 0 then "Red" else "Gray")
 end
 
-local function makeCard(uid: string, hunterId: string): Card
+-- The 5 copies a merge of (pickId, pickTier) would use: unlocked, not knocked, unequipped and
+-- oldest first. Returns the picks and how many usable copies exist.
+local function mergePicks(d: any): ({ string }, number)
+	local list = {}
+	for uid, h in d.Hunters do
+		if h.Id == pickId and (h.Tier or 0) == pickTier and not h.Locked and knockLeft(d, uid) <= 0 then
+			table.insert(list, uid)
+		end
+	end
+	table.sort(list, function(a, b)
+		local ea, eb = table.find(d.Equipped, a) ~= nil, table.find(d.Equipped, b) ~= nil
+		if ea ~= eb then
+			return eb
+		end
+		return (d.Hunters[a].T or 0) < (d.Hunters[b].T or 0)
+	end)
+	local n = #list
+	while #list > Config.Merge.Count do
+		table.remove(list)
+	end
+	return list, n
+end
+
+local function updateMergeBar()
+	local d = State.Data
+	table.clear(selected)
+	mergeConfirm:SetAttribute("Color", "Gray")
+	local id = pickId
+	local def = id and Config.Hunters[id]
+	if not d or not id or not def then
+		mergeInfo.Text = "Tap a hunter to merge " .. Config.Merge.Count .. " identical copies into one stronger hunter.\n\nLocked and knocked hunters are never used."
+		Kit.SetButtonText(mergeConfirm, "CONFIRM")
+		return
+	end
+	local tier = Config.Tiers[pickTier]
+	local name = (if pickTier > 0 then tier.Icon .. " " .. tier.Name .. " " else "") .. string.upper(def.Name)
+	if pickTier >= Config.Merge.MaxTier then
+		mergeInfo.Text = name .. " is already the top tier. It can't be merged further."
+		Kit.SetButtonText(mergeConfirm, "MAX TIER")
+		return
+	end
+	local picks, n = mergePicks(d)
+	if n < Config.Merge.Count then
+		mergeInfo.Text = "You have " .. n .. "/" .. Config.Merge.Count .. " usable " .. name .. ".\n\nYou need " .. Config.Merge.Count .. " identical copies (same tier, unlocked, not knocked)."
+		Kit.SetButtonText(mergeConfirm, "NEED " .. Config.Merge.Count)
+		return
+	end
+	for _, uid in picks do
+		selected[uid] = true
+	end
+	local nextTier = Config.Tiers[pickTier + 1]
+	local cost = cratePrice(id) * Config.Merge.CostMult[pickTier + 1]
+	mergeInfo.Text = "Uses the " .. Config.Merge.Count .. " highlighted " .. name .. ".\n\nYou get: " .. nextTier.Icon .. " " .. nextTier.Name .. " " .. string.upper(def.Name) .. "\n⚡ " .. Format.Commas(def.Power * nextTier.Mult) .. " CAPTURE POWER\n\nCost: 💚" .. Format.Commas(cost)
+	Kit.SetButtonText(mergeConfirm, "CONFIRM 💚" .. Format.Short(cost))
+	mergeConfirm:SetAttribute("Color", if State.Ecto >= cost then "Green" else "Gray")
+end
+
+local function refreshKnocked()
+	local d = State.Data
+	if not d then
+		return
+	end
+	for uid, c in cards do
+		local left = knockLeft(d, uid)
+		c.Knock.Visible = left > 0
+		if left > 0 then
+			c.KnockLabel.Text = "💤 " .. Format.Time(left)
+		end
+	end
+end
+
+local function makeCard(uid: string, hunter: any): Card
+	local hunterId = hunter.Id
 	local def = Config.Hunters[hunterId]
 	local rar = rarityOf(hunterId)
+	local tier = tierOf(hunter)
 	local f: TextButton = Kit.new("TextButton", {
 		Name = uid,
 		Text = "",
@@ -192,7 +293,7 @@ local function makeCard(uid: string, hunterId: string): Card
 		Parent = grid,
 	})
 	Kit.Corner(f, UDim.new(0, 16))
-	Kit.Stroke(f, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Stroke(f, if (hunter.Tier or 0) > 0 then 5 else 3, if (hunter.Tier or 0) > 0 then tier.Color else Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(f, rar.Color, rar.Color2, 90)
 	if rar.Order >= 5 then
 		-- legendary cards shimmer
@@ -223,7 +324,10 @@ local function makeCard(uid: string, hunterId: string): Card
 	Kit.Corner(pic, UDim.new(1, 0))
 	Portrait.Face(pic, hunterId, false)
 	Kit.Label(f, string.upper(def.Name), { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), ZIndex = 66, Style = "Small", Fit = true })
-	Kit.Label(f, "⚡" .. Format.Short(def.Power), { Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 98), ZIndex = 66, Color = Theme.Gold, Style = "Body", Fit = true })
+	if (hunter.Tier or 0) > 0 then
+		Kit.Label(f, tier.Icon .. " " .. tier.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 64), ZIndex = 67, Color = tier.Color, Style = "Small", Fit = true })
+	end
+	Kit.Label(f, "⚡" .. Format.Short(powerOf(hunter)), { Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 98), ZIndex = 66, Color = Theme.Gold, Style = "Body", Fit = true })
 	local eqBadge: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(24, 24),
 		Position = UDim2.fromOffset(-5, -5),
@@ -239,10 +343,25 @@ local function makeCard(uid: string, hunterId: string): Card
 	lock.Visible = false
 	local sel: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Bad, BackgroundTransparency = 0.45, Visible = false, ZIndex = 70, Parent = f })
 	Kit.Corner(sel, UDim.new(0, 12))
-	Kit.Label(sel, "X", { Style = "Title", ZIndex = 71 })
+	local selLabel = Kit.Label(sel, "X", { Style = "Title", ZIndex = 71 })
+	local knock: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(60, 60, 70), BackgroundTransparency = 0.35, Visible = false, ZIndex = 69, Parent = f })
+	Kit.Corner(knock, UDim.new(0, 16))
+	local knockLabel = Kit.Label(knock, "", { Size = UDim2.new(1, -8, 0, 22), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Body", Fit = true, ZIndex = 70 })
 	f.Activated:Connect(function()
 		Kit.Play("Click")
-		if releaseMode then
+		if mergeMode then
+			local d = State.Data
+			local h = d and d.Hunters[uid]
+			if not h then
+				return
+			end
+			if h.Locked then
+				Kit.Toast("Locked hunters can't be merged", "Bad")
+				return
+			end
+			pickId, pickTier = h.Id, h.Tier or 0
+			rebuild()
+		elseif releaseMode then
 			local d = State.Data
 			local h = d and d.Hunters[uid]
 			if not h or h.Locked or table.find(d.Equipped, uid) then
@@ -260,16 +379,19 @@ local function makeCard(uid: string, hunterId: string): Card
 			setInspect(uid)
 		end
 	end)
-	return { Frame = f, Equip = eqBadge, Lock = lock, Select = sel }
+	return { Frame = f, Equip = eqBadge, Lock = lock, Select = sel, SelectLabel = selLabel, Knock = knock, KnockLabel = knockLabel }
 end
 
 local BATCH = 24 -- new cards per frame: a 150-hunter inventory opens without a hitch
 local rebuildQueued = false
 
-local function rebuild()
+function rebuild()
 	local d = State.Data
 	if not d then
 		return
+	end
+	if mergeMode then
+		updateMergeBar()
 	end
 	local created = 0
 	-- remove cards for hunters that are gone
@@ -303,13 +425,15 @@ local function rebuild()
 				continue
 			end
 			created += 1
-			c = makeCard(uid, h.Id)
+			c = makeCard(uid, h)
 			cards[uid] = c
 		end
 		c.Frame.LayoutOrder = i
 		c.Equip.Visible = eq[uid] == true
 		c.Lock.Visible = h.Locked == true
-		c.Select.Visible = releaseMode and selected[uid] == true
+		c.Select.Visible = (releaseMode or mergeMode) and selected[uid] == true
+		c.Select.BackgroundColor3 = if mergeMode then Theme.Good else Theme.Bad
+		c.SelectLabel.Text = if mergeMode then "✓" else "X"
 	end
 	local count = State.CountOwned()
 	local slots = d.Slots or Config.Inventory.BaseSlots
@@ -325,14 +449,19 @@ local function rebuild()
 	if releaseMode then
 		updateReleaseBar()
 	end
+	refreshKnocked()
 end
 
-local function setReleaseMode(on: boolean)
-	releaseMode = on
+local function setMode(release: boolean, merge: boolean)
+	releaseMode, mergeMode = release, merge
+	pickId = nil
 	table.clear(selected)
-	releaseBar.Visible = on
-	Kit.SetButtonText(releaseButton, if on then "DONE" else "RELEASE")
-	releaseButton:SetAttribute("Color", if on then "Gray" else "Red")
+	releaseBar.Visible = release
+	mergeBar.Visible = merge
+	Kit.SetButtonText(releaseButton, if release then "DONE" else "RELEASE")
+	releaseButton:SetAttribute("Color", if release then "Gray" else "Red")
+	Kit.SetButtonText(mergeButton, if merge then "DONE" else "MERGE")
+	mergeButton:SetAttribute("Color", if merge then "Gray" else "Purple")
 	rebuild()
 end
 
@@ -352,13 +481,13 @@ function HuntersPanel.Init()
 	equippedLabel = Kit.Label(top, "EQUIPPED 0/4", { Size = UDim2.fromOffset(150, 22), Position = UDim2.fromOffset(0, 0), Align = Enum.TextXAlignment.Left, Style = "Heading", Fit = true, ZIndex = 62 })
 	powerLabel = Kit.Label(top, "⚡ 0", { Size = UDim2.fromOffset(120, 22), Position = UDim2.fromOffset(152, 0), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 62 })
 	storageLabel = Kit.Label(top, "STORAGE 0/150", { Size = UDim2.fromOffset(200, 16), Position = UDim2.fromOffset(0, 25), Align = Enum.TextXAlignment.Left, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
-	actionsRow = Kit.new("Frame", { Size = UDim2.new(0, 400, 0, 40), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 61, Parent = top })
+	actionsRow = Kit.new("Frame", { Size = UDim2.new(0, 480, 0, 40), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 61, Parent = top })
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), Parent = actionsRow })
 	local buttons = actionsRow
 	sortButton = Kit.Button(buttons, {
 		Text = "SORT: POWER",
 		Color = "Blue",
-		Size = UDim2.fromOffset(124, 38),
+		Size = UDim2.fromOffset(110, 38),
 		TextStyle = "Small",
 		ZIndex = 62,
 		OnClick = function()
@@ -374,7 +503,17 @@ function HuntersPanel.Init()
 		TextStyle = "Small",
 		ZIndex = 62,
 		OnClick = function()
-			setReleaseMode(not releaseMode)
+			setMode(not releaseMode, false)
+		end,
+	})
+	mergeButton = Kit.Button(buttons, {
+		Text = "MERGE",
+		Color = "Purple",
+		Size = UDim2.fromOffset(90, 38),
+		TextStyle = "Small",
+		ZIndex = 62,
+		OnClick = function()
+			setMode(false, not mergeMode)
 		end,
 	})
 	equipBestButton = Kit.Button(buttons, {
@@ -511,12 +650,12 @@ function HuntersPanel.Init()
 			for _, uid in d.Equipped do
 				local h = d.Hunters[uid]
 				if h then
-					weakest = math.min(weakest, powerOf(h.Id))
+					weakest = math.min(weakest, powerOf(h))
 				end
 			end
 			table.clear(selected)
 			for uid, h in d.Hunters do
-				if not h.Locked and not table.find(d.Equipped, uid) and powerOf(h.Id) < weakest then
+				if not h.Locked and not table.find(d.Equipped, uid) and powerOf(h) < weakest then
 					selected[uid] = true
 				end
 			end
@@ -545,6 +684,48 @@ function HuntersPanel.Init()
 			end
 		end,
 	})
+	-- merge bar (replaces the inspect pane in merge mode)
+	mergeBar = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 63, Parent = side })
+	mergeInfo = Kit.Label(mergeBar, "", { Size = UDim2.new(1, -20, 1, -116), Position = UDim2.fromOffset(10, 8), Font = Theme.Body, Style = "Small", ZIndex = 64, Stroke = 0, AlignY = Enum.TextYAlignment.Top })
+	mergeConfirm = Kit.Button(mergeBar, {
+		Text = "CONFIRM",
+		Color = "Gray",
+		Size = UDim2.new(1, -20, 0, 44),
+		Position = UDim2.new(0, 10, 1, -60),
+		AnchorPoint = Vector2.new(0, 1),
+		ZIndex = 64,
+		OnClick = function()
+			local d = State.Data
+			local id = pickId
+			if not d or not id then
+				return
+			end
+			local picks = mergePicks(d)
+			if #picks < Config.Merge.Count or pickTier >= Config.Merge.MaxTier then
+				return
+			end
+			local res = act("Merge", picks)
+			if res.ok then
+				local t = Config.Tiers[res.Tier or pickTier + 1]
+				local def = Config.Hunters[id]
+				Kit.Toast("Merged! " .. t.Icon .. " " .. t.Name .. " " .. string.upper(def.Name) .. " ⚡" .. Format.Short(def.Power * t.Mult), "Gold")
+				pickId = nil
+				rebuild()
+			end
+		end,
+	})
+	Kit.Button(mergeBar, {
+		Text = "CANCEL",
+		Color = "Red",
+		Size = UDim2.new(1, -20, 0, 40),
+		Position = UDim2.new(0, 10, 1, -10),
+		AnchorPoint = Vector2.new(0, 1),
+		ZIndex = 64,
+		OnClick = function()
+			pickId = nil
+			rebuild()
+		end,
+	})
 	Hud.RegisterPanel("Hunters", function()
 		panel:Toggle()
 	end)
@@ -568,7 +749,7 @@ local function layout()
 	else
 		actionsRow.AnchorPoint = Vector2.new(1, 0)
 		actionsRow.Position = UDim2.fromScale(1, 0)
-		actionsRow.Size = UDim2.new(0, 400, 0, 40)
+		actionsRow.Size = UDim2.new(0, 480, 0, 40)
 		local list = actionsRow:FindFirstChildOfClass("UIListLayout")
 		if list then
 			list.HorizontalAlignment = Enum.HorizontalAlignment.Right
@@ -583,9 +764,23 @@ local function layout()
 end
 
 function HuntersPanel.Start()
+	local openToken = 0
 	panel.OnOpen:Connect(function()
 		layout()
 		rebuild()
+		-- knocked countdowns tick while the panel is open
+		openToken += 1
+		local token = openToken
+		task.spawn(function()
+			while panel.IsOpen and token == openToken do
+				task.wait(1)
+				if mergeMode and pickId then
+					rebuild() -- a hunter waking up can make a merge possible
+				else
+					refreshKnocked()
+				end
+			end
+		end)
 	end)
 	Kit.ScaleChanged:Connect(function()
 		if panel.IsOpen then
@@ -593,8 +788,8 @@ function HuntersPanel.Start()
 		end
 	end)
 	panel.OnClose:Connect(function()
-		if releaseMode then
-			setReleaseMode(false)
+		if releaseMode or mergeMode then
+			setMode(false, false)
 		end
 		clearPreview()
 	end)

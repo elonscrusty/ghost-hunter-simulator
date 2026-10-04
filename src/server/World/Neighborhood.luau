@@ -187,8 +187,9 @@ local function plaza(f: Instance)
 			chevron(f, V(sx, 0.55, sz) + dir * (8 + i * 4.5), dir, if target == beg then C(255, 180, 60) else C(90, 210, 255))
 		end
 	end
-	-- signpost straight ahead of spawn
-	local post = V(sx, 0, sz + 19)
+	-- signpost at the roadside (left of the main road as seen from spawn) so the path straight
+	-- ahead to the first ghosts stays clear; the boards still face spawn
+	local post = V(sx - 17, 0, sz + 22)
 	Kit.Box(f, post - V(0.4, 0, 0.4), post + V(0.4, 11, 0.4), C(110, 80, 60), { Mat = Enum.Material.Wood })
 	local boards = {
 		{ Y = 10, Off = 0, Text = "👻 GHOSTS AHEAD", Col = C(150, 255, 140) },
@@ -239,6 +240,75 @@ local function hq(f: Instance)
 end
 
 --==================================================================
+-- SPAWN KIOSKS (Trading / Merge / Pets) in the pockets behind the plaza
+--==================================================================
+-- Small striped booths facing the plaza. Each has an invisible PromptAnchor part carrying
+-- attribute Kiosk = "Trade" | "Merge" | "Pets" and a ProximityPrompt; the client opens the
+-- matching panel from ProximityPromptService.PromptTriggered (prompt.Parent:GetAttribute("Kiosk")).
+-- The pockets (X -36..-14 and 14..36, Z -36..-12) are reserved in Builder.registerKeepOuts.
+local KIOSKS = {
+	{ Id = "Trade", Title = "🤝 TRADING", Pos = V(-25, 0, -25), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
+	{ Id = "Merge", Title = "✨ MERGE", Pos = V(20, 0, -29), Main = C(190, 110, 255), Accent = C(255, 230, 90) },
+	{ Id = "Pets", Title = "🐾 PETS", Pos = V(30, 0, -19), Main = C(255, 130, 190), Accent = C(120, 230, 255) },
+}
+
+local function kiosk(parent: Instance, k: typeof(KIOSKS[1]))
+	local spawnPos = Config.Layout.Spawn
+	-- local -Z (front) faces the spawn plaza
+	local base = CFrame.new(k.Pos) * CFrame.Angles(0, Kit.FaceYaw(spawnPos.X - k.Pos.X, spawnPos.Z - k.Pos.Z), 0)
+	local m = Kit.Model(parent, "Kiosk_" .. k.Id)
+	local dark = C(55, 35, 90)
+	local wood: Kit.Opts = { Mat = Enum.Material.WoodPlanks, Solid = true }
+	-- floor deck and back wall
+	Kit.Part(m, V(9, 0.6, 7), base * CFrame.new(0, 0.3, 0), C(150, 110, 80), wood)
+	Kit.Part(m, V(9, 8, 0.8), base * CFrame.new(0, 4.6, 3.1), k.Main, { Solid = true, Shadow = true })
+	-- counter with a coloured top
+	Kit.Part(m, V(8, 3.4, 1.6), base * CFrame.new(0, 2.3, -2.2), dark, wood)
+	Kit.Part(m, V(8.4, 0.3, 2), base * CFrame.new(0, 4.15, -2.2), Kit.Vivid(k.Accent))
+	-- corner posts
+	for _, sx in { -1, 1 } do
+		for _, lz in { -3.1, 3.1 } do
+			Kit.Part(m, V(0.6, 8, 0.6), base * CFrame.new(sx * 4.2, 4.6, lz), C(240, 235, 250), { Mat = Enum.Material.Wood })
+		end
+	end
+	-- striped awning roof
+	for i = 0, 5 do
+		local col = if i % 2 == 0 then k.Main else C(250, 245, 255)
+		Kit.Part(m, V(1.6, 0.5, 8.4), base * CFrame.new(-4 + i * 1.6, 8.85, -0.3) * CFrame.Angles(math.rad(-8), 0, 0), col)
+	end
+	-- sign board above the awning, facing the plaza
+	local board = Kit.Part(m, V(8, 2.2, 0.5), base * CFrame.new(0, 10.6, -1.2), dark, { Name = "KioskSign" })
+	Kit.Part(m, V(8.8, 3, 0.3), base * CFrame.new(0, 10.6, -0.85), Kit.Vivid(k.Accent))
+	Kit.Sign(board, Enum.NormalId.Front, k.Title, C(255, 255, 255))
+	-- a little glowing lantern on the counter (accent glow, meaning "open")
+	local lantern = Kit.Ball(m, 0.9, (base * CFrame.new(3.2, 4.85, -2.2)).Position, k.Accent, { Mat = NEON })
+	Kit.Light(lantern, k.Accent, 12, 0.8)
+	-- invisible prompt anchor in front of the counter
+	local anchor = Kit.Part(m, V(1, 1, 1), base * CFrame.new(0, 3, -3.6), k.Main, { Transp = 1, Name = "PromptAnchor" })
+	anchor:SetAttribute("Kiosk", k.Id)
+	-- pcall: the headless world simulator (tools/worldsim) has no ProximityPrompt class
+	pcall(function()
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "KioskPrompt"
+		prompt.ActionText = "Open"
+		prompt.ObjectText = k.Title
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 12
+		prompt.RequiresLineOfSight = false
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.GamepadKeyCode = Enum.KeyCode.ButtonY
+		prompt.Parent = anchor
+	end)
+end
+
+local function kiosks(f: Instance)
+	local folder = Kit.Folder(f, "Kiosks")
+	for _, k in KIOSKS do
+		kiosk(folder, k)
+	end
+end
+
+--==================================================================
 -- ROADS
 --==================================================================
 local function roads(f: Instance)
@@ -278,6 +348,7 @@ function Neighborhood.Build(map: Instance)
 	plaza(f)
 	hq(f)
 	roads(f)
+	kiosks(f)
 
 	-- Houses on a grid; each faces the main road.
 	local houses = Kit.Folder(f, "Houses")

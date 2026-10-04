@@ -15,6 +15,7 @@ local Remotes = {}
 type Handler = (Player, ...any) -> any
 local handlers: { [string]: { fn: Handler, bucket: string } } = {}
 local limiters: { [string]: Rules.Limiter } = {}
+local lastAction: { [Player]: number } = {} -- os.clock() of the player's last accepted request (activity)
 
 local function limiter(bucket: string): Rules.Limiter
 	local l = limiters[bucket]
@@ -48,6 +49,7 @@ function Remotes.Init()
 		if not Remotes.Allow(player, h.bucket) then
 			return { ok = false, err = "Slow down!" }
 		end
+		lastAction[player] = os.clock()
 		local ok, result = pcall(h.fn, player, ...)
 		if not ok then
 			warn(string.format("[Remotes] %s from %s errored: %s", action, player.Name, tostring(result)))
@@ -59,11 +61,17 @@ function Remotes.Init()
 		return result
 	end
 	Players.PlayerRemoving:Connect(function(player)
+		lastAction[player] = nil
 		local key = tostring(player.UserId)
 		for _, l in limiters do
 			l.hits[key] = nil
 		end
 	end)
+end
+
+-- os.clock() of the player's last accepted request, or nil (activity checks, e.g. idle detection)
+function Remotes.LastAction(player: Player): number?
+	return lastAction[player]
 end
 
 -- Helpers for handlers
