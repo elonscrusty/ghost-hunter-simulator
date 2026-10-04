@@ -132,6 +132,7 @@ local function addTag(m: Member, isLocal: boolean)
 	local tier = Config.Tiers[m.Tier]
 	local text = (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
 	WorldLabel.Text(gui, text, { Style = "Tiny", Color = rar.Color })
+	gui.Enabled = game:GetService("Players").LocalPlayer:GetAttribute("ShowNames") ~= false -- Settings: NAMES
 	-- HP bar: its own label at the tag's anchor point, drawn in the upper part so it always
 	-- sits just above the name. Own crew: readable at play distance; others: small and close only.
 	local hpGui = WorldLabel.New({

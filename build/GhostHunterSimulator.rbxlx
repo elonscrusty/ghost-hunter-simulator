@@ -6833,7 +6833,7 @@ export type Data = {
 	Daily: { Last: number, Streak: number },
 	Boosts: { [string]: number }, -- boost id -> os.time expiry
 	FreeCrates: { [string]: number },
-	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean },
+	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean, Names: boolean },
 	Tutorial: number,
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
@@ -6875,7 +6875,7 @@ local function defaults(): Data
 		Daily = { Last = 0, Streak = 0 },
 		Boosts = {},
 		FreeCrates = {},
-		Settings = { Music = true, Sfx = true, FastReveal = false },
+		Settings = { Music = true, Sfx = true, FastReveal = false, Names = true },
 		Tutorial = 1,
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
@@ -25530,6 +25530,7 @@ local function addTag(m: Member, isLocal: boolean)
 	local tier = Config.Tiers[m.Tier]
 	local text = (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
 	WorldLabel.Text(gui, text, { Style = "Tiny", Color = rar.Color })
+	gui.Enabled = game:GetService("Players").LocalPlayer:GetAttribute("ShowNames") ~= false -- Settings: NAMES
 	-- HP bar: its own label at the tag's anchor point, drawn in the upper part so it always
 	-- sits just above the name. Own crew: readable at play distance; others: small and close only.
 	local hpGui = WorldLabel.New({
@@ -28778,13 +28779,14 @@ end
 
 -- Settings panel (gear, top right)
 local function buildSettings(screen: ScreenGui)
-	local panel = Kit.Panel("Settings", "SETTINGS", Vector2.new(400, 350), "Gray")
+	local panel = Kit.Panel("Settings", "SETTINGS", Vector2.new(400, 410), "Gray")
 	local list: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = panel.Body, ZIndex = 61 })
 	Kit.new("UIListLayout", { Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Parent = list })
 	local toggles = {
 		{ Key = "Music", Text = "MUSIC" },
 		{ Key = "Sfx", Text = "SOUND EFFECTS" },
 		{ Key = "FastReveal", Text = "FAST CRATE OPENING" },
+		{ Key = "Names", Text = "HUNTER & PET NAMES" },
 	}
 	local buttons: { [string]: TextButton } = {}
 	for _, t in toggles do
@@ -28818,6 +28820,17 @@ local function buildSettings(screen: ScreenGui)
 		end,
 	})
 	State.OnData(function(d)
+		-- names over hunters and pets: Crew / PetFollowers read this attribute for new tags
+		local namesOn = d.Settings.Names ~= false
+		local me = game:GetService("Players").LocalPlayer
+		if me:GetAttribute("ShowNames") ~= namesOn then
+			me:SetAttribute("ShowNames", namesOn)
+			for _, g in workspace:GetDescendants() do
+				if g:IsA("BillboardGui") and (g.Name == "Tag" or g.Name == "PetTag") then
+					g.Enabled = namesOn
+				end
+			end
+		end
 		for _, t in toggles do
 			local on = d.Settings[t.Key] == true
 			local b = buttons[t.Key]
@@ -31865,6 +31878,7 @@ local function buildPet(def: Config.PetDef, slot: number, label: string): Pet
 		Offset = Vector3.new(0, top * S + 0.3, 0) - pieces[1].Offset.Position,
 		MaxDistance = 60,
 	})
+	gui.Enabled = game:GetService("Players").LocalPlayer:GetAttribute("ShowNames") ~= false -- Settings: NAMES
 	WorldLabel.Text(gui, label, { Style = "Small", Color = if r then (if r.Color.R + r.Color.G + r.Color.B >= r.Color2.R + r.Color2.G + r.Color2.B then r.Color else r.Color2) else nil })
 	return { Pieces = pieces, Slot = slot }
 end

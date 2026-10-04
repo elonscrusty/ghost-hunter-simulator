@@ -382,13 +382,14 @@ end
 
 -- Settings panel (gear, top right)
 local function buildSettings(screen: ScreenGui)
-	local panel = Kit.Panel("Settings", "SETTINGS", Vector2.new(400, 350), "Gray")
+	local panel = Kit.Panel("Settings", "SETTINGS", Vector2.new(400, 410), "Gray")
 	local list: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = panel.Body, ZIndex = 61 })
 	Kit.new("UIListLayout", { Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Parent = list })
 	local toggles = {
 		{ Key = "Music", Text = "MUSIC" },
 		{ Key = "Sfx", Text = "SOUND EFFECTS" },
 		{ Key = "FastReveal", Text = "FAST CRATE OPENING" },
+		{ Key = "Names", Text = "HUNTER & PET NAMES" },
 	}
 	local buttons: { [string]: TextButton } = {}
 	for _, t in toggles do
@@ -422,6 +423,17 @@ local function buildSettings(screen: ScreenGui)
 		end,
 	})
 	State.OnData(function(d)
+		-- names over hunters and pets: Crew / PetFollowers read this attribute for new tags
+		local namesOn = d.Settings.Names ~= false
+		local me = game:GetService("Players").LocalPlayer
+		if me:GetAttribute("ShowNames") ~= namesOn then
+			me:SetAttribute("ShowNames", namesOn)
+			for _, g in workspace:GetDescendants() do
+				if g:IsA("BillboardGui") and (g.Name == "Tag" or g.Name == "PetTag") then
+					g.Enabled = namesOn
+				end
+			end
+		end
 		for _, t in toggles do
 			local on = d.Settings[t.Key] == true
 			local b = buttons[t.Key]

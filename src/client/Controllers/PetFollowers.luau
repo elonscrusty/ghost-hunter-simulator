@@ -801,6 +801,7 @@ local function buildPet(def: Config.PetDef, slot: number, label: string): Pet
 		Offset = Vector3.new(0, top * S + 0.3, 0) - pieces[1].Offset.Position,
 		MaxDistance = 60,
 	})
+	gui.Enabled = game:GetService("Players").LocalPlayer:GetAttribute("ShowNames") ~= false -- Settings: NAMES
 	WorldLabel.Text(gui, label, { Style = "Small", Color = if r then (if r.Color.R + r.Color.G + r.Color.B >= r.Color2.R + r.Color2.G + r.Color2.B then r.Color else r.Color2) else nil })
 	return { Pieces = pieces, Slot = slot }
 end

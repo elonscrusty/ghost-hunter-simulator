@@ -39,7 +39,7 @@ export type Data = {
 	Daily: { Last: number, Streak: number },
 	Boosts: { [string]: number }, -- boost id -> os.time expiry
 	FreeCrates: { [string]: number },
-	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean },
+	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean, Names: boolean },
 	Tutorial: number,
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
@@ -81,7 +81,7 @@ local function defaults(): Data
 		Daily = { Last = 0, Streak = 0 },
 		Boosts = {},
 		FreeCrates = {},
-		Settings = { Music = true, Sfx = true, FastReveal = false },
+		Settings = { Music = true, Sfx = true, FastReveal = false, Names = true },
 		Tutorial = 1,
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
