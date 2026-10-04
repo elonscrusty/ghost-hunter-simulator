@@ -19390,7 +19390,6 @@ return LightingSetup
 -- Materials: Asphalt roads, Concrete sidewalks, Slate roof shingles, Brick chimneys, Wood posts.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
-local GhostRig = require(game:GetService("ReplicatedStorage").GH.Rigs.GhostRig)
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
 
@@ -19522,33 +19521,6 @@ local function chevron(parent: Instance, tip: Vector3, dir: Vector3, color: Colo
 	end
 end
 
--- The first zone's ghost (GhostRig "WanderingSpirit") as a static statue hovering above the
--- spawn pad, facing -Z: players spawn looking +Z, so the camera behind them sees its face. Pure decor: renamed, every part anchored and
--- non-colliding/non-queryable, and kept out of the Ghosts folder, so nothing can target it.
-local function ghostStatue(f: Instance, pos: Vector3)
-	local ok, model = pcall(GhostRig.Build, "WanderingSpirit")
-	if not ok then
-		warn("[GH World] spawn ghost statue skipped: " .. tostring(model))
-		return
-	end
-	model.Name = "SpawnGhostStatue"
-	model:ScaleTo(1.6)
-	model:PivotTo(CFrame.new(pos)) -- the rig's front is -Z
-	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.Anchored = true
-			d.CanCollide = false
-			d.CanQuery = false
-			d.CanTouch = false
-			d.CastShadow = false
-			Kit.Stats.Parts += 1
-		elseif d:IsA("ParticleEmitter") then
-			Kit.Stats.Emitters += 1
-		end
-	end
-	model.Parent = f
-end
-
 local function plaza(f: Instance)
 	local spawnPos = Config.Layout.Spawn
 	local sx, sz = spawnPos.X, spawnPos.Z
@@ -19574,10 +19546,9 @@ local function plaza(f: Instance)
 	spawn.CastShadow = false
 	spawn.Parent = f
 	Kit.Stats.Parts += 1
-	-- emblem rings painted on the pad, under the hovering ghost statue
+	-- emblem rings painted on the pad
 	Kit.Disc(f, sx, sz, 1.16, 6, 0.1, Kit.Vivid(C(150, 255, 200)))
 	Kit.Disc(f, sx, sz, 1.18, 4.6, 0.1, C(120, 70, 210))
-	ghostStatue(f, V(sx, 12.5, sz))
 	local border = Kit.Vivid(C(150, 255, 140))
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(sx - 7.4, 0.4, sz + s * 7) - V(0, 0, 0.4), V(sx + 7.4, 1.3, sz + s * 7) + V(0, 0, 0.4), border)
