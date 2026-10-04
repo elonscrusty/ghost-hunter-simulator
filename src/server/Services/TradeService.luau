@@ -484,6 +484,13 @@ function TradeService.Init()
 		if sessions[player] or sessions[target] then
 			return Remotes.Fail("Already trading")
 		end
+		-- trading happens at the booth only: nobody gets requests while they're off playing
+		if not Remotes.Near(player, Config.Layout.TradeBooth, T.BoothRadius) then
+			return Remotes.Fail("Go to the TRADING booth in the lobby to trade")
+		end
+		if not Remotes.Near(target, Config.Layout.TradeBooth, T.BoothRadius) then
+			return Remotes.Fail(target.DisplayName .. " isn't at the TRADING booth")
+		end
 		if not DataService.Get(player) or not DataService.Get(target) then
 			return Remotes.Fail("Still loading...")
 		end
@@ -502,6 +509,9 @@ function TradeService.Init()
 	Remotes.Register("TradeRespond", "Default", function(player, fromId, accept)
 		if not T.Enabled then
 			return Remotes.Fail("Trading is turned off for now")
+		end
+		if accept == true and not Remotes.Near(player, Config.Layout.TradeBooth, T.BoothRadius) then
+			return Remotes.Fail("Go to the TRADING booth in the lobby to trade")
 		end
 		local req = requests[player]
 		requests[player] = nil

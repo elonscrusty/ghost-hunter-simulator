@@ -1680,6 +1680,7 @@ Config.Merge = {
 --==================================================================
 Config.Trade = {
 	Enabled = true, -- false switches trading off (old trade records still settle on join)
+	BoothRadius = 24, -- trade requests only between players this close to the TRADING booth
 	MaxOffer = 8, -- hunters per side
 	RequestSeconds = 30, -- a trade request expires after this
 	ConfirmCooldown = 2, -- seconds after the last offer change before CONFIRM is accepted
@@ -2126,6 +2127,7 @@ Config.Layout = {
 	Leaderboard = { Position = Vector3.new(45.6, 0, -76.9), Yaw = math.rad(72) },
 	PowerBoard = { Position = Vector3.new(38.4, 0, -55.1), Yaw = math.rad(72) },
 	Hatchery = Vector3.new(-27, 0, -93), -- Pet Hatchery centre (PetService BuyEgg near check)
+	TradeBooth = Vector3.new(31, 0, -89), -- TRADING booth: both players must stand near it to trade
 	EventArena = { Center = Vector3.new(95, 0, 110), Radius = 32 },
 	GhostAreas = {
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(0, 0, 70), Radius = 34, Count = 7 },

@@ -684,7 +684,7 @@ local function onData(d: any)
 	-- gradual reveal: PETS once the Boss Tower/shards start, TRADE once the player has 5+ hunters
 	local shards = d.Shards or 0
 	Hud.Buttons.Pets.Visible = shards > 0 or (d.Pets ~= nil and next(d.Pets) ~= nil) or (d.TowerRuns or 0) > 0
-	tradeButton.Visible = Config.Trade.Enabled and State.CountOwned() >= 5
+	tradeButton.Visible = false -- trading opens from the TRADING booth only (no request spam)
 	shardLabel.Text = Format.Short(shards)
 end
 

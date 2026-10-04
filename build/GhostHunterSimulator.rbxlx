@@ -1697,6 +1697,7 @@ Config.Merge = {
 --==================================================================
 Config.Trade = {
 	Enabled = true, -- false switches trading off (old trade records still settle on join)
+	BoothRadius = 24, -- trade requests only between players this close to the TRADING booth
 	MaxOffer = 8, -- hunters per side
 	RequestSeconds = 30, -- a trade request expires after this
 	ConfirmCooldown = 2, -- seconds after the last offer change before CONFIRM is accepted
@@ -2143,6 +2144,7 @@ Config.Layout = {
 	Leaderboard = { Position = Vector3.new(45.6, 0, -76.9), Yaw = math.rad(72) },
 	PowerBoard = { Position = Vector3.new(38.4, 0, -55.1), Yaw = math.rad(72) },
 	Hatchery = Vector3.new(-27, 0, -93), -- Pet Hatchery centre (PetService BuyEgg near check)
+	TradeBooth = Vector3.new(31, 0, -89), -- TRADING booth: both players must stand near it to trade
 	EventArena = { Center = Vector3.new(95, 0, 110), Radius = 32 },
 	GhostAreas = {
 		{ Ghost = "WanderingSpirit", Center = Vector3.new(0, 0, 70), Radius = 34, Count = 7 },
@@ -13747,6 +13749,13 @@ function TradeService.Init()
 		if sessions[player] or sessions[target] then
 			return Remotes.Fail("Already trading")
 		end
+		-- trading happens at the booth only: nobody gets requests while they're off playing
+		if not Remotes.Near(player, Config.Layout.TradeBooth, T.BoothRadius) then
+			return Remotes.Fail("Go to the TRADING booth in the lobby to trade")
+		end
+		if not Remotes.Near(target, Config.Layout.TradeBooth, T.BoothRadius) then
+			return Remotes.Fail(target.DisplayName .. " isn't at the TRADING booth")
+		end
 		if not DataService.Get(player) or not DataService.Get(target) then
 			return Remotes.Fail("Still loading...")
 		end
@@ -13765,6 +13774,9 @@ function TradeService.Init()
 	Remotes.Register("TradeRespond", "Default", function(player, fromId, accept)
 		if not T.Enabled then
 			return Remotes.Fail("Trading is turned off for now")
+		end
+		if accept == true and not Remotes.Near(player, Config.Layout.TradeBooth, T.BoothRadius) then
+			return Remotes.Fail("Go to the TRADING booth in the lobby to trade")
 		end
 		local req = requests[player]
 		requests[player] = nil
@@ -19822,7 +19834,7 @@ end
 -- holds the Pet Hatchery (Hatchery.luau).
 local KIOSKS = {
 	{ Id = "Merge", Title = "MERGE", Emoji = "✨", Icon = "menu_merge", Pos = V(20, 0, LZ - 29), Main = C(190, 110, 255), Accent = C(255, 230, 90) },
-	{ Id = "Trade", Title = "TRADING", Emoji = "🤝", Icon = "menu_trade", Pos = V(31, 0, LZ - 19), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
+	{ Id = "Trade", Title = "TRADING", Emoji = "🤝", Icon = "menu_trade", Pos = Config.Layout.TradeBooth, Main = C(255, 170, 60), Accent = C(150, 255, 140) },
 }
 
 local KIOSK_DARK = C(55, 35, 90)
@@ -29067,7 +29079,7 @@ local function onData(d: any)
 	-- gradual reveal: PETS once the Boss Tower/shards start, TRADE once the player has 5+ hunters
 	local shards = d.Shards or 0
 	Hud.Buttons.Pets.Visible = shards > 0 or (d.Pets ~= nil and next(d.Pets) ~= nil) or (d.TowerRuns or 0) > 0
-	tradeButton.Visible = Config.Trade.Enabled and State.CountOwned() >= 5
+	tradeButton.Visible = false -- trading opens from the TRADING booth only (no request spam)
 	shardLabel.Text = Format.Short(shards)
 end
 
@@ -34627,11 +34639,30 @@ local function setOffer(list: { string })
 	end
 end
 
+-- only players standing at the TRADING booth can be asked (the server checks again)
+local function atBooth(p: Player): boolean
+	local char = p.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	return root ~= nil and (root.Position - Config.Layout.TradeBooth).Magnitude <= Config.Trade.BoothRadius
+end
+
+local lobbyKey = "" -- who was listed last time (the 2 s refresh only redraws when it changes)
+local function boothKey(): string
+	local ids = {}
+	for _, p in Players:GetPlayers() do
+		if p ~= Players.LocalPlayer and atBooth(p) then
+			table.insert(ids, tostring(p.UserId))
+		end
+	end
+	return table.concat(ids, ",")
+end
+
 local function renderLobby()
+	lobbyKey = boothKey()
 	clear(lobbyView)
 	local n = 0
 	for _, p in Players:GetPlayers() do
-		if p == Players.LocalPlayer then
+		if p == Players.LocalPlayer or not atBooth(p) then
 			continue
 		end
 		n += 1
@@ -34656,7 +34687,7 @@ local function renderLobby()
 		})
 	end
 	if n == 0 then
-		Kit.Label(lobbyView, "No other players in this server yet.", { Size = UDim2.new(1, 0, 0, 40), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
+		Kit.Label(lobbyView, "Nobody else is at the TRADING booth yet. Invite a friend over!", { Size = UDim2.new(1, 0, 0, 40), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	end
 end
 
@@ -34879,6 +34910,15 @@ end
 
 function TradePanel.Start()
 	panel.OnOpen:Connect(render)
+	-- players walk up to / away from the booth: refresh the list while it's showing
+	task.spawn(function()
+		while true do
+			task.wait(2)
+			if panel.IsOpen and not trade and boothKey() ~= lobbyKey then
+				renderLobby()
+			end
+		end
+	end)
 	Players.PlayerAdded:Connect(function()
 		if panel.IsOpen and not trade then
 			renderLobby()

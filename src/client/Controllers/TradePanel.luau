@@ -109,11 +109,30 @@ local function setOffer(list: { string })
 	end
 end
 
+-- only players standing at the TRADING booth can be asked (the server checks again)
+local function atBooth(p: Player): boolean
+	local char = p.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	return root ~= nil and (root.Position - Config.Layout.TradeBooth).Magnitude <= Config.Trade.BoothRadius
+end
+
+local lobbyKey = "" -- who was listed last time (the 2 s refresh only redraws when it changes)
+local function boothKey(): string
+	local ids = {}
+	for _, p in Players:GetPlayers() do
+		if p ~= Players.LocalPlayer and atBooth(p) then
+			table.insert(ids, tostring(p.UserId))
+		end
+	end
+	return table.concat(ids, ",")
+end
+
 local function renderLobby()
+	lobbyKey = boothKey()
 	clear(lobbyView)
 	local n = 0
 	for _, p in Players:GetPlayers() do
-		if p == Players.LocalPlayer then
+		if p == Players.LocalPlayer or not atBooth(p) then
 			continue
 		end
 		n += 1
@@ -138,7 +157,7 @@ local function renderLobby()
 		})
 	end
 	if n == 0 then
-		Kit.Label(lobbyView, "No other players in this server yet.", { Size = UDim2.new(1, 0, 0, 40), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
+		Kit.Label(lobbyView, "Nobody else is at the TRADING booth yet. Invite a friend over!", { Size = UDim2.new(1, 0, 0, 40), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	end
 end
 
@@ -361,6 +380,15 @@ end
 
 function TradePanel.Start()
 	panel.OnOpen:Connect(render)
+	-- players walk up to / away from the booth: refresh the list while it's showing
+	task.spawn(function()
+		while true do
+			task.wait(2)
+			if panel.IsOpen and not trade and boothKey() ~= lobbyKey then
+				renderLobby()
+			end
+		end
+	end)
 	Players.PlayerAdded:Connect(function()
 		if panel.IsOpen and not trade then
 			renderLobby()

@@ -260,7 +260,7 @@ end
 -- holds the Pet Hatchery (Hatchery.luau).
 local KIOSKS = {
 	{ Id = "Merge", Title = "MERGE", Emoji = "✨", Icon = "menu_merge", Pos = V(20, 0, LZ - 29), Main = C(190, 110, 255), Accent = C(255, 230, 90) },
-	{ Id = "Trade", Title = "TRADING", Emoji = "🤝", Icon = "menu_trade", Pos = V(31, 0, LZ - 19), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
+	{ Id = "Trade", Title = "TRADING", Emoji = "🤝", Icon = "menu_trade", Pos = Config.Layout.TradeBooth, Main = C(255, 170, 60), Accent = C(150, 255, 140) },
 }
 
 local KIOSK_DARK = C(55, 35, 90)
