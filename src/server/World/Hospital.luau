@@ -171,7 +171,7 @@ end
 
 local function chair(f: Instance, x: number, z: number, fx: number, fz: number, color: Color3)
 	local base = faced(V(x, FLOOR_Y, z), fx, fz)
-	Kit.Part(f, V(2.4, 2, 2.4), base * CFrame.new(0, 1, 0), color, { Solid = true })
+	Kit.Part(f, V(2.4, 2, 2.4), base * CFrame.new(0, 1, 0), color, { Solid = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 	Kit.Part(f, V(2.4, 2.6, 0.5), base * CFrame.new(0, 3.3, 0.95), color)
 end
 

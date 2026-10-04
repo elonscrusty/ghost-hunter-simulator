@@ -96,8 +96,13 @@ local function cratePrice(id: string): number
 	return if crate then crate.Price else 0
 end
 
-local function crateRefund(id: string): number
-	return math.floor(cratePrice(id) * Config.Inventory.ReleaseRefund)
+-- What releasing gives back, as HunterService's releaseRefund: nothing for NoRefund hunters
+-- (traded / dev-granted), otherwise a share of the crate price scaled by the tier.
+local function hunterRefund(h: any): number
+	if h.NoRefund then
+		return 0
+	end
+	return math.floor(cratePrice(h.Id) * Config.Inventory.ReleaseRefund * tierOf(h).Mult)
 end
 
 local function sortedUids(d: any): { string }
@@ -187,7 +192,7 @@ local function setInspect(uid: string?)
 	equipButton:SetAttribute("Color", if isEq then "Red" else "Green")
 	Kit.SetButtonText(lockButton, if h.Locked then "🔓 UNLOCK" else "🔒 LOCK")
 	relOneButton.Visible = not isEq and not h.Locked
-	Kit.SetButtonText(relOneButton, "RELEASE +" .. Format.Short(crateRefund(h.Id)))
+	Kit.SetButtonText(relOneButton, "RELEASE +" .. Format.Short(hunterRefund(h)))
 end
 
 local function updateReleaseBar()
@@ -198,7 +203,7 @@ local function updateReleaseBar()
 			local h = d.Hunters[uid]
 			if h then
 				n += 1
-				refund += crateRefund(h.Id)
+				refund += hunterRefund(h)
 			else
 				selected[uid] = nil
 			end
@@ -641,7 +646,8 @@ function HuntersPanel.Init()
 		Position = UDim2.fromOffset(10, 74),
 		ZIndex = 64,
 		OnClick = function()
-			-- every unequipped, unlocked hunter weaker than your weakest equipped one
+			-- every unequipped, unlocked, Normal-tier hunter weaker than your weakest equipped one
+			-- (Shiny / Mega hunters cost merges: never bulk-picked, tap them to release one)
 			local d = State.Data
 			if not d then
 				return
@@ -655,7 +661,7 @@ function HuntersPanel.Init()
 			end
 			table.clear(selected)
 			for uid, h in d.Hunters do
-				if not h.Locked and not table.find(d.Equipped, uid) and powerOf(h) < weakest then
+				if not h.Locked and (h.Tier or 0) == 0 and not table.find(d.Equipped, uid) and powerOf(h) < weakest then
 					selected[uid] = true
 				end
 			end

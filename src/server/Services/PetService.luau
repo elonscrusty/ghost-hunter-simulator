@@ -18,6 +18,8 @@ local Remotes = require(script.Parent.Remotes)
 local PetService = {}
 
 local lastBuy: { [Player]: number } = {}
+local lastRename: { [Player]: number } = {}
+local RENAME_COOLDOWN = 3 -- seconds between nickname requests (each one calls the text filter)
 local rng = Random.new()
 
 local NICK_MAX = 20 -- characters
@@ -153,6 +155,11 @@ function PetService.Init()
 		if type(text) ~= "string" or #text > 200 then
 			return Remotes.Fail("Bad name")
 		end
+		local now = os.clock()
+		if lastRename[player] and now - lastRename[player] < RENAME_COOLDOWN then
+			return Remotes.Fail("Wait a moment before renaming again")
+		end
+		lastRename[player] = now
 		-- invisible characters (zero-width, direction marks) can't make a "blank" name
 		for _, cp in { 0x200B, 0x200C, 0x200D, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2060, 0x2061, 0x2062, 0x2063, 0x2064, 0xFEFF } do
 			text = string.gsub(text, utf8.char(cp), "")
@@ -193,6 +200,7 @@ end
 function PetService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		lastBuy[player] = nil
+		lastRename[player] = nil
 	end)
 	-- equipped pets replicate to everyone for the follower visuals: "Pets" = "PetId,PetId" and
 	-- "PetNames" = the matching filtered nicknames, one per line ("" = default name). Names are

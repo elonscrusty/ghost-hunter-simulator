@@ -10,10 +10,47 @@ local PlayerInfo = {}
 
 -- Game passes owned this session (filled by ShopService).
 local passes: { [Player]: { [string]: boolean } } = {}
+-- Pass keys whose ownership Roblox couldn't confirm (check kept failing). They count as NOT owned
+-- for gameplay, but the shop won't re-sell them and equipped slots are never trimmed for them.
+local unknownPasses: { [Player]: { [string]: boolean } } = {}
+-- Players whose first pass check has finished this session (until then every pass is unknown).
+local passesChecked: { [Player]: boolean } = {}
 
 function PlayerInfo.SetPass(player: Player, key: string, owned: boolean)
 	passes[player] = passes[player] or {}
 	passes[player][key] = owned
+	local u = unknownPasses[player]
+	if u then
+		u[key] = nil -- a definite answer replaces "unknown"
+	end
+end
+
+function PlayerInfo.SetPassUnknown(player: Player, key: string)
+	if not player.Parent then
+		return
+	end
+	unknownPasses[player] = unknownPasses[player] or {}
+	unknownPasses[player][key] = true
+end
+
+function PlayerInfo.SetPassesChecked(player: Player)
+	if player.Parent then
+		passesChecked[player] = true
+	end
+end
+
+-- True while this pass's ownership isn't known yet (first check still running, or it failed).
+function PlayerInfo.PassUnknown(player: Player, key: string): boolean
+	if not passesChecked[player] then
+		return true
+	end
+	local u = unknownPasses[player]
+	return u ~= nil and u[key] == true
+end
+
+function PlayerInfo.HasUnknownPasses(player: Player): boolean
+	local u = unknownPasses[player]
+	return u ~= nil and next(u) ~= nil
 end
 
 function PlayerInfo.HasPass(player: Player, key: string): boolean
@@ -34,12 +71,15 @@ function PlayerInfo.ServerLuckUntil(): number
 	return serverLuckUntil
 end
 
-function PlayerInfo.AddServerLuck(seconds: number)
+-- uncapped = a paid (Robux) grant: never throw bought time away, even past the usual cap
+function PlayerInfo.AddServerLuck(seconds: number, uncapped: boolean?)
 	local now = os.time()
-	serverLuckUntil = math.min(math.max(serverLuckUntil, now) + seconds, now + Config.ServerLuck.MaxStackSeconds)
+	local total = math.max(serverLuckUntil, now) + seconds
+	serverLuckUntil = if uncapped then total else math.min(total, now + Config.ServerLuck.MaxStackSeconds)
 end
 
--- AUTO OPEN pass (or the legacy Auto Attack pass, now that Auto Attack is free)
+-- AUTO OPEN pass, or the legacy (hidden, no longer sold) Auto Attack pass: Auto Attack itself is
+-- free for everyone now, so its old buyers get Auto Open instead
 function PlayerInfo.HasAutoOpen(player: Player): boolean
 	return PlayerInfo.HasPass(player, Config.AutoOpen.Pass)
 		or (Config.LegacyAutoAttackGrantsAutoOpen and PlayerInfo.HasPass(player, "AutoAttack"))
@@ -51,6 +91,8 @@ end
 
 function PlayerInfo.Forget(player: Player)
 	passes[player] = nil
+	unknownPasses[player] = nil
+	passesChecked[player] = nil
 end
 
 local function passDef(key: string): Config.PassDef?
@@ -76,10 +118,11 @@ function PlayerInfo.BoostActive(d: DataService.Data, boost: string): boolean
 	return t ~= nil and t > os.time()
 end
 
-function PlayerInfo.AddBoost(d: DataService.Data, boost: string, seconds: number)
+-- uncapped = a paid (Robux) grant: never throw bought time away, even past the usual cap
+function PlayerInfo.AddBoost(d: DataService.Data, boost: string, seconds: number, uncapped: boolean?)
 	local now = os.time()
 	local cur = math.max(d.Boosts[boost] or 0, now)
-	d.Boosts[boost] = math.min(cur + seconds, now + Config.Boosts.MaxStackSeconds)
+	d.Boosts[boost] = if uncapped then cur + seconds else math.min(cur + seconds, now + Config.Boosts.MaxStackSeconds)
 end
 
 -- Bonuses from the player's EQUIPPED ghost pets: { Power, Ecto, HP, Recovery } fractions.

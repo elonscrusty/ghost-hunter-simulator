@@ -70,7 +70,8 @@ check(d2.Ecto == d.Ecto and d2.NextUid == d.NextUid and #d2.Equipped == #d.Equip
 local newer = migrate({ Ecto = 5, Zones = { Neighborhood = true, Swamp = true }, SkipTokens = 3, Upgrades = { PickupRadius = 99 } })
 check(newer.SkipTokens == 3, "skip tokens kept")
 check(newer.Zones.Swamp == true, "late areas kept")
-check(newer.Upgrades.PickupRadius == #Config.Upgrades.PickupRadius.Levels, "out-of-range upgrade clamped to max, not reset")
+check(newer.Upgrades.PickupRadius == #Config.Upgrades.PickupRadius.Levels, "out-of-range upgrade clamped to max for use, not reset")
+check(newer.Extra._over.Upgrades.PickupRadius.v == 99, "out-of-range upgrade level kept in Extra")
 
 -- a new-format save re-saved by an OLDER server (rolling update) has SkipTokens parked in Extra
 local hopped = migrate({ Ecto = 5, Extra = { SkipTokens = 4 } })
@@ -126,6 +127,104 @@ check(v17.TowerCheckpoint == 10, "checkpoint kept")
 check(v17.Variants["VoidHunter:2"] == true and v17.Variants.bad == nil, "variant discoveries kept, junk dropped")
 check(v17.Variants["RookieHunter:1"] == true, "owned shiny backfilled as discovered")
 check(v17.Pets.p1.Nick == "Spooky" and v17.Pets.p2.Nick == nil and v17.Pets.p2 ~= nil, "pet nicknames kept, bad nick dropped, pet kept")
+
+-- rolling update: a profile saved by a NEWER schema is refused (never loaded or saved here)
+local V = Config.DataSchemaVersion
+check(DS._TooNew({ Version = V + 1, Ecto = 5 }) == true, "newer schema version refused")
+check(DS._TooNew({ Version = V }) == false and DS._TooNew({ Ecto = 5 }) == false and DS._TooNew(nil) == false, "current/old/missing version accepted")
+check(DS._TooNew({ Version = 0 / 0 }) == false, "NaN version is not 'newer'")
+check(migrate({ Version = V - 1 }).Version == V, "older version stamped up to the current one")
+
+-- NaN / inf / negative numbers become safe values; wrong types are kept in Extra
+local nan, inf = 0 / 0, math.huge
+local bad = migrate({
+	Ecto = -50, TotalEcto = inf, SkipTokens = nan, Tutorial = nan, NextUid = inf, PetNextUid = nan,
+	Stats = { Ghosts = nan, Crates = inf, Events = 2, Seconds = -inf }, Daily = { Last = inf, Streak = nan },
+	Boosts = { Luck = nan, Ecto = 1800000000 }, FreeCrates = { Beginner = inf, Other = 2 },
+	Shards = inf, TowerBest = nan, Hunters = { ["4"] = { Id = "RookieHunter", Tier = nan } },
+	Knocked = { ["4"] = inf }, Pets = { p2 = { Id = "BooBat", T = nan } },
+})
+local function fin(v: any): boolean
+	return type(v) == "number" and v == v and math.abs(v) ~= math.huge
+end
+check(bad.Ecto == 0 and bad.TotalEcto == 0 and bad.SkipTokens == 0 and fin(bad.Tutorial), "bad currencies -> 0")
+check(fin(bad.NextUid) and bad.NextUid >= 5 and fin(bad.PetNextUid) and bad.PetNextUid >= 3, "bad uid counters -> above existing uids")
+check(bad.Stats.Ghosts == 0 and bad.Stats.Crates == 0 and bad.Stats.Events == 2 and bad.Stats.Seconds == 0, "bad stats -> 0, good kept")
+check(fin(bad.Daily.Last) and fin(bad.Daily.Streak), "bad daily -> finite")
+check(bad.Boosts.Luck == nil and bad.Boosts.Ecto == 1800000000, "bad boost dropped, good kept")
+check(bad.FreeCrates.Beginner == nil and bad.FreeCrates.Other == 2, "bad free crate count dropped, good kept")
+check(bad.Shards == 0 and bad.TowerBest == 0 and bad.Hunters["4"] ~= nil and bad.Hunters["4"].Tier == nil, "bad shards/tower/tier -> 0, hunter kept")
+check(bad.Knocked["4"] == nil and bad.Pets.p2 ~= nil and bad.Pets.p2.T == 0, "bad knockout dropped, pet kept")
+local loopy = migrate({ Hunters = { ["1"] = { Id = "RookieHunter" } } })
+loopy.NextUid = inf
+local newUid = DS.NewUid(loopy)
+check(newUid == "2" and loopy.Hunters[newUid] == nil and fin(loopy.NextUid), "NewUid recovers from an infinite NextUid")
+local typed = migrate({ Ecto = "lots", Hunters = 5, Settings = "x", Version = "2" })
+check(typed.Extra._bad_Ecto == "lots" and typed.Extra._bad_Hunters == 5 and typed.Extra._bad_Settings == "x", "wrong-type fields kept in Extra")
+check(typed.Ecto == 0 and next(typed.Hunters) == nil and typed.Settings.Sfx == true and typed.Version == V, "wrong-type fields reset to defaults")
+check(migrate({ Ecto = 12.5 }).Ecto == 12.5, "fractional Ectoplasm kept")
+
+-- values above this version's caps are clamped where used but the originals are kept
+local upMax = #Config.Upgrades.PickupRadius.Levels
+local capped = migrate({
+	Upgrades = { PickupRadius = upMax + 2 },
+	LuckyOpens = { Beginner = Config.LuckyOpens.MaxStack + 10, Other = 3 },
+	Hunters = { ["1"] = { Id = "RookieHunter", Tier = Config.Merge.MaxTier + 1, NoRefund = true, Dev = true } },
+	Settings = { Music = false, FromTheFuture = true },
+	Pets = { p1 = { Id = "BooBat", T = 1, Nick = string.rep("a", 60) } },
+})
+check(capped.Upgrades.PickupRadius == upMax and capped.LuckyOpens.Beginner == Config.LuckyOpens.MaxStack and capped.LuckyOpens.Other == 3, "over-cap upgrade/lucky opens clamped for use")
+check(capped.Hunters["1"].Tier == Config.Merge.MaxTier and capped.Hunters["1"].NoRefund == true and capped.Hunters["1"].Dev == true, "over-cap tier clamped, extra hunter fields kept")
+check(capped.Settings.FromTheFuture == nil and capped.Settings.Music == false and capped.Pets.p1.Nick == nil and capped.Pets.p1 ~= nil, "unknown setting / long nick not used here")
+local o = capped.Extra._over
+check(o ~= nil and o.Upgrades.PickupRadius.v == upMax + 2 and o.LuckyOpens.Beginner.v == Config.LuckyOpens.MaxStack + 10, "over-cap originals kept in Extra")
+check(o ~= nil and o.Tier["1"].v == Config.Merge.MaxTier + 1 and o.Settings.FromTheFuture == true and #o.Nick.p1 == 60, "tier/setting/nick originals kept in Extra")
+local again = migrate(capped)
+check(again.Extra._over ~= nil and again.Extra._over.Tier["1"].v == Config.Merge.MaxTier + 1 and again.Upgrades.PickupRadius == upMax, "kept originals survive another load")
+-- a version with higher caps gets the originals back (unless the value changed in between)
+again.LuckyOpens.Other = nil
+local function copy(v: any): any
+	if type(v) ~= "table" then
+		return v
+	end
+	local out = {}
+	for k, x in v do
+		out[k] = copy(x)
+	end
+	return out
+end
+local spent = migrate(copy(again)) -- migrate reuses the saved tables: keep `again` untouched
+spent.LuckyOpens.Beginner = 5
+local oldTier, oldStack, oldLevels = Config.Merge.MaxTier, Config.LuckyOpens.MaxStack, Config.Upgrades.PickupRadius.Levels
+Config.Merge.MaxTier = oldTier + 5
+Config.LuckyOpens.MaxStack = oldStack + 100
+local more = table.clone(oldLevels)
+for _ = 1, 5 do
+	table.insert(more, oldLevels[#oldLevels])
+end
+Config.Upgrades.PickupRadius.Levels = more
+local raised = migrate(again)
+local raisedSpent = migrate(spent)
+Config.Merge.MaxTier, Config.LuckyOpens.MaxStack, Config.Upgrades.PickupRadius.Levels = oldTier, oldStack, oldLevels
+check(raised.Upgrades.PickupRadius == upMax + 2 and raised.LuckyOpens.Beginner == oldStack + 10 and raised.Hunters["1"].Tier == oldTier + 1, "originals restored when the cap allows")
+check(raised.Extra._over == nil or (raised.Extra._over.Tier == nil and raised.Extra._over.Upgrades == nil), "restored originals leave Extra")
+check(raisedSpent.LuckyOpens.Beginner == 15, "spent lucky opens keep their parked surplus (5 left + 10 parked)")
+
+-- uid tables saved as arrays (number keys) get string keys; nothing lost on a clash
+local arr = migrate({
+	Hunters = { [1] = { Id = "RookieHunter" }, [2] = { Id = "VoidHunter" }, [7] = { Id = "RookieHunter", Locked = true }, ["7"] = { Id = "VoidHunter" } },
+	Discovered = { [3] = true, RookieHunter = true }, Equipped = { "1", "2" }, NextUid = 3,
+})
+check(arr.Hunters["1"] ~= nil and arr.Hunters["2"] ~= nil and arr.Hunters[1 :: any] == nil, "numeric hunter keys converted to strings")
+local n7 = 0
+for _, h in arr.Hunters do
+	if h.Id == "RookieHunter" and h.Locked == true then
+		n7 += 1
+	end
+end
+check(n7 == 1 and arr.Hunters["7"].Id == "VoidHunter", "clashing numeric hunter kept under a new uid")
+check(#arr.Equipped == 2 and arr.NextUid > 8, "equipped kept, uids above every hunter")
+check(arr.Discovered["3"] == true and arr.Discovered.RookieHunter == true, "numeric discovery keys converted")
 
 -- garbage / missing data never crashes and gives a fresh profile
 local blank = migrate(nil)

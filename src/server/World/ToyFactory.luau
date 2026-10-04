@@ -59,7 +59,7 @@ local function gift(parent: Instance, x: number, z: number, s: number, yaw: numb
 	local cf = CFrame.new(x, (y or 0) + s / 2, z) * CFrame.Angles(0, yaw, 0)
 	local col = Kit.Pick(TOYS)
 	local rib = if col == YELLOW then PINK else YELLOW
-	Kit.Part(parent, V(s, s, s), cf, Kit.Vivid(col), { Solid = true })
+	Kit.Part(parent, V(s, s, s), cf, Kit.Vivid(col), { Solid = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 	Kit.Part(parent, V(s + 0.1, s + 0.1, s * 0.18), cf, Kit.Vivid(rib))
 	Kit.Part(parent, V(s * 0.18, s + 0.1, s + 0.1), cf, Kit.Vivid(rib))
 	for _, sx in { -1, 1 } do

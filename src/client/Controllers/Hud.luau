@@ -216,14 +216,14 @@ local function buildTop(screen: ScreenGui)
 end
 
 -- HUD layout
---   LEFT  (vertical): HUNTERS, WORLDS, INDEX, PETS (PETS appears once Boss Tower/shards start)
+--   LEFT  (vertical): HUNTERS, INDEX, WORLDS, PETS (PETS appears once Boss Tower/shards start)
 --   RIGHT (vertical, bottom-anchored stack): UPGRADES, SHOP, DAILY, then the free AUTO ATTACK
 --   toggle, then the lower-right row: [DEV] [TRADE] FEEDBACK SETTINGS. On touch screens the stack sits
 --   above the Roblox jump button; on desktop the left column starts under the chat window.
 local MENU_LEFT = {
 	{ Name = "Hunters", Icon = "🔦", Text = "HUNTERS", Color = "Orange" },
-	{ Name = "Worlds", Icon = "🌍", Text = "WORLDS", Color = "Teal" },
 	{ Name = "Index", Icon = "📖", Text = "INDEX", Color = "Blue" },
+	{ Name = "Worlds", Icon = "🌍", Text = "WORLDS", Color = "Teal" },
 	{ Name = "Pets", Icon = "🐾", Text = "PETS", Color = "Purple" },
 }
 local MENU_RIGHT = {

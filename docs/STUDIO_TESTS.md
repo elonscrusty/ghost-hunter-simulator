@@ -195,3 +195,21 @@ The 🛠 DEV button (top right, next to ⚙) has all test tools. Chat commands a
 - [ ] Tower: leave the game mid-room with a friend still inside: their run keeps going; the pad countdown clears for players who couldn't get in.
 - [ ] Hospital floor cross and Sunken chest gold band: no flicker.
 
+## v1.10 audit fixes (nothing below has been run in Studio yet)
+Note: Studio now saves to a separate "studio" copy of the data, so you start fresh in Studio and live saves are never touched.
+- [ ] Loading: on join a "Loading your hunters…" screen shows until data arrives.
+- [ ] Hunter Slots pass owner: equip 6, rejoin: still 6 equipped.
+- [ ] Buy a pass in Studio test purchase: toast "unlocked"; shop no longer offers it.
+- [ ] Upgrades: double-tap BUY buys one level; tapping again quickly after it works (no "Price changed").
+- [ ] Release a hunter you got by trade: refund 0. Shiny/Mega release refunds more than Normal; SELECT WEAK never picks Shiny/Mega.
+- [ ] During a trade confirm, release/merge/open crate are refused for a moment, then work again.
+- [ ] Boss Tower: Ecto per room is now close to what farming pays (no longer far more). A party member who never hits the boss gets no checkpoint.
+- [ ] Lucky Opens pack price is lower (2 crate prices).
+- [ ] With a menu open, start the 2x event from DEV: the menu stays open; the popup shows after closing it (only once).
+- [ ] Phone emulator: small buttons (close X, AUTO, crate buttons) are easy to tap; toasts wrap instead of "…"; panels slide in; SKIP on the reveal isn't under the notch/jump button.
+- [ ] Left menu order: HUNTERS, INDEX, WORLDS. Shop doesn't show "SOON" items.
+- [ ] Walk into a locked area: you're moved back with "Unlock <area> first!".
+- [ ] Ghosts appear as you walk toward them (built when near); they move smoothly; windup/spit/poof still work.
+- [ ] Throne stairs, School bleachers, Castle doors: no flicker. Hospital chairs / tomb urns don't block walking.
+- [ ] DEV: 2X ON lasts 48h; feedback still sends and shows in READ FEEDBACK.
+

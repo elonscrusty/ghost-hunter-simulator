@@ -15,15 +15,25 @@ local EventPopup = {}
 
 local panel: Kit.Panel
 local shownThisSession = false
+local eventOn = false -- latest on/off from the Ecto2xEvent Fx
 local _ = GH
 
+-- waits until no menu is open and no crate reveal is playing (never closes what you're using)
+local queued = false
 local function show()
-	if panel.IsOpen then
-		return
-	end
 	shownThisSession = true
-	Sound.Play("ZoneUnlock")
-	panel:Open()
+	if queued then
+		return -- one popup is already waiting for a free screen
+	end
+	queued = true
+	Kit.WhenFree(function()
+		queued = false
+		if panel.IsOpen or not (eventOn or workspace:GetAttribute("Ecto2x") == true) then
+			return -- already showing, or the event ended while we waited
+		end
+		Sound.Play("ZoneUnlock")
+		panel:Open()
+	end)
 end
 
 function EventPopup.Init()
@@ -49,7 +59,8 @@ end
 
 function EventPopup.Start()
 	State.OnFx("Ecto2xEvent", function(data: any)
-		if type(data) == "table" and data.On == true then
+		eventOn = type(data) == "table" and data.On == true
+		if eventOn then
 			show()
 		elseif panel.IsOpen then
 			panel:Close()
@@ -59,7 +70,7 @@ function EventPopup.Start()
 	task.spawn(function()
 		State.WaitForData()
 		task.wait(4)
-		if workspace:GetAttribute("Ecto2x") == true and not shownThisSession and not Kit.CurrentPanel() then
+		if workspace:GetAttribute("Ecto2x") == true and not shownThisSession then
 			show()
 		end
 	end)

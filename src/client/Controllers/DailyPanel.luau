@@ -174,8 +174,14 @@ function DailyPanel.Start()
 	task.spawn(function()
 		local d = State.WaitForData()
 		task.wait(6)
-		if d.DailyInfo and d.DailyInfo.CanClaim and (d.Tutorial or 1) > #Config.Tutorial.Steps and not Kit.CurrentPanel() then
-			panel:Open()
+		if d.DailyInfo and d.DailyInfo.CanClaim and (d.Tutorial or 1) > #Config.Tutorial.Steps then
+			-- waits for any open menu / crate reveal to finish instead of skipping or closing it
+			Kit.WhenFree(function()
+				local now = State.Data
+				if not panel.IsOpen and now and now.DailyInfo and now.DailyInfo.CanClaim then
+					panel:Open()
+				end
+			end)
 		end
 	end)
 end

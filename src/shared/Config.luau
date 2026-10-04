@@ -7,7 +7,7 @@ local Config = {}
 
 Config.Version = "1.2.0"
 Config.DataStoreName = "GhostHunterData_v1"
-Config.DataSchemaVersion = 1
+Config.DataSchemaVersion = 2
 
 --==================================================================
 -- RARITIES (ordered weakest → strongest; disabled ones are ready for later)
@@ -1614,8 +1614,9 @@ Config.Crates = {
 Config.LuckAffectsFromOrder = 3 -- Rare and higher
 
 -- LUCKY OPENS (bought with Ectoplasm at a crate): the next `Opens` opens of THAT crate roll with
--- x`Multiplier` luck (stacks with boosts/passes). Costs crate price x `PriceMultiplier`.
-Config.LuckyOpens = { Opens = 5, Multiplier = 2, PriceMultiplier = 5, MaxStack = 50 }
+-- x`Multiplier` luck (stacks with boosts/passes). Costs crate price x `PriceMultiplier` on top of
+-- the opens themselves, so Rare+ per Ecto must beat plain opens (tests/Economy.spec.luau).
+Config.LuckyOpens = { Opens = 5, Multiplier = 2, PriceMultiplier = 2, MaxStack = 50 }
 
 --==================================================================
 -- INVENTORY
@@ -1633,7 +1634,6 @@ Config.Combat = {
 	TickSeconds = 0.25, -- damage is applied in ticks of Power * TickSeconds
 	EngageDelay = 0.6, -- hunters need this long to run to a new target before damage starts
 	MaxRange = 90, -- player must be within this many studs of the target
-	ContributorShare = 0.1, -- min share of max Spirit to receive personal drops (killer always does)
 	HunterRunSpeed = 26, -- client visual
 	HitboxDiameter = 5.4, -- invisible tap target per ghost (x ghost Scale); the body is ~3.5
 }
@@ -1788,7 +1788,13 @@ Config.Tower = {
 	-- rewards per player for beating room r:
 	ShardsBase = 4, -- shards = ShardsBase + r * ShardsPerRoom (x milestone)
 	ShardsPerRoom = 1.5,
-	EctoBase = 150, -- ecto = EctoBase * r^0.9 * zone multiplier (x milestone)
+	-- ecto = min(EctoPerMinute * (fight s + RoomOverheadSeconds) / 60 * zone multiplier,
+	--           SpiritPayShare * boss HP / members * best zone's ghost Ecto per Spirit) (x milestone):
+	-- a run pays about what farming your best zone pays (tests/EconSim.luau "ratio" column;
+	-- Economy.spec asserts <= 1.5x).
+	EctoPerMinute = 230,
+	SpiritPayShare = 1.9,
+	RoomOverheadSeconds = 8, -- walking in, vote, boss intro
 	MilestoneEvery = { [10] = 3, [5] = 2 } :: { [number]: number }, -- room % key == 0 -> multiplier (largest wins)
 	Bosses = { "TowerWarden", "TowerJester", "TowerBaron", "TowerTitan" }, -- cycles by room
 	Slots = 12, -- simultaneous runs per server (each gets its own room space)
@@ -1922,7 +1928,7 @@ export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string
 export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Storage: number?, Blurb: string?, Hidden: boolean? }
 
 Config.Products = {
-	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = 3715910102, PriceLabel = "R$ 149" },
+	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 6000, ProductId = 3715910102, PriceLabel = "R$ 149" },
 	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 12000, ProductId = 3715909987, PriceLabel = "R$ 199" },
 	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 199" },
 	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 149" },
@@ -1951,9 +1957,9 @@ Config.GamePasses = {
 } :: { PassDef }
 
 --==================================================================
--- AUTO ATTACK (game pass convenience: only automates choosing targets).
--- Free players click/tap a ghost once to send their crew; after the poof the crew comes home.
--- With the pass + toggle ON, the server picks the nearest ghost in the zone you stand in.
+-- AUTO ATTACK (free for everyone; only automates choosing targets).
+-- Tap a ghost once to send your crew; after the poof the crew comes home.
+-- With the toggle ON, the server picks the nearest ghost in the zone you stand in.
 -- No extra damage, rewards, drops or pickup range.
 --==================================================================
 -- Players who bought the old Auto Attack pass (Auto Attack is free now) get Auto Open for free.
@@ -1985,7 +1991,6 @@ Config.ServerLuck = { Multiplier = 2, MaxStackSeconds = 3600 } -- server-wide cr
 Config.TripleOpen = { Count = 3, Pass = "TripleOpen" }
 
 Config.AutoAttack = {
-	Pass = "AutoAttack", -- key in Config.GamePasses
 	Range = 45, -- studs from the player
 	ScanSeconds = 0.5, -- how often idle crews look for a ghost
 }

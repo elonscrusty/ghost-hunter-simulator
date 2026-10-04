@@ -121,8 +121,40 @@ local function deepCopy(v: any): any
 	return out
 end
 
+local NICK_MAX = 40 -- longest pet nickname this version accepts (PetService)
+
+local function finite(v: any): boolean
+	return type(v) == "number" and v == v and v > -math.huge and v < math.huge
+end
+
+-- whole number >= lo; NaN, inf and wrong types become lo
+local function num(v: any, lo: number): number
+	return if finite(v) then math.max(lo, math.floor(v)) else lo
+end
+
+-- a profile saved by a NEWER schema than this server knows (rolling update): never load or save it
+local function tooNew(raw: any): boolean
+	return type(raw) == "table" and finite(raw.Version) and raw.Version > Config.DataSchemaVersion
+end
+
+-- highest numeric hunter uid in use (owned or parked)
+local function topUid(d: Data): number
+	local top = 0
+	for _, list in { d.Hunters :: any, d.Orphans } do
+		for uid in list do
+			local n = tonumber(uid)
+			if finite(n) and (n :: number) > top then
+				top = math.floor(n :: number)
+			end
+		end
+	end
+	return top
+end
+
 -- Fills missing fields (new features) and upgrades old schemas. Never deletes player data:
--- unknown keys go to Extra, hunters that no longer exist go to Orphans.
+-- unknown keys go to Extra, hunters that no longer exist go to Orphans, a field of the wrong
+-- type is kept in Extra["_bad_<name>"], and values above this version's caps are kept in
+-- Extra._over (see cap below).
 local function migrate(raw: any): Data
 	local d = defaults()
 	if type(raw) ~= "table" then
@@ -134,8 +166,13 @@ local function migrate(raw: any): Data
 		end
 		local cur = (d :: any)[k]
 		if cur ~= nil then
-			if type(v) == type(cur) and k ~= "Extra" then
+			if k == "Extra" then
+				continue -- merged below
+			elseif type(v) == type(cur) then
 				(d :: any)[k] = v
+			else
+				-- wrong type: keep the original (NaN/inf can't be stored, keep them as text)
+				d.Extra["_bad_" .. k] = if type(v) == "number" and not finite(v) then tostring(v) else v
 			end
 		elseif type(k) == "string" then
 			d.Extra[k] = v
@@ -152,49 +189,120 @@ local function migrate(raw: any): Data
 			end
 		end
 	end
+	-- Values above this version's caps (saved by a newer server, or before a cap was lowered)
+	-- are clamped so nothing indexes past the end of a table, and the original is parked in
+	-- Extra._over. A version whose cap allows it restores it, as long as the clamped value was
+	-- not changed in between (spent, merged, traded); otherwise the parked value is dropped.
+	local parked = if type(d.Extra._over) == "table" then d.Extra._over else {}
+	local over: { [string]: { [any]: any } } = {}
+	local function wasParked(list: string, key: any): any
+		local t = parked[list]
+		return if type(t) == "table" then t[key] else nil
+	end
+	local function park(list: string, key: any, v: any)
+		local t = over[list]
+		if not t then
+			t = {}
+			over[list] = t
+		end
+		t[key] = v
+	end
+	-- count = true for spendable stacks (LuckyOpens): the parked SURPLUS comes back on top of
+	-- whatever is left after spending, instead of being dropped when the value changed
+	local function cap(list: string, key: any, v: number, max: number, count: boolean?): number
+		local o = wasParked(list, key)
+		if type(o) == "table" and finite(o.v) then
+			if count and finite(o.c) and o.v > o.c then
+				v += math.floor(o.v - o.c)
+			elseif o.c == v then
+				v = math.floor(o.v)
+			end
+		end
+		if v > max then
+			park(list, key, { v = v, c = max })
+			v = max
+		end
+		return v
+	end
+	-- a uid/id table saved as an array has number keys: use the string keys this version expects
+	local function stringKeys(t: { [any]: any }, clash: ((any) -> any)?)
+		local nums = {}
+		for k in t do
+			if type(k) == "number" then
+				table.insert(nums, k)
+			end
+		end
+		for _, k in nums do
+			local v = t[k]
+			t[k] = nil
+			local s = tostring(k)
+			if t[s] == nil then
+				t[s] = v
+			elseif clash then
+				t[clash(k)] = v
+			end
+		end
+	end
+	local topKey = math.max(topUid(d), num(d.NextUid, 1))
+	local function freshUid(_: any): string
+		topKey += 1
+		return tostring(topKey)
+	end
+	stringKeys(d.Hunters :: any, freshUid)
+	stringKeys(d.Orphans, freshUid)
+	stringKeys(d.Discovered :: any)
 	-- nested defaults
 	local base = defaults()
 	local settings = d.Settings :: any
+	for k, v in (if type(parked.Settings) == "table" then parked.Settings else {}) :: { [any]: any } do
+		if (base.Settings :: any)[k] == nil then
+			park("Settings", k, v) -- still unknown here: keep it parked
+		elseif settings[k] == nil and type(v) == type((base.Settings :: any)[k]) then
+			settings[k] = v -- a setting an older server didn't know: restore it
+		end
+	end
+	for k, v in settings do
+		if (base.Settings :: any)[k] == nil then
+			park("Settings", k, v) -- retired or newer setting (e.g. the old free auto-target)
+			settings[k] = nil
+		end
+	end
 	for k, v in base.Settings :: any do
 		if type(settings[k]) ~= type(v) then
 			settings[k] = v
 		end
 	end
-	for k in settings do
-		if (base.Settings :: any)[k] == nil then
-			settings[k] = nil -- retired setting (e.g. the old free auto-target)
+	for k in base.Stats do
+		(d.Stats :: any)[k] = num((d.Stats :: any)[k], 0)
+	end
+	for k in base.Daily do
+		(d.Daily :: any)[k] = num((d.Daily :: any)[k], 0)
+	end
+	for id, t in d.Boosts do
+		if not finite(t) then
+			d.Boosts[id] = nil
 		end
 	end
-	for k, v in base.Stats do
-		if type((d.Stats :: any)[k]) ~= "number" then
-			(d.Stats :: any)[k] = v
+	for id, n in d.FreeCrates do
+		if not finite(n) or n < 0 then
+			d.FreeCrates[id] = nil
+		else
+			d.FreeCrates[id] = math.floor(n)
 		end
 	end
-	for k, v in base.Daily do
-		if type((d.Daily :: any)[k]) ~= "number" then
-			(d.Daily :: any)[k] = v
-		end
+	for id, up in Config.Upgrades do
+		d.Upgrades[id] = cap("Upgrades", id, num(d.Upgrades[id], 1), #up.Levels)
 	end
-	for id in Config.Upgrades do
-		local lv = d.Upgrades[id]
-		d.Upgrades[id] = if type(lv) == "number" and lv == lv then math.clamp(math.floor(lv), 1, #Config.Upgrades[id].Levels) else 1
-	end
-	if type(d.Ecto) ~= "number" or d.Ecto ~= d.Ecto then
-		d.Ecto = 0
-	end
-	if d.SkipTokens ~= d.SkipTokens or d.SkipTokens < 0 then
-		d.SkipTokens = 0
-	end
-	d.SkipTokens = math.floor(d.SkipTokens)
+	d.Ecto = if finite(d.Ecto) then math.max(0, d.Ecto) else 0
+	d.TotalEcto = if finite(d.TotalEcto) then math.max(0, d.TotalEcto) else 0
+	d.SkipTokens = num(d.SkipTokens, 0)
+	d.Tutorial = if finite(d.Tutorial) then math.floor(d.Tutorial) else 1
 	for id, n in d.LuckyOpens do
-		if type(id) ~= "string" or type(n) ~= "number" or n ~= n or n < 1 then
+		if type(id) ~= "string" or not finite(n) or n < 1 then
 			d.LuckyOpens[id] = nil
 		else
-			d.LuckyOpens[id] = math.min(math.floor(n), Config.LuckyOpens.MaxStack)
+			d.LuckyOpens[id] = cap("LuckyOpens", id, math.floor(n), Config.LuckyOpens.MaxStack, true)
 		end
-	end
-	local function num(v: any, lo: number): number
-		return if type(v) == "number" and v == v and v < math.huge then math.max(lo, math.floor(v)) else lo
 	end
 	d.Shards = num(d.Shards, 0)
 	d.TowerBest = num(d.TowerBest, 0)
@@ -207,9 +315,6 @@ local function migrate(raw: any): Data
 			d.Variants[k] = nil
 		end
 	end
-	if type(d.TotalEcto) ~= "number" or d.TotalEcto ~= d.TotalEcto then
-		d.TotalEcto = 0
-	end
 	-- pets: unknown pet ids are kept (never deleted) but not equippable
 	local maxPet = 0
 	for uid, pet in d.Pets do
@@ -217,8 +322,20 @@ local function migrate(raw: any): Data
 			d.Pets[uid] = nil
 		else
 			pet.T = num(pet.T, 0)
-			if pet.Nick ~= nil and (type(pet.Nick) ~= "string" or #pet.Nick > 40) then
+			if pet.Nick ~= nil and (type(pet.Nick) ~= "string" or #pet.Nick > NICK_MAX) then
+				if type(pet.Nick) == "string" then
+					park("Nick", uid, pet.Nick)
+				end
 				pet.Nick = nil
+			elseif pet.Nick == nil then
+				local o = wasParked("Nick", uid)
+				if type(o) == "string" then
+					if #o <= NICK_MAX then
+						pet.Nick = o
+					else
+						park("Nick", uid, o)
+					end
+				end
 			end
 			local n = tonumber(string.match(uid, "^p(%d+)$"))
 			if n and n > maxPet then
@@ -279,12 +396,9 @@ local function migrate(raw: any): Data
 			d.Hunters[uid] = nil
 		end
 	end
-	for _, h in d.Hunters do
-		local t = h.Tier
-		h.Tier = if type(t) == "number" and t == t then math.clamp(math.floor(t), 0, Config.Merge.MaxTier) else nil
-		if h.Tier == 0 then
-			h.Tier = nil
-		end
+	for uid, h in d.Hunters do
+		local tier = cap("Tier", uid, num(h.Tier, 0), Config.Merge.MaxTier)
+		h.Tier = if tier > 0 then tier else nil
 		if h.Locked ~= nil and type(h.Locked) ~= "boolean" then
 			h.Locked = false
 		end
@@ -295,7 +409,7 @@ local function migrate(raw: any): Data
 		end
 	end
 	for uid, t in d.Knocked do
-		if type(uid) ~= "string" or d.Hunters[uid] == nil or type(t) ~= "number" or t ~= t then
+		if type(uid) ~= "string" or d.Hunters[uid] == nil or not finite(t) then
 			d.Knocked[uid] = nil
 		end
 	end
@@ -309,20 +423,18 @@ local function migrate(raw: any): Data
 	end
 	d.Equipped = eq
 	-- uids must never be reused: NextUid stays above every existing numeric uid
-	local maxUid = 0
-	for _, list in { d.Hunters :: any, d.Orphans } do
-		for uid in list do
-			local n = tonumber(uid)
-			if n and n > maxUid then
-				maxUid = n
-			end
-		end
-	end
-	d.NextUid = math.max(math.floor(tonumber(d.NextUid) or 1), maxUid + 1)
+	d.NextUid = math.max(num(d.NextUid, 1), topUid(d) + 1)
+	d.Extra._over = if next(over) then over else nil
 	-- (future) if d.Version < 2 then ... end
-	d.Version = Config.DataSchemaVersion
+	-- never stamp a lower version than the stored one (a newer profile is refused before this)
+	d.Version = math.max(num(d.Version, 0), Config.DataSchemaVersion)
 	return d
 end
+
+type SaveJob = { Release: boolean, Done: boolean, Ok: boolean }
+
+local SAVE_GAP = 7 -- seconds between writes of the same key (DataStore limit: 6)
+local SYNC_GAP = 0.5 -- seconds between full snapshots sent to one client
 
 type Profile = {
 	Data: Data,
@@ -338,6 +450,9 @@ type Profile = {
 	-- another session's stamp, a newer session (lock takeover) has written it and we never may
 	LoadedSess: any,
 	LoadedSeq: any,
+	Pending: SaveJob?, -- the one save waiting to start; later save requests join it
+	LastWrite: number, -- os.clock of the last write of this key (load or save)
+	LastSync: number, -- os.clock of the last full snapshot sent to the client
 }
 
 local profiles: { [Player]: Profile } = {}
@@ -347,6 +462,8 @@ local store: DataStore? = nil
 local storeOk = false
 local loadedSignal = Signal.new()
 DataService.Loaded = loadedSignal -- (player, data) by reference
+local resetSignal = Signal.new()
+DataService.ProgressReset = resetSignal -- (player) after ResetProgress (e.g. the leaderboard entry)
 
 local syncRemote: RemoteEvent
 local ectoRemote: RemoteEvent
@@ -404,88 +521,90 @@ local function lockFresh(lock: any, session: string): boolean
 	return type(lock) == "table" and lock.session ~= session and os.time() - (tonumber(lock.t) or 0) < Config.Data.SessionLockSeconds
 end
 
--- Loads with a session lock. Returns data, or nil if the player should be kicked.
-local function loadProfile(player: Player, p: Profile): Data?
+-- Loads with a session lock. Returns data, or nil if the player should be kicked ("newer" =
+-- the stored profile comes from a newer version of the game than this server).
+local function loadProfile(player: Player, p: Profile): (Data?, string?)
 	if not storeOk or not store then
-		return if IS_STUDIO then migrate(nil) else nil
+		return if IS_STUDIO then migrate(nil) else nil, nil
 	end
 	local ds = store :: DataStore
 	local key = p.Key
 	local corrupt = false
-	for attempt = 1, 6 do
+	local newer = false
+	-- Another session holding the lock (player just hopped) normally releases it with its final
+	-- save within seconds. A live server refreshes the lock time on every save, so the lock is
+	-- only taken over once its time has not moved for a whole autosave period (+ margin).
+	local stuckFor = Config.Data.AutosaveSeconds + 30
+	local giveUp = os.clock() + Config.Data.SessionLockSeconds + 60
+	local seenT: number? = nil
+	local seenAt = os.clock()
+	local stealT: number? = nil
+	local attempt = 0
+	while true do
+		attempt += 1
 		local locked = false
+		local lockT: number? = nil
 		local ok, result = retry("load " .. key, function()
 			return ds:UpdateAsync(key, function(old: any)
+				locked, lockT = false, nil
 				if old ~= nil and type(old) ~= "table" then
 					corrupt = true -- never overwrite a stored value we can't read
 					return nil
 				end
+				if tooNew(old) then
+					newer = true -- never touch a newer version's profile
+					return nil
+				end
 				old = if type(old) == "table" then old else {}
 				if lockFresh(old._lock, p.Session) then
-					locked = true
-					return nil -- don't write
+					lockT = tonumber(old._lock.t)
+					if stealT == nil or lockT ~= stealT then
+						locked = true
+						return nil -- don't write
+					end
+					-- take over: the lock time is still the one we watched go stale
 				end
 				old._lock = { job = jobId(), session = p.Session, t = os.time() }
 				return old
 			end)
 		end)
-		if not ok or corrupt then
+		if not ok or corrupt or newer then
 			if corrupt then
 				warn("[Data] stored profile for " .. key .. " is not a table; refusing to load over it")
+			elseif newer then
+				warn("[Data] stored profile for " .. key .. " is from a newer version; not loading it here")
 			end
-			return nil
+			return nil, if newer then "newer" else nil
 		end
 		if not locked then
+			p.LastWrite = os.clock()
 			if type(result) == "table" then
 				p.LoadedSess, p.LoadedSeq = result._sess, result._seq
 			end
-			return migrate(result)
+			return migrate(result), nil
 		end
-		-- Another session still holds the lock (player just hopped). Wait for it to save.
-		task.wait(math.min(2 + attempt * 2, 8))
+		stealT = nil
+		if lockT ~= seenT then
+			seenT, seenAt = lockT, os.clock() -- the other server is still saving: keep waiting
+		end
+		if os.clock() - seenAt >= stuckFor then
+			warn("[Data] session lock for " .. key .. " not refreshed for " .. stuckFor .. " s; taking over")
+			stealT = seenT
+		elseif os.clock() > giveUp then
+			warn("[Data] session lock for " .. key .. " is still held by a live session; not loading")
+			return nil, nil
+		else
+			task.wait(math.min(2 + attempt * 2, 8))
+		end
 		if not player.Parent then
-			return nil
+			return nil, nil
 		end
 	end
-	warn("[Data] session lock never released for " .. key .. "; taking over")
-	local ok, result = retry("steal " .. key, function()
-		return ds:UpdateAsync(key, function(old: any)
-			if old ~= nil and type(old) ~= "table" then
-				corrupt = true
-				return nil
-			end
-			old = if type(old) == "table" then old else {}
-			old._lock = { job = jobId(), session = p.Session, t = os.time() }
-			return old
-		end)
-	end)
-	if ok and not corrupt and type(result) == "table" then
-		p.LoadedSess, p.LoadedSeq = result._sess, result._seq
-	end
-	return if ok and not corrupt then migrate(result) else nil
 end
 
--- Writes the profile. Returns true only if the data really reached the DataStore.
-local function saveP(p: Profile, release: boolean): boolean
-	if not p.Loaded then
-		return false
-	end
-	if not storeOk or not store then
-		return IS_STUDIO -- Studio without API access: nothing to save
-	end
-	if p.Leaving and not release then
-		return false -- only the final, releasing save runs for a leaving player
-	end
-	inflight += 1 -- counted while waiting too, so BindToClose never stops before this save runs
-	if p.Saving then
-		-- wait for the running write; after that go ahead anyway: the save counter (_seq) makes
-		-- sure an older snapshot can never land on top of a newer one, so the final save of a
-		-- leaving player is never skipped just because an autosave was slow
-		local t0 = os.clock()
-		while p.Saving and os.clock() - t0 < 20 do
-			task.wait(0.2)
-		end
-	end
+-- One write of the profile (the caller has waited its turn). True only if the data really
+-- reached the DataStore.
+local function writeP(p: Profile, release: boolean): boolean
 	p.Saving = true
 	local ds = store :: DataStore
 	p.Data.Stats.Seconds += math.floor(os.clock() - p.JoinedAt)
@@ -502,6 +621,10 @@ local function saveP(p: Profile, release: boolean): boolean
 		aborted = false
 		stale = false
 		return ds:UpdateAsync(p.Key, function(old: any)
+			if tooNew(old) then
+				aborted = true -- a newer version of the game saved this profile: never overwrite it
+				return nil
+			end
 			if type(old) == "table" and lockFresh(old._lock, p.Session) then
 				-- another session owns this profile now: never overwrite its newer data
 				aborted = true
@@ -533,8 +656,8 @@ local function saveP(p: Profile, release: boolean): boolean
 			end)
 		end)
 	end
+	p.LastWrite = os.clock()
 	p.Saving = false
-	inflight -= 1
 	if ok and aborted then
 		warn("[Data] save skipped for " .. p.Key .. ": another session owns the profile")
 		-- this server can never save this profile again: send the player to the newer session
@@ -548,6 +671,52 @@ local function saveP(p: Profile, release: boolean): boolean
 		end
 	end
 	return ok and not aborted
+end
+
+-- Saves the profile. Returns true only if the data really reached the DataStore.
+-- At most one save waits per profile: a request made while one is waiting joins it (that save
+-- copies the data when it starts, so it includes the joiner's changes) and gets its result.
+local function saveP(p: Profile, release: boolean): boolean
+	if not p.Loaded then
+		return false
+	end
+	if not storeOk or not store then
+		return IS_STUDIO -- Studio without API access: nothing to save
+	end
+	if p.Leaving and not release then
+		return false -- only the final, releasing save runs for a leaving player
+	end
+	local job = p.Pending
+	if job then
+		if release then
+			job.Release = true -- the waiting save becomes the final one
+		end
+		while not job.Done do
+			task.wait(0.1)
+		end
+		return job.Ok
+	end
+	local mine: SaveJob = { Release = release, Done = false, Ok = false }
+	p.Pending = mine
+	inflight += 1 -- counted while waiting too, so BindToClose never stops before this save runs
+	-- wait for the running write and keep writes of this key SAVE_GAP apart; the final save skips
+	-- the gap so BindToClose finishes in time. After 20 s go ahead anyway: the save counter (_seq)
+	-- makes sure an older snapshot can never land on top of a newer one, so the final save of a
+	-- leaving player is never skipped just because an autosave was slow
+	local t0 = os.clock()
+	while (p.Saving or (not mine.Release and os.clock() - p.LastWrite < SAVE_GAP)) and os.clock() - t0 < 20 do
+		task.wait(0.2)
+	end
+	p.Pending = nil
+	local ok = false
+	-- the player started leaving while this routine save waited: only the final save may write
+	-- (else this save could put the lock back after the final save released it)
+	if not (p.Leaving and not mine.Release) then
+		ok = writeP(p, mine.Release)
+	end
+	inflight -= 1
+	mine.Ok, mine.Done = ok, true
+	return ok
 end
 
 local function saveProfile(player: Player, release: boolean): boolean
@@ -579,6 +748,7 @@ function DataService.ResetProgress(player: Player): boolean
 	d.SkipTokens = keep.SkipTokens
 	d.TradesApplied = keep.TradesApplied
 	DataService.Changed(player)
+	resetSignal:Fire(player)
 	return true
 end
 
@@ -632,34 +802,52 @@ local function snapshot(player: Player, d: Data): any
 	return s
 end
 
--- Sends the client a fresh snapshot (batched: many changes in one frame = one message).
+-- Sends the client a fresh snapshot, batched: at most one per SYNC_GAP per player. The queued
+-- send builds the snapshot when it runs, so the latest state always arrives.
 function DataService.Changed(player: Player)
 	local p = profiles[player]
 	if not p or not p.Loaded or p.SyncQueued then
 		return
 	end
 	p.SyncQueued = true
-	task.defer(function()
+	local function send()
 		p.SyncQueued = false
 		if player.Parent and profiles[player] == p and not p.Leaving then
+			p.LastSync = os.clock()
 			syncRemote:FireClient(player, snapshot(player, p.Data))
 		end
-	end)
+	end
+	local wait = p.LastSync + SYNC_GAP - os.clock()
+	if wait > 0 then
+		task.delay(wait, send)
+	else
+		task.defer(send)
+	end
+end
+
+-- Adds (negative: removes) Ectoplasm on a profile table: ignores NaN/inf, never below 0.
+-- Leave hooks use this directly (the player can no longer be messaged then).
+function DataService.AddEctoData(d: Data, amount: number): boolean
+	if not finite(amount) then
+		return false
+	end
+	amount = math.floor(amount)
+	d.Ecto = math.max(0, d.Ecto + amount)
+	if amount > 0 then
+		d.TotalEcto += amount
+	end
+	return true
 end
 
 -- Currency changes are frequent: send only the number.
 function DataService.AddEcto(player: Player, amount: number)
 	local p = profiles[player]
-	if not p or not p.Loaded or p.Leaving or amount ~= amount or math.abs(amount) == math.huge then
+	if not p or not p.Loaded or p.Leaving then
 		return
 	end
-	amount = math.floor(amount)
-	p.Data.Ecto = math.max(0, p.Data.Ecto + amount)
-	if amount > 0 then
-		p.Data.TotalEcto += amount
+	if DataService.AddEctoData(p.Data, amount) then
+		ectoRemote:FireClient(player, p.Data.Ecto)
 	end
-	ectoRemote:FireClient(player, p.Data.Ecto)
-	player:SetAttribute("Ecto", p.Data.Ecto)
 end
 
 -- Spends Ectoplasm. Returns false if the player can't afford it.
@@ -674,6 +862,10 @@ end
 
 -- Next unique hunter id (never reuses an id that is already owned).
 function DataService.NewUid(d: Data): string
+	if not finite(d.NextUid) or d.NextUid < 1 then
+		d.NextUid = topUid(d) + 1
+	end
+	d.NextUid = math.floor(d.NextUid)
 	local uid = tostring(d.NextUid)
 	while d.Hunters[uid] ~= nil or d.Orphans[uid] ~= nil do
 		d.NextUid += 1
@@ -687,7 +879,8 @@ function DataService.Save(player: Player)
 	task.spawn(saveProfile, player, false)
 end
 
--- Saves now and waits; used by ProcessReceipt. True only if the write really happened.
+-- Saves now and waits (joins the next write); used by ProcessReceipt and trades. True only if
+-- that write really happened.
 function DataService.SaveNow(player: Player): boolean
 	return saveProfile(player, false)
 end
@@ -696,7 +889,10 @@ function DataService.Init()
 	syncRemote = Net.Event("Sync")
 	ectoRemote = Net.Event("Ecto")
 	local ok, result = pcall(function()
-		return DataStoreService:GetDataStore(Config.DataStoreName)
+		-- Studio play tests use their own scope, so testing never reads or writes live players' data
+		return if IS_STUDIO
+			then DataStoreService:GetDataStore(Config.DataStoreName, "studio")
+			else DataStoreService:GetDataStore(Config.DataStoreName)
 	end)
 	if ok and result then
 		store = result
@@ -729,6 +925,9 @@ local function onPlayerAdded(player: Player)
 		Seq = 0,
 		LoadedSess = nil,
 		LoadedSeq = nil,
+		Pending = nil,
+		LastWrite = -math.huge,
+		LastSync = -math.huge,
 	}
 	profiles[player] = p
 	-- rejoined this same server while the previous session was still saving: wait for it
@@ -736,7 +935,7 @@ local function onPlayerAdded(player: Player)
 	while leavingSaves[player.UserId] and os.clock() - t0 < 30 do
 		task.wait(0.2)
 	end
-	local data = loadProfile(player, p)
+	local data, why = loadProfile(player, p)
 	if data and player.Parent and profiles[player] == p then
 		runHooks(loadHooks, player, data) -- e.g. finish a trade that a crash interrupted
 	end
@@ -761,12 +960,13 @@ local function onPlayerAdded(player: Player)
 	end
 	if not data then
 		profiles[player] = nil
-		player:Kick("Couldn't load your Ghost Hunter data. Please rejoin in a moment - your progress is safe.")
+		player:Kick(if why == "newer"
+			then "This server is updating - please rejoin in a moment, your progress is safe."
+			else "Couldn't load your Ghost Hunter data. Please rejoin in a moment - your progress is safe.")
 		return
 	end
 	p.Data = data
 	p.Loaded = true
-	player:SetAttribute("Ecto", data.Ecto)
 	loadedSignal:Fire(player, data)
 	DataService.Changed(player)
 end
@@ -852,5 +1052,6 @@ end
 
 -- exposed for the save-compatibility test (tools/datacompat.sh); not used by the game
 DataService._Migrate = migrate
+DataService._TooNew = tooNew
 
 return DataService

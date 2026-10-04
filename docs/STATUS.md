@@ -1,5 +1,14 @@
 # Status
 
+## v1.10 audit fixes (built, not yet published)
+- Fixed everything in the fresh audit: Slots pass trim, pass-check retries + purchase verify,
+  Studio uses a separate "studio" data scope, save version check (newer saves refused, caps
+  clamped at use not stored), save coalescing (7 s), safer lock takeover, traded/dev hunters give
+  no release refund, trade freeze during commit, tower Ecto ~= farming, Lucky Opens 2x price,
+  Ecto Sack 6000, phone UI (44pt taps, popup queue, loading screen, no text scaling), lazy ghost
+  models, 1 move attribute, z-fighting and snag props.
+- PUBLISH with "Shut down all servers" (old live servers don't have the version check).
+
 ## v1.9 audit pass (built, not yet published)
 - Fixes across UI (touch buttons, titles, text sizes, boost chips), combat (NaN guards, ghost
   cleanup, re-tap target), tower (stuck runs, slot leaks, pad cancel), pets/world (snap after

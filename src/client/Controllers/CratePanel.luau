@@ -43,6 +43,23 @@ local function rarityOrder(id: string): number
 	return if h then Config.Rarities[h.Rarity].Order else 1
 end
 
+-- AUTO OPEN can only be bought once its game pass exists (PassId filled in Config)
+local function autoPassOnSale(): boolean
+	for _, gp in Config.GamePasses do
+		if gp.Key == Config.AutoOpen.Pass then
+			return gp.PassId ~= nil
+		end
+	end
+	return false
+end
+
+-- The server may stop a multi-open early (e.g. storage full): say why after the results.
+local function toastStopped(res: any)
+	if type(res.Stopped) == "string" and res.Stopped ~= "" then
+		Kit.Toast(res.Stopped, "Bad")
+	end
+end
+
 local function nearStation(crateId: string): boolean
 	local pos = Config.Layout.CrateStations[crateId]
 	local char = player.Character
@@ -177,9 +194,11 @@ function refreshButton(crateId: string, d: any, luck: number)
 	local autoOn = player:GetAttribute("AutoOpen") ~= nil
 	Kit.SetButtonText(autoButton, if not autoOwned then "🔒 AUTO OPEN" elseif autoOn then "AUTO OPEN: ON" else "AUTO OPEN: OFF")
 	autoButton:SetAttribute("Color", if not autoOwned then "Gray" elseif autoOn then "Green" else "Purple")
+	-- no "🔒 AUTO OPEN" while the pass isn't on sale (owners keep their button)
+	autoButton.Visible = autoOwned == true or autoPassOnSale()
+	luckyButton.Position = if autoButton.Visible then UDim2.new(1, -180, 0, 8) else UDim2.new(1, 0, 0, 8)
 	local triple = d.Passes and d.Passes[Config.TripleOpen.Pass] == true
 	tripleButton.Visible = triple == true
-	openButton.Position = if triple then UDim2.new(0.5, -75, 1, -4) else UDim2.new(0.5, 0, 1, -4)
 	if triple then
 		Kit.SetButtonText(tripleButton, "OPEN x3  💚 " .. Format.Short(price * Config.TripleOpen.Count))
 	end
@@ -234,6 +253,7 @@ local function buyTriple()
 	end
 	panel:Close()
 	playResults(crateId, res, nil)
+	toastStopped(res)
 end
 
 local function buy()
@@ -281,11 +301,13 @@ local function buy()
 			local res2: Reveal.Result = { Crate = crateId, Hunter = r2.Hunter, Uid = r2.Uid, IsNew = r2.IsNew == true }
 			openedSignal:Fire(res2)
 			Reveal.Play(res2, again)
+			toastStopped(r2)
 		else
 			Kit.Toast(r2.err or "Couldn't open the crate", "Bad")
 		end
 	end
 	Reveal.Play(result, again)
+	toastStopped(res)
 end
 
 function CratePanel.Open(crateId: string)
@@ -336,27 +358,31 @@ function CratePanel.Init()
 		Parent = list,
 	})
 	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), Parent = list })
-	openButton = Kit.Button(panel.Body, {
+	-- OPEN [+ OPEN x3]: a centred row whose buttons share the body width (capped at their design
+	-- widths), so the pair never runs past the panel edge on narrow screens
+	local openRow: Frame = Kit.new("Frame", { Name = "OpenRow", Size = UDim2.new(1, 0, 0, 50), Position = UDim2.new(0, 0, 1, -4), AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1, ZIndex = 62, Parent = panel.Body })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = openRow })
+	openButton = Kit.Button(openRow, {
 		Text = "OPEN",
 		Color = "Green",
-		Size = UDim2.fromOffset(280, 50),
-		Position = UDim2.new(0.5, 0, 1, -4),
-		AnchorPoint = Vector2.new(0.5, 1),
+		Size = UDim2.new(0.56, -5, 0, 50),
 		ZIndex = 63,
 		OnClick = buy,
 	})
 	openButton.Name = "OpenButton"
+	openButton.LayoutOrder = 1
+	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(280, 50), Parent = openButton })
 	panel.Primary = openButton
-	tripleButton = Kit.Button(panel.Body, {
+	tripleButton = Kit.Button(openRow, {
 		Text = "OPEN x3",
 		Color = "Purple",
-		Size = UDim2.fromOffset(200, 50),
-		Position = UDim2.new(0.5, 185, 1, -4),
-		AnchorPoint = Vector2.new(0.5, 1),
+		Size = UDim2.new(0.44, -5, 0, 50),
 		TextStyle = "Small",
 		ZIndex = 63,
 		OnClick = buyTriple,
 	})
+	tripleButton.LayoutOrder = 2
+	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(200, 50), Parent = tripleButton })
 	tripleButton.Visible = false
 	-- LUCKY OPENS (Ectoplasm): next few opens of this crate at higher luck
 	luckyButton = Kit.Button(panel.Body, {

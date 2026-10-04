@@ -49,8 +49,12 @@ function Leaderboard.Build(map: Instance)
 		row.Parent = gui
 		local rankColor = if i == 1 then C(255, 215, 80) elseif i == 2 then C(220, 225, 240) elseif i == 3 then C(240, 160, 90) else C(200, 190, 230)
 		Kit.Label(row, "#" .. i, rankColor, { Name = "Rank", Pos = UDim2.fromScale(0.01, 0.1), Size = UDim2.fromScale(0.12, 0.8) })
-		Kit.Label(row, "...", C(255, 255, 255), { Name = "PlayerName", Pos = UDim2.fromScale(0.15, 0.1), Size = UDim2.fromScale(0.52, 0.8) })
-		Kit.Label(row, "", C(150, 255, 170), { Name = "Value", Pos = UDim2.fromScale(0.69, 0.1), Size = UDim2.fromScale(0.3, 0.8) })
+		-- (filled in by LeaderboardService: TextFit sizes these against typical lengths, not the
+		-- "..." / "" placeholders; longer names are cut with "...")
+		local name = Kit.Label(row, "...", C(255, 255, 255), { Name = "PlayerName", Pos = UDim2.fromScale(0.15, 0.1), Size = UDim2.fromScale(0.52, 0.8) })
+		name:SetAttribute("FitText", "👑 Ghosthunter123")
+		local value = Kit.Label(row, "", C(150, 255, 170), { Name = "Value", Pos = UDim2.fromScale(0.69, 0.1), Size = UDim2.fromScale(0.3, 0.8) })
+		value:SetAttribute("FitText", "999.9Qa")
 	end
 	local p = L.Position
 	Kit.AddRect(p.X - 12, p.Z - 12, p.X + 12, p.Z + 12)

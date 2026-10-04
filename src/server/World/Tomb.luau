@@ -107,7 +107,7 @@ end
 
 local function urn(parent: Instance, x: number, z: number, s: number)
 	local col = if Kit.Rng:NextNumber() < 0.5 then TERRA else C(190, 120, 70)
-	Kit.Ball(parent, 2.4 * s, V(x, 1.2 * s, z), col, { Solid = true })
+	Kit.Ball(parent, 2.4 * s, V(x, 1.2 * s, z), col, { Solid = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 	Kit.Cyl(parent, 1.1 * s, 1.1 * s, CFrame.new(x, 2.6 * s, z), col)
 	Kit.Cyl(parent, 0.3 * s, 1.5 * s, CFrame.new(x, 3.2 * s, z), Kit.Vivid(TURQ))
 end

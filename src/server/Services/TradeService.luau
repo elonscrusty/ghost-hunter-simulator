@@ -130,6 +130,9 @@ local function checkSide(p: Player, uids: { string }, receive: number): string?
 		if h.Locked then
 			return "Locked hunters can't be traded"
 		end
+		if (h :: any).Dev then
+			return "Dev hunters can't be traded"
+		end
 		if HunterService.IsKnocked(d, uid) then
 			return "Knocked-out hunters can't be traded"
 		end
@@ -159,14 +162,20 @@ local function applySide(d: DataService.Data, rec: Record, userId: number): bool
 			table.remove(d.Equipped, i)
 		end
 	end
+	-- received hunters never give a release refund (NoRefund): trading them around can't mint Ectoplasm
 	for _, h in get do
 		if type(h) == "table" and Config.Hunters[h.Id] then
 			local uid = DataService.NewUid(d)
-			d.Hunters[uid] = { Id = h.Id, Tier = h.Tier, Locked = false, T = os.time() }
+			d.Hunters[uid] = { Id = h.Id, Tier = h.Tier, Locked = false, T = os.time() };
+			(d.Hunters[uid] :: any).NoRefund = true
 			d.Discovered[h.Id] = true
 			if type(h.Tier) == "number" and h.Tier > 0 then
 				d.Variants[h.Id .. ":" .. h.Tier] = true
 			end
+		elseif type(h) == "table" and type(h.Id) == "string" then
+			-- recovered on a server that doesn't know this hunter yet: park it in Orphans (same shape
+			-- DataService uses; restored on a later join once the id exists) instead of losing it
+			d.Orphans[DataService.NewUid(d)] = { Id = h.Id, Tier = h.Tier, Locked = false, T = os.time(), NoRefund = true }
 		end
 	end
 	table.insert(d.TradesApplied, rec.Id)
@@ -266,7 +275,7 @@ local function writeRecord(rec: Record): boolean
 	return false
 end
 
-local function commit(s: Session)
+local function commitInner(s: Session)
 	s.Committing = true
 	push(s)
 	local a, b = s.A, s.B
@@ -308,9 +317,7 @@ local function commit(s: Session)
 		close(s, "Couldn't reach the trade server. Nothing was traded.")
 		return
 	end
-	-- someone left (or started leaving) while the pending ids were written: their next join may
-	-- already have read a pending list WITHOUT this id, so the trade must never commit now
-	if DataService.Get(a) ~= dA or DataService.Get(b) ~= dB then
+	local function abort(reason: string)
 		local st = store
 		if st then
 			pcall(function()
@@ -322,7 +329,17 @@ local function commit(s: Session)
 		task.spawn(editPending, a.UserId, s.Id, false)
 		task.spawn(editPending, b.UserId, s.Id, false)
 		s.Committing = false
-		close(s, "A player left. Nothing was traded.")
+		close(s, reason)
+	end
+	-- both profiles must still be saveable (e.g. no lost session lock) before anything commits
+	if not DataService.SaveNow(a) or not DataService.SaveNow(b) then
+		abort("Couldn't save your progress. Nothing was traded.")
+		return
+	end
+	-- someone left (or started leaving) while the pending ids were written: their next join may
+	-- already have read a pending list WITHOUT this id, so the trade must never commit now
+	if DataService.Get(a) ~= dA or DataService.Get(b) ~= dB then
+		abort("A player left. Nothing was traded.")
 		return
 	end
 	if not writeRecord(rec) then
@@ -348,6 +365,22 @@ local function commit(s: Session)
 	-- (each side recovers on its own, so one failed save must not leave the other id behind)
 	clearWhenSaved(a, dA, { s.Id })
 	clearWhenSaved(b, dB, { s.Id })
+end
+
+-- While a trade commits, both players' inventories are frozen (no crate opens, releases, merges,
+-- locks or crew changes), so the checks done at the start still hold when the hunters move.
+local function commit(s: Session)
+	local why = "Finishing your trade..."
+	HunterService.SetFrozen(s.A, why)
+	HunterService.SetFrozen(s.B, why)
+	local ok, err = pcall(function()
+		commitInner(s)
+	end)
+	HunterService.SetFrozen(s.A, nil)
+	HunterService.SetFrozen(s.B, nil)
+	if not ok then
+		warn("[Trade] commit error: " .. tostring(err))
+	end
 end
 
 -- Join-time recovery: finish this player's side of any committed trade a crash interrupted.
@@ -513,6 +546,9 @@ function TradeService.Init()
 			end
 			if h.Locked then
 				return Remotes.Fail("Locked hunters can't be traded")
+			end
+			if (h :: any).Dev then
+				return Remotes.Fail("Dev hunters can't be traded")
 			end
 			if HunterService.IsKnocked(d, uid) then
 				return Remotes.Fail("That hunter is recovering")

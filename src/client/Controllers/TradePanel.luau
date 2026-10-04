@@ -385,8 +385,20 @@ function TradePanel.Start()
 		end
 		inviteFrom = tonumber(data.FromId) or 0
 		inviteEnds = os.clock() + (tonumber(data.Seconds) or Config.Trade.RequestSeconds)
-		inviteText.Text = tostring(data.From or "Someone") .. " wants to trade hunters with you!"
-		invite:Open()
+		local from = tostring(data.From or "Someone")
+		local fromId = inviteFrom
+		local ends = inviteEnds
+		-- never close a menu the player is using: wait until it's free (a toast says who asked)
+		if not Kit.IsFree() then
+			Kit.Toast("🤝 " .. from .. " wants to trade! Close this menu to answer.", "Gold")
+		end
+		Kit.WhenFree(function()
+			if trade or invite.IsOpen or inviteFrom ~= fromId or os.clock() >= ends then
+				return -- expired, replaced or already trading
+			end
+			inviteText.Text = from .. " wants to trade hunters with you!"
+			invite:Open()
+		end)
 	end)
 	-- countdowns: CONFIRM cooldown and the request popup
 	while true do

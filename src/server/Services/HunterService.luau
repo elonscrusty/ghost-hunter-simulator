@@ -63,6 +63,23 @@ function HunterService.SetBusy(player: Player, uid: string, reason: string?)
 	(b :: { [string]: string? })[uid] = reason
 end
 
+-- player -> reason while a trade of theirs is committing: no crate opens, releases, merges,
+-- locks or crew changes until it finishes (TradeService sets and clears it)
+local frozen: { [Player]: string } = {}
+-- a skip token spent while the reveal was already over can be handed back once (os.clock of the spend)
+local skipSpent: { [Player]: number } = {}
+
+function HunterService.SetFrozen(player: Player, reason: string?)
+	if reason and not player.Parent then
+		return
+	end
+	(frozen :: { [Player]: string? })[player] = reason
+end
+
+function HunterService.FrozenReason(player: Player): string?
+	return frozen[player]
+end
+
 function HunterService.BusyReason(player: Player, uid: string): string?
 	local b = busy[player]
 	return if b then b[uid] else nil
@@ -150,7 +167,11 @@ local function ensureEquipped(player: Player, d: DataService.Data)
 			d.Equipped = Rules.EquipBest(d.Hunters, powerOf, rarityOrder, PlayerInfo.Slots(player))
 		end
 	end
-	-- lost the extra-slots pass: keep only as many equipped as there are slots
+	-- lost the extra-slots pass: keep only as many equipped as there are slots. Never while the
+	-- pass state is unknown (still being checked / Roblox unreachable): that would save a trimmed crew
+	if PlayerInfo.PassUnknown(player, "ExtraSlots") then
+		return
+	end
 	while #d.Equipped > PlayerInfo.Slots(player) do
 		table.remove(d.Equipped)
 	end
@@ -172,6 +193,18 @@ local function cratePrice(id: string): number
 end
 HunterService.CratePrice = cratePrice
 
+-- Ectoplasm back for releasing a hunter: a share of its crate price, scaled by tier (Shiny/Mega
+-- took several hunters + a merge fee, so this stays far below what was paid). Traded-in and
+-- dev-granted hunters (NoRefund) give nothing, so they can't be farmed for Ectoplasm.
+local function releaseRefund(h: DataService.HunterRecord): number
+	if (h :: any).NoRefund then
+		return 0
+	end
+	local t = Config.Tiers[h.Tier or 0] or Config.Tiers[0]
+	return math.floor(cratePrice(h.Id) * Config.Inventory.ReleaseRefund * t.Mult)
+end
+HunterService.ReleaseRefund = releaseRefund
+
 local function crateRoll(player: Player, crate: Config.CrateDef, extraLuck: number): string
 	return Rules.Roll(crate.Pool :: any, rarityOrder, PlayerInfo.LuckMultiplier(player) * extraLuck, Config.LuckAffectsFromOrder, rng:NextNumber())
 end
@@ -185,6 +218,10 @@ local function openCrate(player: Player, crateId: any): any
 	local d = DataService.Get(player)
 	if not crate or not d then
 		return Remotes.Fail("Bad crate")
+	end
+	local frozenWhy = frozen[player]
+	if frozenWhy then
+		return Remotes.Fail(frozenWhy)
 	end
 	if not d.Zones[crate.Zone] then
 		return Remotes.Fail("Unlock this zone first!")
@@ -250,6 +287,7 @@ function HunterService.Init()
 		for _ = 2, n do
 			local r = openCrate(player, crateId)
 			if not r.ok then
+				first.Stopped = r.err -- why the multi-open stopped early (client shows it)
 				break
 			end
 			table.insert(more, { Uid = r.Uid, Hunter = r.Hunter, IsNew = r.IsNew })
@@ -298,10 +336,25 @@ function HunterService.Init()
 		end
 		if (d.SkipTokens or 0) > 0 then
 			d.SkipTokens -= 1
+			skipSpent[player] = os.clock()
 			DataService.Changed(player)
 			return { ok = true, Left = d.SkipTokens }
 		end
 		return { ok = false, err = "NeedSkip" }
+	end)
+
+	-- the reveal finished while UseSkip was in flight: give that one token back (only the last
+	-- spend, only within a few seconds, only once)
+	Remotes.Register("RefundSkip", "Default", function(player)
+		local d = DataService.Get(player)
+		local t = skipSpent[player]
+		skipSpent[player] = nil
+		if not d or not t or os.clock() - t > 10 then
+			return Remotes.Fail("Nothing to refund")
+		end
+		d.SkipTokens = (d.SkipTokens or 0) + 1
+		DataService.Changed(player)
+		return { ok = true, Left = d.SkipTokens }
 	end)
 
 	-- AUTO OPEN (game pass): one server loop per player re-opens the chosen crate through the
@@ -329,6 +382,10 @@ function HunterService.Init()
 			end
 			while autoOpen[player] == token and player.Parent do
 				local interval = if PlayerInfo.HasPermanentSkip(player) then Config.AutoOpen.FastInterval else Config.AutoOpen.Interval
+				if frozen[player] then
+					task.wait(interval) -- a trade is finishing: pause, don't stop
+					continue
+				end
 				autoNext[player] = os.clock() + interval
 				local r = openCrate(player, crateId)
 				if autoOpen[player] ~= token then
@@ -369,6 +426,9 @@ function HunterService.Init()
 		if player:GetAttribute("InTower") then
 			return Remotes.Fail("Can't change your crew inside the Boss Tower")
 		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
 		local d = DataService.Get(player)
 		if not d or not validUid(d, uid) then
 			return Remotes.Fail("Unknown hunter")
@@ -387,6 +447,9 @@ function HunterService.Init()
 	Remotes.Register("Unequip", "Inventory", function(player, uid)
 		if player:GetAttribute("InTower") then
 			return Remotes.Fail("Can't change your crew inside the Boss Tower")
+		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
 		end
 		local d = DataService.Get(player)
 		if not d or not validUid(d, uid) then
@@ -408,6 +471,9 @@ function HunterService.Init()
 		if player:GetAttribute("InTower") then
 			return Remotes.Fail("Can't change your crew inside the Boss Tower")
 		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
 		local d = DataService.Get(player)
 		if not d then
 			return Remotes.Fail("Loading...")
@@ -426,6 +492,9 @@ function HunterService.Init()
 		if not d or not validUid(d, uid) or type(locked) ~= "boolean" then
 			return Remotes.Fail("Unknown hunter")
 		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
 		local why = HunterService.BusyReason(player, uid)
 		if why then
 			return Remotes.Fail(why)
@@ -441,6 +510,9 @@ function HunterService.Init()
 		if not d or type(uids) ~= "table" or #uids == 0 or #uids > PlayerInfo.MaxHunters(player) then
 			return Remotes.Fail("Nothing selected")
 		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
 		local refund = 0
 		local released = 0
 		local total = countOwned(d)
@@ -449,7 +521,7 @@ function HunterService.Init()
 				break
 			end
 			if validUid(d, uid) and not table.find(d.Equipped, uid) and not d.Hunters[uid].Locked and not HunterService.BusyReason(player, uid) then
-				refund += math.floor(cratePrice(d.Hunters[uid].Id) * Config.Inventory.ReleaseRefund)
+				refund += releaseRefund(d.Hunters[uid])
 				d.Hunters[uid] = nil
 				d.Knocked[uid] = nil
 				released += 1
@@ -476,6 +548,22 @@ function HunterService.Init()
 		local d = DataService.Get(player)
 		if not d then
 			return Remotes.Fail("Loading...")
+		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
+		-- only a plain list of uid strings (keys exactly 1..n): extra keys could sneak in more hunters
+		if type(uids) ~= "table" then
+			return Remotes.Fail("Pick exactly " .. Config.Merge.Count .. " hunters")
+		end
+		local nKeys = 0
+		for _ in uids do
+			nKeys += 1
+		end
+		for i = 1, nKeys do
+			if type(uids[i]) ~= "string" then
+				return Remotes.Fail("Pick different hunters")
+			end
 		end
 		local ok, err, id, tier = Rules.MergeCheck(d.Hunters :: any, uids, Config.Merge.Count, Config.Merge.MaxTier, function(uid)
 			local why = HunterService.BusyReason(player, uid)
@@ -507,12 +595,23 @@ function HunterService.Init()
 				table.insert(keep, uid)
 			end
 		end
+		-- a merge made from any traded-in / dev-granted hunter keeps those limits (no refund laundering)
+		local noRefund, dev = false, false
 		for _, uid in uids :: { string } do
+			local h = d.Hunters[uid] :: any
+			noRefund = noRefund or h.NoRefund == true
+			dev = dev or h.Dev == true
 			d.Hunters[uid] = nil
 			d.Knocked[uid] = nil
 		end
 		local newUid = DataService.NewUid(d)
 		d.Hunters[newUid] = { Id = hunterId, Locked = false, T = os.time(), Tier = newTier }
+		if noRefund then
+			(d.Hunters[newUid] :: any).NoRefund = true
+		end
+		if dev then
+			(d.Hunters[newUid] :: any).Dev = true
+		end
 		d.Variants[hunterId .. ":" .. newTier] = true -- Shiny/Mega variant discovered (Index)
 		if slot then
 			table.insert(keep, math.min(slot, #keep + 1), newUid)
@@ -554,6 +653,8 @@ function HunterService.Start()
 		autoOpen[player] = nil -- stops their Auto Open loop
 		autoNext[player] = nil
 		busy[player] = nil
+		frozen[player] = nil
+		skipSpent[player] = nil
 		PlayerInfo.Forget(player)
 	end)
 end

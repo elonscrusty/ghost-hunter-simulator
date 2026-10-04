@@ -160,8 +160,7 @@ function DropService.Init()
 		end
 		table.clear(bag.List)
 		if total > 0 then
-			data.Ecto += total
-			data.TotalEcto += total
+			DataService.AddEctoData(data, total) -- same guarded path as AddEcto (finite, never below 0)
 		end
 	end)
 end

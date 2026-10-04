@@ -1,7 +1,8 @@
 --!strict
 -- Client-side ghost presentation. The server sends each ghost as a single invisible hitbox
 -- (`Core`, the tap target) plus attributes; this module builds the visual rig locally
--- (GhostRig), moves both along the server's wander segments, and handles bobbing, facing,
+-- (GhostRig) only while the ghost is within draw range (rigs go back to a small per-kind pool
+-- when it leaves), moves both along the server's wander segments, and handles bobbing, facing,
 -- Spirit labels, the selected-ghost state (active label + ground ring), hit wobble, spawn-in
 -- and the POOF. One RenderStepped loop for all ghosts.
 local Players = game:GetService("Players")
@@ -28,8 +29,8 @@ export type Entry = {
 	Uid: number,
 	Model: Model, -- server model (hitbox)
 	Core: BasePart, -- server hitbox (tap target, beam attachments)
-	Vis: Model, -- local visual rig
-	VisCore: BasePart,
+	Vis: Model?, -- local visual rig (nil while culled: built/taken from the pool on approach)
+	VisCore: BasePart?,
 	Def: Config.GhostDef,
 	From: Vector3,
 	To: Vector3,
@@ -58,8 +59,9 @@ export type Entry = {
 	LungeDir: Vector3,
 	Alert: TextLabel?, -- ❗ only while one of the local player's own hunters is the target
 	Mine: boolean,
-	Mouth: Part?, -- reused glow ball, made on the first windup
+	Mouth: Part?, -- reused glow ball, made on the first windup (lives in the server model)
 	MouthPos: Vector3, -- where bolts leave from (updated every frame while drawn)
+	Grow: number, -- spawn-in size factor (1 = full); applied to a rig taken mid-grow
 }
 
 local entries: { [number]: Entry } = {}
@@ -72,6 +74,57 @@ local selectedUid = 0
 local ring: Part
 local ringStroke: UIStroke
 local MOUTH_GREEN = Color3.fromRGB(120, 255, 100)
+
+-- Spare visual rigs per ghost id, so walking back and forth doesn't rebuild them every time.
+local POOL_MAX = 3
+local pool: { [string]: { Model } } = {}
+
+local function takeRig(e: Entry)
+	local id = e.Def.Id
+	local list = pool[id]
+	local vis: Model
+	local spare = list and table.remove(list)
+	if spare then
+		vis = spare
+	else
+		vis = GhostRig.Build(id)
+		vis.Name = "Visual"
+		local core = vis.PrimaryPart :: BasePart
+		core.CanQuery = false -- the server hitbox is the tap target
+	end
+	if e.Grow ~= 1 then
+		vis:ScaleTo(e.Def.Scale * e.Grow)
+	end
+	vis:PivotTo(CFrame.new(e.Pos))
+	vis.Parent = e.Model
+	e.Vis = vis
+	e.VisCore = vis.PrimaryPart :: BasePart
+end
+
+-- Unparents the rig and keeps it for reuse (full size, so a half-grown spawn-in isn't pooled).
+local function releaseRig(e: Entry)
+	local vis = e.Vis
+	if not vis then
+		return
+	end
+	e.Vis = nil
+	e.VisCore = nil
+	vis.Parent = nil
+	local id = e.Def.Id
+	local list = pool[id]
+	if not list then
+		list = {}
+		pool[id] = list
+	end
+	if #list < POOL_MAX then
+		if vis:GetScale() ~= e.Def.Scale then
+			vis:ScaleTo(e.Def.Scale)
+		end
+		table.insert(list, vis)
+	else
+		vis:Destroy()
+	end
+end
 
 function Ghosts.Get(uid: number): Entry?
 	return entries[uid]
@@ -188,14 +241,23 @@ local function updateSpirit(e: Entry, spirit: number)
 	end
 end
 
+-- Wander segment, packed by the server into one attribute: "fx,fy,fz|tx,ty,tz|t0|dur".
 local function readSegment(e: Entry)
-	local m = e.Model
-	local from = m:GetAttribute("From")
-	local to = m:GetAttribute("To")
-	e.From = if typeof(from) == "Vector3" then from else e.Pos
-	e.To = if typeof(to) == "Vector3" then to else e.From
-	e.T0 = (m:GetAttribute("T0") :: number?) or 0
-	e.Dur = (m:GetAttribute("Dur") :: number?) or 0
+	local seg = e.Model:GetAttribute("Seg")
+	if type(seg) ~= "string" then
+		return
+	end
+	local fx, fy, fz, tx, ty, tz, t0, dur = string.match(seg, "^([^,]+),([^,]+),([^|]+)|([^,]+),([^,]+),([^|]+)|([^|]+)|(.+)$")
+	local n = { tonumber(fx), tonumber(fy), tonumber(fz), tonumber(tx), tonumber(ty), tonumber(tz), tonumber(t0), tonumber(dur) }
+	for i = 1, 8 do
+		if n[i] == nil then
+			return
+		end
+	end
+	e.From = Vector3.new(n[1] :: number, n[2] :: number, n[3] :: number)
+	e.To = Vector3.new(n[4] :: number, n[5] :: number, n[6] :: number)
+	e.T0 = n[7] :: number
+	e.Dur = n[8] :: number
 end
 
 -- Selected ghost: active label + soft ground ring (set by Targeting).
@@ -235,18 +297,13 @@ local function add(model: Instance)
 	if not def or not core or not core:IsA("BasePart") or model:GetAttribute("Dead") then
 		return
 	end
-	local vis = GhostRig.Build(ghostId)
-	vis.Name = "Visual"
-	local visCore = vis.PrimaryPart :: BasePart
-	visCore.CanQuery = false -- the server hitbox is the tap target
-	vis:PivotTo(core.CFrame)
-	vis.Parent = model
+	-- the visual rig is built lazily by step() once the ghost is within draw range
 	local e: Entry = {
 		Uid = uid,
 		Model = model,
 		Core = core,
-		Vis = vis,
-		VisCore = visCore,
+		Vis = nil,
+		VisCore = nil,
 		Def = def,
 		From = core.Position,
 		To = core.Position,
@@ -266,7 +323,7 @@ local function add(model: Instance)
 		Pos = core.Position,
 		Base = core.Position,
 		Selected = false,
-		Culled = false,
+		Culled = true,
 		WindupEnd = 0,
 		WindupLen = 1,
 		LungeT = 0,
@@ -275,18 +332,19 @@ local function add(model: Instance)
 		Mine = false,
 		Mouth = nil,
 		MouthPos = core.Position,
+		Grow = 1,
 	}
 	readSegment(e)
 	buildLabel(e)
+	e.Gui.Enabled = false -- shown when step() draws it
 	updateSpirit(e, e.Spirit)
 	entries[uid] = e
 	if uid == selectedUid then
 		selectedUid = 0
 		Ghosts.SetSelected(uid)
 	end
-	model:GetAttributeChangedSignal("T0"):Connect(function()
-		-- From/To/T0/Dur are set together; read them once they have all arrived
-		task.defer(readSegment, e)
+	model:GetAttributeChangedSignal("Seg"):Connect(function()
+		readSegment(e)
 	end)
 	model:GetAttributeChangedSignal("Spirit"):Connect(function()
 		updateSpirit(e, (model:GetAttribute("Spirit") :: number?) or 0)
@@ -296,28 +354,36 @@ local function add(model: Instance)
 			if entries[uid] == e then
 				entries[uid] = nil
 			end
-			-- a culled rig is parked outside the model, so the model's Destroy wouldn't take it
 			e.Dying = true
-			e.Vis:Destroy()
+			local vis = e.Vis
+			if vis then
+				e.Vis = nil
+				e.VisCore = nil
+				vis:Destroy()
+			end
 		end
 	end)
 	-- spawn-in: grow from nothing (the event boss gets its own dramatic entrance)
 	if def.Kind ~= "Event" then
 		local s = Instance.new("NumberValue")
 		s.Value = 0.2
-		vis:ScaleTo(def.Scale * 0.2)
+		e.Grow = 0.2
 		local conn
 		conn = s.Changed:Connect(function(v)
-			-- (vis.Parent is nil while culled: keep growing so it isn't stuck small on return)
 			if e.Dying or not model.Parent then
 				conn:Disconnect()
 				return
 			end
-			vis:ScaleTo(def.Scale * v)
+			e.Grow = v
+			local vis = e.Vis -- nil while culled (a far ghost has nothing to grow)
+			if vis then
+				vis:ScaleTo(def.Scale * v)
+			end
 		end)
 		local tw = TweenService:Create(s, TweenInfo.new(0.45, Enum.EasingStyle.Back), { Value = 1 })
 		tw:Play()
 		tw.Completed:Connect(function()
+			e.Grow = 1
 			conn:Disconnect()
 			s:Destroy()
 		end)
@@ -342,8 +408,15 @@ local function poof(data: any)
 		end
 		diedSignal:Fire(data.Uid, pos)
 		e.Gui.Enabled = false
-		-- squash-and-stretch pop: inflate, then vanish
+		-- squash-and-stretch pop: inflate, then vanish (nothing to pop if the rig isn't drawn)
 		local vis = e.Vis
+		if not vis then
+			if near then
+				Effects.Poof(pos, color, scale, data.Big == true)
+				Sound.Play(if data.Big then "BigPoof" else "Poof", 0.08)
+			end
+			return
+		end
 		local v = Instance.new("NumberValue")
 		v.Value = 1
 		v.Changed:Connect(function(x)
@@ -406,12 +479,16 @@ local function step()
 				continue
 			end
 			e.Culled = false
-			e.Vis.Parent = e.Model
+			e.Pos = base
+			takeRig(e)
 			e.Gui.Enabled = true
 		elseif camDist > CULL_OUT and not e.Selected then
 			e.Culled = true
-			e.Vis.Parent = nil
+			releaseRig(e)
 			e.Gui.Enabled = false
+			if e.Mouth then
+				e.Mouth.Transparency = 1
+			end
 			e.Pos = base
 			e.Base = base
 			e.MouthPos = base
@@ -463,8 +540,11 @@ local function step()
 		e.MouthPos = cf * Vector3.new(0, -0.45 * s, -1.8 * s)
 		table.insert(parts, e.Core)
 		table.insert(cframes, CFrame.new(pos))
-		table.insert(parts, e.VisCore)
-		table.insert(cframes, cf)
+		local visCore = e.VisCore
+		if visCore then
+			table.insert(parts, visCore)
+			table.insert(cframes, cf)
+		end
 		-- green glow gathering at the mouth while winding up
 		local mouth = e.Mouth
 		if mouth then
@@ -553,7 +633,7 @@ function Ghosts.Windup(uid: number, len: number, at: Vector3?, mine: boolean)
 		m.Transparency = 1
 		m.Size = Vector3.new(0.3, 0.3, 0.3)
 		m.CFrame = CFrame.new(e.MouthPos)
-		m.Parent = e.Vis -- parked with the visual when culled, gone with the model
+		m.Parent = e.Model -- not in the pooled rig; hidden when culled, gone with the model
 		e.Mouth = m
 	end
 end

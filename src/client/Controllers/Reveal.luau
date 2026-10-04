@@ -21,6 +21,7 @@ local UserInputService = game:GetService("UserInputService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Rules = require(GH.Logic.Rules)
 local Signal = require(GH.Signal)
 local HunterRig = require(GH.Rigs.HunterRig)
 local CrateRig = require(GH.Rigs.CrateRig)
@@ -104,6 +105,25 @@ local autoMode = false
 
 local petMode = false -- egg hatches skip for free (crate skips are a paid product)
 
+-- A SKIP button is only offered when it can actually skip: egg hatches (free), Permanent Crate
+-- Skip owners, players holding skip tokens, or when the Single Crate Skip product is on sale.
+local function skipProductOnSale(): boolean
+	for _, p in Config.Products do
+		if p.Key == Config.CrateSkip.Product then
+			return p.ProductId ~= nil
+		end
+	end
+	return false
+end
+
+local function canSkip(): boolean
+	if petMode or hasPermanentSkip() then
+		return true
+	end
+	local d = State.Data
+	return (d ~= nil and (d.SkipTokens or 0) > 0) or skipProductOnSale()
+end
+
 local function skipLabel(): string
 	local d = State.Data
 	if petMode then
@@ -124,9 +144,20 @@ local function requestSkip()
 		skipping = true
 		return
 	end
+	if not canSkip() then
+		return -- gamepad B with no skip available
+	end
+	local myStage = stage
 	skipBusy = true
 	local res = State.Request("UseSkip")
 	skipBusy = false
+	if cardShown or not playing or stage ~= myStage then
+		-- the reveal finished while we waited: nothing left to skip, so hand the token back
+		if res.ok and not res.Permanent then
+			task.spawn(State.Request, "RefundSkip")
+		end
+		return
+	end
 	if res.ok then
 		pendingSkip = false
 		skipping = true
@@ -298,12 +329,22 @@ local function buildGui(): (ScreenGui, TextButton)
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
+	-- buttons stay clear of notches / rounded corners / the Roblox top bar (set after creation:
+	-- IgnoreGuiInset would otherwise override it); full-screen flashes overflow the insets anyway
+	g.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	Kit.new("UIScale", { Scale = Kit.UIScale(), Parent = g })
+	-- touch screens: lift SKIP above where the jump button sits (same reserve as the HUD)
+	local lift = 16
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		local cam = workspace.CurrentCamera
+		local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
+		lift = (if math.min(vp.X, vp.Y) < 500 then 100 else 225) / Kit.UIScale()
+	end
 	local skip = Kit.Button(g, {
 		Text = skipLabel(),
 		Color = if hasPermanentSkip() then "Gray" else "Orange",
 		Size = UDim2.fromOffset(150, 40),
-		Position = UDim2.new(1, -16, 1, -16),
+		Position = UDim2.new(1, -16, 1, -lift),
 		AnchorPoint = Vector2.new(1, 1),
 		ZIndex = 5,
 		OnClick = function()
@@ -311,6 +352,8 @@ local function buildGui(): (ScreenGui, TextButton)
 		end,
 	})
 	skipButton = skip
+	-- no "SKIP R$10" while the Single Crate Skip product isn't on sale (it could only fail)
+	skip.Visible = canSkip()
 	if autoMode then
 		Kit.Button(g, {
 			Text = "STOP AUTO OPEN",
@@ -374,9 +417,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Corner(card, UDim.new(0, 18))
 	Kit.Stroke(card, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(card, Theme.Panel2, Theme.Bg, 90)
-	local sc = Kit.new("UIScale", { Scale = 0.3, Parent = card })
-	Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-	-- slide in from the right edge
+	-- slide in from the right edge (no scale pop: scaling text renders it at many sizes)
 	card.Position = UDim2.new(1, 380, 0.5, 10)
 	Kit.Tween(card, 0.35, { Position = UDim2.new(1, -20, 0.5, 10) }, Enum.EasingStyle.Back)
 	-- rarity ribbon
@@ -396,10 +437,11 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Label(card, "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", ZIndex = 11 })
 	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 78), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
-		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, 4), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
+		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, -26), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
 		stamp.Rotation = 14
-		local ssc = Kit.new("UIScale", { Scale = 3, Parent = stamp })
-		Kit.Tween(ssc, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+		-- drops into place and fades in (one text size throughout)
+		stamp.TextTransparency = 1
+		Kit.Tween(stamp, 0.3, { Position = UDim2.new(1, 8, 0, 4), TextTransparency = 0 }, Enum.EasingStyle.Back)
 	end
 	-- buttons
 	local row: Frame = Kit.new("Frame", {
@@ -415,14 +457,22 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	if d and not equipped then
 		local free = #d.Equipped < slots
 		-- with full slots, offer EQUIP BEST only if this hunter beats the weakest equipped one
+		-- tier power, as the server's EquipBest ranks hunters (a Shiny/Mega can beat a new pull)
+		local function tierPower(h: any): number
+			local hd = h and Config.Hunters[h.Id]
+			local t = Config.Tiers[h and h.Tier or 0] or Config.Tiers[0]
+			return if hd then Rules.HunterPower(hd.Power, t.Mult) else 0
+		end
 		local weakest = math.huge
 		for _, uid in d.Equipped do
 			local h = d.Hunters[uid]
 			if h then
-				weakest = math.min(weakest, Config.Hunters[h.Id].Power)
+				weakest = math.min(weakest, tierPower(h))
 			end
 		end
-		if free or def.Power > weakest then
+		local mine = d.Hunters[res.Uid]
+		local newPower = if mine then tierPower(mine) else Rules.HunterPower(def.Power, 1)
+		if free or newPower > weakest then
 			local b: TextButton
 			b = Kit.Button(row, {
 				Text = if free then "EQUIP" else "EQUIP BEST",
@@ -484,8 +534,6 @@ local function petCard(g: ScreenGui, pet: Config.PetDef, rarity: Config.RarityDe
 	Kit.Corner(card, UDim.new(0, 18))
 	Kit.Stroke(card, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(card, Theme.Panel2, Theme.Bg, 90)
-	local sc = Kit.new("UIScale", { Scale = 0.3, Parent = card })
-	Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
 	Kit.Tween(card, 0.35, { Position = UDim2.new(1, -20, 0.5, 10) }, Enum.EasingStyle.Back)
 	local ribbon: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(200, 32),
@@ -571,6 +619,7 @@ function Reveal.Close()
 		GuiService.SelectedObject = nil
 	end
 	playing = false
+	Kit.SetBusy("Reveal", false)
 	finishedSignal:Fire()
 end
 
@@ -582,6 +631,7 @@ local function begin(rarity: Config.RarityDef): (ScreenGui, TextButton, Camera, 
 		teardownStage() -- "AGAIN": keep the camera, rebuild the stage
 	end
 	playing = true
+	Kit.SetBusy("Reveal", true) -- popups wait until the reveal is over
 	skipping = autoMode and hasPermanentSkip() -- Auto Open + Permanent Skip: quick reveals
 	startedSignal:Fire()
 	Targeting.SetBlocked(true)
@@ -731,10 +781,11 @@ end
 -- Shared ending: legendary title slam, camera slides left, the result card, auto-close.
 local function finish(g: ScreenGui, skip: TextButton, cam: Camera, camCF: CFrame, rarity: Config.RarityDef, card: () -> ())
 	if rarity.Order >= 5 and not skipping then
-		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", ZIndex = 8, Stroke = 4 })
-		-- solid colour (a UIGradient on big text dropped letters on phones)
-		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
-		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.new(0.5, 0, 0.2, -60), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", ZIndex = 8, Stroke = 4 })
+		-- solid colour (a UIGradient on big text dropped letters on phones); slams down and fades
+		-- in rather than scaling, so the text renders at one size
+		title.TextTransparency = 1
+		Kit.Tween(title, 0.35, { Position = UDim2.fromScale(0.5, 0.2), TextTransparency = 0 }, Enum.EasingStyle.Back)
 		task.spawn(cameraShake, 0.35, 0.3)
 	end
 	skip.Visible = false
@@ -1029,6 +1080,7 @@ function Reveal.Start()
 	State.OnFx("SkipGranted", function()
 		if skipButton and skipButton.Parent then
 			Kit.SetButtonText(skipButton, skipLabel())
+			skipButton.Visible = not cardShown and canSkip()
 		end
 		if pendingSkip and playing and not cardShown then
 			task.spawn(requestSkip)

@@ -1,9 +1,11 @@
 --!strict
 -- Fills the spawn TOP GHOST HUNTERS board: every RefreshSeconds it writes each online player's
 -- all-time Ectoplasm to an OrderedDataStore and reads the top rows back. Without DataStore
--- access (Studio with API off) it ranks the players in this server instead.
+-- access (Studio with API off) it ranks the players in this server instead. Studio never
+-- writes, and developer accounts stay off the public board.
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -17,7 +19,17 @@ type Row = { Name: string, Value: number }
 
 local store: OrderedDataStore? = nil
 local names: { [number]: string } = {}
+local written: { [number]: number } = {} -- userId -> value this server last wrote
 local MAX_VALUE = 2 ^ 53
+local IS_STUDIO = RunService:IsStudio()
+
+local function isDev(userId: number): boolean
+	return table.find(Config.DevUserIds, userId) ~= nil
+end
+
+local function canWrite(userId: number): boolean
+	return not IS_STUDIO and userId > 0 and not isDev(userId)
+end
 
 local function nameOf(userId: number): string
 	local cached = names[userId]
@@ -60,16 +72,20 @@ local function globalRows(): { Row }?
 		return nil
 	end
 	for _, pl in Players:GetPlayers() do
+		local id = pl.UserId
 		local v = valueOf(pl)
-		if v and v > 0 then
-			names[pl.UserId] = pl.Name
-			pcall(function()
-				s:SetAsync(tostring(pl.UserId), v)
-			end)
+		-- the current value (not the best): after a progress reset the entry goes down too
+		if v and canWrite(id) and v ~= written[id] and (v > 0 or written[id] ~= nil) then
+			names[id] = pl.Name
+			if pcall(function()
+				s:SetAsync(tostring(id), v)
+			end) then
+				written[id] = v
+			end
 		end
 	end
 	local ok, pages = pcall(function()
-		return s:GetSortedAsync(false, Config.Leaderboard.Rows)
+		return s:GetSortedAsync(false, Config.Leaderboard.Rows + #Config.DevUserIds)
 	end)
 	if not ok or not pages then
 		return nil
@@ -77,7 +93,7 @@ local function globalRows(): { Row }?
 	local rows: { Row } = {}
 	for _, entry in (pages :: DataStorePages):GetCurrentPage() do
 		local id = tonumber(entry.key)
-		if id then
+		if id and not isDev(id) and #rows < Config.Leaderboard.Rows then
 			table.insert(rows, { Name = nameOf(id), Value = tonumber(entry.value) or 0 })
 		end
 	end
@@ -121,6 +137,20 @@ function LeaderboardService.Init()
 		return DataStoreService:GetOrderedDataStore(Config.Leaderboard.DataStoreName)
 	end)
 	store = if ok then ds else nil
+	-- a progress reset removes the entry right away (the next refresh writes the new value)
+	DataService.ProgressReset:Connect(function(player: Player)
+		local s = store
+		local id = player.UserId
+		if s and canWrite(id) then
+			written[id] = nil
+			pcall(function()
+				s:RemoveAsync(tostring(id))
+			end)
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		written[player.UserId] = nil
+	end)
 end
 
 function LeaderboardService.Start()

@@ -79,6 +79,23 @@ local function pxSize(obj: Instance): Vector2?
 	return nil
 end
 
+-- Picks the size for the label's current text (or its "FitText" attribute: the longest text
+-- it is expected to show, for labels filled in later) and applies it.
+local function size(l: TextLabel)
+	local px = pxSize(l)
+	if not px or px.X <= 0 or px.Y <= 0 then
+		return
+	end
+	local wide = l.Font == Enum.Font.GothamBlack or l.Font == Enum.Font.GothamBold
+	local sample = l:GetAttribute("FitText")
+	local s = TextFit.Pick(if type(sample) == "string" then sample else l.Text, px.X, px.Y, wide)
+	l.TextSize = s
+	local st = l:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Thickness = if s <= 20 then 1 elseif s <= 40 then 2 else 3
+	end
+end
+
 local function fit(l: TextLabel)
 	if not l.TextScaled or not l:FindFirstAncestorOfClass("SurfaceGui") then
 		return
@@ -87,15 +104,16 @@ local function fit(l: TextLabel)
 	if not px or px.X <= 0 or px.Y <= 0 then
 		return
 	end
-	local wide = l.Font == Enum.Font.GothamBlack or l.Font == Enum.Font.GothamBold
-	local size = TextFit.Pick(l.Text, px.X, px.Y, wide)
 	l.TextScaled = false
-	l.TextSize = size
 	l.TextWrapped = false
-	l.TextTruncate = Enum.TextTruncate.AtEnd -- names that change later never spill out of the box
-	local st = l:FindFirstChildOfClass("UIStroke")
-	if st then
-		st.Thickness = if size <= 20 then 1 elseif size <= 40 then 2 else 3
+	l.TextTruncate = Enum.TextTruncate.AtEnd -- text longer than expected never spills out of the box
+	size(l)
+	if l:GetAttribute("FitText") == nil then
+		-- text set later by the server (placeholders like "..."): re-pick from the same short
+		-- list so the label isn't stuck at the placeholder's size
+		l:GetPropertyChangedSignal("Text"):Connect(function()
+			size(l)
+		end)
 	end
 end
 

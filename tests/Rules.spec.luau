@@ -172,7 +172,7 @@ T.pet_bonuses_add_and_cap = function()
 	eq(b.Power, 0.6); eq(b.Ecto, 0.05)
 end
 local towerCfg = { BaseHP = 180, HPGrowth = 1.15, FiveRoomBump = 1.25, MinKillSeconds = 4, HitFractionBase = 0.1, HitFractionGrowth = 1.05,
-	HitFractionCap = 0.95, MaxScaledRoom = 400, ShardsBase = 4, ShardsPerRoom = 1.5, EctoBase = 150, MilestoneEvery = { [10] = 3, [5] = 2 } }
+	HitFractionCap = 0.95, MaxScaledRoom = 400, ShardsBase = 4, ShardsPerRoom = 1.5, EctoPerMinute = 200, SpiritPayShare = 1.2, RoomOverheadSeconds = 8, MilestoneEvery = { [10] = 3, [5] = 2 } }
 T.tower_scaling_grows_and_stays_finite = function()
 	local h1, f1 = Rules.TowerScale(1, towerCfg, 0)
 	local h2 = Rules.TowerScale(2, towerCfg, 0)

@@ -211,7 +211,7 @@ local function sideWalls(f: Instance)
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(s * 140, -0.5, Z0 + 3), V(s * 146, 30, Z1 - 3), STONE, SOLID_SLATE)
 		Kit.Box(f, V(s * 139.6, 30, Z0 + 3), V(s * 146.4, 31.2, Z1 - 3), STONE_D, { Mat = SLATE })
-		Kit.Box(f, V(s * 139.7, 24, Z0 + 3), V(s * 140, 25.2, Z1 - 3), Kit.Vivid(BLUE), { Mat = SLATE })
+		Kit.Box(f, V(s * 139.7, 24, Z0 + 3), V(s * 140.05, 25.2, Z1 - 3), Kit.Vivid(BLUE), { Mat = SLATE }) -- sunk into the wall: no shared face with the pilasters
 		for z = Z0 + 12, Z1 - 12, 16 do
 			Kit.Box(f, V(s * 140, 31.2, z - 3), V(s * 146, 35, z + 3), STONE, { Mat = SLATE })
 		end
@@ -336,7 +336,7 @@ local function throneRoom(f: Instance)
 	for _, s in { -1, 1 } do
 		Kit.Box(m, V(s * 15, 0, 2171), V(s * 16.6, H, 2186), C(105, 68, 45), { Mat = Enum.Material.WoodPlanks, Solid = true, Shadow = true })
 		for _, y in { 5, 14, 23 } do
-			Kit.Box(m, V(s * 14.8, y, 2171), V(s * 16.8, y + 1, 2186), IRON, { Mat = METAL })
+			Kit.Box(m, V(s * 14.8, y, 2170.95), V(s * 16.8, y + 1, 2186.05), IRON, { Mat = METAL }) -- a hair past the door ends (z-fighting)
 		end
 		Kit.CylFlat(m, 0.4, 2.2, V(s * 14.7, 12, 2174), "X", gold, { Mat = METAL })
 		Kit.AddRect(s * 14, 2170, s * 17.5, 2186)

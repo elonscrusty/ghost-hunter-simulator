@@ -103,11 +103,16 @@ end
 
 local function spawnDrops(origin: Vector3, list: { any }, removed: { number }?)
 	local now = os.clock()
-	-- the server retired these (too many uncollected orbs): fade them out like a timeout
+	-- the server retired these (too many uncollected orbs): fade them out like a timeout. That
+	-- includes orbs already flying to / waiting at the player (predicted, never confirmed): the
+	-- server will never confirm them, so they'd otherwise bounce back as phantom orbs.
 	if type(removed) == "table" then
 		for _, id in removed do
 			local old = orbs[id]
-			if old and old.Phase ~= "Magnet" and old.Phase ~= "Held" then
+			if old and not old.Confirmed and old.Phase ~= "Fade" then
+				if old.Phase == "Magnet" or old.Phase == "Held" then
+					old.Land = old.Pos - Vector3.new(0, 0.35, 0) -- fade where it is now
+				end
 				old.Phase = "Fade"
 				old.T0 = now
 			end

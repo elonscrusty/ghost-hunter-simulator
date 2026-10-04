@@ -282,8 +282,11 @@ local function backdrop(f: Instance)
 	for i = 0, steps - 1 do
 		local z = BACK + i * run
 		local col = if i % 2 == 0 then WHITE else MARBLE_L
+		-- each step is a slab reaching to the back; inset the hidden faces a hair per step so the
+		-- alternating colours never share a plane (z-fighting)
+		local d = (i + 1) * 0.03
 		for _, s in { -1, 1 } do
-			Kit.Box(m, V(s * 34, 0, z), V(s * 146, rise * (i + 1), BACK + steps * run + 4), col, { Mat = MARBLE, Solid = i < 2, Shadow = true })
+			Kit.Box(m, V(s * (34 + d), d, z), V(s * (146 - d), rise * (i + 1), BACK + steps * run + 4 - d), col, { Mat = MARBLE, Solid = i < 2, Shadow = true })
 		end
 	end
 	local stairEnd = BACK + steps * run

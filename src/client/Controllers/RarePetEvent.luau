@@ -153,10 +153,14 @@ function RarePetEvent.Start()
 	end)
 	State.OnFx("RarePetEventStarted", function(_data: any)
 		update()
-		if chip.Visible and not Kit.CurrentPanel() then
-			panel:Open()
+		-- shown once the player isn't using a menu / watching a reveal (never closes one)
+		Kit.WhenFree(function()
 			update()
-		end
+			if chip.Visible and not panel.IsOpen then
+				panel:Open()
+				update()
+			end
+		end)
 	end)
 	for _, attr in { "RarePetEventId", "RarePetStart", "RarePetEnd" } do
 		workspace:GetAttributeChangedSignal(attr):Connect(update)

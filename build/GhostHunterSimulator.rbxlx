@@ -24,7 +24,7 @@ local Config = {}
 
 Config.Version = "1.2.0"
 Config.DataStoreName = "GhostHunterData_v1"
-Config.DataSchemaVersion = 1
+Config.DataSchemaVersion = 2
 
 --==================================================================
 -- RARITIES (ordered weakest → strongest; disabled ones are ready for later)
@@ -1631,8 +1631,9 @@ Config.Crates = {
 Config.LuckAffectsFromOrder = 3 -- Rare and higher
 
 -- LUCKY OPENS (bought with Ectoplasm at a crate): the next `Opens` opens of THAT crate roll with
--- x`Multiplier` luck (stacks with boosts/passes). Costs crate price x `PriceMultiplier`.
-Config.LuckyOpens = { Opens = 5, Multiplier = 2, PriceMultiplier = 5, MaxStack = 50 }
+-- x`Multiplier` luck (stacks with boosts/passes). Costs crate price x `PriceMultiplier` on top of
+-- the opens themselves, so Rare+ per Ecto must beat plain opens (tests/Economy.spec.luau).
+Config.LuckyOpens = { Opens = 5, Multiplier = 2, PriceMultiplier = 2, MaxStack = 50 }
 
 --==================================================================
 -- INVENTORY
@@ -1650,7 +1651,6 @@ Config.Combat = {
 	TickSeconds = 0.25, -- damage is applied in ticks of Power * TickSeconds
 	EngageDelay = 0.6, -- hunters need this long to run to a new target before damage starts
 	MaxRange = 90, -- player must be within this many studs of the target
-	ContributorShare = 0.1, -- min share of max Spirit to receive personal drops (killer always does)
 	HunterRunSpeed = 26, -- client visual
 	HitboxDiameter = 5.4, -- invisible tap target per ghost (x ghost Scale); the body is ~3.5
 }
@@ -1805,7 +1805,13 @@ Config.Tower = {
 	-- rewards per player for beating room r:
 	ShardsBase = 4, -- shards = ShardsBase + r * ShardsPerRoom (x milestone)
 	ShardsPerRoom = 1.5,
-	EctoBase = 150, -- ecto = EctoBase * r^0.9 * zone multiplier (x milestone)
+	-- ecto = min(EctoPerMinute * (fight s + RoomOverheadSeconds) / 60 * zone multiplier,
+	--           SpiritPayShare * boss HP / members * best zone's ghost Ecto per Spirit) (x milestone):
+	-- a run pays about what farming your best zone pays (tests/EconSim.luau "ratio" column;
+	-- Economy.spec asserts <= 1.5x).
+	EctoPerMinute = 230,
+	SpiritPayShare = 1.9,
+	RoomOverheadSeconds = 8, -- walking in, vote, boss intro
 	MilestoneEvery = { [10] = 3, [5] = 2 } :: { [number]: number }, -- room % key == 0 -> multiplier (largest wins)
 	Bosses = { "TowerWarden", "TowerJester", "TowerBaron", "TowerTitan" }, -- cycles by room
 	Slots = 12, -- simultaneous runs per server (each gets its own room space)
@@ -1939,7 +1945,7 @@ export type ProductDef = { Key: string, Name: string, Icon: string, Kind: string
 export type PassDef = { Key: string, Name: string, Icon: string, PassId: number?, PriceLabel: string, Slots: number?, Multiplier: number?, Storage: number?, Blurb: string?, Hidden: boolean? }
 
 Config.Products = {
-	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 2000, ProductId = 3715910102, PriceLabel = "R$ 149" },
+	{ Key = "Ecto1", Name = "SACK OF ECTOPLASM", Icon = "💚", Kind = "Ecto", Amount = 6000, ProductId = 3715910102, PriceLabel = "R$ 149" },
 	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 12000, ProductId = 3715909987, PriceLabel = "R$ 199" },
 	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 199" },
 	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 149" },
@@ -1968,9 +1974,9 @@ Config.GamePasses = {
 } :: { PassDef }
 
 --==================================================================
--- AUTO ATTACK (game pass convenience: only automates choosing targets).
--- Free players click/tap a ghost once to send their crew; after the poof the crew comes home.
--- With the pass + toggle ON, the server picks the nearest ghost in the zone you stand in.
+-- AUTO ATTACK (free for everyone; only automates choosing targets).
+-- Tap a ghost once to send your crew; after the poof the crew comes home.
+-- With the toggle ON, the server picks the nearest ghost in the zone you stand in.
 -- No extra damage, rewards, drops or pickup range.
 --==================================================================
 -- Players who bought the old Auto Attack pass (Auto Attack is free now) get Auto Open for free.
@@ -2002,7 +2008,6 @@ Config.ServerLuck = { Multiplier = 2, MaxStackSeconds = 3600 } -- server-wide cr
 Config.TripleOpen = { Count = 3, Pass = "TripleOpen" }
 
 Config.AutoAttack = {
-	Pass = "AutoAttack", -- key in Config.GamePasses
 	Range = 45, -- studs from the player
 	ScanSeconds = 0.5, -- how often idle crews look for a ghost
 }
@@ -2876,7 +2881,9 @@ export type TowerCfg = {
 	MaxScaledRoom: number,
 	ShardsBase: number,
 	ShardsPerRoom: number,
-	EctoBase: number,
+	EctoPerMinute: number,
+	SpiritPayShare: number,
+	RoomOverheadSeconds: number,
 	MilestoneEvery: { [number]: number },
 }
 
@@ -2908,13 +2915,36 @@ function Rules.TowerMilestone(room: number, cfg: TowerCfg): number
 end
 
 -- Reward pool PER PARTY MEMBER for beating `room` (the run's pool = this * party size, then
--- split by damage). Ecto is in base units before the zone multiplier.
-function Rules.TowerReward(room: number, cfg: TowerCfg): (number, number)
+-- split by damage). Ecto is in base units before the zone multiplier and is paid like farming:
+-- EctoPerMinute for the time the room took (fight `seconds` + RoomOverheadSeconds), but never
+-- more than SpiritPayShare x what the same damage (`hpEach` = boss health / members) would earn
+-- on the player's zone ghosts (`perSpirit` = base Ecto per Spirit, see ZoneEctoPerSpirit / zone
+-- multiplier), so an under-geared crew can't out-earn farming. Both x milestone. Shards depend on
+-- the room only.
+function Rules.TowerReward(room: number, cfg: TowerCfg, seconds: number?, hpEach: number?, perSpirit: number?): (number, number)
 	local r = math.max(1, math.floor(room))
 	local m = Rules.TowerMilestone(r, cfg)
 	local shards = math.floor((cfg.ShardsBase + math.min(r, cfg.MaxScaledRoom) * cfg.ShardsPerRoom) * m)
-	local ecto = math.floor(cfg.EctoBase * math.min(r, cfg.MaxScaledRoom) ^ 0.9 * m)
-	return shards, ecto
+	local secs = math.max(0, seconds or 0)
+	secs = if secs == secs then math.min(secs, 3600) else 0
+	local ecto = cfg.EctoPerMinute * (secs + cfg.RoomOverheadSeconds) / 60
+	if hpEach and perSpirit and hpEach == hpEach and perSpirit == perSpirit then
+		ecto = math.min(ecto, cfg.SpiritPayShare * math.max(0, hpEach) * math.max(0, perSpirit))
+	end
+	return shards, math.floor(ecto * m)
+end
+
+-- Best Ecto per point of Spirit among the farmable ghosts (Normal, MiniBoss, Boss) of `zoneId`
+-- (what farming that zone pays per damage, before multipliers). 0 if the zone has none.
+function Rules.ZoneEctoPerSpirit(ghosts: { [string]: any }, zoneId: string): number
+	local best = 0
+	for _, gAny in ghosts do
+		local g: { Zone: string, Kind: string, Reward: number, Spirit: number } = gAny
+		if g.Zone == zoneId and g.Kind ~= "Event" and g.Kind ~= "Tower" and g.Spirit > 0 then
+			best = math.max(best, g.Reward / g.Spirit)
+		end
+	end
+	return best
 end
 
 export type MergeHunter = { Id: string, Locked: boolean?, Tier: number? }
@@ -6832,8 +6862,40 @@ local function deepCopy(v: any): any
 	return out
 end
 
+local NICK_MAX = 40 -- longest pet nickname this version accepts (PetService)
+
+local function finite(v: any): boolean
+	return type(v) == "number" and v == v and v > -math.huge and v < math.huge
+end
+
+-- whole number >= lo; NaN, inf and wrong types become lo
+local function num(v: any, lo: number): number
+	return if finite(v) then math.max(lo, math.floor(v)) else lo
+end
+
+-- a profile saved by a NEWER schema than this server knows (rolling update): never load or save it
+local function tooNew(raw: any): boolean
+	return type(raw) == "table" and finite(raw.Version) and raw.Version > Config.DataSchemaVersion
+end
+
+-- highest numeric hunter uid in use (owned or parked)
+local function topUid(d: Data): number
+	local top = 0
+	for _, list in { d.Hunters :: any, d.Orphans } do
+		for uid in list do
+			local n = tonumber(uid)
+			if finite(n) and (n :: number) > top then
+				top = math.floor(n :: number)
+			end
+		end
+	end
+	return top
+end
+
 -- Fills missing fields (new features) and upgrades old schemas. Never deletes player data:
--- unknown keys go to Extra, hunters that no longer exist go to Orphans.
+-- unknown keys go to Extra, hunters that no longer exist go to Orphans, a field of the wrong
+-- type is kept in Extra["_bad_<name>"], and values above this version's caps are kept in
+-- Extra._over (see cap below).
 local function migrate(raw: any): Data
 	local d = defaults()
 	if type(raw) ~= "table" then
@@ -6845,8 +6907,13 @@ local function migrate(raw: any): Data
 		end
 		local cur = (d :: any)[k]
 		if cur ~= nil then
-			if type(v) == type(cur) and k ~= "Extra" then
+			if k == "Extra" then
+				continue -- merged below
+			elseif type(v) == type(cur) then
 				(d :: any)[k] = v
+			else
+				-- wrong type: keep the original (NaN/inf can't be stored, keep them as text)
+				d.Extra["_bad_" .. k] = if type(v) == "number" and not finite(v) then tostring(v) else v
 			end
 		elseif type(k) == "string" then
 			d.Extra[k] = v
@@ -6863,49 +6930,120 @@ local function migrate(raw: any): Data
 			end
 		end
 	end
+	-- Values above this version's caps (saved by a newer server, or before a cap was lowered)
+	-- are clamped so nothing indexes past the end of a table, and the original is parked in
+	-- Extra._over. A version whose cap allows it restores it, as long as the clamped value was
+	-- not changed in between (spent, merged, traded); otherwise the parked value is dropped.
+	local parked = if type(d.Extra._over) == "table" then d.Extra._over else {}
+	local over: { [string]: { [any]: any } } = {}
+	local function wasParked(list: string, key: any): any
+		local t = parked[list]
+		return if type(t) == "table" then t[key] else nil
+	end
+	local function park(list: string, key: any, v: any)
+		local t = over[list]
+		if not t then
+			t = {}
+			over[list] = t
+		end
+		t[key] = v
+	end
+	-- count = true for spendable stacks (LuckyOpens): the parked SURPLUS comes back on top of
+	-- whatever is left after spending, instead of being dropped when the value changed
+	local function cap(list: string, key: any, v: number, max: number, count: boolean?): number
+		local o = wasParked(list, key)
+		if type(o) == "table" and finite(o.v) then
+			if count and finite(o.c) and o.v > o.c then
+				v += math.floor(o.v - o.c)
+			elseif o.c == v then
+				v = math.floor(o.v)
+			end
+		end
+		if v > max then
+			park(list, key, { v = v, c = max })
+			v = max
+		end
+		return v
+	end
+	-- a uid/id table saved as an array has number keys: use the string keys this version expects
+	local function stringKeys(t: { [any]: any }, clash: ((any) -> any)?)
+		local nums = {}
+		for k in t do
+			if type(k) == "number" then
+				table.insert(nums, k)
+			end
+		end
+		for _, k in nums do
+			local v = t[k]
+			t[k] = nil
+			local s = tostring(k)
+			if t[s] == nil then
+				t[s] = v
+			elseif clash then
+				t[clash(k)] = v
+			end
+		end
+	end
+	local topKey = math.max(topUid(d), num(d.NextUid, 1))
+	local function freshUid(_: any): string
+		topKey += 1
+		return tostring(topKey)
+	end
+	stringKeys(d.Hunters :: any, freshUid)
+	stringKeys(d.Orphans, freshUid)
+	stringKeys(d.Discovered :: any)
 	-- nested defaults
 	local base = defaults()
 	local settings = d.Settings :: any
+	for k, v in (if type(parked.Settings) == "table" then parked.Settings else {}) :: { [any]: any } do
+		if (base.Settings :: any)[k] == nil then
+			park("Settings", k, v) -- still unknown here: keep it parked
+		elseif settings[k] == nil and type(v) == type((base.Settings :: any)[k]) then
+			settings[k] = v -- a setting an older server didn't know: restore it
+		end
+	end
+	for k, v in settings do
+		if (base.Settings :: any)[k] == nil then
+			park("Settings", k, v) -- retired or newer setting (e.g. the old free auto-target)
+			settings[k] = nil
+		end
+	end
 	for k, v in base.Settings :: any do
 		if type(settings[k]) ~= type(v) then
 			settings[k] = v
 		end
 	end
-	for k in settings do
-		if (base.Settings :: any)[k] == nil then
-			settings[k] = nil -- retired setting (e.g. the old free auto-target)
+	for k in base.Stats do
+		(d.Stats :: any)[k] = num((d.Stats :: any)[k], 0)
+	end
+	for k in base.Daily do
+		(d.Daily :: any)[k] = num((d.Daily :: any)[k], 0)
+	end
+	for id, t in d.Boosts do
+		if not finite(t) then
+			d.Boosts[id] = nil
 		end
 	end
-	for k, v in base.Stats do
-		if type((d.Stats :: any)[k]) ~= "number" then
-			(d.Stats :: any)[k] = v
+	for id, n in d.FreeCrates do
+		if not finite(n) or n < 0 then
+			d.FreeCrates[id] = nil
+		else
+			d.FreeCrates[id] = math.floor(n)
 		end
 	end
-	for k, v in base.Daily do
-		if type((d.Daily :: any)[k]) ~= "number" then
-			(d.Daily :: any)[k] = v
-		end
+	for id, up in Config.Upgrades do
+		d.Upgrades[id] = cap("Upgrades", id, num(d.Upgrades[id], 1), #up.Levels)
 	end
-	for id in Config.Upgrades do
-		local lv = d.Upgrades[id]
-		d.Upgrades[id] = if type(lv) == "number" and lv == lv then math.clamp(math.floor(lv), 1, #Config.Upgrades[id].Levels) else 1
-	end
-	if type(d.Ecto) ~= "number" or d.Ecto ~= d.Ecto then
-		d.Ecto = 0
-	end
-	if d.SkipTokens ~= d.SkipTokens or d.SkipTokens < 0 then
-		d.SkipTokens = 0
-	end
-	d.SkipTokens = math.floor(d.SkipTokens)
+	d.Ecto = if finite(d.Ecto) then math.max(0, d.Ecto) else 0
+	d.TotalEcto = if finite(d.TotalEcto) then math.max(0, d.TotalEcto) else 0
+	d.SkipTokens = num(d.SkipTokens, 0)
+	d.Tutorial = if finite(d.Tutorial) then math.floor(d.Tutorial) else 1
 	for id, n in d.LuckyOpens do
-		if type(id) ~= "string" or type(n) ~= "number" or n ~= n or n < 1 then
+		if type(id) ~= "string" or not finite(n) or n < 1 then
 			d.LuckyOpens[id] = nil
 		else
-			d.LuckyOpens[id] = math.min(math.floor(n), Config.LuckyOpens.MaxStack)
+			d.LuckyOpens[id] = cap("LuckyOpens", id, math.floor(n), Config.LuckyOpens.MaxStack, true)
 		end
-	end
-	local function num(v: any, lo: number): number
-		return if type(v) == "number" and v == v and v < math.huge then math.max(lo, math.floor(v)) else lo
 	end
 	d.Shards = num(d.Shards, 0)
 	d.TowerBest = num(d.TowerBest, 0)
@@ -6918,9 +7056,6 @@ local function migrate(raw: any): Data
 			d.Variants[k] = nil
 		end
 	end
-	if type(d.TotalEcto) ~= "number" or d.TotalEcto ~= d.TotalEcto then
-		d.TotalEcto = 0
-	end
 	-- pets: unknown pet ids are kept (never deleted) but not equippable
 	local maxPet = 0
 	for uid, pet in d.Pets do
@@ -6928,8 +7063,20 @@ local function migrate(raw: any): Data
 			d.Pets[uid] = nil
 		else
 			pet.T = num(pet.T, 0)
-			if pet.Nick ~= nil and (type(pet.Nick) ~= "string" or #pet.Nick > 40) then
+			if pet.Nick ~= nil and (type(pet.Nick) ~= "string" or #pet.Nick > NICK_MAX) then
+				if type(pet.Nick) == "string" then
+					park("Nick", uid, pet.Nick)
+				end
 				pet.Nick = nil
+			elseif pet.Nick == nil then
+				local o = wasParked("Nick", uid)
+				if type(o) == "string" then
+					if #o <= NICK_MAX then
+						pet.Nick = o
+					else
+						park("Nick", uid, o)
+					end
+				end
 			end
 			local n = tonumber(string.match(uid, "^p(%d+)$"))
 			if n and n > maxPet then
@@ -6990,12 +7137,9 @@ local function migrate(raw: any): Data
 			d.Hunters[uid] = nil
 		end
 	end
-	for _, h in d.Hunters do
-		local t = h.Tier
-		h.Tier = if type(t) == "number" and t == t then math.clamp(math.floor(t), 0, Config.Merge.MaxTier) else nil
-		if h.Tier == 0 then
-			h.Tier = nil
-		end
+	for uid, h in d.Hunters do
+		local tier = cap("Tier", uid, num(h.Tier, 0), Config.Merge.MaxTier)
+		h.Tier = if tier > 0 then tier else nil
 		if h.Locked ~= nil and type(h.Locked) ~= "boolean" then
 			h.Locked = false
 		end
@@ -7006,7 +7150,7 @@ local function migrate(raw: any): Data
 		end
 	end
 	for uid, t in d.Knocked do
-		if type(uid) ~= "string" or d.Hunters[uid] == nil or type(t) ~= "number" or t ~= t then
+		if type(uid) ~= "string" or d.Hunters[uid] == nil or not finite(t) then
 			d.Knocked[uid] = nil
 		end
 	end
@@ -7020,20 +7164,18 @@ local function migrate(raw: any): Data
 	end
 	d.Equipped = eq
 	-- uids must never be reused: NextUid stays above every existing numeric uid
-	local maxUid = 0
-	for _, list in { d.Hunters :: any, d.Orphans } do
-		for uid in list do
-			local n = tonumber(uid)
-			if n and n > maxUid then
-				maxUid = n
-			end
-		end
-	end
-	d.NextUid = math.max(math.floor(tonumber(d.NextUid) or 1), maxUid + 1)
+	d.NextUid = math.max(num(d.NextUid, 1), topUid(d) + 1)
+	d.Extra._over = if next(over) then over else nil
 	-- (future) if d.Version < 2 then ... end
-	d.Version = Config.DataSchemaVersion
+	-- never stamp a lower version than the stored one (a newer profile is refused before this)
+	d.Version = math.max(num(d.Version, 0), Config.DataSchemaVersion)
 	return d
 end
+
+type SaveJob = { Release: boolean, Done: boolean, Ok: boolean }
+
+local SAVE_GAP = 7 -- seconds between writes of the same key (DataStore limit: 6)
+local SYNC_GAP = 0.5 -- seconds between full snapshots sent to one client
 
 type Profile = {
 	Data: Data,
@@ -7049,6 +7191,9 @@ type Profile = {
 	-- another session's stamp, a newer session (lock takeover) has written it and we never may
 	LoadedSess: any,
 	LoadedSeq: any,
+	Pending: SaveJob?, -- the one save waiting to start; later save requests join it
+	LastWrite: number, -- os.clock of the last write of this key (load or save)
+	LastSync: number, -- os.clock of the last full snapshot sent to the client
 }
 
 local profiles: { [Player]: Profile } = {}
@@ -7058,6 +7203,8 @@ local store: DataStore? = nil
 local storeOk = false
 local loadedSignal = Signal.new()
 DataService.Loaded = loadedSignal -- (player, data) by reference
+local resetSignal = Signal.new()
+DataService.ProgressReset = resetSignal -- (player) after ResetProgress (e.g. the leaderboard entry)
 
 local syncRemote: RemoteEvent
 local ectoRemote: RemoteEvent
@@ -7115,88 +7262,90 @@ local function lockFresh(lock: any, session: string): boolean
 	return type(lock) == "table" and lock.session ~= session and os.time() - (tonumber(lock.t) or 0) < Config.Data.SessionLockSeconds
 end
 
--- Loads with a session lock. Returns data, or nil if the player should be kicked.
-local function loadProfile(player: Player, p: Profile): Data?
+-- Loads with a session lock. Returns data, or nil if the player should be kicked ("newer" =
+-- the stored profile comes from a newer version of the game than this server).
+local function loadProfile(player: Player, p: Profile): (Data?, string?)
 	if not storeOk or not store then
-		return if IS_STUDIO then migrate(nil) else nil
+		return if IS_STUDIO then migrate(nil) else nil, nil
 	end
 	local ds = store :: DataStore
 	local key = p.Key
 	local corrupt = false
-	for attempt = 1, 6 do
+	local newer = false
+	-- Another session holding the lock (player just hopped) normally releases it with its final
+	-- save within seconds. A live server refreshes the lock time on every save, so the lock is
+	-- only taken over once its time has not moved for a whole autosave period (+ margin).
+	local stuckFor = Config.Data.AutosaveSeconds + 30
+	local giveUp = os.clock() + Config.Data.SessionLockSeconds + 60
+	local seenT: number? = nil
+	local seenAt = os.clock()
+	local stealT: number? = nil
+	local attempt = 0
+	while true do
+		attempt += 1
 		local locked = false
+		local lockT: number? = nil
 		local ok, result = retry("load " .. key, function()
 			return ds:UpdateAsync(key, function(old: any)
+				locked, lockT = false, nil
 				if old ~= nil and type(old) ~= "table" then
 					corrupt = true -- never overwrite a stored value we can't read
 					return nil
 				end
+				if tooNew(old) then
+					newer = true -- never touch a newer version's profile
+					return nil
+				end
 				old = if type(old) == "table" then old else {}
 				if lockFresh(old._lock, p.Session) then
-					locked = true
-					return nil -- don't write
+					lockT = tonumber(old._lock.t)
+					if stealT == nil or lockT ~= stealT then
+						locked = true
+						return nil -- don't write
+					end
+					-- take over: the lock time is still the one we watched go stale
 				end
 				old._lock = { job = jobId(), session = p.Session, t = os.time() }
 				return old
 			end)
 		end)
-		if not ok or corrupt then
+		if not ok or corrupt or newer then
 			if corrupt then
 				warn("[Data] stored profile for " .. key .. " is not a table; refusing to load over it")
+			elseif newer then
+				warn("[Data] stored profile for " .. key .. " is from a newer version; not loading it here")
 			end
-			return nil
+			return nil, if newer then "newer" else nil
 		end
 		if not locked then
+			p.LastWrite = os.clock()
 			if type(result) == "table" then
 				p.LoadedSess, p.LoadedSeq = result._sess, result._seq
 			end
-			return migrate(result)
+			return migrate(result), nil
 		end
-		-- Another session still holds the lock (player just hopped). Wait for it to save.
-		task.wait(math.min(2 + attempt * 2, 8))
+		stealT = nil
+		if lockT ~= seenT then
+			seenT, seenAt = lockT, os.clock() -- the other server is still saving: keep waiting
+		end
+		if os.clock() - seenAt >= stuckFor then
+			warn("[Data] session lock for " .. key .. " not refreshed for " .. stuckFor .. " s; taking over")
+			stealT = seenT
+		elseif os.clock() > giveUp then
+			warn("[Data] session lock for " .. key .. " is still held by a live session; not loading")
+			return nil, nil
+		else
+			task.wait(math.min(2 + attempt * 2, 8))
+		end
 		if not player.Parent then
-			return nil
+			return nil, nil
 		end
 	end
-	warn("[Data] session lock never released for " .. key .. "; taking over")
-	local ok, result = retry("steal " .. key, function()
-		return ds:UpdateAsync(key, function(old: any)
-			if old ~= nil and type(old) ~= "table" then
-				corrupt = true
-				return nil
-			end
-			old = if type(old) == "table" then old else {}
-			old._lock = { job = jobId(), session = p.Session, t = os.time() }
-			return old
-		end)
-	end)
-	if ok and not corrupt and type(result) == "table" then
-		p.LoadedSess, p.LoadedSeq = result._sess, result._seq
-	end
-	return if ok and not corrupt then migrate(result) else nil
 end
 
--- Writes the profile. Returns true only if the data really reached the DataStore.
-local function saveP(p: Profile, release: boolean): boolean
-	if not p.Loaded then
-		return false
-	end
-	if not storeOk or not store then
-		return IS_STUDIO -- Studio without API access: nothing to save
-	end
-	if p.Leaving and not release then
-		return false -- only the final, releasing save runs for a leaving player
-	end
-	inflight += 1 -- counted while waiting too, so BindToClose never stops before this save runs
-	if p.Saving then
-		-- wait for the running write; after that go ahead anyway: the save counter (_seq) makes
-		-- sure an older snapshot can never land on top of a newer one, so the final save of a
-		-- leaving player is never skipped just because an autosave was slow
-		local t0 = os.clock()
-		while p.Saving and os.clock() - t0 < 20 do
-			task.wait(0.2)
-		end
-	end
+-- One write of the profile (the caller has waited its turn). True only if the data really
+-- reached the DataStore.
+local function writeP(p: Profile, release: boolean): boolean
 	p.Saving = true
 	local ds = store :: DataStore
 	p.Data.Stats.Seconds += math.floor(os.clock() - p.JoinedAt)
@@ -7213,6 +7362,10 @@ local function saveP(p: Profile, release: boolean): boolean
 		aborted = false
 		stale = false
 		return ds:UpdateAsync(p.Key, function(old: any)
+			if tooNew(old) then
+				aborted = true -- a newer version of the game saved this profile: never overwrite it
+				return nil
+			end
 			if type(old) == "table" and lockFresh(old._lock, p.Session) then
 				-- another session owns this profile now: never overwrite its newer data
 				aborted = true
@@ -7244,8 +7397,8 @@ local function saveP(p: Profile, release: boolean): boolean
 			end)
 		end)
 	end
+	p.LastWrite = os.clock()
 	p.Saving = false
-	inflight -= 1
 	if ok and aborted then
 		warn("[Data] save skipped for " .. p.Key .. ": another session owns the profile")
 		-- this server can never save this profile again: send the player to the newer session
@@ -7259,6 +7412,52 @@ local function saveP(p: Profile, release: boolean): boolean
 		end
 	end
 	return ok and not aborted
+end
+
+-- Saves the profile. Returns true only if the data really reached the DataStore.
+-- At most one save waits per profile: a request made while one is waiting joins it (that save
+-- copies the data when it starts, so it includes the joiner's changes) and gets its result.
+local function saveP(p: Profile, release: boolean): boolean
+	if not p.Loaded then
+		return false
+	end
+	if not storeOk or not store then
+		return IS_STUDIO -- Studio without API access: nothing to save
+	end
+	if p.Leaving and not release then
+		return false -- only the final, releasing save runs for a leaving player
+	end
+	local job = p.Pending
+	if job then
+		if release then
+			job.Release = true -- the waiting save becomes the final one
+		end
+		while not job.Done do
+			task.wait(0.1)
+		end
+		return job.Ok
+	end
+	local mine: SaveJob = { Release = release, Done = false, Ok = false }
+	p.Pending = mine
+	inflight += 1 -- counted while waiting too, so BindToClose never stops before this save runs
+	-- wait for the running write and keep writes of this key SAVE_GAP apart; the final save skips
+	-- the gap so BindToClose finishes in time. After 20 s go ahead anyway: the save counter (_seq)
+	-- makes sure an older snapshot can never land on top of a newer one, so the final save of a
+	-- leaving player is never skipped just because an autosave was slow
+	local t0 = os.clock()
+	while (p.Saving or (not mine.Release and os.clock() - p.LastWrite < SAVE_GAP)) and os.clock() - t0 < 20 do
+		task.wait(0.2)
+	end
+	p.Pending = nil
+	local ok = false
+	-- the player started leaving while this routine save waited: only the final save may write
+	-- (else this save could put the lock back after the final save released it)
+	if not (p.Leaving and not mine.Release) then
+		ok = writeP(p, mine.Release)
+	end
+	inflight -= 1
+	mine.Ok, mine.Done = ok, true
+	return ok
 end
 
 local function saveProfile(player: Player, release: boolean): boolean
@@ -7290,6 +7489,7 @@ function DataService.ResetProgress(player: Player): boolean
 	d.SkipTokens = keep.SkipTokens
 	d.TradesApplied = keep.TradesApplied
 	DataService.Changed(player)
+	resetSignal:Fire(player)
 	return true
 end
 
@@ -7343,34 +7543,52 @@ local function snapshot(player: Player, d: Data): any
 	return s
 end
 
--- Sends the client a fresh snapshot (batched: many changes in one frame = one message).
+-- Sends the client a fresh snapshot, batched: at most one per SYNC_GAP per player. The queued
+-- send builds the snapshot when it runs, so the latest state always arrives.
 function DataService.Changed(player: Player)
 	local p = profiles[player]
 	if not p or not p.Loaded or p.SyncQueued then
 		return
 	end
 	p.SyncQueued = true
-	task.defer(function()
+	local function send()
 		p.SyncQueued = false
 		if player.Parent and profiles[player] == p and not p.Leaving then
+			p.LastSync = os.clock()
 			syncRemote:FireClient(player, snapshot(player, p.Data))
 		end
-	end)
+	end
+	local wait = p.LastSync + SYNC_GAP - os.clock()
+	if wait > 0 then
+		task.delay(wait, send)
+	else
+		task.defer(send)
+	end
+end
+
+-- Adds (negative: removes) Ectoplasm on a profile table: ignores NaN/inf, never below 0.
+-- Leave hooks use this directly (the player can no longer be messaged then).
+function DataService.AddEctoData(d: Data, amount: number): boolean
+	if not finite(amount) then
+		return false
+	end
+	amount = math.floor(amount)
+	d.Ecto = math.max(0, d.Ecto + amount)
+	if amount > 0 then
+		d.TotalEcto += amount
+	end
+	return true
 end
 
 -- Currency changes are frequent: send only the number.
 function DataService.AddEcto(player: Player, amount: number)
 	local p = profiles[player]
-	if not p or not p.Loaded or p.Leaving or amount ~= amount or math.abs(amount) == math.huge then
+	if not p or not p.Loaded or p.Leaving then
 		return
 	end
-	amount = math.floor(amount)
-	p.Data.Ecto = math.max(0, p.Data.Ecto + amount)
-	if amount > 0 then
-		p.Data.TotalEcto += amount
+	if DataService.AddEctoData(p.Data, amount) then
+		ectoRemote:FireClient(player, p.Data.Ecto)
 	end
-	ectoRemote:FireClient(player, p.Data.Ecto)
-	player:SetAttribute("Ecto", p.Data.Ecto)
 end
 
 -- Spends Ectoplasm. Returns false if the player can't afford it.
@@ -7385,6 +7603,10 @@ end
 
 -- Next unique hunter id (never reuses an id that is already owned).
 function DataService.NewUid(d: Data): string
+	if not finite(d.NextUid) or d.NextUid < 1 then
+		d.NextUid = topUid(d) + 1
+	end
+	d.NextUid = math.floor(d.NextUid)
 	local uid = tostring(d.NextUid)
 	while d.Hunters[uid] ~= nil or d.Orphans[uid] ~= nil do
 		d.NextUid += 1
@@ -7398,7 +7620,8 @@ function DataService.Save(player: Player)
 	task.spawn(saveProfile, player, false)
 end
 
--- Saves now and waits; used by ProcessReceipt. True only if the write really happened.
+-- Saves now and waits (joins the next write); used by ProcessReceipt and trades. True only if
+-- that write really happened.
 function DataService.SaveNow(player: Player): boolean
 	return saveProfile(player, false)
 end
@@ -7407,7 +7630,10 @@ function DataService.Init()
 	syncRemote = Net.Event("Sync")
 	ectoRemote = Net.Event("Ecto")
 	local ok, result = pcall(function()
-		return DataStoreService:GetDataStore(Config.DataStoreName)
+		-- Studio play tests use their own scope, so testing never reads or writes live players' data
+		return if IS_STUDIO
+			then DataStoreService:GetDataStore(Config.DataStoreName, "studio")
+			else DataStoreService:GetDataStore(Config.DataStoreName)
 	end)
 	if ok and result then
 		store = result
@@ -7440,6 +7666,9 @@ local function onPlayerAdded(player: Player)
 		Seq = 0,
 		LoadedSess = nil,
 		LoadedSeq = nil,
+		Pending = nil,
+		LastWrite = -math.huge,
+		LastSync = -math.huge,
 	}
 	profiles[player] = p
 	-- rejoined this same server while the previous session was still saving: wait for it
@@ -7447,7 +7676,7 @@ local function onPlayerAdded(player: Player)
 	while leavingSaves[player.UserId] and os.clock() - t0 < 30 do
 		task.wait(0.2)
 	end
-	local data = loadProfile(player, p)
+	local data, why = loadProfile(player, p)
 	if data and player.Parent and profiles[player] == p then
 		runHooks(loadHooks, player, data) -- e.g. finish a trade that a crash interrupted
 	end
@@ -7472,12 +7701,13 @@ local function onPlayerAdded(player: Player)
 	end
 	if not data then
 		profiles[player] = nil
-		player:Kick("Couldn't load your Ghost Hunter data. Please rejoin in a moment - your progress is safe.")
+		player:Kick(if why == "newer"
+			then "This server is updating - please rejoin in a moment, your progress is safe."
+			else "Couldn't load your Ghost Hunter data. Please rejoin in a moment - your progress is safe.")
 		return
 	end
 	p.Data = data
 	p.Loaded = true
-	player:SetAttribute("Ecto", data.Ecto)
 	loadedSignal:Fire(player, data)
 	DataService.Changed(player)
 end
@@ -7563,6 +7793,7 @@ end
 
 -- exposed for the save-compatibility test (tools/datacompat.sh); not used by the game
 DataService._Migrate = migrate
+DataService._TooNew = tooNew
 
 return DataService
 ]]></string>
@@ -7572,9 +7803,10 @@ return DataService
           <Properties>
             <string name="Name">DevService</string>
             <string name="Source"><![CDATA[--!strict
--- Owner-only developer tools (DEV button + Studio chat commands). A player is a dev when the
--- game runs in Studio, or when their UserId is listed in Config.DevUserIds (live servers). Every command is re-checked here on the server, so the
--- button showing up on a client means nothing by itself.
+-- Developer-only tools (DEV button + Studio chat commands). A player is a dev ONLY when the game
+-- runs in Studio, or when their UserId is listed in Config.DevUserIds (live servers); being the
+-- place creator or a group owner does NOT make anyone a dev. Every command is re-checked here on
+-- the server, so the button showing up on a client means nothing by itself.
 -- NOTE: in a live server these change the dev's REAL saved profile.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7611,6 +7843,16 @@ end
 local MAX_ECTO_GRANT = 1e12
 local MAX_SHARD_GRANT = 1e6
 local MAX_TOWER_ROOM = 400
+local ECTO2X_DEFAULT_HOURS = 48 -- "ON" without hours: never an endless global event
+
+-- Dev-granted hunters: no release refund and can't be traded (they never leave the dev's profile).
+local function markDevHunter(d: DataService.Data, uid: string?)
+	local h = if uid then d.Hunters[uid] else nil
+	if h then
+		(h :: any).NoRefund = true;
+		(h :: any).Dev = true
+	end
+end
 
 -- whole number in [lo, hi], else nil
 local function int(arg: any, lo: number, hi: number): number?
@@ -7663,7 +7905,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 			if count >= PlayerInfo.MaxHunters(player) then
 				break
 			end
-			HunterService.Add(player, id)
+			markDevHunter(d, (HunterService.Add(player, id)))
 			count += 1
 		end
 		HunterService.Refresh(player)
@@ -7673,12 +7915,14 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		end
 		DataService.Changed(player)
 	elseif cmd == "Ecto2x" then
-		-- GLOBAL 2X Ectoplasm (all servers); arg = true (until OFF) / false / hours (timed, 1-168)
+		-- GLOBAL 2X Ectoplasm (all servers); arg = true (48 h) / false (OFF) / hours (timed, 1-168)
 		local err
 		if type(arg) == "number" and arg == arg then
 			err = GlobalEventService.SetEcto2x(true, math.clamp(arg, 1, 168) * 3600)
+		elseif arg == true then
+			err = GlobalEventService.SetEcto2x(true, ECTO2X_DEFAULT_HOURS * 3600)
 		else
-			err = GlobalEventService.SetEcto2x(arg == true)
+			err = GlobalEventService.SetEcto2x(false)
 		end
 		if err then
 			return err
@@ -7743,6 +7987,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		d.Daily.Last = 0
 		DataService.Changed(player)
 	elseif cmd == "AutoAttack" then
+		-- the LEGACY Auto Attack pass (no longer sold; Auto Attack is free): owning it grants Auto Open
 		PlayerInfo.SetPass(player, "AutoAttack", true)
 		HunterService.Refresh(player)
 	elseif cmd == "AllPasses" then
@@ -7764,7 +8009,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 			DataService.Changed(other)
 		end
 	elseif cmd == "Exclusive" then
-		HunterService.GrantExclusive(player)
+		markDevHunter(d, (HunterService.GrantExclusive(player)))
 	elseif cmd == "RarePetAddMinutes" then
 		-- Studio only: +N minutes of rare pet event play time (tests the reward without waiting)
 		local err = RarePetEventService.StudioAddMinutes(player, tonumber(arg) or 5)
@@ -8002,8 +8247,7 @@ function DropService.Init()
 		end
 		table.clear(bag.List)
 		if total > 0 then
-			data.Ecto += total
-			data.TotalEcto += total
+			DataService.AddEctoData(data, total) -- same guarded path as AddEcto (finite, never below 0)
 		end
 	end)
 end
@@ -8075,8 +8319,9 @@ return EventService
             <string name="Name">FeedbackService</string>
             <string name="Source"><![CDATA[--!strict
 -- Player feedback (bug reports + ideas). Players send short text from the FEEDBACK panel; it is
--- run through Roblox's text filter and kept in a DataStore inbox (newest first, capped) that
--- only developers can read from the DEV panel. Cooldown + per-server cap stop spam.
+-- run through Roblox's text filter and kept in a DataStore inbox (one key per day, newest first,
+-- capped) that only developers can read from the DEV panel. Cooldown + per-server cap + a
+-- durable per-day cap (counted in that day's inbox) stop spam. Studio keeps feedback in memory.
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -8094,7 +8339,8 @@ local FeedbackService = {}
 
 export type Entry = { T: number, UserId: number, Name: string, Kind: string, Text: string, Zone: string, Version: string }
 
-local KEY = "Inbox"
+local KEY = "Inbox" -- day shards are "Inbox_<day>"; "Inbox" itself is the old single inbox
+local DAY = 86400
 local store: DataStore? = nil
 local memory: { Entry } = {} -- Studio without API access: keep this session's feedback here
 local lastSent: { [Player]: number } = {}
@@ -8126,15 +8372,39 @@ local function filter(player: Player, text: string): string?
 	return if RunService:IsStudio() then text else nil
 end
 
-local function save(entry: Entry): boolean
+local function day(t: number): number
+	return math.floor(t / DAY)
+end
+
+-- messages this user already sent on the entry's day
+local function countToday(list: { any }, entry: Entry): number
+	local n = 0
+	for _, e in list do
+		if type(e) == "table" and e.UserId == entry.UserId and type(e.T) == "number" and day(e.T) == day(entry.T) then
+			n += 1
+		end
+	end
+	return n
+end
+
+-- Returns (saved, over the daily cap).
+local function save(entry: Entry): (boolean, boolean)
 	local s = store
 	if not s then
+		if countToday(memory, entry) >= Config.Feedback.PerServer then
+			return false, true
+		end
 		table.insert(memory, 1, entry)
-		return true
+		return true, false
 	end
+	local full = false
 	local ok = pcall(function()
-		s:UpdateAsync(KEY, function(old: any)
+		s:UpdateAsync(KEY .. "_" .. day(entry.T), function(old: any)
 			local list = if type(old) == "table" then old else {}
+			full = countToday(list, entry) >= Config.Feedback.PerServer
+			if full then
+				return nil -- don't write
+			end
 			table.insert(list, 1, entry)
 			while #list > Config.Feedback.InboxSize do
 				table.remove(list)
@@ -8142,25 +8412,41 @@ local function save(entry: Entry): boolean
 			return list
 		end)
 	end)
-	return ok
+	return ok and not full, ok and full
 end
 
+-- Newest first: today's shard, the days before, then the old single inbox.
 local function load(): { Entry }
 	local s = store
 	if not s then
 		return memory
 	end
-	local ok, list = pcall(function()
-		return s:GetAsync(KEY)
-	end)
-	return if ok and type(list) == "table" then list :: any else {}
+	local out: { Entry } = {}
+	local today = day(os.time())
+	for i = 0, 7 do
+		local key = if i < 7 then KEY .. "_" .. (today - i) else KEY
+		local ok, list = pcall(function()
+			return s:GetAsync(key)
+		end)
+		if ok and type(list) == "table" then
+			for _, e in list do
+				table.insert(out, e)
+			end
+		end
+		if #out >= 60 then
+			break
+		end
+	end
+	return out
 end
 
 function FeedbackService.Init()
-	local ok, ds = pcall(function()
-		return DataStoreService:GetDataStore(Config.Feedback.DataStoreName)
-	end)
-	store = if ok then ds else nil
+	if not RunService:IsStudio() then -- Studio: memory only, never the live inbox
+		local ok, ds = pcall(function()
+			return DataStoreService:GetDataStore(Config.Feedback.DataStoreName)
+		end)
+		store = if ok then ds else nil
+	end
 
 	Remotes.Register("Feedback", "Default", function(player, kind, text)
 		local fb = Config.Feedback
@@ -8201,10 +8487,14 @@ function FeedbackService.Init()
 			Zone = zoneOf(player),
 			Version = Config.Version,
 		}
-		local saved = save(entry)
+		local saved, full = save(entry)
 		if not player.Parent then
 			lastSent[player] = nil -- left while the filter/save yielded: don't keep their entries
 			return { ok = saved }
+		end
+		if full then
+			sentCount[player] = fb.PerServer
+			return Remotes.Fail("Thanks! You've sent a lot already today.")
 		end
 		if not saved then
 			lastSent[player] = nil
@@ -8288,7 +8578,8 @@ return Fx
 -- Ghost spawning, wandering, targeting and server-authoritative damage.
 --
 -- Movement is NOT simulated per frame on the server. Each ghost has a straight wander segment
--- (attributes From, To, T0, Dur in server time); the server evaluates the position only when it
+-- (one packed string attribute "Seg" = "fx,fy,fz|tx,ty,tz|t0|dur", server time, so each move
+-- replicates one attribute instead of four); the server evaluates the position only when it
 -- needs it (range checks, drops) and every client animates the model locally along the same
 -- segment. One loop handles all ghosts, so there is no per-ghost Heartbeat connection.
 local Players = game:GetService("Players")
@@ -8338,16 +8629,17 @@ export type Ghost = {
 
 local buildHitbox: (Config.GhostDef, Vector3) -> Model
 local ghosts: { [number]: Ghost } = {}
+local byArea: { [number]: { Ghost } } = {} -- live ghosts per spawn area (spacedPoint scans only its own area)
 local nextUid = 1
 local folder: Folder
 local rng = Random.new()
 
 -- Ready = os.clock() when damage may start (hunters need time to run over).
--- Auto = picked by the Auto Attack pass (manual picks are never replaced automatically).
+-- Auto = picked by Auto Attack (manual picks are never replaced automatically).
 type Target = { Uid: number, Ready: number, Auto: boolean }
 local targets: { [Player]: Target } = {}
 
--- Auto Attack toggle (session only, default OFF). Only honoured while the player owns the pass.
+-- Auto Attack toggle (session only, default OFF). Free for every player.
 local autoOn: { [Player]: boolean } = {}
 
 local zoneRanges: { { number } } = {}
@@ -8395,11 +8687,12 @@ local function spacedPoint(center: Vector3, radius: number, hover: number, area:
 		return best
 	end
 	local want = spacing * spacing
+	local peers: { Ghost } = byArea[area] or {}
 	for i = 1, SPREAD_TRIES do
 		local p = if i == 1 then best else randomPoint(center, radius, hover)
 		local gap = math.huge
-		for _, o in ghosts do
-			if o ~= self and o.Alive and o.Area == area then
+		for _, o in peers do
+			if o ~= self and o.Alive then
 				local q = o.To
 				local dx, dz = p.X - q.X, p.Z - q.Z
 				gap = math.min(gap, dx * dx + dz * dz)
@@ -8424,10 +8717,8 @@ local function setSegment(g: Ghost, to: Vector3)
 	g.Dur = math.max(0.5, (to - from).Magnitude / math.max(g.Def.Speed, 0.1))
 	g.NextMove = t + g.Dur + rng:NextNumber(0.4, g.Def.Wander)
 	local m = g.Model
-	m:SetAttribute("From", g.From)
-	m:SetAttribute("To", g.To)
-	m:SetAttribute("T0", g.T0)
-	m:SetAttribute("Dur", g.Dur)
+	local f, o = g.From, g.To
+	m:SetAttribute("Seg", string.format("%.2f,%.2f,%.2f|%.2f,%.2f,%.2f|%.3f|%.3f", f.X, f.Y, f.Z, o.X, o.Y, o.Z, g.T0, g.Dur))
 end
 
 -- The server's ghost is only an invisible, generously sized tap target (Core) with the
@@ -8501,6 +8792,14 @@ function GhostService.Spawn(def: Config.GhostDef, center: Vector3, radius: numbe
 		Pending = nil,
 	}
 	ghosts[uid] = g
+	if o.Area then
+		local list = byArea[o.Area]
+		if not list then
+			list = {}
+			byArea[o.Area] = list
+		end
+		table.insert(list, g)
+	end
 	setSegment(g, pos)
 	g.NextMove = now() + rng:NextNumber(0, def.Wander)
 	model.Parent = folder
@@ -8584,6 +8883,14 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 	end
 	g.Alive = false
 	ghosts[g.Uid] = nil
+	local list = g.Area and byArea[g.Area]
+	if list then
+		local i = table.find(list, g)
+		if i then
+			list[i] = list[#list]
+			list[#list] = nil
+		end
+	end
 	local pos = GhostService.Position(g)
 	g.Model:SetAttribute("Spirit", 0)
 	g.Model:SetAttribute("Dead", true)
@@ -8626,7 +8933,7 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 		killedSignal:Fire(g, killer)
 	end
 
-	-- Hunters on this ghost come home. Only Auto Attack owners with the toggle ON get a new
+	-- Hunters on this ghost come home. Only players with Auto Attack ON get a new
 	-- ghost picked for them; everyone else chooses their next ghost by clicking/tapping it.
 	for player, tg in targets do
 		if tg.Uid == g.Uid then
@@ -9150,6 +9457,23 @@ function HunterService.SetBusy(player: Player, uid: string, reason: string?)
 	(b :: { [string]: string? })[uid] = reason
 end
 
+-- player -> reason while a trade of theirs is committing: no crate opens, releases, merges,
+-- locks or crew changes until it finishes (TradeService sets and clears it)
+local frozen: { [Player]: string } = {}
+-- a skip token spent while the reveal was already over can be handed back once (os.clock of the spend)
+local skipSpent: { [Player]: number } = {}
+
+function HunterService.SetFrozen(player: Player, reason: string?)
+	if reason and not player.Parent then
+		return
+	end
+	(frozen :: { [Player]: string? })[player] = reason
+end
+
+function HunterService.FrozenReason(player: Player): string?
+	return frozen[player]
+end
+
 function HunterService.BusyReason(player: Player, uid: string): string?
 	local b = busy[player]
 	return if b then b[uid] else nil
@@ -9237,7 +9561,11 @@ local function ensureEquipped(player: Player, d: DataService.Data)
 			d.Equipped = Rules.EquipBest(d.Hunters, powerOf, rarityOrder, PlayerInfo.Slots(player))
 		end
 	end
-	-- lost the extra-slots pass: keep only as many equipped as there are slots
+	-- lost the extra-slots pass: keep only as many equipped as there are slots. Never while the
+	-- pass state is unknown (still being checked / Roblox unreachable): that would save a trimmed crew
+	if PlayerInfo.PassUnknown(player, "ExtraSlots") then
+		return
+	end
 	while #d.Equipped > PlayerInfo.Slots(player) do
 		table.remove(d.Equipped)
 	end
@@ -9259,6 +9587,18 @@ local function cratePrice(id: string): number
 end
 HunterService.CratePrice = cratePrice
 
+-- Ectoplasm back for releasing a hunter: a share of its crate price, scaled by tier (Shiny/Mega
+-- took several hunters + a merge fee, so this stays far below what was paid). Traded-in and
+-- dev-granted hunters (NoRefund) give nothing, so they can't be farmed for Ectoplasm.
+local function releaseRefund(h: DataService.HunterRecord): number
+	if (h :: any).NoRefund then
+		return 0
+	end
+	local t = Config.Tiers[h.Tier or 0] or Config.Tiers[0]
+	return math.floor(cratePrice(h.Id) * Config.Inventory.ReleaseRefund * t.Mult)
+end
+HunterService.ReleaseRefund = releaseRefund
+
 local function crateRoll(player: Player, crate: Config.CrateDef, extraLuck: number): string
 	return Rules.Roll(crate.Pool :: any, rarityOrder, PlayerInfo.LuckMultiplier(player) * extraLuck, Config.LuckAffectsFromOrder, rng:NextNumber())
 end
@@ -9272,6 +9612,10 @@ local function openCrate(player: Player, crateId: any): any
 	local d = DataService.Get(player)
 	if not crate or not d then
 		return Remotes.Fail("Bad crate")
+	end
+	local frozenWhy = frozen[player]
+	if frozenWhy then
+		return Remotes.Fail(frozenWhy)
 	end
 	if not d.Zones[crate.Zone] then
 		return Remotes.Fail("Unlock this zone first!")
@@ -9337,6 +9681,7 @@ function HunterService.Init()
 		for _ = 2, n do
 			local r = openCrate(player, crateId)
 			if not r.ok then
+				first.Stopped = r.err -- why the multi-open stopped early (client shows it)
 				break
 			end
 			table.insert(more, { Uid = r.Uid, Hunter = r.Hunter, IsNew = r.IsNew })
@@ -9385,10 +9730,25 @@ function HunterService.Init()
 		end
 		if (d.SkipTokens or 0) > 0 then
 			d.SkipTokens -= 1
+			skipSpent[player] = os.clock()
 			DataService.Changed(player)
 			return { ok = true, Left = d.SkipTokens }
 		end
 		return { ok = false, err = "NeedSkip" }
+	end)
+
+	-- the reveal finished while UseSkip was in flight: give that one token back (only the last
+	-- spend, only within a few seconds, only once)
+	Remotes.Register("RefundSkip", "Default", function(player)
+		local d = DataService.Get(player)
+		local t = skipSpent[player]
+		skipSpent[player] = nil
+		if not d or not t or os.clock() - t > 10 then
+			return Remotes.Fail("Nothing to refund")
+		end
+		d.SkipTokens = (d.SkipTokens or 0) + 1
+		DataService.Changed(player)
+		return { ok = true, Left = d.SkipTokens }
 	end)
 
 	-- AUTO OPEN (game pass): one server loop per player re-opens the chosen crate through the
@@ -9416,6 +9776,10 @@ function HunterService.Init()
 			end
 			while autoOpen[player] == token and player.Parent do
 				local interval = if PlayerInfo.HasPermanentSkip(player) then Config.AutoOpen.FastInterval else Config.AutoOpen.Interval
+				if frozen[player] then
+					task.wait(interval) -- a trade is finishing: pause, don't stop
+					continue
+				end
 				autoNext[player] = os.clock() + interval
 				local r = openCrate(player, crateId)
 				if autoOpen[player] ~= token then
@@ -9456,6 +9820,9 @@ function HunterService.Init()
 		if player:GetAttribute("InTower") then
 			return Remotes.Fail("Can't change your crew inside the Boss Tower")
 		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
 		local d = DataService.Get(player)
 		if not d or not validUid(d, uid) then
 			return Remotes.Fail("Unknown hunter")
@@ -9474,6 +9841,9 @@ function HunterService.Init()
 	Remotes.Register("Unequip", "Inventory", function(player, uid)
 		if player:GetAttribute("InTower") then
 			return Remotes.Fail("Can't change your crew inside the Boss Tower")
+		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
 		end
 		local d = DataService.Get(player)
 		if not d or not validUid(d, uid) then
@@ -9495,6 +9865,9 @@ function HunterService.Init()
 		if player:GetAttribute("InTower") then
 			return Remotes.Fail("Can't change your crew inside the Boss Tower")
 		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
 		local d = DataService.Get(player)
 		if not d then
 			return Remotes.Fail("Loading...")
@@ -9513,6 +9886,9 @@ function HunterService.Init()
 		if not d or not validUid(d, uid) or type(locked) ~= "boolean" then
 			return Remotes.Fail("Unknown hunter")
 		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
 		local why = HunterService.BusyReason(player, uid)
 		if why then
 			return Remotes.Fail(why)
@@ -9528,6 +9904,9 @@ function HunterService.Init()
 		if not d or type(uids) ~= "table" or #uids == 0 or #uids > PlayerInfo.MaxHunters(player) then
 			return Remotes.Fail("Nothing selected")
 		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
 		local refund = 0
 		local released = 0
 		local total = countOwned(d)
@@ -9536,7 +9915,7 @@ function HunterService.Init()
 				break
 			end
 			if validUid(d, uid) and not table.find(d.Equipped, uid) and not d.Hunters[uid].Locked and not HunterService.BusyReason(player, uid) then
-				refund += math.floor(cratePrice(d.Hunters[uid].Id) * Config.Inventory.ReleaseRefund)
+				refund += releaseRefund(d.Hunters[uid])
 				d.Hunters[uid] = nil
 				d.Knocked[uid] = nil
 				released += 1
@@ -9563,6 +9942,22 @@ function HunterService.Init()
 		local d = DataService.Get(player)
 		if not d then
 			return Remotes.Fail("Loading...")
+		end
+		if frozen[player] then
+			return Remotes.Fail(frozen[player])
+		end
+		-- only a plain list of uid strings (keys exactly 1..n): extra keys could sneak in more hunters
+		if type(uids) ~= "table" then
+			return Remotes.Fail("Pick exactly " .. Config.Merge.Count .. " hunters")
+		end
+		local nKeys = 0
+		for _ in uids do
+			nKeys += 1
+		end
+		for i = 1, nKeys do
+			if type(uids[i]) ~= "string" then
+				return Remotes.Fail("Pick different hunters")
+			end
 		end
 		local ok, err, id, tier = Rules.MergeCheck(d.Hunters :: any, uids, Config.Merge.Count, Config.Merge.MaxTier, function(uid)
 			local why = HunterService.BusyReason(player, uid)
@@ -9594,12 +9989,23 @@ function HunterService.Init()
 				table.insert(keep, uid)
 			end
 		end
+		-- a merge made from any traded-in / dev-granted hunter keeps those limits (no refund laundering)
+		local noRefund, dev = false, false
 		for _, uid in uids :: { string } do
+			local h = d.Hunters[uid] :: any
+			noRefund = noRefund or h.NoRefund == true
+			dev = dev or h.Dev == true
 			d.Hunters[uid] = nil
 			d.Knocked[uid] = nil
 		end
 		local newUid = DataService.NewUid(d)
 		d.Hunters[newUid] = { Id = hunterId, Locked = false, T = os.time(), Tier = newTier }
+		if noRefund then
+			(d.Hunters[newUid] :: any).NoRefund = true
+		end
+		if dev then
+			(d.Hunters[newUid] :: any).Dev = true
+		end
 		d.Variants[hunterId .. ":" .. newTier] = true -- Shiny/Mega variant discovered (Index)
 		if slot then
 			table.insert(keep, math.min(slot, #keep + 1), newUid)
@@ -9641,6 +10047,8 @@ function HunterService.Start()
 		autoOpen[player] = nil -- stops their Auto Open loop
 		autoNext[player] = nil
 		busy[player] = nil
+		frozen[player] = nil
+		skipSpent[player] = nil
 		PlayerInfo.Forget(player)
 	end)
 end
@@ -9655,9 +10063,11 @@ return HunterService
             <string name="Source"><![CDATA[--!strict
 -- Fills the spawn TOP GHOST HUNTERS board: every RefreshSeconds it writes each online player's
 -- all-time Ectoplasm to an OrderedDataStore and reads the top rows back. Without DataStore
--- access (Studio with API off) it ranks the players in this server instead.
+-- access (Studio with API off) it ranks the players in this server instead. Studio never
+-- writes, and developer accounts stay off the public board.
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -9671,7 +10081,17 @@ type Row = { Name: string, Value: number }
 
 local store: OrderedDataStore? = nil
 local names: { [number]: string } = {}
+local written: { [number]: number } = {} -- userId -> value this server last wrote
 local MAX_VALUE = 2 ^ 53
+local IS_STUDIO = RunService:IsStudio()
+
+local function isDev(userId: number): boolean
+	return table.find(Config.DevUserIds, userId) ~= nil
+end
+
+local function canWrite(userId: number): boolean
+	return not IS_STUDIO and userId > 0 and not isDev(userId)
+end
 
 local function nameOf(userId: number): string
 	local cached = names[userId]
@@ -9714,16 +10134,20 @@ local function globalRows(): { Row }?
 		return nil
 	end
 	for _, pl in Players:GetPlayers() do
+		local id = pl.UserId
 		local v = valueOf(pl)
-		if v and v > 0 then
-			names[pl.UserId] = pl.Name
-			pcall(function()
-				s:SetAsync(tostring(pl.UserId), v)
-			end)
+		-- the current value (not the best): after a progress reset the entry goes down too
+		if v and canWrite(id) and v ~= written[id] and (v > 0 or written[id] ~= nil) then
+			names[id] = pl.Name
+			if pcall(function()
+				s:SetAsync(tostring(id), v)
+			end) then
+				written[id] = v
+			end
 		end
 	end
 	local ok, pages = pcall(function()
-		return s:GetSortedAsync(false, Config.Leaderboard.Rows)
+		return s:GetSortedAsync(false, Config.Leaderboard.Rows + #Config.DevUserIds)
 	end)
 	if not ok or not pages then
 		return nil
@@ -9731,7 +10155,7 @@ local function globalRows(): { Row }?
 	local rows: { Row } = {}
 	for _, entry in (pages :: DataStorePages):GetCurrentPage() do
 		local id = tonumber(entry.key)
-		if id then
+		if id and not isDev(id) and #rows < Config.Leaderboard.Rows then
 			table.insert(rows, { Name = nameOf(id), Value = tonumber(entry.value) or 0 })
 		end
 	end
@@ -9775,6 +10199,20 @@ function LeaderboardService.Init()
 		return DataStoreService:GetOrderedDataStore(Config.Leaderboard.DataStoreName)
 	end)
 	store = if ok then ds else nil
+	-- a progress reset removes the entry right away (the next refresh writes the new value)
+	DataService.ProgressReset:Connect(function(player: Player)
+		local s = store
+		local id = player.UserId
+		if s and canWrite(id) then
+			written[id] = nil
+			pcall(function()
+				s:RemoveAsync(tostring(id))
+			end)
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		written[player.UserId] = nil
+	end)
 end
 
 function LeaderboardService.Start()
@@ -9823,6 +10261,8 @@ local Remotes = require(script.Parent.Remotes)
 local PetService = {}
 
 local lastBuy: { [Player]: number } = {}
+local lastRename: { [Player]: number } = {}
+local RENAME_COOLDOWN = 3 -- seconds between nickname requests (each one calls the text filter)
 local rng = Random.new()
 
 local NICK_MAX = 20 -- characters
@@ -9958,6 +10398,11 @@ function PetService.Init()
 		if type(text) ~= "string" or #text > 200 then
 			return Remotes.Fail("Bad name")
 		end
+		local now = os.clock()
+		if lastRename[player] and now - lastRename[player] < RENAME_COOLDOWN then
+			return Remotes.Fail("Wait a moment before renaming again")
+		end
+		lastRename[player] = now
 		-- invisible characters (zero-width, direction marks) can't make a "blank" name
 		for _, cp in { 0x200B, 0x200C, 0x200D, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2060, 0x2061, 0x2062, 0x2063, 0x2064, 0xFEFF } do
 			text = string.gsub(text, utf8.char(cp), "")
@@ -9998,6 +10443,7 @@ end
 function PetService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		lastBuy[player] = nil
+		lastRename[player] = nil
 	end)
 	-- equipped pets replicate to everyone for the follower visuals: "Pets" = "PetId,PetId" and
 	-- "PetNames" = the matching filtered nicknames, one per line ("" = default name). Names are
@@ -10042,10 +10488,47 @@ local PlayerInfo = {}
 
 -- Game passes owned this session (filled by ShopService).
 local passes: { [Player]: { [string]: boolean } } = {}
+-- Pass keys whose ownership Roblox couldn't confirm (check kept failing). They count as NOT owned
+-- for gameplay, but the shop won't re-sell them and equipped slots are never trimmed for them.
+local unknownPasses: { [Player]: { [string]: boolean } } = {}
+-- Players whose first pass check has finished this session (until then every pass is unknown).
+local passesChecked: { [Player]: boolean } = {}
 
 function PlayerInfo.SetPass(player: Player, key: string, owned: boolean)
 	passes[player] = passes[player] or {}
 	passes[player][key] = owned
+	local u = unknownPasses[player]
+	if u then
+		u[key] = nil -- a definite answer replaces "unknown"
+	end
+end
+
+function PlayerInfo.SetPassUnknown(player: Player, key: string)
+	if not player.Parent then
+		return
+	end
+	unknownPasses[player] = unknownPasses[player] or {}
+	unknownPasses[player][key] = true
+end
+
+function PlayerInfo.SetPassesChecked(player: Player)
+	if player.Parent then
+		passesChecked[player] = true
+	end
+end
+
+-- True while this pass's ownership isn't known yet (first check still running, or it failed).
+function PlayerInfo.PassUnknown(player: Player, key: string): boolean
+	if not passesChecked[player] then
+		return true
+	end
+	local u = unknownPasses[player]
+	return u ~= nil and u[key] == true
+end
+
+function PlayerInfo.HasUnknownPasses(player: Player): boolean
+	local u = unknownPasses[player]
+	return u ~= nil and next(u) ~= nil
 end
 
 function PlayerInfo.HasPass(player: Player, key: string): boolean
@@ -10066,12 +10549,15 @@ function PlayerInfo.ServerLuckUntil(): number
 	return serverLuckUntil
 end
 
-function PlayerInfo.AddServerLuck(seconds: number)
+-- uncapped = a paid (Robux) grant: never throw bought time away, even past the usual cap
+function PlayerInfo.AddServerLuck(seconds: number, uncapped: boolean?)
 	local now = os.time()
-	serverLuckUntil = math.min(math.max(serverLuckUntil, now) + seconds, now + Config.ServerLuck.MaxStackSeconds)
+	local total = math.max(serverLuckUntil, now) + seconds
+	serverLuckUntil = if uncapped then total else math.min(total, now + Config.ServerLuck.MaxStackSeconds)
 end
 
--- AUTO OPEN pass (or the legacy Auto Attack pass, now that Auto Attack is free)
+-- AUTO OPEN pass, or the legacy (hidden, no longer sold) Auto Attack pass: Auto Attack itself is
+-- free for everyone now, so its old buyers get Auto Open instead
 function PlayerInfo.HasAutoOpen(player: Player): boolean
 	return PlayerInfo.HasPass(player, Config.AutoOpen.Pass)
 		or (Config.LegacyAutoAttackGrantsAutoOpen and PlayerInfo.HasPass(player, "AutoAttack"))
@@ -10083,6 +10569,8 @@ end
 
 function PlayerInfo.Forget(player: Player)
 	passes[player] = nil
+	unknownPasses[player] = nil
+	passesChecked[player] = nil
 end
 
 local function passDef(key: string): Config.PassDef?
@@ -10108,10 +10596,11 @@ function PlayerInfo.BoostActive(d: DataService.Data, boost: string): boolean
 	return t ~= nil and t > os.time()
 end
 
-function PlayerInfo.AddBoost(d: DataService.Data, boost: string, seconds: number)
+-- uncapped = a paid (Robux) grant: never throw bought time away, even past the usual cap
+function PlayerInfo.AddBoost(d: DataService.Data, boost: string, seconds: number, uncapped: boolean?)
 	local now = os.time()
 	local cur = math.max(d.Boosts[boost] or 0, now)
-	d.Boosts[boost] = math.min(cur + seconds, now + Config.Boosts.MaxStackSeconds)
+	d.Boosts[boost] = if uncapped then cur + seconds else math.min(cur + seconds, now + Config.Boosts.MaxStackSeconds)
 end
 
 -- Bonuses from the player's EQUIPPED ghost pets: { Power, Ecto, HP, Recovery } fractions.
@@ -10270,6 +10759,8 @@ local ProgressService = {}
 local GATE_RANGE = 40
 local TRAVEL_COOLDOWN = 3 -- seconds between Fast Travel jumps
 local lastTravel: { [Player]: number } = {}
+local lastGuardToast: { [Player]: number } = {}
+local GUARD_TOAST_COOLDOWN = 5 -- seconds between "Unlock <zone> first!" toasts
 
 local zoneRanges: { { number } } = {}
 for _, z in Config.Zones do
@@ -10373,13 +10864,18 @@ function ProgressService.Init()
 		return { ok = true }
 	end)
 
-	Remotes.Register("BuyUpgrade", "Default", function(player, upgradeId)
+	-- shownLevel = the level the client displayed with the price; if it changed meanwhile (double
+	-- tap, lag) the purchase is refused instead of charging a price the player never saw. nil = old client.
+	Remotes.Register("BuyUpgrade", "Default", function(player, upgradeId, shownLevel)
 		local d = DataService.Get(player)
 		local up = type(upgradeId) == "string" and Config.Upgrades[upgradeId] or nil
 		if not d or not up then
 			return Remotes.Fail("Unknown upgrade")
 		end
 		local level = d.Upgrades[up.Id] or 1
+		if type(shownLevel) == "number" and shownLevel ~= level then
+			return Remotes.Fail("Price changed, try again")
+		end
 		local cost = Rules.UpgradeCost(up.Costs, level)
 		if not cost then
 			return Remotes.Fail("Already maxed!")
@@ -10468,6 +10964,11 @@ local function zoneGuardTick()
 			local char = player.Character
 			if char then
 				char:PivotTo(CFrame.new(math.clamp(root.Position.X, -10, 10), 4, safeZ))
+				local now = os.clock()
+				if now - (lastGuardToast[player] or -math.huge) >= GUARD_TOAST_COOLDOWN then
+					lastGuardToast[player] = now
+					Fx.Toast(player, "Unlock " .. zone.Name .. " first!", "Bad")
+				end
 			end
 		end
 	end
@@ -10503,6 +11004,7 @@ function ProgressService.Start()
 	Players.PlayerAdded:Connect(hook)
 	Players.PlayerRemoving:Connect(function(player)
 		lastTravel[player] = nil
+		lastGuardToast[player] = nil
 	end)
 	for _, pl in Players:GetPlayers() do
 		hook(pl)
@@ -11236,7 +11738,7 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 	if p.Kind == "Ecto" and p.Amount then
 		DataService.AddEcto(player, p.Amount * PlayerInfo.ZoneMultiplier(player))
 	elseif p.Kind == "Boost" and p.Boost and p.Seconds then
-		PlayerInfo.AddBoost(d, p.Boost, p.Seconds)
+		PlayerInfo.AddBoost(d, p.Boost, p.Seconds, true) -- paid: never capped away
 	elseif p.Kind == "CrateSkip" then
 		-- never cap here: this skip is already paid for (the cap is enforced before prompting)
 		d.SkipTokens = (d.SkipTokens or 0) + 1
@@ -11256,7 +11758,7 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 			Fx.To(player, "Exclusive", { Uid = uid, Hunter = hunterId, IsNew = isNew })
 		end
 	elseif p.Kind == "ServerLuck" and p.Seconds then
-		PlayerInfo.AddServerLuck(p.Seconds)
+		PlayerInfo.AddServerLuck(p.Seconds, true) -- paid: never capped away
 		Fx.All("Announce", { Text = player.DisplayName .. " turned on SERVER LUCK for everyone! 🍀", Color = "Rare" })
 		for _, other in Players:GetPlayers() do
 			DataService.Changed(other)
@@ -11368,19 +11870,63 @@ local function processReceipt(info: any): Enum.ProductPurchaseDecision
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
-local function checkPasses(player: Player)
-	for _, pass in Config.GamePasses do
-		if pass.PassId then
-			local ok, owned = pcall(function()
-				return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.PassId :: number)
-			end)
-			if not player.Parent then
-				return -- left while we were asking Roblox
-			end
-			PlayerInfo.SetPass(player, pass.Key, ok and owned == true)
+-- Asks Roblox (3 tries with backoff). true/false = answer, nil = still unknown.
+local function ownsPass(player: Player, passId: number): boolean?
+	for attempt = 1, 3 do
+		local ok, owned = pcall(function()
+			return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
+		end)
+		if ok then
+			return owned == true
+		end
+		if attempt < 3 then
+			task.wait(2 * attempt)
+		end
+		if not player.Parent then
+			return nil
 		end
 	end
+	return nil
+end
+
+local RECHECK_SECONDS = 180 -- passes Roblox couldn't confirm are asked about again this often
+local checking: { [Player]: boolean } = {}
+-- passes bought this session that Roblox hasn't confirmed yet: a "false" answer stays unknown
+local unconfirmed: { [Player]: { [string]: boolean } } = {}
+
+-- onlyUnknown = re-check just the passes whose earlier check failed.
+local function checkPasses(player: Player, onlyUnknown: boolean?)
+	if checking[player] then
+		return
+	end
+	checking[player] = true
+	for _, pass in Config.GamePasses do
+		if pass.PassId and (not onlyUnknown or PlayerInfo.PassUnknown(player, pass.Key)) then
+			local owned = ownsPass(player, pass.PassId :: number)
+			if not player.Parent then
+				checking[player] = nil
+				return -- left while we were asking Roblox
+			end
+			if owned == nil then
+				-- unknown: not owned for gameplay, but never re-sold and slots are never trimmed
+				PlayerInfo.SetPass(player, pass.Key, PlayerInfo.HasPass(player, pass.Key))
+				PlayerInfo.SetPassUnknown(player, pass.Key)
+			elseif not owned and unconfirmed[player] and unconfirmed[player][pass.Key] then
+				PlayerInfo.SetPassUnknown(player, pass.Key) -- bought, Roblox's cache is behind: ask again later
+			else
+				if owned and unconfirmed[player] then
+					unconfirmed[player][pass.Key] = nil
+				end
+				-- never take back a pass granted this session (a purchase can lag Roblox's cache)
+				PlayerInfo.SetPass(player, pass.Key, owned or PlayerInfo.HasPass(player, pass.Key))
+			end
+		end
+	end
+	checking[player] = nil
+	PlayerInfo.SetPassesChecked(player)
 	applyPassLooks(player)
+	-- pass state is known now: only now may a lost Extra Slots pass trim the equipped list
+	HunterService.EnsureEquipped(player)
 	HunterService.Refresh(player)
 end
 
@@ -11393,10 +11939,30 @@ function ShopService.Init()
 		end
 		for _, pass in Config.GamePasses do
 			if pass.PassId == passId then
-				PlayerInfo.SetPass(player, pass.Key, true)
-				applyPassLooks(player)
-				HunterService.Refresh(player)
-				Fx.Toast(player, "Thanks! " .. pass.Name .. " unlocked!", "Good")
+				-- the client's "purchased" flag isn't proof: confirm with Roblox first
+				local owned: boolean? = nil
+				for attempt = 1, 3 do
+					owned = ownsPass(player, passId)
+					if owned or not player.Parent then
+						break
+					end
+					task.wait(attempt)
+				end
+				if not player.Parent then
+					return
+				end
+				if owned then
+					PlayerInfo.SetPass(player, pass.Key, true)
+					applyPassLooks(player)
+					HunterService.Refresh(player)
+					Fx.Toast(player, "Thanks! " .. pass.Name .. " unlocked!", "Good")
+				elseif not PlayerInfo.HasPass(player, pass.Key) then
+					-- not confirmed yet: keep it "unknown" (not re-sold) and let the re-check unlock it
+					unconfirmed[player] = unconfirmed[player] or {}
+					unconfirmed[player][pass.Key] = true
+					PlayerInfo.SetPassUnknown(player, pass.Key)
+					Fx.Toast(player, "Checking your " .. pass.Name .. " purchase... it unlocks in a few minutes.", "Good")
+				end
 			end
 		end
 	end)
@@ -11455,6 +12021,9 @@ function ShopService.Init()
 				if PlayerInfo.HasPass(player, pass.Key) then
 					return Remotes.Fail("You already own this!")
 				end
+				if PlayerInfo.PassUnknown(player, pass.Key) then
+					return Remotes.Fail("Still checking your passes, try again in a moment")
+				end
 				if pass.Key == Config.AutoOpen.Pass and PlayerInfo.HasAutoOpen(player) then
 					return Remotes.Fail("You already have Auto Open!")
 				end
@@ -11485,7 +12054,23 @@ function ShopService.Init()
 	end
 end
 
-function ShopService.Start() end
+function ShopService.Start()
+	-- passes Roblox couldn't confirm (check failed, or a purchase not visible yet): ask again
+	task.spawn(function()
+		while true do
+			task.wait(RECHECK_SECONDS)
+			for _, player in Players:GetPlayers() do
+				if PlayerInfo.HasUnknownPasses(player) and DataService.Get(player) then
+					task.spawn(checkPasses, player, true)
+				end
+			end
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		checking[player] = nil
+		unconfirmed[player] = nil
+	end)
+end
 
 return ShopService
 ]]></string>
@@ -11703,6 +12288,7 @@ export type Run = {
 	Votes: { [Player]: boolean },
 	Earned: { [Player]: Earned },
 	Best: number, -- highest room cleared in this run
+	Dealt: { [Player]: boolean }, -- members who damaged at least one boss this run (checkpoint/best progress)
 	Model: Model?,
 	EndsAt: number,
 	Dev: boolean, -- developer test run: no rewards, no checkpoint, no stats
@@ -11963,7 +12549,9 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 	run.Best = math.max(run.Best, room)
 	run.Boss = nil
 	local members = memberList(run)
-	local shardsEach, ectoEach = Rules.TowerReward(room, TC)
+	-- Ecto is paid like farming: by the time the room took, capped by what the same damage earns
+	-- on the player's best-zone ghosts (Rules.TowerReward)
+	local fightSeconds = math.clamp(TC.RoomSeconds - (run.EndsAt - serverNow()), 0, TC.RoomSeconds)
 	-- SHARED POOLS: (reward per member * party size), split by effective damage among the
 	-- members still in the run (no damage = no share).
 	local split = GhostService.SplitDamage(g)
@@ -11978,17 +12566,23 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 	-- pool size counts members who did at least 10% of the damage (idle alts add nothing)
 	local _ = members
 	local sized = Rules.PoolMembers(weights, 0.1)
+	local shardsEach = Rules.TowerReward(room, TC)
 	local shardShares = Rules.SplitPool(shardsEach * sized, weights)
-	local ectoShares = Rules.SplitPool(ectoEach * sized, weights)
+	local hpEach = g.Max / sized
 	local paid: { [Player]: { Ecto: number, Shards: number, Pct: number } } = {}
 	for i, p in players do
 		local d = DataService.Get(p)
 		if not d or weights[i] <= 0 then
 			continue
 		end
+		run.Dealt[p] = true
 		local shards = shardShares[i]
-		local base = ectoShares[i]
-		local ecto = if base > 0 then math.max(1, math.floor(base * PlayerInfo.ZoneMultiplier(p) * PlayerInfo.EctoMultiplier(p) + 0.5)) else 0
+		local zoneMult = PlayerInfo.ZoneMultiplier(p)
+		local zone = Config.Zones[math.min(PlayerInfo.BestZone(p), #Config.Zones)]
+		local perSpirit = Rules.ZoneEctoPerSpirit(Config.Ghosts, zone.Id) / zoneMult
+		local _, ectoEach = Rules.TowerReward(room, TC, fightSeconds, hpEach, perSpirit)
+		local base = Rules.SplitPool(ectoEach * sized, weights)[i]
+		local ecto = if base > 0 then math.max(1, math.floor(base * zoneMult * PlayerInfo.EctoMultiplier(p) + 0.5)) else 0
 		if ecto > 0 then
 			DataService.AddEcto(p, ecto)
 		end
@@ -12006,7 +12600,8 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 	local saved: { [Player]: boolean } = {}
 	for _, p in members do
 		local d = DataService.Get(p)
-		if d and not run.Dev then
+		-- no damage dealt this whole run = no checkpoint / best-room progress (no free carries)
+		if d and not run.Dev and run.Dealt[p] then
 			d.TowerBest = math.max(d.TowerBest, room)
 			if cp > d.TowerCheckpoint then
 				d.TowerCheckpoint = cp
@@ -12128,6 +12723,7 @@ local function startRun(party: { Player }, first: number, dev: boolean): string?
 		Votes = {},
 		Earned = {},
 		Best = 0,
+		Dealt = {},
 		Model = nil,
 		EndsAt = serverNow() + STARTING_LIMIT,
 		Dev = dev,
@@ -12660,6 +13256,9 @@ local function checkSide(p: Player, uids: { string }, receive: number): string?
 		if h.Locked then
 			return "Locked hunters can't be traded"
 		end
+		if (h :: any).Dev then
+			return "Dev hunters can't be traded"
+		end
 		if HunterService.IsKnocked(d, uid) then
 			return "Knocked-out hunters can't be traded"
 		end
@@ -12689,14 +13288,20 @@ local function applySide(d: DataService.Data, rec: Record, userId: number): bool
 			table.remove(d.Equipped, i)
 		end
 	end
+	-- received hunters never give a release refund (NoRefund): trading them around can't mint Ectoplasm
 	for _, h in get do
 		if type(h) == "table" and Config.Hunters[h.Id] then
 			local uid = DataService.NewUid(d)
-			d.Hunters[uid] = { Id = h.Id, Tier = h.Tier, Locked = false, T = os.time() }
+			d.Hunters[uid] = { Id = h.Id, Tier = h.Tier, Locked = false, T = os.time() };
+			(d.Hunters[uid] :: any).NoRefund = true
 			d.Discovered[h.Id] = true
 			if type(h.Tier) == "number" and h.Tier > 0 then
 				d.Variants[h.Id .. ":" .. h.Tier] = true
 			end
+		elseif type(h) == "table" and type(h.Id) == "string" then
+			-- recovered on a server that doesn't know this hunter yet: park it in Orphans (same shape
+			-- DataService uses; restored on a later join once the id exists) instead of losing it
+			d.Orphans[DataService.NewUid(d)] = { Id = h.Id, Tier = h.Tier, Locked = false, T = os.time(), NoRefund = true }
 		end
 	end
 	table.insert(d.TradesApplied, rec.Id)
@@ -12796,7 +13401,7 @@ local function writeRecord(rec: Record): boolean
 	return false
 end
 
-local function commit(s: Session)
+local function commitInner(s: Session)
 	s.Committing = true
 	push(s)
 	local a, b = s.A, s.B
@@ -12838,9 +13443,7 @@ local function commit(s: Session)
 		close(s, "Couldn't reach the trade server. Nothing was traded.")
 		return
 	end
-	-- someone left (or started leaving) while the pending ids were written: their next join may
-	-- already have read a pending list WITHOUT this id, so the trade must never commit now
-	if DataService.Get(a) ~= dA or DataService.Get(b) ~= dB then
+	local function abort(reason: string)
 		local st = store
 		if st then
 			pcall(function()
@@ -12852,7 +13455,17 @@ local function commit(s: Session)
 		task.spawn(editPending, a.UserId, s.Id, false)
 		task.spawn(editPending, b.UserId, s.Id, false)
 		s.Committing = false
-		close(s, "A player left. Nothing was traded.")
+		close(s, reason)
+	end
+	-- both profiles must still be saveable (e.g. no lost session lock) before anything commits
+	if not DataService.SaveNow(a) or not DataService.SaveNow(b) then
+		abort("Couldn't save your progress. Nothing was traded.")
+		return
+	end
+	-- someone left (or started leaving) while the pending ids were written: their next join may
+	-- already have read a pending list WITHOUT this id, so the trade must never commit now
+	if DataService.Get(a) ~= dA or DataService.Get(b) ~= dB then
+		abort("A player left. Nothing was traded.")
 		return
 	end
 	if not writeRecord(rec) then
@@ -12878,6 +13491,22 @@ local function commit(s: Session)
 	-- (each side recovers on its own, so one failed save must not leave the other id behind)
 	clearWhenSaved(a, dA, { s.Id })
 	clearWhenSaved(b, dB, { s.Id })
+end
+
+-- While a trade commits, both players' inventories are frozen (no crate opens, releases, merges,
+-- locks or crew changes), so the checks done at the start still hold when the hunters move.
+local function commit(s: Session)
+	local why = "Finishing your trade..."
+	HunterService.SetFrozen(s.A, why)
+	HunterService.SetFrozen(s.B, why)
+	local ok, err = pcall(function()
+		commitInner(s)
+	end)
+	HunterService.SetFrozen(s.A, nil)
+	HunterService.SetFrozen(s.B, nil)
+	if not ok then
+		warn("[Trade] commit error: " .. tostring(err))
+	end
 end
 
 -- Join-time recovery: finish this player's side of any committed trade a crash interrupted.
@@ -13043,6 +13672,9 @@ function TradeService.Init()
 			end
 			if h.Locked then
 				return Remotes.Fail("Locked hunters can't be traded")
+			end
+			if (h :: any).Dev then
+				return Remotes.Fail("Dev hunters can't be traded")
 			end
 			if HunterService.IsKnocked(d, uid) then
 				return Remotes.Fail("That hunter is recovering")
@@ -14032,7 +14664,8 @@ local function stall(f: Instance, x: number, z: number, color: Color3, title: st
 	local fx = if x > 0 then -1 else 1
 	local base = faced(V(x, 0, z), fx, 0)
 	local col = Kit.Vivid(color)
-	Kit.Part(m, V(12, 10, 1), base * CFrame.new(0, 5, 3.5), col, { Mat = WOOD, Solid = true, Shadow = true })
+	-- back panel a hair larger than the side panels so their end faces don't share a plane
+	Kit.Part(m, V(12.04, 10.04, 1.04), base * CFrame.new(0, 5, 3.5), col, { Mat = WOOD, Solid = true, Shadow = true })
 	for _, sx in { -1, 1 } do
 		Kit.Part(m, V(1, 10, 8), base * CFrame.new(sx * 5.5, 5, 0), CREAM, { Mat = WOOD, Solid = true })
 	end
@@ -14567,7 +15200,7 @@ local function sideWalls(f: Instance)
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(s * 140, -0.5, Z0 + 3), V(s * 146, 30, Z1 - 3), STONE, SOLID_SLATE)
 		Kit.Box(f, V(s * 139.6, 30, Z0 + 3), V(s * 146.4, 31.2, Z1 - 3), STONE_D, { Mat = SLATE })
-		Kit.Box(f, V(s * 139.7, 24, Z0 + 3), V(s * 140, 25.2, Z1 - 3), Kit.Vivid(BLUE), { Mat = SLATE })
+		Kit.Box(f, V(s * 139.7, 24, Z0 + 3), V(s * 140.05, 25.2, Z1 - 3), Kit.Vivid(BLUE), { Mat = SLATE }) -- sunk into the wall: no shared face with the pilasters
 		for z = Z0 + 12, Z1 - 12, 16 do
 			Kit.Box(f, V(s * 140, 31.2, z - 3), V(s * 146, 35, z + 3), STONE, { Mat = SLATE })
 		end
@@ -14692,7 +15325,7 @@ local function throneRoom(f: Instance)
 	for _, s in { -1, 1 } do
 		Kit.Box(m, V(s * 15, 0, 2171), V(s * 16.6, H, 2186), C(105, 68, 45), { Mat = Enum.Material.WoodPlanks, Solid = true, Shadow = true })
 		for _, y in { 5, 14, 23 } do
-			Kit.Box(m, V(s * 14.8, y, 2171), V(s * 16.8, y + 1, 2186), IRON, { Mat = METAL })
+			Kit.Box(m, V(s * 14.8, y, 2170.95), V(s * 16.8, y + 1, 2186.05), IRON, { Mat = METAL }) -- a hair past the door ends (z-fighting)
 		end
 		Kit.CylFlat(m, 0.4, 2.2, V(s * 14.7, 12, 2174), "X", gold, { Mat = METAL })
 		Kit.AddRect(s * 14, 2170, s * 17.5, 2186)
@@ -15344,7 +15977,7 @@ local function sideWalls(f: Instance)
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(s * 140, -0.5, z0), V(s * 146, 30, z1), BRICKC, SOLID_BRICK)
 		Kit.Box(f, V(s * 139.5, 30, z0), V(s * 146.5, 31.4, z1), Kit.Vivid(COPPER), BRASS_M)
-		Kit.Box(f, V(s * 139.6, 0, z0), V(s * 140, 2.4, z1), DARK, { Mat = Enum.Material.Slate })
+		Kit.Box(f, V(s * 139.6, 0, z0), V(s * 140.05, 2.4, z1), DARK, { Mat = Enum.Material.Slate }) -- sunk into the wall (z-fighting with the pilasters)
 		for z = Z0 + 40, Z1 - 20, 40 do
 			Kit.Box(f, V(s * 137.6, 0, z - 2), V(s * 140, 32, z + 2), CREAM, { Mat = Enum.Material.Concrete, Solid = true })
 		end
@@ -16505,7 +17138,7 @@ local function ship(f: Instance)
 
 	-- mooring bollards with ropes up to the hull
 	for _, z in { 1690, 1770 } do
-		Kit.Cyl(m, 2.4, 2, CFrame.new(121, 1.2, z), IRON, { Mat = METAL, Solid = true })
+		Kit.Cyl(m, 2.4, 2, CFrame.new(121, 1.2, z), IRON, { Mat = METAL, Solid = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 		Kit.Cyl(m, 0.6, 2.8, CFrame.new(121, 2.5, z), IRON, { Mat = METAL })
 		Props.Beam(m, V(121, 2.2, z), V(x0 - 0.2, 16, z + 4), 0.4, 0.4, ROPE)
 		Kit.AddCircle(121, z, 2)
@@ -17204,7 +17837,7 @@ end
 
 local function chair(f: Instance, x: number, z: number, fx: number, fz: number, color: Color3)
 	local base = faced(V(x, FLOOR_Y, z), fx, fz)
-	Kit.Part(f, V(2.4, 2, 2.4), base * CFrame.new(0, 1, 0), color, { Solid = true })
+	Kit.Part(f, V(2.4, 2, 2.4), base * CFrame.new(0, 1, 0), color, { Solid = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 	Kit.Part(f, V(2.4, 2.6, 0.5), base * CFrame.new(0, 3.3, 0.95), color)
 end
 
@@ -18321,6 +18954,15 @@ function Kit.Gui(part: BasePart, face: Enum.NormalId, pps: number?): SurfaceGui
 	-- most on phones). Brightness just above 1 keeps the colours bright without the text
 	-- glowing into the bloom.
 	g.PixelsPerStud = pps or 30
+	-- big signs (gate arches, the throne hall banner): a 30 px/stud canvas on a 40-64 stud face
+	-- is a 0.4-0.5 Mpx texture each. 16 px/stud is still sharp at the distance they're read from,
+	-- and past 250 studs they aren't drawn at all (TextFit sizes text from this canvas).
+	local s = part.Size
+	local wide = if face == Enum.NormalId.Left or face == Enum.NormalId.Right then s.Z else s.X
+	if wide > 30 then
+		g.PixelsPerStud = math.min(g.PixelsPerStud, 16)
+		g.MaxDistance = 250
+	end
 	g.LightInfluence = 0
 	g.Brightness = 1.1
 	g.ZOffset = 1
@@ -18567,8 +19209,12 @@ function Leaderboard.Build(map: Instance)
 		row.Parent = gui
 		local rankColor = if i == 1 then C(255, 215, 80) elseif i == 2 then C(220, 225, 240) elseif i == 3 then C(240, 160, 90) else C(200, 190, 230)
 		Kit.Label(row, "#" .. i, rankColor, { Name = "Rank", Pos = UDim2.fromScale(0.01, 0.1), Size = UDim2.fromScale(0.12, 0.8) })
-		Kit.Label(row, "...", C(255, 255, 255), { Name = "PlayerName", Pos = UDim2.fromScale(0.15, 0.1), Size = UDim2.fromScale(0.52, 0.8) })
-		Kit.Label(row, "", C(150, 255, 170), { Name = "Value", Pos = UDim2.fromScale(0.69, 0.1), Size = UDim2.fromScale(0.3, 0.8) })
+		-- (filled in by LeaderboardService: TextFit sizes these against typical lengths, not the
+		-- "..." / "" placeholders; longer names are cut with "...")
+		local name = Kit.Label(row, "...", C(255, 255, 255), { Name = "PlayerName", Pos = UDim2.fromScale(0.15, 0.1), Size = UDim2.fromScale(0.52, 0.8) })
+		name:SetAttribute("FitText", "👑 Ghosthunter123")
+		local value = Kit.Label(row, "", C(150, 255, 170), { Name = "Value", Pos = UDim2.fromScale(0.69, 0.1), Size = UDim2.fromScale(0.3, 0.8) })
+		value:SetAttribute("FitText", "999.9Qa")
 	end
 	local p = L.Position
 	Kit.AddRect(p.X - 12, p.Z - 12, p.X + 12, p.Z + 12)
@@ -19802,7 +20448,9 @@ local function gym(f: Instance)
 	local cols = { C(95, 135, 205), C(235, 150, 70), C(240, 225, 195), C(150, 100, 220) }
 	for i = 0, 3 do
 		for _, s in { -1, 1 } do
-			Kit.Box(f, V(s * 15, 0.15, 842 + i * 4), V(s * 60, 1.6 * (i + 1) + 0.15, 859), cols[i + 1], { Mat = Enum.Material.WoodPlanks, Solid = true, Shadow = true })
+			-- rows overlap (each reaches the back): inset hidden faces per row against z-fighting
+			local d = i * 0.03
+			Kit.Box(f, V(s * (15 + d), 0.15 + d, 842 + i * 4), V(s * (60 - d), 1.6 * (i + 1) + 0.15, 859 - d), cols[i + 1], { Mat = Enum.Material.WoodPlanks, Solid = true, Shadow = true })
 		end
 	end
 	for k, px in { -50, -36, -22, 22, 36, 50 } do
@@ -20059,7 +20707,7 @@ end
 local function waterfall(parent: Instance, top: Vector3, width: number, len: number, mist: boolean)
 	local cf = CFrame.new(top - V(0, len / 2, 0))
 	Kit.Part(parent, V(1.2, len, width), cf, C(110, 180, 255), { Mat = GLASS, Transp = 0.45, Refl = 0.1, Name = "Waterfall" })
-	Kit.Part(parent, V(1.6, len, width * 0.4), cf, C(205, 235, 255), { Transp = 0.6 })
+	Kit.Part(parent, V(1.6, len - 0.04, width * 0.4), cf, C(205, 235, 255), { Transp = 0.6 }) -- ends inside the sheet (z-fighting)
 	local lip = Kit.Part(parent, V(3, 0.8, width + 1), CFrame.new(top + V(0, 0.2, 0)), C(170, 220, 255), { Transp = 0.35 })
 	if mist then
 		Kit.Emitter(lip, C(190, 225, 255), 4, 7, 1.2)
@@ -20145,7 +20793,8 @@ end
 --==================================================================
 local function ground(f: Instance)
 	-- void glass: walkable everywhere in the play area, dark and see-through
-	Kit.Box(f, V(-W, -1, Z0), V(W, 0, Z1), C(16, 12, 34), { Solid = true, Transp = 0.3, Refl = 0.15, Name = "VoidGlass" })
+	-- (ends 0.05 short of the edge so it doesn't share the side rocks' outer face)
+	Kit.Box(f, V(-W + 0.05, -1, Z0), V(W - 0.05, 0, Z1), C(16, 12, 34), { Solid = true, Transp = 0.3, Refl = 0.15, Name = "VoidGlass" })
 	-- invisible backing slab: the glass alone is only 1 stud thick while every other zone floor
 	-- is 4, so this brings the realm floor to 4 studs and fast characters can't tunnel through.
 	Kit.Box(f, V(-W, -4, Z0), V(W, -1, Z1), C(16, 12, 34), { Solid = true, Transp = 1, Shadow = false, Name = "VoidGlassBacking" })
@@ -20346,7 +20995,7 @@ local function insideScenery(f: Instance)
 		if Kit.IsFree(x, z, 3) then
 			boulders += 1
 			local sz = V(rng:NextNumber(2, 4.5), rng:NextNumber(1.5, 3), rng:NextNumber(2, 4.5))
-			Kit.Part(f, sz, CFrame.new(x, sz.Y * 0.35, z) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3)), Kit.Pick(ROCKS), { Mat = ROCK, Solid = true, Shadow = true })
+			Kit.Part(f, sz, CFrame.new(x, sz.Y * 0.35, z) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3)), Kit.Pick(ROCKS), { Mat = ROCK, Solid = true, Shadow = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 			Kit.AddCircle(x, z, 3)
 		end
 	end
@@ -21774,6 +22423,23 @@ local function pxSize(obj: Instance): Vector2?
 	return nil
 end
 
+-- Picks the size for the label's current text (or its "FitText" attribute: the longest text
+-- it is expected to show, for labels filled in later) and applies it.
+local function size(l: TextLabel)
+	local px = pxSize(l)
+	if not px or px.X <= 0 or px.Y <= 0 then
+		return
+	end
+	local wide = l.Font == Enum.Font.GothamBlack or l.Font == Enum.Font.GothamBold
+	local sample = l:GetAttribute("FitText")
+	local s = TextFit.Pick(if type(sample) == "string" then sample else l.Text, px.X, px.Y, wide)
+	l.TextSize = s
+	local st = l:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Thickness = if s <= 20 then 1 elseif s <= 40 then 2 else 3
+	end
+end
+
 local function fit(l: TextLabel)
 	if not l.TextScaled or not l:FindFirstAncestorOfClass("SurfaceGui") then
 		return
@@ -21782,15 +22448,16 @@ local function fit(l: TextLabel)
 	if not px or px.X <= 0 or px.Y <= 0 then
 		return
 	end
-	local wide = l.Font == Enum.Font.GothamBlack or l.Font == Enum.Font.GothamBold
-	local size = TextFit.Pick(l.Text, px.X, px.Y, wide)
 	l.TextScaled = false
-	l.TextSize = size
 	l.TextWrapped = false
-	l.TextTruncate = Enum.TextTruncate.AtEnd -- names that change later never spill out of the box
-	local st = l:FindFirstChildOfClass("UIStroke")
-	if st then
-		st.Thickness = if size <= 20 then 1 elseif size <= 40 then 2 else 3
+	l.TextTruncate = Enum.TextTruncate.AtEnd -- text longer than expected never spills out of the box
+	size(l)
+	if l:GetAttribute("FitText") == nil then
+		-- text set later by the server (placeholders like "..."): re-pick from the same short
+		-- list so the label isn't stuck at the placeholder's size
+		l:GetPropertyChangedSignal("Text"):Connect(function()
+			size(l)
+		end)
 	end
 end
 
@@ -22106,8 +22773,11 @@ local function backdrop(f: Instance)
 	for i = 0, steps - 1 do
 		local z = BACK + i * run
 		local col = if i % 2 == 0 then WHITE else MARBLE_L
+		-- each step is a slab reaching to the back; inset the hidden faces a hair per step so the
+		-- alternating colours never share a plane (z-fighting)
+		local d = (i + 1) * 0.03
 		for _, s in { -1, 1 } do
-			Kit.Box(m, V(s * 34, 0, z), V(s * 146, rise * (i + 1), BACK + steps * run + 4), col, { Mat = MARBLE, Solid = i < 2, Shadow = true })
+			Kit.Box(m, V(s * (34 + d), d, z), V(s * (146 - d), rise * (i + 1), BACK + steps * run + 4 - d), col, { Mat = MARBLE, Solid = i < 2, Shadow = true })
 		end
 	end
 	local stairEnd = BACK + steps * run
@@ -22334,7 +23004,7 @@ end
 
 local function urn(parent: Instance, x: number, z: number, s: number)
 	local col = if Kit.Rng:NextNumber() < 0.5 then TERRA else C(190, 120, 70)
-	Kit.Ball(parent, 2.4 * s, V(x, 1.2 * s, z), col, { Solid = true })
+	Kit.Ball(parent, 2.4 * s, V(x, 1.2 * s, z), col, { Solid = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 	Kit.Cyl(parent, 1.1 * s, 1.1 * s, CFrame.new(x, 2.6 * s, z), col)
 	Kit.Cyl(parent, 0.3 * s, 1.5 * s, CFrame.new(x, 3.2 * s, z), Kit.Vivid(TURQ))
 end
@@ -22938,7 +23608,7 @@ local function gift(parent: Instance, x: number, z: number, s: number, yaw: numb
 	local cf = CFrame.new(x, (y or 0) + s / 2, z) * CFrame.Angles(0, yaw, 0)
 	local col = Kit.Pick(TOYS)
 	local rib = if col == YELLOW then PINK else YELLOW
-	Kit.Part(parent, V(s, s, s), cf, Kit.Vivid(col), { Solid = true })
+	Kit.Part(parent, V(s, s, s), cf, Kit.Vivid(col), { Solid = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 	Kit.Part(parent, V(s + 0.1, s + 0.1, s * 0.18), cf, Kit.Vivid(rib))
 	Kit.Part(parent, V(s * 0.18, s + 0.1, s + 0.1), cf, Kit.Vivid(rib))
 	for _, sx in { -1, 1 } do
@@ -23826,6 +24496,23 @@ local function rarityOrder(id: string): number
 	return if h then Config.Rarities[h.Rarity].Order else 1
 end
 
+-- AUTO OPEN can only be bought once its game pass exists (PassId filled in Config)
+local function autoPassOnSale(): boolean
+	for _, gp in Config.GamePasses do
+		if gp.Key == Config.AutoOpen.Pass then
+			return gp.PassId ~= nil
+		end
+	end
+	return false
+end
+
+-- The server may stop a multi-open early (e.g. storage full): say why after the results.
+local function toastStopped(res: any)
+	if type(res.Stopped) == "string" and res.Stopped ~= "" then
+		Kit.Toast(res.Stopped, "Bad")
+	end
+end
+
 local function nearStation(crateId: string): boolean
 	local pos = Config.Layout.CrateStations[crateId]
 	local char = player.Character
@@ -23960,9 +24647,11 @@ function refreshButton(crateId: string, d: any, luck: number)
 	local autoOn = player:GetAttribute("AutoOpen") ~= nil
 	Kit.SetButtonText(autoButton, if not autoOwned then "🔒 AUTO OPEN" elseif autoOn then "AUTO OPEN: ON" else "AUTO OPEN: OFF")
 	autoButton:SetAttribute("Color", if not autoOwned then "Gray" elseif autoOn then "Green" else "Purple")
+	-- no "🔒 AUTO OPEN" while the pass isn't on sale (owners keep their button)
+	autoButton.Visible = autoOwned == true or autoPassOnSale()
+	luckyButton.Position = if autoButton.Visible then UDim2.new(1, -180, 0, 8) else UDim2.new(1, 0, 0, 8)
 	local triple = d.Passes and d.Passes[Config.TripleOpen.Pass] == true
 	tripleButton.Visible = triple == true
-	openButton.Position = if triple then UDim2.new(0.5, -75, 1, -4) else UDim2.new(0.5, 0, 1, -4)
 	if triple then
 		Kit.SetButtonText(tripleButton, "OPEN x3  💚 " .. Format.Short(price * Config.TripleOpen.Count))
 	end
@@ -24017,6 +24706,7 @@ local function buyTriple()
 	end
 	panel:Close()
 	playResults(crateId, res, nil)
+	toastStopped(res)
 end
 
 local function buy()
@@ -24064,11 +24754,13 @@ local function buy()
 			local res2: Reveal.Result = { Crate = crateId, Hunter = r2.Hunter, Uid = r2.Uid, IsNew = r2.IsNew == true }
 			openedSignal:Fire(res2)
 			Reveal.Play(res2, again)
+			toastStopped(r2)
 		else
 			Kit.Toast(r2.err or "Couldn't open the crate", "Bad")
 		end
 	end
 	Reveal.Play(result, again)
+	toastStopped(res)
 end
 
 function CratePanel.Open(crateId: string)
@@ -24119,27 +24811,31 @@ function CratePanel.Init()
 		Parent = list,
 	})
 	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), Parent = list })
-	openButton = Kit.Button(panel.Body, {
+	-- OPEN [+ OPEN x3]: a centred row whose buttons share the body width (capped at their design
+	-- widths), so the pair never runs past the panel edge on narrow screens
+	local openRow: Frame = Kit.new("Frame", { Name = "OpenRow", Size = UDim2.new(1, 0, 0, 50), Position = UDim2.new(0, 0, 1, -4), AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1, ZIndex = 62, Parent = panel.Body })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = openRow })
+	openButton = Kit.Button(openRow, {
 		Text = "OPEN",
 		Color = "Green",
-		Size = UDim2.fromOffset(280, 50),
-		Position = UDim2.new(0.5, 0, 1, -4),
-		AnchorPoint = Vector2.new(0.5, 1),
+		Size = UDim2.new(0.56, -5, 0, 50),
 		ZIndex = 63,
 		OnClick = buy,
 	})
 	openButton.Name = "OpenButton"
+	openButton.LayoutOrder = 1
+	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(280, 50), Parent = openButton })
 	panel.Primary = openButton
-	tripleButton = Kit.Button(panel.Body, {
+	tripleButton = Kit.Button(openRow, {
 		Text = "OPEN x3",
 		Color = "Purple",
-		Size = UDim2.fromOffset(200, 50),
-		Position = UDim2.new(0.5, 185, 1, -4),
-		AnchorPoint = Vector2.new(0.5, 1),
+		Size = UDim2.new(0.44, -5, 0, 50),
 		TextStyle = "Small",
 		ZIndex = 63,
 		OnClick = buyTriple,
 	})
+	tripleButton.LayoutOrder = 2
+	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(200, 50), Parent = tripleButton })
 	tripleButton.Visible = false
 	-- LUCKY OPENS (Ectoplasm): next few opens of this crate at higher luck
 	luckyButton = Kit.Button(panel.Body, {
@@ -25486,8 +26182,14 @@ function DailyPanel.Start()
 	task.spawn(function()
 		local d = State.WaitForData()
 		task.wait(6)
-		if d.DailyInfo and d.DailyInfo.CanClaim and (d.Tutorial or 1) > #Config.Tutorial.Steps and not Kit.CurrentPanel() then
-			panel:Open()
+		if d.DailyInfo and d.DailyInfo.CanClaim and (d.Tutorial or 1) > #Config.Tutorial.Steps then
+			-- waits for any open menu / crate reveal to finish instead of skipping or closing it
+			Kit.WhenFree(function()
+				local now = State.Data
+				if not panel.IsOpen and now and now.DailyInfo and now.DailyInfo.CanClaim then
+					panel:Open()
+				end
+			end)
 		end
 	end)
 end
@@ -25576,10 +26278,10 @@ local ACTIONS: { Action } = {
 	{ Text = "GIVE ALL PETS", Cmd = "AllPets", Color = "Pink" },
 	{ Text = "HEAL ALL HUNTERS", Cmd = "HealAll", Color = "Green" },
 	{ Text = "2X ECTOPLASM: 2 DAYS", Cmd = "Ecto2x", Arg = 48, Color = "Green" },
-	{ Text = "2X ECTOPLASM: ON", Cmd = "Ecto2x", Arg = true, Color = "Green" },
+	{ Text = "2X ECTOPLASM: ON (48H)", Cmd = "Ecto2x", Arg = true, Color = "Green" },
 	{ Text = "2X ECTOPLASM: OFF", Cmd = "Ecto2x", Arg = false, Color = "Red" },
 	{ Text = "RESET DAILY", Cmd = "ResetDaily", Color = "Purple" },
-	{ Text = "AUTO ATTACK PASS", Cmd = "AutoAttack", Color = "Purple" },
+	{ Text = "LEGACY PASS: AUTO OPEN", Cmd = "AutoAttack", Color = "Purple" },
 	{ Text = "ALL GAME PASSES", Cmd = "AllPasses", Color = "Purple" },
 	{ Text = "SERVER LUCK 15M", Cmd = "ServerLuck", Color = "Green" },
 	{ Text = "EXCLUSIVE HUNTER", Cmd = "Exclusive", Color = "Teal" },
@@ -26041,15 +26743,25 @@ local EventPopup = {}
 
 local panel: Kit.Panel
 local shownThisSession = false
+local eventOn = false -- latest on/off from the Ecto2xEvent Fx
 local _ = GH
 
+-- waits until no menu is open and no crate reveal is playing (never closes what you're using)
+local queued = false
 local function show()
-	if panel.IsOpen then
-		return
-	end
 	shownThisSession = true
-	Sound.Play("ZoneUnlock")
-	panel:Open()
+	if queued then
+		return -- one popup is already waiting for a free screen
+	end
+	queued = true
+	Kit.WhenFree(function()
+		queued = false
+		if panel.IsOpen or not (eventOn or workspace:GetAttribute("Ecto2x") == true) then
+			return -- already showing, or the event ended while we waited
+		end
+		Sound.Play("ZoneUnlock")
+		panel:Open()
+	end)
 end
 
 function EventPopup.Init()
@@ -26075,7 +26787,8 @@ end
 
 function EventPopup.Start()
 	State.OnFx("Ecto2xEvent", function(data: any)
-		if type(data) == "table" and data.On == true then
+		eventOn = type(data) == "table" and data.On == true
+		if eventOn then
 			show()
 		elseif panel.IsOpen then
 			panel:Close()
@@ -26085,7 +26798,7 @@ function EventPopup.Start()
 	task.spawn(function()
 		State.WaitForData()
 		task.wait(4)
-		if workspace:GetAttribute("Ecto2x") == true and not shownThisSession and not Kit.CurrentPanel() then
+		if workspace:GetAttribute("Ecto2x") == true and not shownThisSession then
 			show()
 		end
 	end)
@@ -26345,7 +27058,8 @@ return GatePanel
               <string name="Source"><![CDATA[--!strict
 -- Client-side ghost presentation. The server sends each ghost as a single invisible hitbox
 -- (`Core`, the tap target) plus attributes; this module builds the visual rig locally
--- (GhostRig), moves both along the server's wander segments, and handles bobbing, facing,
+-- (GhostRig) only while the ghost is within draw range (rigs go back to a small per-kind pool
+-- when it leaves), moves both along the server's wander segments, and handles bobbing, facing,
 -- Spirit labels, the selected-ghost state (active label + ground ring), hit wobble, spawn-in
 -- and the POOF. One RenderStepped loop for all ghosts.
 local Players = game:GetService("Players")
@@ -26372,8 +27086,8 @@ export type Entry = {
 	Uid: number,
 	Model: Model, -- server model (hitbox)
 	Core: BasePart, -- server hitbox (tap target, beam attachments)
-	Vis: Model, -- local visual rig
-	VisCore: BasePart,
+	Vis: Model?, -- local visual rig (nil while culled: built/taken from the pool on approach)
+	VisCore: BasePart?,
 	Def: Config.GhostDef,
 	From: Vector3,
 	To: Vector3,
@@ -26402,8 +27116,9 @@ export type Entry = {
 	LungeDir: Vector3,
 	Alert: TextLabel?, -- ❗ only while one of the local player's own hunters is the target
 	Mine: boolean,
-	Mouth: Part?, -- reused glow ball, made on the first windup
+	Mouth: Part?, -- reused glow ball, made on the first windup (lives in the server model)
 	MouthPos: Vector3, -- where bolts leave from (updated every frame while drawn)
+	Grow: number, -- spawn-in size factor (1 = full); applied to a rig taken mid-grow
 }
 
 local entries: { [number]: Entry } = {}
@@ -26416,6 +27131,57 @@ local selectedUid = 0
 local ring: Part
 local ringStroke: UIStroke
 local MOUTH_GREEN = Color3.fromRGB(120, 255, 100)
+
+-- Spare visual rigs per ghost id, so walking back and forth doesn't rebuild them every time.
+local POOL_MAX = 3
+local pool: { [string]: { Model } } = {}
+
+local function takeRig(e: Entry)
+	local id = e.Def.Id
+	local list = pool[id]
+	local vis: Model
+	local spare = list and table.remove(list)
+	if spare then
+		vis = spare
+	else
+		vis = GhostRig.Build(id)
+		vis.Name = "Visual"
+		local core = vis.PrimaryPart :: BasePart
+		core.CanQuery = false -- the server hitbox is the tap target
+	end
+	if e.Grow ~= 1 then
+		vis:ScaleTo(e.Def.Scale * e.Grow)
+	end
+	vis:PivotTo(CFrame.new(e.Pos))
+	vis.Parent = e.Model
+	e.Vis = vis
+	e.VisCore = vis.PrimaryPart :: BasePart
+end
+
+-- Unparents the rig and keeps it for reuse (full size, so a half-grown spawn-in isn't pooled).
+local function releaseRig(e: Entry)
+	local vis = e.Vis
+	if not vis then
+		return
+	end
+	e.Vis = nil
+	e.VisCore = nil
+	vis.Parent = nil
+	local id = e.Def.Id
+	local list = pool[id]
+	if not list then
+		list = {}
+		pool[id] = list
+	end
+	if #list < POOL_MAX then
+		if vis:GetScale() ~= e.Def.Scale then
+			vis:ScaleTo(e.Def.Scale)
+		end
+		table.insert(list, vis)
+	else
+		vis:Destroy()
+	end
+end
 
 function Ghosts.Get(uid: number): Entry?
 	return entries[uid]
@@ -26532,14 +27298,23 @@ local function updateSpirit(e: Entry, spirit: number)
 	end
 end
 
+-- Wander segment, packed by the server into one attribute: "fx,fy,fz|tx,ty,tz|t0|dur".
 local function readSegment(e: Entry)
-	local m = e.Model
-	local from = m:GetAttribute("From")
-	local to = m:GetAttribute("To")
-	e.From = if typeof(from) == "Vector3" then from else e.Pos
-	e.To = if typeof(to) == "Vector3" then to else e.From
-	e.T0 = (m:GetAttribute("T0") :: number?) or 0
-	e.Dur = (m:GetAttribute("Dur") :: number?) or 0
+	local seg = e.Model:GetAttribute("Seg")
+	if type(seg) ~= "string" then
+		return
+	end
+	local fx, fy, fz, tx, ty, tz, t0, dur = string.match(seg, "^([^,]+),([^,]+),([^|]+)|([^,]+),([^,]+),([^|]+)|([^|]+)|(.+)$")
+	local n = { tonumber(fx), tonumber(fy), tonumber(fz), tonumber(tx), tonumber(ty), tonumber(tz), tonumber(t0), tonumber(dur) }
+	for i = 1, 8 do
+		if n[i] == nil then
+			return
+		end
+	end
+	e.From = Vector3.new(n[1] :: number, n[2] :: number, n[3] :: number)
+	e.To = Vector3.new(n[4] :: number, n[5] :: number, n[6] :: number)
+	e.T0 = n[7] :: number
+	e.Dur = n[8] :: number
 end
 
 -- Selected ghost: active label + soft ground ring (set by Targeting).
@@ -26579,18 +27354,13 @@ local function add(model: Instance)
 	if not def or not core or not core:IsA("BasePart") or model:GetAttribute("Dead") then
 		return
 	end
-	local vis = GhostRig.Build(ghostId)
-	vis.Name = "Visual"
-	local visCore = vis.PrimaryPart :: BasePart
-	visCore.CanQuery = false -- the server hitbox is the tap target
-	vis:PivotTo(core.CFrame)
-	vis.Parent = model
+	-- the visual rig is built lazily by step() once the ghost is within draw range
 	local e: Entry = {
 		Uid = uid,
 		Model = model,
 		Core = core,
-		Vis = vis,
-		VisCore = visCore,
+		Vis = nil,
+		VisCore = nil,
 		Def = def,
 		From = core.Position,
 		To = core.Position,
@@ -26610,7 +27380,7 @@ local function add(model: Instance)
 		Pos = core.Position,
 		Base = core.Position,
 		Selected = false,
-		Culled = false,
+		Culled = true,
 		WindupEnd = 0,
 		WindupLen = 1,
 		LungeT = 0,
@@ -26619,18 +27389,19 @@ local function add(model: Instance)
 		Mine = false,
 		Mouth = nil,
 		MouthPos = core.Position,
+		Grow = 1,
 	}
 	readSegment(e)
 	buildLabel(e)
+	e.Gui.Enabled = false -- shown when step() draws it
 	updateSpirit(e, e.Spirit)
 	entries[uid] = e
 	if uid == selectedUid then
 		selectedUid = 0
 		Ghosts.SetSelected(uid)
 	end
-	model:GetAttributeChangedSignal("T0"):Connect(function()
-		-- From/To/T0/Dur are set together; read them once they have all arrived
-		task.defer(readSegment, e)
+	model:GetAttributeChangedSignal("Seg"):Connect(function()
+		readSegment(e)
 	end)
 	model:GetAttributeChangedSignal("Spirit"):Connect(function()
 		updateSpirit(e, (model:GetAttribute("Spirit") :: number?) or 0)
@@ -26640,28 +27411,36 @@ local function add(model: Instance)
 			if entries[uid] == e then
 				entries[uid] = nil
 			end
-			-- a culled rig is parked outside the model, so the model's Destroy wouldn't take it
 			e.Dying = true
-			e.Vis:Destroy()
+			local vis = e.Vis
+			if vis then
+				e.Vis = nil
+				e.VisCore = nil
+				vis:Destroy()
+			end
 		end
 	end)
 	-- spawn-in: grow from nothing (the event boss gets its own dramatic entrance)
 	if def.Kind ~= "Event" then
 		local s = Instance.new("NumberValue")
 		s.Value = 0.2
-		vis:ScaleTo(def.Scale * 0.2)
+		e.Grow = 0.2
 		local conn
 		conn = s.Changed:Connect(function(v)
-			-- (vis.Parent is nil while culled: keep growing so it isn't stuck small on return)
 			if e.Dying or not model.Parent then
 				conn:Disconnect()
 				return
 			end
-			vis:ScaleTo(def.Scale * v)
+			e.Grow = v
+			local vis = e.Vis -- nil while culled (a far ghost has nothing to grow)
+			if vis then
+				vis:ScaleTo(def.Scale * v)
+			end
 		end)
 		local tw = TweenService:Create(s, TweenInfo.new(0.45, Enum.EasingStyle.Back), { Value = 1 })
 		tw:Play()
 		tw.Completed:Connect(function()
+			e.Grow = 1
 			conn:Disconnect()
 			s:Destroy()
 		end)
@@ -26686,8 +27465,15 @@ local function poof(data: any)
 		end
 		diedSignal:Fire(data.Uid, pos)
 		e.Gui.Enabled = false
-		-- squash-and-stretch pop: inflate, then vanish
+		-- squash-and-stretch pop: inflate, then vanish (nothing to pop if the rig isn't drawn)
 		local vis = e.Vis
+		if not vis then
+			if near then
+				Effects.Poof(pos, color, scale, data.Big == true)
+				Sound.Play(if data.Big then "BigPoof" else "Poof", 0.08)
+			end
+			return
+		end
 		local v = Instance.new("NumberValue")
 		v.Value = 1
 		v.Changed:Connect(function(x)
@@ -26750,12 +27536,16 @@ local function step()
 				continue
 			end
 			e.Culled = false
-			e.Vis.Parent = e.Model
+			e.Pos = base
+			takeRig(e)
 			e.Gui.Enabled = true
 		elseif camDist > CULL_OUT and not e.Selected then
 			e.Culled = true
-			e.Vis.Parent = nil
+			releaseRig(e)
 			e.Gui.Enabled = false
+			if e.Mouth then
+				e.Mouth.Transparency = 1
+			end
 			e.Pos = base
 			e.Base = base
 			e.MouthPos = base
@@ -26807,8 +27597,11 @@ local function step()
 		e.MouthPos = cf * Vector3.new(0, -0.45 * s, -1.8 * s)
 		table.insert(parts, e.Core)
 		table.insert(cframes, CFrame.new(pos))
-		table.insert(parts, e.VisCore)
-		table.insert(cframes, cf)
+		local visCore = e.VisCore
+		if visCore then
+			table.insert(parts, visCore)
+			table.insert(cframes, cf)
+		end
 		-- green glow gathering at the mouth while winding up
 		local mouth = e.Mouth
 		if mouth then
@@ -26897,7 +27690,7 @@ function Ghosts.Windup(uid: number, len: number, at: Vector3?, mine: boolean)
 		m.Transparency = 1
 		m.Size = Vector3.new(0.3, 0.3, 0.3)
 		m.CFrame = CFrame.new(e.MouthPos)
-		m.Parent = e.Vis -- parked with the visual when culled, gone with the model
+		m.Parent = e.Model -- not in the pooled rig; hidden when culled, gone with the model
 		e.Mouth = m
 	end
 end
@@ -27408,14 +28201,14 @@ local function buildTop(screen: ScreenGui)
 end
 
 -- HUD layout
---   LEFT  (vertical): HUNTERS, WORLDS, INDEX, PETS (PETS appears once Boss Tower/shards start)
+--   LEFT  (vertical): HUNTERS, INDEX, WORLDS, PETS (PETS appears once Boss Tower/shards start)
 --   RIGHT (vertical, bottom-anchored stack): UPGRADES, SHOP, DAILY, then the free AUTO ATTACK
 --   toggle, then the lower-right row: [DEV] [TRADE] FEEDBACK SETTINGS. On touch screens the stack sits
 --   above the Roblox jump button; on desktop the left column starts under the chat window.
 local MENU_LEFT = {
 	{ Name = "Hunters", Icon = "🔦", Text = "HUNTERS", Color = "Orange" },
-	{ Name = "Worlds", Icon = "🌍", Text = "WORLDS", Color = "Teal" },
 	{ Name = "Index", Icon = "📖", Text = "INDEX", Color = "Blue" },
+	{ Name = "Worlds", Icon = "🌍", Text = "WORLDS", Color = "Teal" },
 	{ Name = "Pets", Icon = "🐾", Text = "PETS", Color = "Purple" },
 }
 local MENU_RIGHT = {
@@ -28093,8 +28886,13 @@ local function cratePrice(id: string): number
 	return if crate then crate.Price else 0
 end
 
-local function crateRefund(id: string): number
-	return math.floor(cratePrice(id) * Config.Inventory.ReleaseRefund)
+-- What releasing gives back, as HunterService's releaseRefund: nothing for NoRefund hunters
+-- (traded / dev-granted), otherwise a share of the crate price scaled by the tier.
+local function hunterRefund(h: any): number
+	if h.NoRefund then
+		return 0
+	end
+	return math.floor(cratePrice(h.Id) * Config.Inventory.ReleaseRefund * tierOf(h).Mult)
 end
 
 local function sortedUids(d: any): { string }
@@ -28184,7 +28982,7 @@ local function setInspect(uid: string?)
 	equipButton:SetAttribute("Color", if isEq then "Red" else "Green")
 	Kit.SetButtonText(lockButton, if h.Locked then "🔓 UNLOCK" else "🔒 LOCK")
 	relOneButton.Visible = not isEq and not h.Locked
-	Kit.SetButtonText(relOneButton, "RELEASE +" .. Format.Short(crateRefund(h.Id)))
+	Kit.SetButtonText(relOneButton, "RELEASE +" .. Format.Short(hunterRefund(h)))
 end
 
 local function updateReleaseBar()
@@ -28195,7 +28993,7 @@ local function updateReleaseBar()
 			local h = d.Hunters[uid]
 			if h then
 				n += 1
-				refund += crateRefund(h.Id)
+				refund += hunterRefund(h)
 			else
 				selected[uid] = nil
 			end
@@ -28638,7 +29436,8 @@ function HuntersPanel.Init()
 		Position = UDim2.fromOffset(10, 74),
 		ZIndex = 64,
 		OnClick = function()
-			-- every unequipped, unlocked hunter weaker than your weakest equipped one
+			-- every unequipped, unlocked, Normal-tier hunter weaker than your weakest equipped one
+			-- (Shiny / Mega hunters cost merges: never bulk-picked, tap them to release one)
 			local d = State.Data
 			if not d then
 				return
@@ -28652,7 +29451,7 @@ function HuntersPanel.Init()
 			end
 			table.clear(selected)
 			for uid, h in d.Hunters do
-				if not h.Locked and not table.find(d.Equipped, uid) and powerOf(h) < weakest then
+				if not h.Locked and (h.Tier or 0) == 0 and not table.find(d.Equipped, uid) and powerOf(h) < weakest then
 					selected[uid] = true
 				end
 			end
@@ -29493,11 +30292,16 @@ end
 
 local function spawnDrops(origin: Vector3, list: { any }, removed: { number }?)
 	local now = os.clock()
-	-- the server retired these (too many uncollected orbs): fade them out like a timeout
+	-- the server retired these (too many uncollected orbs): fade them out like a timeout. That
+	-- includes orbs already flying to / waiting at the player (predicted, never confirmed): the
+	-- server will never confirm them, so they'd otherwise bounce back as phantom orbs.
 	if type(removed) == "table" then
 		for _, id in removed do
 			local old = orbs[id]
-			if old and old.Phase ~= "Magnet" and old.Phase ~= "Held" then
+			if old and not old.Confirmed and old.Phase ~= "Fade" then
+				if old.Phase == "Magnet" or old.Phase == "Held" then
+					old.Land = old.Pos - Vector3.new(0, 0.35, 0) -- fade where it is now
+				end
 				old.Phase = "Fade"
 				old.T0 = now
 			end
@@ -30555,10 +31359,14 @@ function RarePetEvent.Start()
 	end)
 	State.OnFx("RarePetEventStarted", function(_data: any)
 		update()
-		if chip.Visible and not Kit.CurrentPanel() then
-			panel:Open()
+		-- shown once the player isn't using a menu / watching a reveal (never closes one)
+		Kit.WhenFree(function()
 			update()
-		end
+			if chip.Visible and not panel.IsOpen then
+				panel:Open()
+				update()
+			end
+		end)
 	end)
 	for _, attr in { "RarePetEventId", "RarePetStart", "RarePetEnd" } do
 		workspace:GetAttributeChangedSignal(attr):Connect(update)
@@ -30606,6 +31414,7 @@ local UserInputService = game:GetService("UserInputService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Rules = require(GH.Logic.Rules)
 local Signal = require(GH.Signal)
 local HunterRig = require(GH.Rigs.HunterRig)
 local CrateRig = require(GH.Rigs.CrateRig)
@@ -30689,6 +31498,25 @@ local autoMode = false
 
 local petMode = false -- egg hatches skip for free (crate skips are a paid product)
 
+-- A SKIP button is only offered when it can actually skip: egg hatches (free), Permanent Crate
+-- Skip owners, players holding skip tokens, or when the Single Crate Skip product is on sale.
+local function skipProductOnSale(): boolean
+	for _, p in Config.Products do
+		if p.Key == Config.CrateSkip.Product then
+			return p.ProductId ~= nil
+		end
+	end
+	return false
+end
+
+local function canSkip(): boolean
+	if petMode or hasPermanentSkip() then
+		return true
+	end
+	local d = State.Data
+	return (d ~= nil and (d.SkipTokens or 0) > 0) or skipProductOnSale()
+end
+
 local function skipLabel(): string
 	local d = State.Data
 	if petMode then
@@ -30709,9 +31537,20 @@ local function requestSkip()
 		skipping = true
 		return
 	end
+	if not canSkip() then
+		return -- gamepad B with no skip available
+	end
+	local myStage = stage
 	skipBusy = true
 	local res = State.Request("UseSkip")
 	skipBusy = false
+	if cardShown or not playing or stage ~= myStage then
+		-- the reveal finished while we waited: nothing left to skip, so hand the token back
+		if res.ok and not res.Permanent then
+			task.spawn(State.Request, "RefundSkip")
+		end
+		return
+	end
 	if res.ok then
 		pendingSkip = false
 		skipping = true
@@ -30883,12 +31722,22 @@ local function buildGui(): (ScreenGui, TextButton)
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
+	-- buttons stay clear of notches / rounded corners / the Roblox top bar (set after creation:
+	-- IgnoreGuiInset would otherwise override it); full-screen flashes overflow the insets anyway
+	g.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	Kit.new("UIScale", { Scale = Kit.UIScale(), Parent = g })
+	-- touch screens: lift SKIP above where the jump button sits (same reserve as the HUD)
+	local lift = 16
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		local cam = workspace.CurrentCamera
+		local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
+		lift = (if math.min(vp.X, vp.Y) < 500 then 100 else 225) / Kit.UIScale()
+	end
 	local skip = Kit.Button(g, {
 		Text = skipLabel(),
 		Color = if hasPermanentSkip() then "Gray" else "Orange",
 		Size = UDim2.fromOffset(150, 40),
-		Position = UDim2.new(1, -16, 1, -16),
+		Position = UDim2.new(1, -16, 1, -lift),
 		AnchorPoint = Vector2.new(1, 1),
 		ZIndex = 5,
 		OnClick = function()
@@ -30896,6 +31745,8 @@ local function buildGui(): (ScreenGui, TextButton)
 		end,
 	})
 	skipButton = skip
+	-- no "SKIP R$10" while the Single Crate Skip product isn't on sale (it could only fail)
+	skip.Visible = canSkip()
 	if autoMode then
 		Kit.Button(g, {
 			Text = "STOP AUTO OPEN",
@@ -30959,9 +31810,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Corner(card, UDim.new(0, 18))
 	Kit.Stroke(card, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(card, Theme.Panel2, Theme.Bg, 90)
-	local sc = Kit.new("UIScale", { Scale = 0.3, Parent = card })
-	Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-	-- slide in from the right edge
+	-- slide in from the right edge (no scale pop: scaling text renders it at many sizes)
 	card.Position = UDim2.new(1, 380, 0.5, 10)
 	Kit.Tween(card, 0.35, { Position = UDim2.new(1, -20, 0.5, 10) }, Enum.EasingStyle.Back)
 	-- rarity ribbon
@@ -30981,10 +31830,11 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Label(card, "⚡ " .. Format.Commas(def.Power) .. " CAPTURE POWER", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", ZIndex = 11 })
 	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 78), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
-		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, 4), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
+		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, -26), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
 		stamp.Rotation = 14
-		local ssc = Kit.new("UIScale", { Scale = 3, Parent = stamp })
-		Kit.Tween(ssc, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+		-- drops into place and fades in (one text size throughout)
+		stamp.TextTransparency = 1
+		Kit.Tween(stamp, 0.3, { Position = UDim2.new(1, 8, 0, 4), TextTransparency = 0 }, Enum.EasingStyle.Back)
 	end
 	-- buttons
 	local row: Frame = Kit.new("Frame", {
@@ -31000,14 +31850,22 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	if d and not equipped then
 		local free = #d.Equipped < slots
 		-- with full slots, offer EQUIP BEST only if this hunter beats the weakest equipped one
+		-- tier power, as the server's EquipBest ranks hunters (a Shiny/Mega can beat a new pull)
+		local function tierPower(h: any): number
+			local hd = h and Config.Hunters[h.Id]
+			local t = Config.Tiers[h and h.Tier or 0] or Config.Tiers[0]
+			return if hd then Rules.HunterPower(hd.Power, t.Mult) else 0
+		end
 		local weakest = math.huge
 		for _, uid in d.Equipped do
 			local h = d.Hunters[uid]
 			if h then
-				weakest = math.min(weakest, Config.Hunters[h.Id].Power)
+				weakest = math.min(weakest, tierPower(h))
 			end
 		end
-		if free or def.Power > weakest then
+		local mine = d.Hunters[res.Uid]
+		local newPower = if mine then tierPower(mine) else Rules.HunterPower(def.Power, 1)
+		if free or newPower > weakest then
 			local b: TextButton
 			b = Kit.Button(row, {
 				Text = if free then "EQUIP" else "EQUIP BEST",
@@ -31069,8 +31927,6 @@ local function petCard(g: ScreenGui, pet: Config.PetDef, rarity: Config.RarityDe
 	Kit.Corner(card, UDim.new(0, 18))
 	Kit.Stroke(card, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(card, Theme.Panel2, Theme.Bg, 90)
-	local sc = Kit.new("UIScale", { Scale = 0.3, Parent = card })
-	Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
 	Kit.Tween(card, 0.35, { Position = UDim2.new(1, -20, 0.5, 10) }, Enum.EasingStyle.Back)
 	local ribbon: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(200, 32),
@@ -31156,6 +32012,7 @@ function Reveal.Close()
 		GuiService.SelectedObject = nil
 	end
 	playing = false
+	Kit.SetBusy("Reveal", false)
 	finishedSignal:Fire()
 end
 
@@ -31167,6 +32024,7 @@ local function begin(rarity: Config.RarityDef): (ScreenGui, TextButton, Camera, 
 		teardownStage() -- "AGAIN": keep the camera, rebuild the stage
 	end
 	playing = true
+	Kit.SetBusy("Reveal", true) -- popups wait until the reveal is over
 	skipping = autoMode and hasPermanentSkip() -- Auto Open + Permanent Skip: quick reveals
 	startedSignal:Fire()
 	Targeting.SetBlocked(true)
@@ -31316,10 +32174,11 @@ end
 -- Shared ending: legendary title slam, camera slides left, the result card, auto-close.
 local function finish(g: ScreenGui, skip: TextButton, cam: Camera, camCF: CFrame, rarity: Config.RarityDef, card: () -> ())
 	if rarity.Order >= 5 and not skipping then
-		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", ZIndex = 8, Stroke = 4 })
-		-- solid colour (a UIGradient on big text dropped letters on phones)
-		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
-		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.new(0.5, 0, 0.2, -60), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", ZIndex = 8, Stroke = 4 })
+		-- solid colour (a UIGradient on big text dropped letters on phones); slams down and fades
+		-- in rather than scaling, so the text renders at one size
+		title.TextTransparency = 1
+		Kit.Tween(title, 0.35, { Position = UDim2.fromScale(0.5, 0.2), TextTransparency = 0 }, Enum.EasingStyle.Back)
 		task.spawn(cameraShake, 0.35, 0.3)
 	end
 	skip.Visible = false
@@ -31614,6 +32473,7 @@ function Reveal.Start()
 	State.OnFx("SkipGranted", function()
 		if skipButton and skipButton.Parent then
 			Kit.SetButtonText(skipButton, skipLabel())
+			skipButton.Visible = not cardShown and canSkip()
 		end
 		if pendingSkip and playing and not cardShown then
 			task.spawn(requestSkip)
@@ -31636,7 +32496,8 @@ return Reveal
               <string name="Name">ShopPanel</string>
               <string name="Source"><![CDATA[--!strict
 -- SHOP: Robux products (Ectoplasm packs, boosts) and game passes. Items without an id in
--- Config show "SOON". Purchases are prompted and granted by the server only.
+-- Config aren't listed (a pass without an id only shows, as OWNED, to players who have it).
+-- Purchases are prompted and granted by the server only.
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -31655,6 +32516,7 @@ local ShopPanel = {}
 local panel: Kit.Panel
 local passButtons: { [string]: TextButton } = {}
 local ectoLabels: { [string]: TextLabel } = {}
+local unsoldPasses: { [string]: GuiObject } = {} -- pass cards with no PassId yet: owners only
 
 local function card(parent: Instance, order: number, iconKey: string?, icon: string, name: string, sub: string, price: string, available: boolean, color: string, onBuy: () -> ()): (TextButton, TextLabel)
 	local f: Frame = Kit.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ZIndex = 62, Parent = parent })
@@ -31726,6 +32588,10 @@ local function refresh()
 	end
 	for _, pass in Config.GamePasses do
 		local b = passButtons[pass.Key]
+		local unsold = unsoldPasses[pass.Key]
+		if unsold then
+			unsold.Visible = d.Passes ~= nil and d.Passes[pass.Key] == true
+		end
 		if b and d.Passes and d.Passes[pass.Key] then
 			Kit.SetButtonText(b, "OWNED ✅")
 			b:SetAttribute("Color", "Gray")
@@ -31759,6 +32625,9 @@ function ShopPanel.Init()
 		if p.Kind == "SummonEvent" then
 			continue -- retired with the Giant Poltergeist event (no longer sold)
 		end
+		if p.ProductId == nil then
+			continue -- not on sale yet (no "SOON" buttons)
+		end
 		local sub = if p.Blurb then p.Blurb elseif p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
 		local prodButton, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
 			buy(p.Key)
@@ -31773,14 +32642,19 @@ function ShopPanel.Init()
 		if pass.Hidden then
 			continue -- no longer sold (e.g. the old Auto Attack pass: Auto Attack is free now)
 		end
-		local sub = if pass.Blurb then pass.Blurb elseif pass.Slots then "+" .. pass.Slots .. " EQUIPPED HUNTERS" else "x" .. tostring(pass.Multiplier or 2) .. " ALL ECTOPLASM"
+		local sub = if pass.Blurb then pass.Blurb elseif pass.Slots then "+" .. pass.Slots .. " EQUIPPED HUNTERS" else "x" .. tostring(pass.Multiplier or 2) .. " GHOST & TOWER ECTOPLASM"
 		local b = card(passRow, i, Icons.ForProduct[pass.Key], pass.Icon, pass.Name, sub, pass.PriceLabel, pass.PassId ~= nil, "Orange", function()
 			buy(pass.Key)
 		end)
 		passButtons[pass.Key] = b
 		priceButtons[pass.Key] = b
+		if pass.PassId == nil then
+			local f = b.Parent :: GuiObject
+			f.Visible = false
+			unsoldPasses[pass.Key] = f
+		end
 	end
-	Kit.Label(scroll, "Ectoplasm packs grow with the furthest area you've unlocked. Auto Attack only picks targets for you: same damage, same rewards.", { Size = UDim2.new(1, -10, 0, 36), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 62, Stroke = 0 }).LayoutOrder = 5
+	Kit.Label(scroll, "Ectoplasm packs grow with the furthest area you've unlocked.", { Size = UDim2.new(1, -10, 0, 36), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 62, Stroke = 0 }).LayoutOrder = 5
 	Hud.RegisterPanel("Shop", function()
 		panel:Toggle()
 	end)
@@ -33143,8 +34017,20 @@ function TradePanel.Start()
 		end
 		inviteFrom = tonumber(data.FromId) or 0
 		inviteEnds = os.clock() + (tonumber(data.Seconds) or Config.Trade.RequestSeconds)
-		inviteText.Text = tostring(data.From or "Someone") .. " wants to trade hunters with you!"
-		invite:Open()
+		local from = tostring(data.From or "Someone")
+		local fromId = inviteFrom
+		local ends = inviteEnds
+		-- never close a menu the player is using: wait until it's free (a toast says who asked)
+		if not Kit.IsFree() then
+			Kit.Toast("🤝 " .. from .. " wants to trade! Close this menu to answer.", "Gold")
+		end
+		Kit.WhenFree(function()
+			if trade or invite.IsOpen or inviteFrom ~= fromId or os.clock() >= ends then
+				return -- expired, replaced or already trading
+			end
+			inviteText.Text = from .. " wants to trade hunters with you!"
+			invite:Open()
+		end)
 	end)
 	-- countdowns: CONFIRM cooldown and the request popup
 	while true do
@@ -33571,7 +34457,7 @@ local function tick()
 			setPrompt("UNLOCK THE CEMETERY!", "Follow the trail to the gate")
 			setGuide(gatePos)
 		else
-			setPrompt("UNLOCK THE CEMETERY!", Format.Commas(d.Ecto) .. " / " .. Format.Commas(zone.Cost) .. " Ectoplasm  -  open crates, equip the best!")
+			setPrompt("UNLOCK THE CEMETERY!", "Defeat ghosts to save up - " .. Format.Commas(d.Ecto) .. " / " .. Format.Commas(zone.Cost))
 			setGuide(nil)
 		end
 	end
@@ -33738,6 +34624,9 @@ type Row = { Pips: { Frame }, Value: TextLabel, Buy: TextButton }
 
 local panel: Kit.Panel
 local rows: { [string]: Row } = {}
+-- level from the last buy reply, briefly (the data sync can lag behind the reply)
+local lastLevel: { [string]: { L: number, T: number } } = {}
+local busy = false -- one purchase in flight at a time (a fast double tap used to buy twice)
 
 local function fmt(up: Config.UpgradeDef, v: number): string
 	if up.Format == "percent" then
@@ -33823,8 +34712,19 @@ function UpgradesPanel.Init()
 			AnchorPoint = Vector2.new(1, 0.5),
 			ZIndex = 64,
 			OnClick = function()
-				local res = State.Request("BuyUpgrade", id)
+				local d = State.Data
+				if busy or not d then
+					return
+				end
+				-- the level this button showed: the server refuses if it already moved on
+				-- (a reply can arrive before the next data sync: use the newest level we know)
+				local last = lastLevel[id]
+				local shownLevel = math.max(d.Upgrades[id] or 1, if last and os.clock() - last.T < 3 then last.L else 0)
+				busy = true
+				local res = State.Request("BuyUpgrade", id, shownLevel)
+				busy = false
 				if res.ok then
+					lastLevel[id] = { L = tonumber(res.Level) or 0, T = os.clock() }
 					Sound.Play("Upgrade")
 					Kit.Toast(up.Name .. " upgraded to level " .. tostring(res.Level) .. "!", "Good")
 					local char = game:GetService("Players").LocalPlayer.Character
@@ -34066,6 +34966,45 @@ task.spawn(function()
 	end
 end)
 
+-- "Loading your hunters..." until the first data snapshot arrives (a slow DataStore load used
+-- to show an empty HUD with 0 Ectoplasm, which looks like lost progress)
+task.spawn(function()
+	if State.Data then
+		return
+	end
+	local Kit = require(script.Parent.UI.Kit)
+	local Theme = require(script.Parent.UI.Theme)
+	local cover: Frame = Kit.new("Frame", {
+		Name = "Loading",
+		Size = UDim2.fromScale(4, 4),
+		Position = UDim2.fromScale(-1.5, -1.5),
+		BackgroundColor3 = Theme.Bg,
+		BackgroundTransparency = 0.15,
+		ZIndex = 200,
+		Parent = Kit.Overlay(),
+	})
+	local box: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(420, 90), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 201, Parent = cover })
+	local title = Kit.Label(box, "Loading your hunters...", { Size = UDim2.new(1, 0, 0, 36), Style = "Heading", ZIndex = 202 })
+	local hint = Kit.Label(box, "Still loading - your progress is safe", { Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 44), Color = Theme.Muted, Style = "Small", ZIndex = 202 })
+	hint.Visible = false
+	task.delay(10, function()
+		if cover.Parent then
+			hint.Visible = true
+		end
+	end)
+	State.WaitForData()
+	for _, l in { title, hint } do
+		Kit.Tween(l, 0.3, { TextTransparency = 1 })
+		local st = l:FindFirstChildOfClass("UIStroke")
+		if st then
+			Kit.Tween(st, 0.3, { Transparency = 1 })
+		end
+	end
+	Kit.Tween(cover, 0.3, { BackgroundTransparency = 1 })
+	task.wait(0.3)
+	cover:Destroy()
+end)
+
 local Controllers = script.Parent.Controllers
 local order = {
 	"Sound",
@@ -34099,17 +35038,32 @@ local order = {
 	"Ambience",
 	"Tutorial",
 }
-local loaded: { any } = {}
+-- one broken controller must not take the whole UI down with it: each one loads, inits and
+-- starts inside pcall (like the server's Main) and a failure is only a warning
+local loaded: { { Name: string, Mod: any } } = {}
 for _, name in order do
-	local mod = require(Controllers:FindFirstChild(name) :: ModuleScript) :: any
-	table.insert(loaded, mod)
-	if mod.Init then
-		mod.Init()
+	local ok, mod = pcall(require, Controllers:FindFirstChild(name) :: ModuleScript)
+	if not ok then
+		warn("[Main] couldn't load " .. name .. ": " .. tostring(mod))
+		continue
+	end
+	table.insert(loaded, { Name = name, Mod = mod })
+	if (mod :: any).Init then
+		local okInit, err = pcall((mod :: any).Init)
+		if not okInit then
+			warn("[Main] " .. name .. ".Init failed: " .. tostring(err))
+		end
 	end
 end
-for _, mod in loaded do
-	if mod.Start then
-		task.spawn(mod.Start)
+for _, entry in loaded do
+	local start = entry.Mod.Start
+	if start then
+		task.spawn(function()
+			local okStart, err = pcall(start)
+			if not okStart then
+				warn("[Main] " .. entry.Name .. ".Start failed: " .. tostring(err))
+			end
+		end)
 	end
 end
 ]]></string>
@@ -34473,6 +35427,8 @@ export type ButtonProps = {
 	TextStyle: string?, -- typography key, default "Button"
 }
 
+local MIN_TAP_PT = 44 -- smallest physical tap target (points), Apple / Google guideline
+
 -- Chunky gradient button with press/hover animation and click sound.
 function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	local colors = Theme.Buttons[p.Color or "Green"] or Theme.Buttons.Green
@@ -34512,6 +35468,45 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	label.Name = "Label"
 	Kit.EctoText(label, text)
 	local scale = Kit.new("UIScale", { Parent = b })
+	-- Minimum finger target: an invisible hit area, centred on the button, that grows so the
+	-- tappable size is never under MIN_TAP_PT real points even when the screen / menu scaling
+	-- draws the button smaller. The visible button is unchanged.
+	local hit: TextButton = Kit.new("TextButton", {
+		Name = "Hit",
+		Text = "",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Selectable = false,
+		ZIndex = b.ZIndex + 2,
+		Parent = b,
+	})
+	local function fitHit()
+		-- local px -> screen points: product of every UIScale from here up to the ScreenGui
+		local k = 1
+		local node: Instance? = b
+		while node and not node:IsA("LayerCollector") do
+			local sc = node:FindFirstChildOfClass("UIScale")
+			if sc then
+				k *= sc.Scale
+			end
+			node = node.Parent
+		end
+		local g = node and node:FindFirstChildOfClass("UIScale")
+		if g then
+			k *= g.Scale
+		end
+		k = math.max(k, 0.05)
+		local abs = b.AbsoluteSize
+		hit.Size = UDim2.new(1, math.max(0, MIN_TAP_PT - abs.X) / k, 1, math.max(0, MIN_TAP_PT - abs.Y) / k)
+	end
+	b:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitHit)
+	b.AncestryChanged:Connect(fitHit)
+	b:GetPropertyChangedSignal("ZIndex"):Connect(function()
+		hit.ZIndex = b.ZIndex + 2
+	end)
+	fitHit()
 	b.MouseEnter:Connect(function()
 		-- touch screens fire MouseEnter with no MouseLeave: a hover grow would stay stuck and make
 		-- buttons overlap their neighbours, so hover only reacts to a real mouse
@@ -34527,7 +35522,7 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	-- release is watched globally: a finger that drags off the button (e.g. to scroll a list)
 	-- never fires MouseButton1Up on it, which used to leave the button stuck shrunk
 	local pressConn: RBXScriptConnection? = nil
-	b.MouseButton1Down:Connect(function()
+	local function pressed()
 		Kit.Tween(scale, 0.06, { Scale = 0.93 })
 		if pressConn then
 			pressConn:Disconnect()
@@ -34542,13 +35537,18 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 				Kit.Tween(scale, 0.15, { Scale = 1 }, Enum.EasingStyle.Back)
 			end
 		end)
-	end)
-	b.Activated:Connect(function()
+	end
+	local function activated()
 		play("Click")
 		if p.OnClick then
 			(p.OnClick :: () -> ())()
 		end
-	end)
+	end
+	-- touches / clicks land on the hit area; gamepad ButtonA activates the selected button itself
+	b.MouseButton1Down:Connect(pressed)
+	hit.MouseButton1Down:Connect(pressed)
+	b.Activated:Connect(activated)
+	hit.Activated:Connect(activated)
 	b:GetAttributeChangedSignal("Color"):Connect(function()
 		local c = Theme.Buttons[b:GetAttribute("Color") :: string] or Theme.Buttons.Green
 		grad.Color = ColorSequence.new(c[1], c[2])
@@ -34829,7 +35829,10 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 	Kit.Corner(root, UDim.new(0, 18))
 	Kit.Stroke(root, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(root, Theme.Panel2, Theme.Panel, 90)
-	local scale = Kit.new("UIScale", { Parent = root })
+	-- open/close slide the panel instead of scaling it: a scale tween re-rendered every label
+	-- through many pixel sizes, which is what broke text on phones (glyph cache)
+	local REST = UDim2.new(0.5, 0, 0.5, 12)
+	local OFF = UDim2.new(0.5, 0, 0.5, 52)
 	-- title banner
 	local banner: Frame = Kit.new("Frame", {
 		Size = UDim2.new(0, math.clamp(#title * 15 + 60, 200, 420), 0, 44),
@@ -34887,8 +35890,8 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			d.Visible = true
 			Kit.Tween(d, 0.2, { BackgroundTransparency = 0.5 })
 			root.Visible = true
-			scale.Scale = 0.7
-			Kit.Tween(scale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+			root.Position = OFF
+			Kit.Tween(root, 0.25, { Position = REST }, Enum.EasingStyle.Back)
 			play("PanelOpen")
 			self.OnOpen:Fire()
 			panelOpenedSignal:Fire(self.Name)
@@ -34915,7 +35918,7 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			if sel and sel:IsDescendantOf(root) then
 				GuiService.SelectedObject = nil
 			end
-			Kit.Tween(scale, 0.12, { Scale = 0.75 })
+			Kit.Tween(root, 0.12, { Position = OFF })
 			task.delay(0.12, function()
 				if not self.IsOpen then
 					root.Visible = false
@@ -34962,6 +35965,60 @@ GuiService.MenuOpened:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
+-- Popups that wait their turn
+--------------------------------------------------------------------------------
+-- Unprompted popups (event announcements, the daily reward, trade requests) must never close
+-- a menu the player is using or cover a crate reveal: they wait here until no panel is open
+-- and nothing has marked the screen busy (Kit.SetBusy), then show one at a time.
+local busyReasons: { [string]: boolean? } = {}
+local waiting: { () -> () } = {}
+local flushing = false
+
+function Kit.IsFree(): boolean
+	return current == nil and next(busyReasons) == nil
+end
+
+local function flushWaiting()
+	if flushing or #waiting == 0 or not Kit.IsFree() then
+		return
+	end
+	flushing = true
+	-- a short beat so a closing panel / finished reveal is out of the way first
+	task.delay(0.5, function()
+		flushing = false
+		if not Kit.IsFree() or #waiting == 0 then
+			return
+		end
+		local fn = table.remove(waiting, 1) :: () -> ()
+		local ok, err = pcall(fn :: any)
+		if not ok then
+			warn("[Kit] popup failed: " .. tostring(err))
+		end
+		-- the popup may not have opened anything (stale): try the next one
+		flushWaiting()
+	end)
+end
+
+-- Runs `fn` as soon as the screen is free (right away if it already is). `fn` should re-check that its
+-- popup still makes sense (it may run much later).
+function Kit.WhenFree(fn: () -> ())
+	table.insert(waiting, fn)
+	flushWaiting()
+end
+
+-- Marks the screen busy for a reason (e.g. "Reveal") so waiting popups hold off.
+function Kit.SetBusy(reason: string, on: boolean)
+	busyReasons[reason] = if on then true else nil
+	flushWaiting()
+end
+
+panelOpenedSignal:Connect(function(name: any)
+	if name == nil then
+		flushWaiting()
+	end
+end)
+
+--------------------------------------------------------------------------------
 -- Toasts
 --------------------------------------------------------------------------------
 local toastHolder: Frame? = nil
@@ -34990,16 +36047,31 @@ function Kit.Toast(text: string, color: string?)
 	local f: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(400, 32),
 		BackgroundColor3 = col,
-		BackgroundTransparency = 0.08,
+		BackgroundTransparency = 1,
 		LayoutOrder = math.floor(os.clock() * 100),
 		ZIndex = 90,
 		Parent = holder,
 	})
 	Kit.Corner(f, UDim.new(0, 10))
-	Kit.Stroke(f, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	local l = Kit.Label(f, text, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 91, Style = "Body", Fit = true })
-	local sc = Kit.new("UIScale", { Scale = 0.6, Parent = f })
-	Kit.Tween(sc, 0.22, { Scale = 1 }, Enum.EasingStyle.Back)
+	local fStroke = Kit.Stroke(f, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	-- long messages wrap onto up to TOAST_LINES lines (then "…") instead of being cut to one
+	local l = Kit.Label(f, text, { Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 91, Style = "Body", Wrap = true })
+	l.TextTruncate = Enum.TextTruncate.AtEnd
+	local TOAST_LINES = 3
+	local lineH = l.TextSize + 2
+	local textH = TextService:GetTextSize(text, l.TextSize, l.Font, Vector2.new(384, 1000)).Y
+	f.Size = UDim2.fromOffset(400, math.max(32, math.min(textH, lineH * TOAST_LINES) + 12))
+	-- fade in (no scale pop: scaling text re-renders it through many sizes, see Kit.Panel)
+	local lStroke = l:FindFirstChildOfClass("UIStroke")
+	l.TextTransparency = 1
+	fStroke.Transparency = 1
+	Kit.Tween(f, 0.18, { BackgroundTransparency = 0.08 })
+	Kit.Tween(fStroke, 0.18, { Transparency = 0 })
+	Kit.Tween(l, 0.18, { TextTransparency = 0 })
+	if lStroke then
+		lStroke.Transparency = 1
+		Kit.Tween(lStroke, 0.18, { Transparency = 0 })
+	end
 	if color == "Bad" then
 		play("Error")
 	end
@@ -35016,13 +36088,15 @@ function Kit.Toast(text: string, color: string?)
 		end)
 		kids[1]:Destroy()
 	end
-	task.delay(2.4, function()
+	-- longer (wrapped) messages stay up a little longer so they can be read
+	local lines = math.clamp(math.ceil(textH / lineH), 1, TOAST_LINES)
+	task.delay(2.4 + (lines - 1) * 0.8, function()
 		if f.Parent then
 			Kit.Tween(f, 0.3, { BackgroundTransparency = 1 })
+			Kit.Tween(fStroke, 0.3, { Transparency = 1 })
 			Kit.Tween(l, 0.3, { TextTransparency = 1 })
-			local st = l:FindFirstChildOfClass("UIStroke")
-			if st then
-				Kit.Tween(st, 0.3, { Transparency = 1 })
+			if lStroke then
+				Kit.Tween(lStroke, 0.3, { Transparency = 1 })
 			end
 			task.wait(0.3)
 			f:Destroy()

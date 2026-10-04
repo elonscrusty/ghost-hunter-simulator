@@ -54,6 +54,7 @@ export type Run = {
 	Votes: { [Player]: boolean },
 	Earned: { [Player]: Earned },
 	Best: number, -- highest room cleared in this run
+	Dealt: { [Player]: boolean }, -- members who damaged at least one boss this run (checkpoint/best progress)
 	Model: Model?,
 	EndsAt: number,
 	Dev: boolean, -- developer test run: no rewards, no checkpoint, no stats
@@ -314,7 +315,9 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 	run.Best = math.max(run.Best, room)
 	run.Boss = nil
 	local members = memberList(run)
-	local shardsEach, ectoEach = Rules.TowerReward(room, TC)
+	-- Ecto is paid like farming: by the time the room took, capped by what the same damage earns
+	-- on the player's best-zone ghosts (Rules.TowerReward)
+	local fightSeconds = math.clamp(TC.RoomSeconds - (run.EndsAt - serverNow()), 0, TC.RoomSeconds)
 	-- SHARED POOLS: (reward per member * party size), split by effective damage among the
 	-- members still in the run (no damage = no share).
 	local split = GhostService.SplitDamage(g)
@@ -329,17 +332,23 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 	-- pool size counts members who did at least 10% of the damage (idle alts add nothing)
 	local _ = members
 	local sized = Rules.PoolMembers(weights, 0.1)
+	local shardsEach = Rules.TowerReward(room, TC)
 	local shardShares = Rules.SplitPool(shardsEach * sized, weights)
-	local ectoShares = Rules.SplitPool(ectoEach * sized, weights)
+	local hpEach = g.Max / sized
 	local paid: { [Player]: { Ecto: number, Shards: number, Pct: number } } = {}
 	for i, p in players do
 		local d = DataService.Get(p)
 		if not d or weights[i] <= 0 then
 			continue
 		end
+		run.Dealt[p] = true
 		local shards = shardShares[i]
-		local base = ectoShares[i]
-		local ecto = if base > 0 then math.max(1, math.floor(base * PlayerInfo.ZoneMultiplier(p) * PlayerInfo.EctoMultiplier(p) + 0.5)) else 0
+		local zoneMult = PlayerInfo.ZoneMultiplier(p)
+		local zone = Config.Zones[math.min(PlayerInfo.BestZone(p), #Config.Zones)]
+		local perSpirit = Rules.ZoneEctoPerSpirit(Config.Ghosts, zone.Id) / zoneMult
+		local _, ectoEach = Rules.TowerReward(room, TC, fightSeconds, hpEach, perSpirit)
+		local base = Rules.SplitPool(ectoEach * sized, weights)[i]
+		local ecto = if base > 0 then math.max(1, math.floor(base * zoneMult * PlayerInfo.EctoMultiplier(p) + 0.5)) else 0
 		if ecto > 0 then
 			DataService.AddEcto(p, ecto)
 		end
@@ -357,7 +366,8 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 	local saved: { [Player]: boolean } = {}
 	for _, p in members do
 		local d = DataService.Get(p)
-		if d and not run.Dev then
+		-- no damage dealt this whole run = no checkpoint / best-room progress (no free carries)
+		if d and not run.Dev and run.Dealt[p] then
 			d.TowerBest = math.max(d.TowerBest, room)
 			if cp > d.TowerCheckpoint then
 				d.TowerCheckpoint = cp
@@ -479,6 +489,7 @@ local function startRun(party: { Player }, first: number, dev: boolean): string?
 		Votes = {},
 		Earned = {},
 		Best = 0,
+		Dealt = {},
 		Model = nil,
 		EndsAt = serverNow() + STARTING_LIMIT,
 		Dev = dev,

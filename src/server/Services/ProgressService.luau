@@ -18,6 +18,8 @@ local ProgressService = {}
 local GATE_RANGE = 40
 local TRAVEL_COOLDOWN = 3 -- seconds between Fast Travel jumps
 local lastTravel: { [Player]: number } = {}
+local lastGuardToast: { [Player]: number } = {}
+local GUARD_TOAST_COOLDOWN = 5 -- seconds between "Unlock <zone> first!" toasts
 
 local zoneRanges: { { number } } = {}
 for _, z in Config.Zones do
@@ -121,13 +123,18 @@ function ProgressService.Init()
 		return { ok = true }
 	end)
 
-	Remotes.Register("BuyUpgrade", "Default", function(player, upgradeId)
+	-- shownLevel = the level the client displayed with the price; if it changed meanwhile (double
+	-- tap, lag) the purchase is refused instead of charging a price the player never saw. nil = old client.
+	Remotes.Register("BuyUpgrade", "Default", function(player, upgradeId, shownLevel)
 		local d = DataService.Get(player)
 		local up = type(upgradeId) == "string" and Config.Upgrades[upgradeId] or nil
 		if not d or not up then
 			return Remotes.Fail("Unknown upgrade")
 		end
 		local level = d.Upgrades[up.Id] or 1
+		if type(shownLevel) == "number" and shownLevel ~= level then
+			return Remotes.Fail("Price changed, try again")
+		end
 		local cost = Rules.UpgradeCost(up.Costs, level)
 		if not cost then
 			return Remotes.Fail("Already maxed!")
@@ -216,6 +223,11 @@ local function zoneGuardTick()
 			local char = player.Character
 			if char then
 				char:PivotTo(CFrame.new(math.clamp(root.Position.X, -10, 10), 4, safeZ))
+				local now = os.clock()
+				if now - (lastGuardToast[player] or -math.huge) >= GUARD_TOAST_COOLDOWN then
+					lastGuardToast[player] = now
+					Fx.Toast(player, "Unlock " .. zone.Name .. " first!", "Bad")
+				end
 			end
 		end
 	end
@@ -251,6 +263,7 @@ function ProgressService.Start()
 	Players.PlayerAdded:Connect(hook)
 	Players.PlayerRemoving:Connect(function(player)
 		lastTravel[player] = nil
+		lastGuardToast[player] = nil
 	end)
 	for _, pl in Players:GetPlayers() do
 		hook(pl)

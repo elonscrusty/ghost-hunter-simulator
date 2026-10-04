@@ -178,6 +178,15 @@ function Kit.Gui(part: BasePart, face: Enum.NormalId, pps: number?): SurfaceGui
 	-- most on phones). Brightness just above 1 keeps the colours bright without the text
 	-- glowing into the bloom.
 	g.PixelsPerStud = pps or 30
+	-- big signs (gate arches, the throne hall banner): a 30 px/stud canvas on a 40-64 stud face
+	-- is a 0.4-0.5 Mpx texture each. 16 px/stud is still sharp at the distance they're read from,
+	-- and past 250 studs they aren't drawn at all (TextFit sizes text from this canvas).
+	local s = part.Size
+	local wide = if face == Enum.NormalId.Left or face == Enum.NormalId.Right then s.Z else s.X
+	if wide > 30 then
+		g.PixelsPerStud = math.min(g.PixelsPerStud, 16)
+		g.MaxDistance = 250
+	end
 	g.LightInfluence = 0
 	g.Brightness = 1.1
 	g.ZOffset = 1

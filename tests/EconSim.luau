@@ -35,7 +35,7 @@ end
 local Z = #Config.Zones
 local stats = {} -- [zoneIndex] = { entry = {}, firstCrate = {}, epmIn = {}, epmOut = {}, crateMin = {}, crates = {}, power = {} }
 for i = 1, Z do
-	stats[i] = { entry = {}, firstCrate = {}, epmIn = {}, epmOut = {}, crateMin = {}, crates = {}, power = {} }
+	stats[i] = { entry = {}, firstCrate = {}, epmIn = {}, epmOut = {}, crateMin = {}, crates = {}, power = {}, bonus = {} }
 end
 local finish = {}
 
@@ -78,6 +78,7 @@ for _ = 1, RUNS do
 		table.insert(s.epmIn, r * 60)
 		table.insert(s.crateMin, Config.Crates[Config.Zones[i].Crate].Price / (r * 60))
 		table.insert(s.power, crew())
+		table.insert(s.bonus, Rules.UpgradeValue(Config.Upgrades.EctoBonus.Levels, up.EctoBonus))
 	end
 	enterZone(1)
 	while t < MAX_T do
@@ -224,12 +225,14 @@ print("  epm = Ecto/min; crateMin = minutes of farming per newest crate on arriv
 local TC = Config.Tower
 local RT = Config.Retaliation
 local DT = 0.1
-local function towerRun(power: number, zoneIdx: number): (number, number, number, number)
+local function towerRun(power: number, zoneIdx: number, bonus: number): (number, number, number, number)
 	local shards, ecto, secs, room = 0, 0, 0, 0
 	local hp = { 1, 1, 1, 1 }
 	local lastHit = { -99, -99, -99, -99 }
 	local outUntil = { -1, -1, -1, -1 }
 	local now = 0
+	local zm = Config.Daily.ZoneMultiplier[zoneIdx]
+	local perSpirit = Rules.ZoneEctoPerSpirit(Config.Ghosts, Config.Zones[zoneIdx].Id) / zm
 	local function standing(): { number }
 		local s = {}
 		for i = 1, 4 do
@@ -277,9 +280,9 @@ local function towerRun(power: number, zoneIdx: number): (number, number, number
 		if left > 0 then
 			break -- wiped or out of time: rewards so far are kept
 		end
-		local s, e = Rules.TowerReward(r, TC :: any)
+		local s, e = Rules.TowerReward(r, TC :: any, roomT, bossHP, perSpirit)
 		shards += s
-		ecto += e * Config.Daily.ZoneMultiplier[zoneIdx]
+		ecto += e * zm * (1 + bonus) -- the Ecto Bonus upgrade applies to tower Ecto too
 		secs += roomT + ROOM_OVERHEAD
 		now += ROOM_OVERHEAD
 		heal(ROOM_OVERHEAD)
@@ -288,16 +291,18 @@ local function towerRun(power: number, zoneIdx: number): (number, number, number
 	return room, shards, ecto, secs
 end
 print("")
-print("BOSS TOWER (solo, leaves when a room takes > " .. PATIENCE .. " s; no pets; egg = runs per egg)")
-print(string.format("%-13s %8s %5s %7s %7s %6s %6s %6s %9s %9s", "stage", "crew", "room", "shards", "runMin", "egg1", "egg2", "egg3", "towerEpm", "farmEpm"))
-local function towerLine(label: string, power: number, zoneIdx: number, farmEpm: number?)
-	local room, shards, ecto, secs = towerRun(power, zoneIdx)
+print("BOSS TOWER (solo, leaves when a room takes > " .. PATIENCE .. " s; no pets; egg = runs per egg; ratio = towerEpm / farmEpm)")
+print(string.format("%-13s %8s %5s %7s %7s %6s %6s %6s %9s %9s %6s", "stage", "crew", "room", "shards", "runMin", "egg1", "egg2", "egg3", "towerEpm", "farmEpm", "ratio"))
+local function towerLine(label: string, power: number, zoneIdx: number, farmEpm: number?, bonus: number?)
+	local room, shards, ecto, secs = towerRun(power, zoneIdx, bonus or 0)
 	local e = Config.Eggs
 	local function runs(price: number): string
 		return if shards > 0 then string.format("%.1f", price / shards) else "inf"
 	end
-	print(string.format("%-13s %8s %5d %7d %7.1f %6s %6s %6s %9s %9s", label, num(power), room, shards, secs / 60,
-		runs(e.HauntedEgg.Price), runs(e.PhantomEgg.Price), runs(e.MoonlightEgg.Price), num(ecto / math.max(secs, 1) * 60), num(farmEpm)))
+	local towerEpm = ecto / math.max(secs, 1) * 60
+	print(string.format("%-13s %8s %5d %7d %7.1f %6s %6s %6s %9s %9s %6s", label, num(power), room, shards, secs / 60,
+		runs(e.HauntedEgg.Price), runs(e.PhantomEgg.Price), runs(e.MoonlightEgg.Price), num(towerEpm), num(farmEpm),
+		if farmEpm then string.format("%.2f", towerEpm / farmEpm) else "-"))
 end
 for _, p in { 10, 20, 40 } do
 	towerLine("power " .. p, p, 1, nil)
@@ -305,7 +310,7 @@ end
 for i = 1, Z do
 	local p = pct(stats[i].power, 0.5)
 	if p then
-		towerLine(Config.Zones[i].Id, p, i, pct(stats[i].epmIn, 0.5))
+		towerLine(Config.Zones[i].Id, p, i, pct(stats[i].epmIn, 0.5), pct(stats[i].bonus, 0.5))
 	end
 end
 do

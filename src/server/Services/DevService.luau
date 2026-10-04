@@ -1,7 +1,8 @@
 --!strict
--- Owner-only developer tools (DEV button + Studio chat commands). A player is a dev when the
--- game runs in Studio, or when their UserId is listed in Config.DevUserIds (live servers). Every command is re-checked here on the server, so the
--- button showing up on a client means nothing by itself.
+-- Developer-only tools (DEV button + Studio chat commands). A player is a dev ONLY when the game
+-- runs in Studio, or when their UserId is listed in Config.DevUserIds (live servers); being the
+-- place creator or a group owner does NOT make anyone a dev. Every command is re-checked here on
+-- the server, so the button showing up on a client means nothing by itself.
 -- NOTE: in a live server these change the dev's REAL saved profile.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -38,6 +39,16 @@ end
 local MAX_ECTO_GRANT = 1e12
 local MAX_SHARD_GRANT = 1e6
 local MAX_TOWER_ROOM = 400
+local ECTO2X_DEFAULT_HOURS = 48 -- "ON" without hours: never an endless global event
+
+-- Dev-granted hunters: no release refund and can't be traded (they never leave the dev's profile).
+local function markDevHunter(d: DataService.Data, uid: string?)
+	local h = if uid then d.Hunters[uid] else nil
+	if h then
+		(h :: any).NoRefund = true;
+		(h :: any).Dev = true
+	end
+end
 
 -- whole number in [lo, hi], else nil
 local function int(arg: any, lo: number, hi: number): number?
@@ -90,7 +101,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 			if count >= PlayerInfo.MaxHunters(player) then
 				break
 			end
-			HunterService.Add(player, id)
+			markDevHunter(d, (HunterService.Add(player, id)))
 			count += 1
 		end
 		HunterService.Refresh(player)
@@ -100,12 +111,14 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		end
 		DataService.Changed(player)
 	elseif cmd == "Ecto2x" then
-		-- GLOBAL 2X Ectoplasm (all servers); arg = true (until OFF) / false / hours (timed, 1-168)
+		-- GLOBAL 2X Ectoplasm (all servers); arg = true (48 h) / false (OFF) / hours (timed, 1-168)
 		local err
 		if type(arg) == "number" and arg == arg then
 			err = GlobalEventService.SetEcto2x(true, math.clamp(arg, 1, 168) * 3600)
+		elseif arg == true then
+			err = GlobalEventService.SetEcto2x(true, ECTO2X_DEFAULT_HOURS * 3600)
 		else
-			err = GlobalEventService.SetEcto2x(arg == true)
+			err = GlobalEventService.SetEcto2x(false)
 		end
 		if err then
 			return err
@@ -170,6 +183,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		d.Daily.Last = 0
 		DataService.Changed(player)
 	elseif cmd == "AutoAttack" then
+		-- the LEGACY Auto Attack pass (no longer sold; Auto Attack is free): owning it grants Auto Open
 		PlayerInfo.SetPass(player, "AutoAttack", true)
 		HunterService.Refresh(player)
 	elseif cmd == "AllPasses" then
@@ -191,7 +205,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 			DataService.Changed(other)
 		end
 	elseif cmd == "Exclusive" then
-		HunterService.GrantExclusive(player)
+		markDevHunter(d, (HunterService.GrantExclusive(player)))
 	elseif cmd == "RarePetAddMinutes" then
 		-- Studio only: +N minutes of rare pet event play time (tests the reward without waiting)
 		local err = RarePetEventService.StudioAddMinutes(player, tonumber(arg) or 5)

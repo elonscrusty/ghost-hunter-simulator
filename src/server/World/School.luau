@@ -437,7 +437,9 @@ local function gym(f: Instance)
 	local cols = { C(95, 135, 205), C(235, 150, 70), C(240, 225, 195), C(150, 100, 220) }
 	for i = 0, 3 do
 		for _, s in { -1, 1 } do
-			Kit.Box(f, V(s * 15, 0.15, 842 + i * 4), V(s * 60, 1.6 * (i + 1) + 0.15, 859), cols[i + 1], { Mat = Enum.Material.WoodPlanks, Solid = true, Shadow = true })
+			-- rows overlap (each reaches the back): inset hidden faces per row against z-fighting
+			local d = i * 0.03
+			Kit.Box(f, V(s * (15 + d), 0.15 + d, 842 + i * 4), V(s * (60 - d), 1.6 * (i + 1) + 0.15, 859 - d), cols[i + 1], { Mat = Enum.Material.WoodPlanks, Solid = true, Shadow = true })
 		end
 	end
 	for k, px in { -50, -36, -22, 22, 36, 50 } do

@@ -285,6 +285,126 @@ T.zone_multiplier_rises = function()
 	end
 end
 
+-- P1 audit: a solo Boss Tower run pays at most 1.5x the Ecto/min of farming the player's zone.
+-- Same models as tests/EconSim.luau (farming with starting upgrades; a crew of 4 equal hunters
+-- climbs while a room takes <= 60 s, with boss retaliation and knockouts), but deterministic: the
+-- boss hits the standing hunters in turn. Crews of 4x the zone's Uncommon..Legendary hunter
+-- (EconSim's arrival crews are at least that strong) must stay <= 1.5x; an under-geared crew of
+-- 4x Commons <= 2x.
+T.tower_ecto_close_to_farming = function()
+	local TC, RT = Config.Tower, Config.Retaliation
+	local U = Config.Upgrades
+	local radius, speed = U.PickupRadius.Levels[1], U.MoveSpeed.Levels[1]
+	local overhead = Config.Combat.EngageDelay + 0.6 + (Config.Drops.ScatterMax + 6) / radius * (16 / speed) * 1.2
+	local DT = 0.1
+	for zi, z in Config.Zones do
+		for k, h in zoneHunters(z.Id) do
+			local power = h.Power * Config.Inventory.BaseSlots
+			local limit = if k == 1 then 2 else 1.5
+			local farm = 0
+			for _, g in Config.Ghosts do
+				local gz = Config.ZoneById[g.Zone].Order
+				if gz <= zi and g.Kind ~= "Event" and g.Kind ~= "Tower" and (g.Kind == "Normal" or g.Spirit / power <= 25) then
+					farm = math.max(farm, g.Reward / (g.Spirit / power + overhead))
+				end
+			end
+			local zm = Config.Daily.ZoneMultiplier[zi]
+			local perSpirit = Rules.ZoneEctoPerSpirit(Config.Ghosts, z.Id) / zm
+			local hp, lastHit, outUntil = { 1, 1, 1, 1 }, { -99, -99, -99, -99 }, { -1, -1, -1, -1 }
+			local now, turn, ecto, secs = 0, 0, 0, 0
+			local function tick(dt)
+				now += dt
+				for i = 1, 4 do
+					if now >= outUntil[i] and hp[i] <= 0 then
+						hp[i] = 1
+					end
+					if now >= outUntil[i] and now - lastHit[i] >= RT.RegenDelay then
+						hp[i] = math.min(1, hp[i] + RT.RegenPerSecond * dt)
+					end
+				end
+			end
+			for r = 1, 400 do
+				local bossHP, hit = Rules.TowerScale(r, TC :: any, power)
+				if bossHP / power > 60 then
+					break
+				end
+				local left, roomT, nextHit = bossHP, 0, TC.Interval
+				while left > 0 and roomT <= TC.RoomSeconds do
+					local up = {}
+					for i = 1, 4 do
+						if now >= outUntil[i] then
+							table.insert(up, i)
+						end
+					end
+					if #up == 0 then
+						break
+					end
+					left -= power * #up / 4 * DT
+					roomT += DT
+					tick(DT)
+					if roomT >= nextHit then
+						nextHit += TC.Interval
+						turn += 1
+						local i = up[turn % #up + 1]
+						hp[i] -= hit
+						lastHit[i] = now
+						if hp[i] <= 0 then
+							outUntil[i] = now + RT.RecoverySeconds
+						end
+					end
+				end
+				if left > 0 then
+					break
+				end
+				local _, e = Rules.TowerReward(r, TC :: any, roomT, bossHP, perSpirit)
+				ecto += e * zm
+				secs += roomT + TC.RoomOverheadSeconds
+				tick(TC.RoomOverheadSeconds)
+			end
+			if secs > 0 then
+				local ratio = (ecto / secs) / farm
+				assert(ratio <= limit, string.format("%s crew %g: tower pays %.2fx farming", z.Id, power, ratio))
+			end
+		end
+	end
+end
+
+-- P1 audit: Lucky Opens (pack + the opens themselves) give more Rare+ per Ecto than plain opens
+T.lucky_opens_beat_plain_per_ecto = function()
+	local L = Config.LuckyOpens
+	local function order(id) return Config.Rarities[Config.Hunters[id].Rarity].Order end
+	local rare = Config.Rarities.Rare.Order
+	for id, c in Config.Crates do
+		if #c.Pool > 0 then
+			local base = Rules.Odds(c.Pool, order, 1, Config.LuckAffectsFromOrder)
+			local lucky = Rules.Odds(c.Pool, order, L.Multiplier, Config.LuckAffectsFromOrder)
+			local b, l = 0, 0
+			for _, e in c.Pool do
+				if order(e.Hunter) >= rare then
+					b += base[e.Hunter]
+					l += lucky[e.Hunter]
+				end
+			end
+			local luckyPerPrice = l * L.Opens / (L.Opens + L.PriceMultiplier)
+			assert(luckyPerPrice > b * 1.1, id .. ": lucky opens must clearly beat plain opens per Ecto")
+		end
+	end
+end
+
+-- smaller Ecto pack is worse per Robux than the Barrel, but not wildly worse
+T.ecto_packs_per_robux = function()
+	local function per(key)
+		for _, p in Config.Products do
+			if p.Key == key then
+				return p.Amount / tonumber(string.match(p.PriceLabel, "%d+"))
+			end
+		end
+		error("missing " .. key)
+	end
+	local sack, barrel = per("Ecto1"), per("Ecto2")
+	assert(sack < barrel and sack >= barrel * 0.6, string.format("sack %.1f vs barrel %.1f Ecto/R$", sack, barrel))
+end
+
 -- locked: the cheapest egg takes about 3-5 beginner tower runs (a beginner run reaches ~room 5)
 T.cheapest_egg_takes_3_to_5_beginner_runs = function()
 	local cheapest = math.huge

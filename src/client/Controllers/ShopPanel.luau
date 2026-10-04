@@ -1,6 +1,7 @@
 --!strict
 -- SHOP: Robux products (Ectoplasm packs, boosts) and game passes. Items without an id in
--- Config show "SOON". Purchases are prompted and granted by the server only.
+-- Config aren't listed (a pass without an id only shows, as OWNED, to players who have it).
+-- Purchases are prompted and granted by the server only.
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -19,6 +20,7 @@ local ShopPanel = {}
 local panel: Kit.Panel
 local passButtons: { [string]: TextButton } = {}
 local ectoLabels: { [string]: TextLabel } = {}
+local unsoldPasses: { [string]: GuiObject } = {} -- pass cards with no PassId yet: owners only
 
 local function card(parent: Instance, order: number, iconKey: string?, icon: string, name: string, sub: string, price: string, available: boolean, color: string, onBuy: () -> ()): (TextButton, TextLabel)
 	local f: Frame = Kit.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ZIndex = 62, Parent = parent })
@@ -90,6 +92,10 @@ local function refresh()
 	end
 	for _, pass in Config.GamePasses do
 		local b = passButtons[pass.Key]
+		local unsold = unsoldPasses[pass.Key]
+		if unsold then
+			unsold.Visible = d.Passes ~= nil and d.Passes[pass.Key] == true
+		end
 		if b and d.Passes and d.Passes[pass.Key] then
 			Kit.SetButtonText(b, "OWNED ✅")
 			b:SetAttribute("Color", "Gray")
@@ -123,6 +129,9 @@ function ShopPanel.Init()
 		if p.Kind == "SummonEvent" then
 			continue -- retired with the Giant Poltergeist event (no longer sold)
 		end
+		if p.ProductId == nil then
+			continue -- not on sale yet (no "SOON" buttons)
+		end
 		local sub = if p.Blurb then p.Blurb elseif p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
 		local prodButton, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
 			buy(p.Key)
@@ -137,14 +146,19 @@ function ShopPanel.Init()
 		if pass.Hidden then
 			continue -- no longer sold (e.g. the old Auto Attack pass: Auto Attack is free now)
 		end
-		local sub = if pass.Blurb then pass.Blurb elseif pass.Slots then "+" .. pass.Slots .. " EQUIPPED HUNTERS" else "x" .. tostring(pass.Multiplier or 2) .. " ALL ECTOPLASM"
+		local sub = if pass.Blurb then pass.Blurb elseif pass.Slots then "+" .. pass.Slots .. " EQUIPPED HUNTERS" else "x" .. tostring(pass.Multiplier or 2) .. " GHOST & TOWER ECTOPLASM"
 		local b = card(passRow, i, Icons.ForProduct[pass.Key], pass.Icon, pass.Name, sub, pass.PriceLabel, pass.PassId ~= nil, "Orange", function()
 			buy(pass.Key)
 		end)
 		passButtons[pass.Key] = b
 		priceButtons[pass.Key] = b
+		if pass.PassId == nil then
+			local f = b.Parent :: GuiObject
+			f.Visible = false
+			unsoldPasses[pass.Key] = f
+		end
 	end
-	Kit.Label(scroll, "Ectoplasm packs grow with the furthest area you've unlocked. Auto Attack only picks targets for you: same damage, same rewards.", { Size = UDim2.new(1, -10, 0, 36), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 62, Stroke = 0 }).LayoutOrder = 5
+	Kit.Label(scroll, "Ectoplasm packs grow with the furthest area you've unlocked.", { Size = UDim2.new(1, -10, 0, 36), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 62, Stroke = 0 }).LayoutOrder = 5
 	Hud.RegisterPanel("Shop", function()
 		panel:Toggle()
 	end)

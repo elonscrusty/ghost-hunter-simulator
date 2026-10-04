@@ -334,7 +334,8 @@ local function stall(f: Instance, x: number, z: number, color: Color3, title: st
 	local fx = if x > 0 then -1 else 1
 	local base = faced(V(x, 0, z), fx, 0)
 	local col = Kit.Vivid(color)
-	Kit.Part(m, V(12, 10, 1), base * CFrame.new(0, 5, 3.5), col, { Mat = WOOD, Solid = true, Shadow = true })
+	-- back panel a hair larger than the side panels so their end faces don't share a plane
+	Kit.Part(m, V(12.04, 10.04, 1.04), base * CFrame.new(0, 5, 3.5), col, { Mat = WOOD, Solid = true, Shadow = true })
 	for _, sx in { -1, 1 } do
 		Kit.Part(m, V(1, 10, 8), base * CFrame.new(sx * 5.5, 5, 0), CREAM, { Mat = WOOD, Solid = true })
 	end

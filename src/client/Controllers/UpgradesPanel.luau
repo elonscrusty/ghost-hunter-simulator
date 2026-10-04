@@ -22,6 +22,9 @@ type Row = { Pips: { Frame }, Value: TextLabel, Buy: TextButton }
 
 local panel: Kit.Panel
 local rows: { [string]: Row } = {}
+-- level from the last buy reply, briefly (the data sync can lag behind the reply)
+local lastLevel: { [string]: { L: number, T: number } } = {}
+local busy = false -- one purchase in flight at a time (a fast double tap used to buy twice)
 
 local function fmt(up: Config.UpgradeDef, v: number): string
 	if up.Format == "percent" then
@@ -107,8 +110,19 @@ function UpgradesPanel.Init()
 			AnchorPoint = Vector2.new(1, 0.5),
 			ZIndex = 64,
 			OnClick = function()
-				local res = State.Request("BuyUpgrade", id)
+				local d = State.Data
+				if busy or not d then
+					return
+				end
+				-- the level this button showed: the server refuses if it already moved on
+				-- (a reply can arrive before the next data sync: use the newest level we know)
+				local last = lastLevel[id]
+				local shownLevel = math.max(d.Upgrades[id] or 1, if last and os.clock() - last.T < 3 then last.L else 0)
+				busy = true
+				local res = State.Request("BuyUpgrade", id, shownLevel)
+				busy = false
 				if res.ok then
+					lastLevel[id] = { L = tonumber(res.Level) or 0, T = os.clock() }
 					Sound.Play("Upgrade")
 					Kit.Toast(up.Name .. " upgraded to level " .. tostring(res.Level) .. "!", "Good")
 					local char = game:GetService("Players").LocalPlayer.Character

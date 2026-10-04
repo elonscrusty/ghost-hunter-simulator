@@ -2,7 +2,8 @@
 -- Ghost spawning, wandering, targeting and server-authoritative damage.
 --
 -- Movement is NOT simulated per frame on the server. Each ghost has a straight wander segment
--- (attributes From, To, T0, Dur in server time); the server evaluates the position only when it
+-- (one packed string attribute "Seg" = "fx,fy,fz|tx,ty,tz|t0|dur", server time, so each move
+-- replicates one attribute instead of four); the server evaluates the position only when it
 -- needs it (range checks, drops) and every client animates the model locally along the same
 -- segment. One loop handles all ghosts, so there is no per-ghost Heartbeat connection.
 local Players = game:GetService("Players")
@@ -52,16 +53,17 @@ export type Ghost = {
 
 local buildHitbox: (Config.GhostDef, Vector3) -> Model
 local ghosts: { [number]: Ghost } = {}
+local byArea: { [number]: { Ghost } } = {} -- live ghosts per spawn area (spacedPoint scans only its own area)
 local nextUid = 1
 local folder: Folder
 local rng = Random.new()
 
 -- Ready = os.clock() when damage may start (hunters need time to run over).
--- Auto = picked by the Auto Attack pass (manual picks are never replaced automatically).
+-- Auto = picked by Auto Attack (manual picks are never replaced automatically).
 type Target = { Uid: number, Ready: number, Auto: boolean }
 local targets: { [Player]: Target } = {}
 
--- Auto Attack toggle (session only, default OFF). Only honoured while the player owns the pass.
+-- Auto Attack toggle (session only, default OFF). Free for every player.
 local autoOn: { [Player]: boolean } = {}
 
 local zoneRanges: { { number } } = {}
@@ -109,11 +111,12 @@ local function spacedPoint(center: Vector3, radius: number, hover: number, area:
 		return best
 	end
 	local want = spacing * spacing
+	local peers: { Ghost } = byArea[area] or {}
 	for i = 1, SPREAD_TRIES do
 		local p = if i == 1 then best else randomPoint(center, radius, hover)
 		local gap = math.huge
-		for _, o in ghosts do
-			if o ~= self and o.Alive and o.Area == area then
+		for _, o in peers do
+			if o ~= self and o.Alive then
 				local q = o.To
 				local dx, dz = p.X - q.X, p.Z - q.Z
 				gap = math.min(gap, dx * dx + dz * dz)
@@ -138,10 +141,8 @@ local function setSegment(g: Ghost, to: Vector3)
 	g.Dur = math.max(0.5, (to - from).Magnitude / math.max(g.Def.Speed, 0.1))
 	g.NextMove = t + g.Dur + rng:NextNumber(0.4, g.Def.Wander)
 	local m = g.Model
-	m:SetAttribute("From", g.From)
-	m:SetAttribute("To", g.To)
-	m:SetAttribute("T0", g.T0)
-	m:SetAttribute("Dur", g.Dur)
+	local f, o = g.From, g.To
+	m:SetAttribute("Seg", string.format("%.2f,%.2f,%.2f|%.2f,%.2f,%.2f|%.3f|%.3f", f.X, f.Y, f.Z, o.X, o.Y, o.Z, g.T0, g.Dur))
 end
 
 -- The server's ghost is only an invisible, generously sized tap target (Core) with the
@@ -215,6 +216,14 @@ function GhostService.Spawn(def: Config.GhostDef, center: Vector3, radius: numbe
 		Pending = nil,
 	}
 	ghosts[uid] = g
+	if o.Area then
+		local list = byArea[o.Area]
+		if not list then
+			list = {}
+			byArea[o.Area] = list
+		end
+		table.insert(list, g)
+	end
 	setSegment(g, pos)
 	g.NextMove = now() + rng:NextNumber(0, def.Wander)
 	model.Parent = folder
@@ -298,6 +307,14 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 	end
 	g.Alive = false
 	ghosts[g.Uid] = nil
+	local list = g.Area and byArea[g.Area]
+	if list then
+		local i = table.find(list, g)
+		if i then
+			list[i] = list[#list]
+			list[#list] = nil
+		end
+	end
 	local pos = GhostService.Position(g)
 	g.Model:SetAttribute("Spirit", 0)
 	g.Model:SetAttribute("Dead", true)
@@ -340,7 +357,7 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 		killedSignal:Fire(g, killer)
 	end
 
-	-- Hunters on this ghost come home. Only Auto Attack owners with the toggle ON get a new
+	-- Hunters on this ghost come home. Only players with Auto Attack ON get a new
 	-- ghost picked for them; everyone else chooses their next ghost by clicking/tapping it.
 	for player, tg in targets do
 		if tg.Uid == g.Uid then

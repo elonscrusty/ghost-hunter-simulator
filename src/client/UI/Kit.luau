@@ -201,6 +201,8 @@ export type ButtonProps = {
 	TextStyle: string?, -- typography key, default "Button"
 }
 
+local MIN_TAP_PT = 44 -- smallest physical tap target (points), Apple / Google guideline
+
 -- Chunky gradient button with press/hover animation and click sound.
 function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	local colors = Theme.Buttons[p.Color or "Green"] or Theme.Buttons.Green
@@ -240,6 +242,45 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	label.Name = "Label"
 	Kit.EctoText(label, text)
 	local scale = Kit.new("UIScale", { Parent = b })
+	-- Minimum finger target: an invisible hit area, centred on the button, that grows so the
+	-- tappable size is never under MIN_TAP_PT real points even when the screen / menu scaling
+	-- draws the button smaller. The visible button is unchanged.
+	local hit: TextButton = Kit.new("TextButton", {
+		Name = "Hit",
+		Text = "",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Selectable = false,
+		ZIndex = b.ZIndex + 2,
+		Parent = b,
+	})
+	local function fitHit()
+		-- local px -> screen points: product of every UIScale from here up to the ScreenGui
+		local k = 1
+		local node: Instance? = b
+		while node and not node:IsA("LayerCollector") do
+			local sc = node:FindFirstChildOfClass("UIScale")
+			if sc then
+				k *= sc.Scale
+			end
+			node = node.Parent
+		end
+		local g = node and node:FindFirstChildOfClass("UIScale")
+		if g then
+			k *= g.Scale
+		end
+		k = math.max(k, 0.05)
+		local abs = b.AbsoluteSize
+		hit.Size = UDim2.new(1, math.max(0, MIN_TAP_PT - abs.X) / k, 1, math.max(0, MIN_TAP_PT - abs.Y) / k)
+	end
+	b:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitHit)
+	b.AncestryChanged:Connect(fitHit)
+	b:GetPropertyChangedSignal("ZIndex"):Connect(function()
+		hit.ZIndex = b.ZIndex + 2
+	end)
+	fitHit()
 	b.MouseEnter:Connect(function()
 		-- touch screens fire MouseEnter with no MouseLeave: a hover grow would stay stuck and make
 		-- buttons overlap their neighbours, so hover only reacts to a real mouse
@@ -255,7 +296,7 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	-- release is watched globally: a finger that drags off the button (e.g. to scroll a list)
 	-- never fires MouseButton1Up on it, which used to leave the button stuck shrunk
 	local pressConn: RBXScriptConnection? = nil
-	b.MouseButton1Down:Connect(function()
+	local function pressed()
 		Kit.Tween(scale, 0.06, { Scale = 0.93 })
 		if pressConn then
 			pressConn:Disconnect()
@@ -270,13 +311,18 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 				Kit.Tween(scale, 0.15, { Scale = 1 }, Enum.EasingStyle.Back)
 			end
 		end)
-	end)
-	b.Activated:Connect(function()
+	end
+	local function activated()
 		play("Click")
 		if p.OnClick then
 			(p.OnClick :: () -> ())()
 		end
-	end)
+	end
+	-- touches / clicks land on the hit area; gamepad ButtonA activates the selected button itself
+	b.MouseButton1Down:Connect(pressed)
+	hit.MouseButton1Down:Connect(pressed)
+	b.Activated:Connect(activated)
+	hit.Activated:Connect(activated)
 	b:GetAttributeChangedSignal("Color"):Connect(function()
 		local c = Theme.Buttons[b:GetAttribute("Color") :: string] or Theme.Buttons.Green
 		grad.Color = ColorSequence.new(c[1], c[2])
@@ -557,7 +603,10 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 	Kit.Corner(root, UDim.new(0, 18))
 	Kit.Stroke(root, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(root, Theme.Panel2, Theme.Panel, 90)
-	local scale = Kit.new("UIScale", { Parent = root })
+	-- open/close slide the panel instead of scaling it: a scale tween re-rendered every label
+	-- through many pixel sizes, which is what broke text on phones (glyph cache)
+	local REST = UDim2.new(0.5, 0, 0.5, 12)
+	local OFF = UDim2.new(0.5, 0, 0.5, 52)
 	-- title banner
 	local banner: Frame = Kit.new("Frame", {
 		Size = UDim2.new(0, math.clamp(#title * 15 + 60, 200, 420), 0, 44),
@@ -615,8 +664,8 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			d.Visible = true
 			Kit.Tween(d, 0.2, { BackgroundTransparency = 0.5 })
 			root.Visible = true
-			scale.Scale = 0.7
-			Kit.Tween(scale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+			root.Position = OFF
+			Kit.Tween(root, 0.25, { Position = REST }, Enum.EasingStyle.Back)
 			play("PanelOpen")
 			self.OnOpen:Fire()
 			panelOpenedSignal:Fire(self.Name)
@@ -643,7 +692,7 @@ function Kit.Panel(name: string, title: string, size: Vector2, color: string?): 
 			if sel and sel:IsDescendantOf(root) then
 				GuiService.SelectedObject = nil
 			end
-			Kit.Tween(scale, 0.12, { Scale = 0.75 })
+			Kit.Tween(root, 0.12, { Position = OFF })
 			task.delay(0.12, function()
 				if not self.IsOpen then
 					root.Visible = false
@@ -690,6 +739,60 @@ GuiService.MenuOpened:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
+-- Popups that wait their turn
+--------------------------------------------------------------------------------
+-- Unprompted popups (event announcements, the daily reward, trade requests) must never close
+-- a menu the player is using or cover a crate reveal: they wait here until no panel is open
+-- and nothing has marked the screen busy (Kit.SetBusy), then show one at a time.
+local busyReasons: { [string]: boolean? } = {}
+local waiting: { () -> () } = {}
+local flushing = false
+
+function Kit.IsFree(): boolean
+	return current == nil and next(busyReasons) == nil
+end
+
+local function flushWaiting()
+	if flushing or #waiting == 0 or not Kit.IsFree() then
+		return
+	end
+	flushing = true
+	-- a short beat so a closing panel / finished reveal is out of the way first
+	task.delay(0.5, function()
+		flushing = false
+		if not Kit.IsFree() or #waiting == 0 then
+			return
+		end
+		local fn = table.remove(waiting, 1) :: () -> ()
+		local ok, err = pcall(fn :: any)
+		if not ok then
+			warn("[Kit] popup failed: " .. tostring(err))
+		end
+		-- the popup may not have opened anything (stale): try the next one
+		flushWaiting()
+	end)
+end
+
+-- Runs `fn` as soon as the screen is free (right away if it already is). `fn` should re-check that its
+-- popup still makes sense (it may run much later).
+function Kit.WhenFree(fn: () -> ())
+	table.insert(waiting, fn)
+	flushWaiting()
+end
+
+-- Marks the screen busy for a reason (e.g. "Reveal") so waiting popups hold off.
+function Kit.SetBusy(reason: string, on: boolean)
+	busyReasons[reason] = if on then true else nil
+	flushWaiting()
+end
+
+panelOpenedSignal:Connect(function(name: any)
+	if name == nil then
+		flushWaiting()
+	end
+end)
+
+--------------------------------------------------------------------------------
 -- Toasts
 --------------------------------------------------------------------------------
 local toastHolder: Frame? = nil
@@ -718,16 +821,31 @@ function Kit.Toast(text: string, color: string?)
 	local f: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(400, 32),
 		BackgroundColor3 = col,
-		BackgroundTransparency = 0.08,
+		BackgroundTransparency = 1,
 		LayoutOrder = math.floor(os.clock() * 100),
 		ZIndex = 90,
 		Parent = holder,
 	})
 	Kit.Corner(f, UDim.new(0, 10))
-	Kit.Stroke(f, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	local l = Kit.Label(f, text, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 91, Style = "Body", Fit = true })
-	local sc = Kit.new("UIScale", { Scale = 0.6, Parent = f })
-	Kit.Tween(sc, 0.22, { Scale = 1 }, Enum.EasingStyle.Back)
+	local fStroke = Kit.Stroke(f, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	-- long messages wrap onto up to TOAST_LINES lines (then "…") instead of being cut to one
+	local l = Kit.Label(f, text, { Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 91, Style = "Body", Wrap = true })
+	l.TextTruncate = Enum.TextTruncate.AtEnd
+	local TOAST_LINES = 3
+	local lineH = l.TextSize + 2
+	local textH = TextService:GetTextSize(text, l.TextSize, l.Font, Vector2.new(384, 1000)).Y
+	f.Size = UDim2.fromOffset(400, math.max(32, math.min(textH, lineH * TOAST_LINES) + 12))
+	-- fade in (no scale pop: scaling text re-renders it through many sizes, see Kit.Panel)
+	local lStroke = l:FindFirstChildOfClass("UIStroke")
+	l.TextTransparency = 1
+	fStroke.Transparency = 1
+	Kit.Tween(f, 0.18, { BackgroundTransparency = 0.08 })
+	Kit.Tween(fStroke, 0.18, { Transparency = 0 })
+	Kit.Tween(l, 0.18, { TextTransparency = 0 })
+	if lStroke then
+		lStroke.Transparency = 1
+		Kit.Tween(lStroke, 0.18, { Transparency = 0 })
+	end
 	if color == "Bad" then
 		play("Error")
 	end
@@ -744,13 +862,15 @@ function Kit.Toast(text: string, color: string?)
 		end)
 		kids[1]:Destroy()
 	end
-	task.delay(2.4, function()
+	-- longer (wrapped) messages stay up a little longer so they can be read
+	local lines = math.clamp(math.ceil(textH / lineH), 1, TOAST_LINES)
+	task.delay(2.4 + (lines - 1) * 0.8, function()
 		if f.Parent then
 			Kit.Tween(f, 0.3, { BackgroundTransparency = 1 })
+			Kit.Tween(fStroke, 0.3, { Transparency = 1 })
 			Kit.Tween(l, 0.3, { TextTransparency = 1 })
-			local st = l:FindFirstChildOfClass("UIStroke")
-			if st then
-				Kit.Tween(st, 0.3, { Transparency = 1 })
+			if lStroke then
+				Kit.Tween(lStroke, 0.3, { Transparency = 1 })
 			end
 			task.wait(0.3)
 			f:Destroy()

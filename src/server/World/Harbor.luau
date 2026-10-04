@@ -287,7 +287,7 @@ local function ship(f: Instance)
 
 	-- mooring bollards with ropes up to the hull
 	for _, z in { 1690, 1770 } do
-		Kit.Cyl(m, 2.4, 2, CFrame.new(121, 1.2, z), IRON, { Mat = METAL, Solid = true })
+		Kit.Cyl(m, 2.4, 2, CFrame.new(121, 1.2, z), IRON, { Mat = METAL, Solid = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 		Kit.Cyl(m, 0.6, 2.8, CFrame.new(121, 2.5, z), IRON, { Mat = METAL })
 		Props.Beam(m, V(121, 2.2, z), V(x0 - 0.2, 16, z + 4), 0.4, 0.4, ROPE)
 		Kit.AddCircle(121, z, 2)

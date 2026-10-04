@@ -183,7 +183,7 @@ local function sideWalls(f: Instance)
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(s * 140, -0.5, z0), V(s * 146, 30, z1), BRICKC, SOLID_BRICK)
 		Kit.Box(f, V(s * 139.5, 30, z0), V(s * 146.5, 31.4, z1), Kit.Vivid(COPPER), BRASS_M)
-		Kit.Box(f, V(s * 139.6, 0, z0), V(s * 140, 2.4, z1), DARK, { Mat = Enum.Material.Slate })
+		Kit.Box(f, V(s * 139.6, 0, z0), V(s * 140.05, 2.4, z1), DARK, { Mat = Enum.Material.Slate }) -- sunk into the wall (z-fighting with the pilasters)
 		for z = Z0 + 40, Z1 - 20, 40 do
 			Kit.Box(f, V(s * 137.6, 0, z - 2), V(s * 140, 32, z + 2), CREAM, { Mat = Enum.Material.Concrete, Solid = true })
 		end

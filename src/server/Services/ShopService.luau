@@ -42,7 +42,7 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 	if p.Kind == "Ecto" and p.Amount then
 		DataService.AddEcto(player, p.Amount * PlayerInfo.ZoneMultiplier(player))
 	elseif p.Kind == "Boost" and p.Boost and p.Seconds then
-		PlayerInfo.AddBoost(d, p.Boost, p.Seconds)
+		PlayerInfo.AddBoost(d, p.Boost, p.Seconds, true) -- paid: never capped away
 	elseif p.Kind == "CrateSkip" then
 		-- never cap here: this skip is already paid for (the cap is enforced before prompting)
 		d.SkipTokens = (d.SkipTokens or 0) + 1
@@ -62,7 +62,7 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 			Fx.To(player, "Exclusive", { Uid = uid, Hunter = hunterId, IsNew = isNew })
 		end
 	elseif p.Kind == "ServerLuck" and p.Seconds then
-		PlayerInfo.AddServerLuck(p.Seconds)
+		PlayerInfo.AddServerLuck(p.Seconds, true) -- paid: never capped away
 		Fx.All("Announce", { Text = player.DisplayName .. " turned on SERVER LUCK for everyone! 🍀", Color = "Rare" })
 		for _, other in Players:GetPlayers() do
 			DataService.Changed(other)
@@ -174,19 +174,63 @@ local function processReceipt(info: any): Enum.ProductPurchaseDecision
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
-local function checkPasses(player: Player)
-	for _, pass in Config.GamePasses do
-		if pass.PassId then
-			local ok, owned = pcall(function()
-				return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.PassId :: number)
-			end)
-			if not player.Parent then
-				return -- left while we were asking Roblox
-			end
-			PlayerInfo.SetPass(player, pass.Key, ok and owned == true)
+-- Asks Roblox (3 tries with backoff). true/false = answer, nil = still unknown.
+local function ownsPass(player: Player, passId: number): boolean?
+	for attempt = 1, 3 do
+		local ok, owned = pcall(function()
+			return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
+		end)
+		if ok then
+			return owned == true
+		end
+		if attempt < 3 then
+			task.wait(2 * attempt)
+		end
+		if not player.Parent then
+			return nil
 		end
 	end
+	return nil
+end
+
+local RECHECK_SECONDS = 180 -- passes Roblox couldn't confirm are asked about again this often
+local checking: { [Player]: boolean } = {}
+-- passes bought this session that Roblox hasn't confirmed yet: a "false" answer stays unknown
+local unconfirmed: { [Player]: { [string]: boolean } } = {}
+
+-- onlyUnknown = re-check just the passes whose earlier check failed.
+local function checkPasses(player: Player, onlyUnknown: boolean?)
+	if checking[player] then
+		return
+	end
+	checking[player] = true
+	for _, pass in Config.GamePasses do
+		if pass.PassId and (not onlyUnknown or PlayerInfo.PassUnknown(player, pass.Key)) then
+			local owned = ownsPass(player, pass.PassId :: number)
+			if not player.Parent then
+				checking[player] = nil
+				return -- left while we were asking Roblox
+			end
+			if owned == nil then
+				-- unknown: not owned for gameplay, but never re-sold and slots are never trimmed
+				PlayerInfo.SetPass(player, pass.Key, PlayerInfo.HasPass(player, pass.Key))
+				PlayerInfo.SetPassUnknown(player, pass.Key)
+			elseif not owned and unconfirmed[player] and unconfirmed[player][pass.Key] then
+				PlayerInfo.SetPassUnknown(player, pass.Key) -- bought, Roblox's cache is behind: ask again later
+			else
+				if owned and unconfirmed[player] then
+					unconfirmed[player][pass.Key] = nil
+				end
+				-- never take back a pass granted this session (a purchase can lag Roblox's cache)
+				PlayerInfo.SetPass(player, pass.Key, owned or PlayerInfo.HasPass(player, pass.Key))
+			end
+		end
+	end
+	checking[player] = nil
+	PlayerInfo.SetPassesChecked(player)
 	applyPassLooks(player)
+	-- pass state is known now: only now may a lost Extra Slots pass trim the equipped list
+	HunterService.EnsureEquipped(player)
 	HunterService.Refresh(player)
 end
 
@@ -199,10 +243,30 @@ function ShopService.Init()
 		end
 		for _, pass in Config.GamePasses do
 			if pass.PassId == passId then
-				PlayerInfo.SetPass(player, pass.Key, true)
-				applyPassLooks(player)
-				HunterService.Refresh(player)
-				Fx.Toast(player, "Thanks! " .. pass.Name .. " unlocked!", "Good")
+				-- the client's "purchased" flag isn't proof: confirm with Roblox first
+				local owned: boolean? = nil
+				for attempt = 1, 3 do
+					owned = ownsPass(player, passId)
+					if owned or not player.Parent then
+						break
+					end
+					task.wait(attempt)
+				end
+				if not player.Parent then
+					return
+				end
+				if owned then
+					PlayerInfo.SetPass(player, pass.Key, true)
+					applyPassLooks(player)
+					HunterService.Refresh(player)
+					Fx.Toast(player, "Thanks! " .. pass.Name .. " unlocked!", "Good")
+				elseif not PlayerInfo.HasPass(player, pass.Key) then
+					-- not confirmed yet: keep it "unknown" (not re-sold) and let the re-check unlock it
+					unconfirmed[player] = unconfirmed[player] or {}
+					unconfirmed[player][pass.Key] = true
+					PlayerInfo.SetPassUnknown(player, pass.Key)
+					Fx.Toast(player, "Checking your " .. pass.Name .. " purchase... it unlocks in a few minutes.", "Good")
+				end
 			end
 		end
 	end)
@@ -261,6 +325,9 @@ function ShopService.Init()
 				if PlayerInfo.HasPass(player, pass.Key) then
 					return Remotes.Fail("You already own this!")
 				end
+				if PlayerInfo.PassUnknown(player, pass.Key) then
+					return Remotes.Fail("Still checking your passes, try again in a moment")
+				end
 				if pass.Key == Config.AutoOpen.Pass and PlayerInfo.HasAutoOpen(player) then
 					return Remotes.Fail("You already have Auto Open!")
 				end
@@ -291,6 +358,22 @@ function ShopService.Init()
 	end
 end
 
-function ShopService.Start() end
+function ShopService.Start()
+	-- passes Roblox couldn't confirm (check failed, or a purchase not visible yet): ask again
+	task.spawn(function()
+		while true do
+			task.wait(RECHECK_SECONDS)
+			for _, player in Players:GetPlayers() do
+				if PlayerInfo.HasUnknownPasses(player) and DataService.Get(player) then
+					task.spawn(checkPasses, player, true)
+				end
+			end
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		checking[player] = nil
+		unconfirmed[player] = nil
+	end)
+end
 
 return ShopService

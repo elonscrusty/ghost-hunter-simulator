@@ -399,7 +399,7 @@ local function tick()
 			setPrompt("UNLOCK THE CEMETERY!", "Follow the trail to the gate")
 			setGuide(gatePos)
 		else
-			setPrompt("UNLOCK THE CEMETERY!", Format.Commas(d.Ecto) .. " / " .. Format.Commas(zone.Cost) .. " Ectoplasm  -  open crates, equip the best!")
+			setPrompt("UNLOCK THE CEMETERY!", "Defeat ghosts to save up - " .. Format.Commas(d.Ecto) .. " / " .. Format.Commas(zone.Cost))
 			setGuide(nil)
 		end
 	end

@@ -135,7 +135,7 @@ end
 local function waterfall(parent: Instance, top: Vector3, width: number, len: number, mist: boolean)
 	local cf = CFrame.new(top - V(0, len / 2, 0))
 	Kit.Part(parent, V(1.2, len, width), cf, C(110, 180, 255), { Mat = GLASS, Transp = 0.45, Refl = 0.1, Name = "Waterfall" })
-	Kit.Part(parent, V(1.6, len, width * 0.4), cf, C(205, 235, 255), { Transp = 0.6 })
+	Kit.Part(parent, V(1.6, len - 0.04, width * 0.4), cf, C(205, 235, 255), { Transp = 0.6 }) -- ends inside the sheet (z-fighting)
 	local lip = Kit.Part(parent, V(3, 0.8, width + 1), CFrame.new(top + V(0, 0.2, 0)), C(170, 220, 255), { Transp = 0.35 })
 	if mist then
 		Kit.Emitter(lip, C(190, 225, 255), 4, 7, 1.2)
@@ -221,7 +221,8 @@ end
 --==================================================================
 local function ground(f: Instance)
 	-- void glass: walkable everywhere in the play area, dark and see-through
-	Kit.Box(f, V(-W, -1, Z0), V(W, 0, Z1), C(16, 12, 34), { Solid = true, Transp = 0.3, Refl = 0.15, Name = "VoidGlass" })
+	-- (ends 0.05 short of the edge so it doesn't share the side rocks' outer face)
+	Kit.Box(f, V(-W + 0.05, -1, Z0), V(W - 0.05, 0, Z1), C(16, 12, 34), { Solid = true, Transp = 0.3, Refl = 0.15, Name = "VoidGlass" })
 	-- invisible backing slab: the glass alone is only 1 stud thick while every other zone floor
 	-- is 4, so this brings the realm floor to 4 studs and fast characters can't tunnel through.
 	Kit.Box(f, V(-W, -4, Z0), V(W, -1, Z1), C(16, 12, 34), { Solid = true, Transp = 1, Shadow = false, Name = "VoidGlassBacking" })
@@ -422,7 +423,7 @@ local function insideScenery(f: Instance)
 		if Kit.IsFree(x, z, 3) then
 			boulders += 1
 			local sz = V(rng:NextNumber(2, 4.5), rng:NextNumber(1.5, 3), rng:NextNumber(2, 4.5))
-			Kit.Part(f, sz, CFrame.new(x, sz.Y * 0.35, z) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3)), Kit.Pick(ROCKS), { Mat = ROCK, Solid = true, Shadow = true })
+			Kit.Part(f, sz, CFrame.new(x, sz.Y * 0.35, z) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3)), Kit.Pick(ROCKS), { Mat = ROCK, Solid = true, Shadow = true }).CanCollide = false -- small prop: tappable/queryable but walk-through (solid ones snag players)
 			Kit.AddCircle(x, z, 3)
 		end
 	end

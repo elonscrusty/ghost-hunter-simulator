@@ -353,7 +353,9 @@ export type TowerCfg = {
 	MaxScaledRoom: number,
 	ShardsBase: number,
 	ShardsPerRoom: number,
-	EctoBase: number,
+	EctoPerMinute: number,
+	SpiritPayShare: number,
+	RoomOverheadSeconds: number,
 	MilestoneEvery: { [number]: number },
 }
 
@@ -385,13 +387,36 @@ function Rules.TowerMilestone(room: number, cfg: TowerCfg): number
 end
 
 -- Reward pool PER PARTY MEMBER for beating `room` (the run's pool = this * party size, then
--- split by damage). Ecto is in base units before the zone multiplier.
-function Rules.TowerReward(room: number, cfg: TowerCfg): (number, number)
+-- split by damage). Ecto is in base units before the zone multiplier and is paid like farming:
+-- EctoPerMinute for the time the room took (fight `seconds` + RoomOverheadSeconds), but never
+-- more than SpiritPayShare x what the same damage (`hpEach` = boss health / members) would earn
+-- on the player's zone ghosts (`perSpirit` = base Ecto per Spirit, see ZoneEctoPerSpirit / zone
+-- multiplier), so an under-geared crew can't out-earn farming. Both x milestone. Shards depend on
+-- the room only.
+function Rules.TowerReward(room: number, cfg: TowerCfg, seconds: number?, hpEach: number?, perSpirit: number?): (number, number)
 	local r = math.max(1, math.floor(room))
 	local m = Rules.TowerMilestone(r, cfg)
 	local shards = math.floor((cfg.ShardsBase + math.min(r, cfg.MaxScaledRoom) * cfg.ShardsPerRoom) * m)
-	local ecto = math.floor(cfg.EctoBase * math.min(r, cfg.MaxScaledRoom) ^ 0.9 * m)
-	return shards, ecto
+	local secs = math.max(0, seconds or 0)
+	secs = if secs == secs then math.min(secs, 3600) else 0
+	local ecto = cfg.EctoPerMinute * (secs + cfg.RoomOverheadSeconds) / 60
+	if hpEach and perSpirit and hpEach == hpEach and perSpirit == perSpirit then
+		ecto = math.min(ecto, cfg.SpiritPayShare * math.max(0, hpEach) * math.max(0, perSpirit))
+	end
+	return shards, math.floor(ecto * m)
+end
+
+-- Best Ecto per point of Spirit among the farmable ghosts (Normal, MiniBoss, Boss) of `zoneId`
+-- (what farming that zone pays per damage, before multipliers). 0 if the zone has none.
+function Rules.ZoneEctoPerSpirit(ghosts: { [string]: any }, zoneId: string): number
+	local best = 0
+	for _, gAny in ghosts do
+		local g: { Zone: string, Kind: string, Reward: number, Spirit: number } = gAny
+		if g.Zone == zoneId and g.Kind ~= "Event" and g.Kind ~= "Tower" and g.Spirit > 0 then
+			best = math.max(best, g.Reward / g.Spirit)
+		end
+	end
+	return best
 end
 
 export type MergeHunter = { Id: string, Locked: boolean?, Tier: number? }
