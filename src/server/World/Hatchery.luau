@@ -4,7 +4,8 @@
 -- (origin CENTER = Config.Layout.Hatchery, local -Z = front, toward the spawn): footprint 21 x 13
 -- studs, which lands at about X -39..-14, Z -106..-81 in the lobby (Builder reserves the pocket;
 -- PetService's BuyEgg near check uses the same point).
---   Three pedestals (Config.EggOrder, left to right as seen from the plaza), each with a big egg,
+--   One pedestal per egg (Config.EggOrder, left to right as seen from the plaza; four eggs are
+--   built at PED_SCALE so they fit between the pillars), each with a big egg,
 --   a price/unlock sign and an invisible PromptAnchor (attribute Egg = egg id) holding a "View"
 --   ProximityPrompt. The client (Controllers/Hatchery) opens the egg panel from the prompt;
 --   buying and rolling happen only on the server (PetService "BuyEgg").
@@ -25,7 +26,9 @@ local NEON = Enum.Material.Neon
 local CENTER: Vector3 = Config.Layout.Hatchery -- PetService BuyEgg near check uses this spot
 local HW, HD = 10.5, 6.5 -- floor half width (local X) / half depth (local Z)
 local PED_Z = 1.5 -- pedestal row (local Z, behind the middle)
-local PED_GAP = 6
+local PED_GAP = 6 -- pedestal spacing at full size (up to three eggs)
+local PED_GAP_4 = 5.1 -- four or more eggs: closer together...
+local PED_SCALE_4 = 0.85 -- ...and slightly smaller (base 4.8 wide, sign 4.7 wide)
 local PX, PZ = 9.5, 5.3 -- pillar offsets
 local ROOF_Y = 12
 local STONE = C(96, 84, 120)
@@ -90,13 +93,49 @@ local function moonlightEgg(m: Instance, at: CFrame, egg: Config.EggDef)
 	end
 end
 
+local function cursedEgg(m: Instance, at: CFrame, egg: Config.EggDef)
+	eggShape(m, at, egg.Color, { Refl = 0.08 })
+	-- two slanted glowing eye slits and a jagged crack (the egg's few glowing accents)
+	for _, s in { -1, 1 } do
+		Kit.Part(m, V(0.9, 0.22, 0.2), off(at, 0.62 * s, 3.55, 1.6) * CFrame.Angles(0, 0, math.rad(-18 * s)), egg.Accent, { Mat = NEON })
+	end
+	local crack = { { -0.4, 2.3, 30 }, { 0.15, 1.8, -35 }, { 0.6, 1.35, 30 } }
+	for _, c in crack do
+		Kit.Part(m, V(0.16, 0.9, 0.2), off(at, c[1], c[2], 2.08) * CFrame.Angles(0, 0, math.rad(c[3])), egg.Accent, { Mat = NEON })
+	end
+	-- a band of dark thorns around the middle
+	for i = 0, 5 do
+		local a = math.rad(i * 60)
+		Kit.Part(m, V(0.4, 0.9, 0.4), at * CFrame.Angles(0, a, 0) * CFrame.new(0, 2.7, -2.0) * CFrame.Angles(math.rad(-60), 0, 0), C(70, 20, 50))
+	end
+	-- floating curse wisps
+	for _, w in { { -2.2, 4.6, 0.6 }, { 2.1, 2.2, 0.9 } } do
+		local wisp = Kit.Ball(m, 0.55, off(at, w[1], w[2], w[3]).Position, C(150, 60, 190), { Transp = 0.3 })
+		Kit.Float(wisp, 0.4)
+	end
+end
+
 local EGG_LOOK: { [string]: (Instance, CFrame, Config.EggDef) -> () } = {
 	HauntedEgg = hauntedEgg,
 	PhantomEgg = phantomEgg,
 	MoonlightEgg = moonlightEgg,
+	CursedEgg = cursedEgg,
 }
 
-local function pedestal(parent: Instance, base: CFrame, egg: Config.EggDef, x: number)
+-- Shrinks a built pedestal model by k around its origin (sizes, offsets and light ranges).
+local function scaleModel(m: Instance, origin: CFrame, k: number)
+	for _, d in m:GetDescendants() do
+		if d:IsA("BasePart") then
+			local rel = origin:ToObjectSpace(d.CFrame)
+			d.Size *= k
+			d.CFrame = origin * CFrame.new(rel.Position * k) * rel.Rotation
+		elseif d:IsA("PointLight") then
+			d.Range *= k
+		end
+	end
+end
+
+local function pedestal(parent: Instance, base: CFrame, egg: Config.EggDef, x: number, scale: number)
 	local m = Kit.Model(parent, "Pedestal_" .. egg.Id)
 	local pcf = base * CFrame.new(x, 0, PED_Z)
 	local function at(dx: number, dy: number, dz: number): CFrame
@@ -165,6 +204,9 @@ local function pedestal(parent: Instance, base: CFrame, egg: Config.EggDef, x: n
 		prompt:SetAttribute("Egg", egg.Id)
 		prompt.Parent = anchor
 	end)
+	if scale ~= 1 then
+		scaleModel(m, pcf, scale)
+	end
 	m.PrimaryPart = basePart
 end
 
@@ -220,10 +262,14 @@ function Hatchery.Build(map: Instance)
 
 	-- pedestals (Config.EggOrder, left to right as seen from the plaza)
 	local n = #Config.EggOrder
+	local gap, scale = PED_GAP, 1
+	if n >= 4 then
+		gap, scale = PED_GAP_4, PED_SCALE_4
+	end
 	for i, id in Config.EggOrder do
 		local egg = Config.Eggs[id]
 		if egg then
-			pedestal(m, base, egg, (i - (n + 1) / 2) * PED_GAP)
+			pedestal(m, base, egg, (i - (n + 1) / 2) * gap, scale)
 		end
 	end
 

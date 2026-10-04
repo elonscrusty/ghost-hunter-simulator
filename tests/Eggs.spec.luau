@@ -28,6 +28,17 @@ T.design_numbers = function()
 	eq(e.HauntedEgg.Price, 200); eq(e.HauntedEgg.Unlock, 0)
 	eq(e.PhantomEgg.Price, 1200); eq(e.PhantomEgg.Unlock, 10)
 	eq(e.MoonlightEgg.Price, 5000); eq(e.MoonlightEgg.Unlock, 25)
+	eq(e.CursedEgg.Price, 20000); eq(e.CursedEgg.Unlock, 50)
+	local want = {
+		GhostPhoenix = 35, CrystalSkull = 35, PhantomKing = 12.5, GhostCarousel = 12.5,
+		GhostMusicBox = 2.25, GhostShipBottle = 2.25, GhostBalloonRide = 0.5,
+	}
+	local n = 0
+	for _, o in e.CursedEgg.Odds do
+		n += 1
+		eq(o.Chance, want[o.Pet], "CursedEgg " .. o.Pet)
+	end
+	eq(n, 7, "CursedEgg pet count")
 	for id, pet in Config.Pets do
 		eq(pet.Price, nil, id .. " is no longer sold directly")
 	end
@@ -57,7 +68,7 @@ T.distribution_matches_odds = function()
 		end
 		for _, o in egg.Odds do
 			local pct = (counts[o.Pet] or 0) / N * 100
-			assert(math.abs(pct - o.Chance) < 0.05, string.format("%s %s %.2f vs %d", id, o.Pet, pct, o.Chance))
+			assert(math.abs(pct - o.Chance) < 0.05, string.format("%s %s %.2f vs %g", id, o.Pet, pct, o.Chance))
 		end
 	end
 	-- random sanity: Legendary pets stay rare (Moonlight Egg: 10% in total)
@@ -72,6 +83,28 @@ T.distribution_matches_odds = function()
 	assert(legendary > 1700 and legendary < 2300, "legendary ~10%: " .. legendary)
 end
 
+-- fractional chances: the cumulative sums land exactly on the boundaries
+T.fractional_roll_boundaries = function()
+	local egg = Config.Eggs.CursedEgg
+	eq(Eggs.Roll(egg, 0.6999), "CrystalSkull")
+	eq(Eggs.Roll(egg, 0.70), "PhantomKing")
+	eq(Eggs.Roll(egg, 0.8249), "PhantomKing")
+	eq(Eggs.Roll(egg, 0.825), "GhostCarousel")
+	eq(Eggs.Roll(egg, 0.9499), "GhostCarousel")
+	eq(Eggs.Roll(egg, 0.95), "GhostMusicBox")
+	eq(Eggs.Roll(egg, 0.9725), "GhostShipBottle")
+	eq(Eggs.Roll(egg, 0.9949), "GhostShipBottle")
+	eq(Eggs.Roll(egg, 0.995), "GhostBalloonRide")
+	eq(Eggs.Roll(egg, 1 - 1e-12), "GhostBalloonRide")
+end
+
+-- every pet rarity exists (Mythic/Secret/Ultra pets show like the others)
+T.pet_rarities_known = function()
+	for id, pet in Config.Pets do
+		assert(Config.Rarities[pet.Rarity], id .. " rarity " .. pet.Rarity)
+	end
+end
+
 T.unlock_gates = function()
 	local e = Config.Eggs
 	assert(Eggs.Unlocked(e.HauntedEgg, 0))
@@ -80,6 +113,8 @@ T.unlock_gates = function()
 	assert(not Eggs.Unlocked(e.MoonlightEgg, 20))
 	assert(Eggs.Unlocked(e.MoonlightEgg, 25))
 	assert(Eggs.Unlocked(e.MoonlightEgg, 40))
+	assert(not Eggs.Unlocked(e.CursedEgg, 49))
+	assert(Eggs.Unlocked(e.CursedEgg, 50))
 end
 
 T.request_ids = function()
@@ -119,6 +154,16 @@ T.every_pet_obtainable = function()
 		assert(inEgg[id] or id == Config.RarePetEvent.Pet, id .. " is in no egg and is not the event pet")
 	end
 	assert(Config.Pets[Config.RarePetEvent.Pet], "event pet exists")
+	-- the Cursed Egg's own pets are in that egg only
+	for _, id in { "PhantomKing", "GhostCarousel", "GhostMusicBox", "GhostShipBottle", "GhostBalloonRide" } do
+		local eggsWith = 0
+		for _, egg in Config.Eggs do
+			for _, o in egg.Odds do
+				eggsWith += if o.Pet == id then 1 else 0
+			end
+		end
+		eq(eggsWith, 1, id .. " egg count")
+	end
 	-- PetOrder (Index, dev tools) lists every pet exactly once; ids match their keys
 	local seen, n = {}, 0
 	for _, id in Config.PetOrder do

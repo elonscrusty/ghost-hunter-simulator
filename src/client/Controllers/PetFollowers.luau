@@ -1,8 +1,8 @@
 --!strict
 -- Pets floating beside every player (read from the player's "Pets" attribute, e.g.
 -- "GlowWisp,BooBat", plus "PetNames": the server-filtered nicknames, one per line).
--- v2 lineup (18 pets): each pet id has its own look builder in LOOKS (haunted objects and a
--- few cute creatures; rarer pets are more elaborate and glow more). Every look is <= 25 anchored parts
+-- v2 lineup (23 pets): each pet id has its own look builder in LOOKS (haunted objects and a
+-- few cute creatures; rarer pets are more elaborate). Every look is <= 30 anchored parts
 -- with no collisions/queries/touch/shadows, built around the body centre (front = -Z) and
 -- kept within the old ghost pets' bounds (~2 studs wide, ~2.4 tall), all moved by one
 -- RenderStepped loop with a single BulkMoveTo. The original nine ids, rarities and bonuses are
@@ -543,6 +543,192 @@ LOOKS.CrystalSkull = function(K)
 	return CORE, 3.3
 end
 
+-- Cursed Egg top tier (unlocked at Boss Tower checkpoint 50): 2 Mythic, 2 Secret, 1 Ultra
+-- MYTHIC: a tiny ghost king sitting on a floating crimson-and-gold throne, holding a scepter
+LOOKS.PhantomKing = function(K)
+	local GHOST = Color3.fromRGB(246, 242, 255)
+	local VELVET = Color3.fromRGB(205, 45, 90)
+	local RUBY = Color3.fromRGB(255, 70, 120)
+	K.ball(2.5, at(0, 0.55, -0.35), GHOST) -- ghost king (PrimaryPart)
+	K.ball(1.9, at(0, -0.4, -0.6), GHOST) -- ghost lap
+	K.face(0, 0.5, -1.52, 0.8)
+	K.cyl(0.4, 1.35, at(0, 1.85, -0.35), GOLD) -- crown band
+	K.spike(at(0, 2.45, -0.35), 0.5, 0.9, 1, GOLD) -- crown points
+	for _, s in { -1, 1 } do
+		K.spike(at(0.48 * s, 2.3, -0.35), 0.4, 0.65, s, GOLD)
+	end
+	K.ball(0.38, at(0, 1.85, -1.05), RUBY, true) -- crown gem
+	-- throne
+	K.block(3.2, 3.4, 0.5, at(0, 0.75, 1.0), VELVET) -- back
+	K.block(3.6, 0.45, 0.75, at(0, 2.55, 1.0), GOLD) -- top rail
+	for _, s in { -1, 1 } do
+		K.ball(0.7, at(1.8 * s, 2.85, 1.0), GOLD) -- finials
+		K.block(0.55, 1.0, 2.5, at(1.65 * s, -0.55, 0.05), GOLD) -- armrests
+	end
+	K.ball(0.7, at(0, 3.0, 0.85), RUBY, true) -- throne jewel
+	K.block(3.4, 0.8, 2.7, at(0, -1.3, 0.05), GOLD) -- seat base
+	K.block(3.0, 0.35, 2.3, at(0, -0.8, -0.05), VELVET) -- cushion
+	K.cyl(0.15, 3.2, at(0, -2.2, 0.05), RUBY, true, 0.35) -- floating glow under the throne
+	-- scepter in the right hand
+	K.ball(0.62, at(1.05, -0.2, -1.3), GHOST) -- hand
+	K.cyl(2.4, 0.2, at(1.25, 0.45, -1.35) * rot(0, 0, -12), GOLD)
+	K.ball(0.6, at(1.52, 1.75, -1.35), Color3.fromRGB(255, 120, 200), true) -- scepter orb
+	K.ball(0.45, at(-2.45, 1.6, -0.3), GOLD, true, 0.05) -- orbiting coin-sparks
+	K.ball(0.4, at(2.55, -1.0, 0.2), RUBY, true, 0.1)
+	return Color3.fromRGB(255, 90, 130), 3.35
+end
+
+-- MYTHIC: a mini merry-go-round: tiny ghosts ride a pumpkin, a bat and a teacup under a striped
+-- canopy ringed with warm bulbs
+LOOKS.GhostCarousel = function(K)
+	local GHOST = Color3.fromRGB(246, 242, 255)
+	local CANDY = Color3.fromRGB(255, 120, 170)
+	local PLUM = Color3.fromRGB(120, 60, 170)
+	local ORANGE = Color3.fromRGB(255, 145, 45)
+	local BAT = Color3.fromRGB(85, 60, 125)
+	local BULB = Color3.fromRGB(255, 225, 140)
+	K.cyl(4.2, 0.45, CFrame.identity, GOLD) -- centre pole (PrimaryPart)
+	K.cyl(0.45, 4.4, at(0, -1.85, 0), PLUM) -- platform
+	K.cyl(0.2, 4.6, at(0, -2.1, 0), GOLD) -- gold trim
+	K.cyl(0.4, 4.6, at(0, 1.9, 0), CANDY) -- striped canopy
+	K.cyl(0.35, 3.4, at(0, 2.25, 0), CREAM)
+	K.cyl(0.3, 2.2, at(0, 2.55, 0), CANDY)
+	K.ball(0.6, at(0, 2.95, 0), GOLD) -- top finial
+	for i = 0, 3 do -- warm bulbs around the canopy rim
+		local a = math.rad(i * 90 + 45)
+		K.ball(0.35, at(math.cos(a) * 2.3, 1.62, math.sin(a) * 2.3), BULB, true, 0.2)
+	end
+	-- front rider: a ghost on a pumpkin
+	K.cyl(3.5, 0.15, at(0, 0, -1.5), GOLD)
+	K.ball(1.1, at(0, -0.95, -1.5), ORANGE)
+	K.ball(1.2, at(0, -0.1, -1.5), GHOST)
+	K.face(0, -0.05, -2.08, 0.38)
+	-- left rider: a ghost on a little bat
+	K.cyl(3.5, 0.15, at(-1.3, 0, 0.75), GOLD)
+	K.ball(0.95, at(-1.3, -0.55, 0.75), BAT)
+	K.spike(at(-1.85, -0.45, 0.75), 0.6, 0.5, -1, BAT)
+	K.spike(at(-0.75, -0.45, 0.75), 0.6, 0.5, 1, BAT)
+	K.ball(1.0, at(-1.3, 0.25, 0.75), GHOST)
+	-- right rider: a ghost in a teacup
+	K.cyl(3.5, 0.15, at(1.3, 0, 0.75), GOLD)
+	K.cyl(0.7, 1.1, at(1.3, -1.15, 0.75), PINK)
+	K.ball(1.0, at(1.3, -0.45, 0.75), GHOST)
+	return Color3.fromRGB(255, 200, 130), 3.25
+end
+
+-- SECRET: an open music box: a tiny ghost ballerina in a pink tutu twirls on a gold stage,
+-- with floating music notes and a gold wind-up key
+LOOKS.GhostMusicBox = function(K)
+	local WOOD = Color3.fromRGB(150, 60, 110)
+	local VELVET = Color3.fromRGB(255, 160, 205)
+	local GHOST = Color3.fromRGB(246, 242, 255)
+	local TUTU = Color3.fromRGB(255, 185, 220)
+	local NOTE = Color3.fromRGB(205, 175, 255)
+	K.block(4.0, 1.6, 2.8, at(0, -1.3, 0), WOOD) -- box (PrimaryPart)
+	K.block(4.0, 2.4, 0.25, at(0, 0.55, 1.5) * rot(15, 0, 0), WOOD) -- open lid
+	K.block(3.5, 2.0, 0.08, at(0, 0.55, 1.36) * rot(15, 0, 0), VELVET) -- velvet inside the lid
+	K.block(4.15, 0.2, 2.95, at(0, -0.5, 0), GOLD) -- gold trims
+	K.block(4.15, 0.25, 2.95, at(0, -2.15, 0), GOLD)
+	K.ball(0.5, at(0, -1.3, -1.42), GOLD) -- front medallion
+	K.block(3.7, 0.1, 2.5, at(0, -0.42, 0), VELVET) -- velvet top
+	K.cyl(0.25, 1.2, at(0, -0.3, -0.2), GOLD) -- little stage
+	-- the ghost ballerina, arms up
+	K.ball(1.5, at(0, 0.85, -0.2), GHOST)
+	K.cyl(0.25, 2.0, at(0, 0.25, -0.2), TUTU) -- tutu
+	K.cyl(0.18, 1.6, at(0, 0.1, -0.2), VELVET)
+	K.ball(0.55, at(0, -0.05, -0.2), GHOST) -- wispy tail on the stage
+	K.ball(0.38, at(-0.55, 1.75, -0.2), GHOST) -- hands over the head
+	K.ball(0.38, at(0.55, 1.75, -0.2), GHOST)
+	K.ball(0.3, at(0.45, 1.45, -0.6), Color3.fromRGB(255, 110, 170)) -- hair bow
+	K.face(0, 0.85, -0.92, 0.5)
+	-- floating music notes
+	K.ball(0.45, at(-2.3, 1.0, -0.3), NOTE, true, 0.2)
+	K.block(0.1, 0.8, 0.1, at(-2.12, 1.4, -0.3), NOTE, true, 0.2)
+	K.ball(0.4, at(2.2, 1.9, 0), NOTE, true, 0.2)
+	K.block(0.1, 0.7, 0.1, at(2.36, 2.25, 0), NOTE, true, 0.2)
+	-- gold wind-up key on the side
+	K.block(0.4, 0.15, 0.15, at(2.2, -1.3, 0), GOLD)
+	K.block(0.1, 0.6, 0.6, at(2.45, -1.3, 0), GOLD)
+	return Color3.fromRGB(255, 175, 220), 2.7
+end
+
+-- SECRET: a ghost galleon with glowing sails sailing tiny waves inside a corked glass bottle
+LOOKS.GhostShipBottle = function(K)
+	local GLASS = Color3.fromRGB(190, 240, 255)
+	local SEA = Color3.fromRGB(60, 200, 230)
+	local HULL = Color3.fromRGB(125, 70, 185)
+	local MAST = Color3.fromRGB(120, 85, 70)
+	local CORK = Color3.fromRGB(190, 140, 90)
+	local GHOST = Color3.fromRGB(246, 242, 255)
+	local B = at(-0.45, 0, 0) * rot(0, 0, 10) -- the bottle lies on its side, neck up-right
+	local X = rot(0, 0, -90) -- turns an upright K.cyl to lie along the bottle
+	K.cyl(3.0, 2.5, B * X, GLASS, false, 0.8) -- glass (PrimaryPart)
+	K.ball(2.5, B * at(-1.5, 0, 0), GLASS, false, 0.8) -- rounded bottom
+	K.ball(2.5, B * at(1.5, 0, 0), GLASS, false, 0.8) -- shoulder
+	K.cyl(0.9, 1.1, B * at(2.95, 0, 0) * X, GLASS, false, 0.6) -- neck
+	K.cyl(0.75, 0.95, B * at(3.6, 0, 0) * X, CORK) -- cork
+	K.cyl(0.22, 1.25, B * at(3.05, 0, 0) * X, GOLD) -- gold seal band
+	K.block(3.3, 0.35, 1.6, B * at(-0.1, -0.95, 0), Color3.fromRGB(30, 90, 190), false, 0.1) -- tiny sea
+	K.ball(0.55, B * at(-1.35, -0.78, -0.55), SEA, false, 0.1) -- waves
+	K.ball(0.5, B * at(0.45, -0.8, -0.6), SEA, false, 0.1)
+	K.block(2.1, 0.75, 0.95, B * at(-0.15, -0.3, 0), HULL) -- hull
+	K.block(2.15, 0.16, 1.0, B * at(-0.15, -0.05, 0), GOLD) -- gold rail
+	K.wedge(0.95, 0.65, 0.7, B * at(1.25, -0.35, 0) * rot(0, -90, 0), HULL) -- bow
+	K.block(0.65, 0.4, 0.95, B * at(-0.9, 0.15, 0), Color3.fromRGB(150, 95, 210)) -- stern deck
+	K.block(0.1, 1.35, 0.1, B * at(-0.1, 0.4, 0.1), MAST) -- masts
+	K.block(0.1, 1.0, 0.1, B * at(0.7, 0.2, 0.1), MAST)
+	K.block(0.95, 0.6, 0.08, B * at(-0.1, 0.3, 0.02), Color3.fromRGB(205, 255, 225), false, 0.15) -- ghostly sails (top one glows)
+	K.block(0.7, 0.4, 0.08, B * at(-0.1, 0.85, 0.02), ECTO, true, 0.25)
+	K.block(0.65, 0.5, 0.08, B * at(0.7, 0.25, 0.02), Color3.fromRGB(205, 255, 225), false, 0.15)
+	K.spike(B * at(0.05, 1.0, 0.1), 0.3, 0.22, 1, Color3.fromRGB(255, 110, 200), true) -- flag
+	K.ball(0.3, B * at(1.55, -0.1, -0.2), Color3.fromRGB(255, 220, 110), true) -- bow lantern
+	local cap = B * at(-1.0, 0.72, -0.1)
+	K.ball(0.85, cap, GHOST) -- ghost captain
+	local f = cap.Position / S
+	K.face(f.X, f.Y, f.Z - 0.36, 0.38)
+	K.ball(0.42, at(-2.9, 1.35, -0.3), ECTO, true, 0.1) -- floating sparkles
+	K.ball(0.34, at(2.3, -1.45, 0.2), Color3.fromRGB(255, 110, 200), true, 0.1)
+	return Color3.fromRGB(170, 140, 255), 1.9
+end
+
+-- ULTRA: a tiny ghost waving from the wicker basket of a mini hot-air balloon with a pastel
+-- purple/gold/mint striped envelope, a crescent moon emblem, little lanterns and orbiting stars
+LOOKS.GhostBalloonRide = function(K)
+	local LILAC = Color3.fromRGB(190, 160, 255)
+	local SOFTGOLD = Color3.fromRGB(255, 215, 120)
+	local MINT = Color3.fromRGB(150, 240, 205)
+	local WICKER = Color3.fromRGB(190, 135, 80)
+	local WICKER2 = Color3.fromRGB(150, 100, 60)
+	local GHOST = Color3.fromRGB(246, 242, 255)
+	local LANTERN = Color3.fromRGB(255, 205, 120)
+	K.ball(3.6, at(0, 1.2, 0), LILAC) -- envelope (PrimaryPart)
+	K.ball(2.2, at(0, -0.1, 0), LILAC) -- tapered bottom
+	K.cyl(0.4, 1.3, at(0, -0.85, 0), SOFTGOLD) -- throat
+	K.cyl(0.4, 3.32, at(0, 0.45, 0), SOFTGOLD) -- stripes
+	K.cyl(0.4, 3.32, at(0, 1.95, 0), MINT)
+	K.cyl(0.25, 2.42, at(0, 2.55, 0), SOFTGOLD)
+	K.disc(0.12, 0.9, at(0, 1.2, -1.8), SOFTGOLD) -- crescent moon emblem...
+	K.disc(0.14, 0.75, at(0.22, 1.3, -1.83), LILAC) -- ...cut by a lilac disc
+	for _, x in { -0.65, 0.65 } do -- ropes
+		for _, z in { -0.55, 0.55 } do
+			K.block(0.08, 0.8, 0.08, at(x, -1.42, z), WICKER2)
+		end
+	end
+	K.block(1.6, 0.9, 1.4, at(0, -2.3, 0), WICKER) -- basket
+	K.block(1.7, 0.18, 1.5, at(0, -1.82, 0), WICKER2) -- basket rim
+	K.ball(1.2, at(0, -1.45, -0.15), GHOST) -- the little ghost
+	K.face(0, -1.4, -0.72, 0.38)
+	K.ball(0.4, at(-0.85, -1.0, -0.4), GHOST) -- waving hand
+	for _, s in { -1, 1 } do -- tiny lanterns hanging from the basket
+		K.block(0.05, 0.4, 0.05, at(0.95 * s, -2.55, -0.6), WICKER2)
+		K.ball(0.35, at(0.95 * s, -2.85, -0.6), LANTERN, true, 0.2)
+	end
+	K.ball(0.35, at(-2.4, 1.9, -0.2), SOFTGOLD, true, 0.15) -- orbiting stars
+	K.ball(0.3, at(2.35, 0.6, 0.2), MINT, true, 0.15)
+	K.ball(0.28, at(2.0, 2.8, -0.1), Color3.fromRGB(255, 180, 220), true, 0.15)
+	return Color3.fromRGB(220, 200, 255), 3.1
+end
+
 -- unknown id (a pet added to Config before it has a look): a plain ghost blob
 local function fallback(K: Kit, def: Config.PetDef): (Color3, number)
 	K.ball(3.5, CFrame.identity, def.Color)
@@ -595,13 +781,14 @@ local function buildPet(def: Config.PetDef, slot: number, label: string): Pet
 	end
 	local body = pieces[1].Part
 
-	-- rarity glow: brighter and wider for rarer pets
+	-- rarity glow: a little wider for rarer pets, capped so Mythic/Secret/Ultra pets don't wash
+	-- out (pale pets turned white under the old Secret/Ultra light)
 	local r = Config.Rarities[def.Rarity]
 	local order = if r then r.Order else 1
 	local light = Instance.new("PointLight")
 	light.Color = glow
-	light.Range = 4 + order * 1.5
-	light.Brightness = 0.6 + order * 0.3
+	light.Range = math.min(4 + order, 8)
+	light.Brightness = math.min(0.5 + order * 0.15, 1.1)
 	light.Shadows = false
 	light.Parent = body
 
@@ -614,7 +801,7 @@ local function buildPet(def: Config.PetDef, slot: number, label: string): Pet
 		Offset = Vector3.new(0, top * S + 0.3, 0) - pieces[1].Offset.Position,
 		MaxDistance = 60,
 	})
-	WorldLabel.Text(gui, label, { Style = "Small", Color = if r then r.Color else nil })
+	WorldLabel.Text(gui, label, { Style = "Small", Color = if r then (if r.Color.R + r.Color.G + r.Color.B >= r.Color2.R + r.Color2.G + r.Color2.B then r.Color else r.Color2) else nil })
 	return { Pieces = pieces, Slot = slot }
 end
 

@@ -426,6 +426,7 @@ T.pet_bonus_caps_cover_every_kind = function()
 	for id, pet in Config.Pets do
 		local cap = Config.PetRules.Caps[pet.Bonus.Kind]
 		assert(cap and cap > 0 and cap <= 1, id .. " bonus kind " .. pet.Bonus.Kind .. " has no sane cap")
+		-- a pet never shows more than it can give (the total cap limits every bonus kind)
 		assert(pet.Bonus.Value > 0 and pet.Bonus.Value <= cap, id .. " bonus above its cap")
 	end
 end

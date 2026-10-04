@@ -18,7 +18,7 @@ function LightingSetup.Apply()
 	local L = LightingService
 	L.ClockTime = 0.5
 	L.GeographicLatitude = 20
-	L.Brightness = 2.2
+	L.Brightness = 1.7 -- owner: dimmer (was 2.2)
 	L.Ambient = Color3.fromRGB(150, 120, 200)
 	L.OutdoorAmbient = Color3.fromRGB(160, 140, 210)
 	L.ColorShift_Top = Color3.fromRGB(170, 140, 255)
@@ -27,7 +27,7 @@ function LightingSetup.Apply()
 	L.EnvironmentSpecularScale = 0.4
 	L.GlobalShadows = true
 	L.ShadowSoftness = 0.4
-	L.ExposureCompensation = 0.12 -- slightly toned down (v1.4.1): same look, easier on the eyes
+	L.ExposureCompensation = -0.1 -- owner asked twice for less brightness (was 0.12)
 	L.FogEnd = 100000
 
 	for _, child in L:GetChildren() do
@@ -57,9 +57,9 @@ function LightingSetup.Apply()
 	clear("GHBloom")
 	local bloom = Instance.new("BloomEffect")
 	bloom.Name = "GHBloom"
-	bloom.Intensity = 0.08 -- owner: light pieces glowed too much (was 0.2)
+	bloom.Intensity = 0.04 -- owner: less bloom (was 0.2, then 0.08)
 	bloom.Size = 4 -- small radius: lights stay crisp, no blurry halo
-	bloom.Threshold = 2.8
+	bloom.Threshold = 3.2
 	bloom.Parent = L
 
 	clear("GHColor")

@@ -1040,8 +1040,9 @@ function Reveal.PlayPet(res: PetResult)
 	end
 	model:ScaleTo(3)
 	for _, d in model:GetDescendants() do
-		if d:IsA("PointLight") then
-			d.Brightness = math.min(d.Brightness, 1)
+		if d:IsA("PointLight") then -- ScaleTo widened the range 3x: keep the rarity glow soft
+			d.Brightness = math.min(d.Brightness, 0.9)
+			d.Range = math.min(d.Range, 12)
 		end
 	end
 	model.Parent = stage

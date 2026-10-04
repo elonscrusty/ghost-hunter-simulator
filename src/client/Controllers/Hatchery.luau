@@ -109,7 +109,7 @@ local function refresh()
 		lockLabel.Text = if egg.Unlock > 0 then string.format("UNLOCKED (Tower checkpoint %d)", egg.Unlock) else "Open to everyone"
 		lockLabel.TextColor3 = Theme.Good
 	else
-		lockLabel.Text = string.format("🔒 LOCKED: clear Boss Tower checkpoint %d (yours: %d)", egg.Unlock, d.TowerCheckpoint or 0)
+		lockLabel.Text = string.format("🔒 Unlock: Tower checkpoint %d (yours: %d)", egg.Unlock, d.TowerCheckpoint or 0)
 		lockLabel.TextColor3 = Theme.Bad
 	end
 	local reason = blockReason(egg, d)

@@ -324,7 +324,7 @@ local function rebuildPets()
 		Kit.Corner(pic, UDim.new(1, 0))
 		PetPortrait.New(pic, id, not known) -- undiscovered: dark silhouette
 		Kit.Label(card, if known then string.upper(pet.Name) else "???", { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 72), ZIndex = 66, Style = "Small", Fit = true })
-		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 90), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color, Style = "Tiny", Fit = true })
+		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 90), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else Theme.RarityText(rar), Style = "Tiny", Fit = true })
 		if known then
 			Kit.Label(card, (string.gsub(PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), " for all hunters", "")), { Size = UDim2.new(1, -8, 0, 26), Position = UDim2.fromOffset(4, 106), ZIndex = 66, Color = Theme.Ecto, Style = "Tiny", Fit = true })
 		end

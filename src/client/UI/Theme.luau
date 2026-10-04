@@ -72,4 +72,11 @@ local Theme = {
 	},
 }
 
+-- Text colour for a rarity: the brighter of its two colours, so dark rarities (Secret) stay
+-- readable on the dark panels.
+function Theme.RarityText(r: { Color: Color3, Color2: Color3 }): Color3
+	local a, b = r.Color, r.Color2
+	return if a.R + a.G + a.B >= b.R + b.G + b.B then a else b
+end
+
 return Theme

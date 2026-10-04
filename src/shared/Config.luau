@@ -1729,10 +1729,18 @@ Config.Pets = {
 	CrystalSkull = { Id = "CrystalSkull", Name = "Crystal Skull", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Ecto", Value = 0.35 }, Color = Color3.fromRGB(150, 230, 255), Glow = Color3.fromRGB(130, 230, 255), Icon = "💎" },
 	-- launch event reward (never in eggs): Legendary, same bonus size as the other Legendaries
 	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Icon = "🏮" },
+	-- Cursed Egg top tier (Boss Tower checkpoint 50). Secret/Ultra bonuses sit exactly at the
+	-- PetRules.Caps total, so one such pet alone maxes that bonus (shown numbers are what it gives).
+	PhantomKing = { Id = "PhantomKing", Name = "Phantom King", Rarity = "Mythic", Price = nil, Bonus = { Kind = "Power", Value = 0.45 }, Color = Color3.fromRGB(205, 45, 90), Glow = Color3.fromRGB(255, 205, 60), Icon = "👑" },
+	GhostCarousel = { Id = "GhostCarousel", Name = "Teacup Carousel", Rarity = "Mythic", Price = nil, Bonus = { Kind = "HP", Value = 0.45 }, Color = Color3.fromRGB(255, 120, 170), Glow = Color3.fromRGB(255, 200, 130), Icon = "🎠" },
+	GhostMusicBox = { Id = "GhostMusicBox", Name = "Haunted Music Box", Rarity = "Secret", Price = nil, Bonus = { Kind = "Recovery", Value = 0.5 }, Color = Color3.fromRGB(150, 60, 110), Glow = Color3.fromRGB(255, 175, 220), Icon = "🎶" },
+	GhostShipBottle = { Id = "GhostShipBottle", Name = "Ghost Ship in a Bottle", Rarity = "Secret", Price = nil, Bonus = { Kind = "Ecto", Value = 0.5 }, Color = Color3.fromRGB(125, 70, 185), Glow = Color3.fromRGB(120, 255, 150), Icon = "⛵" },
+	GhostBalloonRide = { Id = "GhostBalloonRide", Name = "Starlight Balloon", Rarity = "Ultra", Price = nil, Bonus = { Kind = "Power", Value = 0.6 }, Color = Color3.fromRGB(190, 160, 255), Glow = Color3.fromRGB(150, 240, 205), Icon = "🌙" },
 } :: { [string]: PetDef }
 Config.PetOrder = {
 	"GlowWisp", "BooBat", "EctoSlime", "BooBalloon", "JellyGhost", "PhantomKitty", "CursedTeddy", "MiniMummy", "MoonOwl",
 	"SpiritFox", "HauntedMirror", "TreasureMimic", "SpookyDrake", "HauntedClock", "GhostTrain", "GhostPhoenix", "CrystalSkull", "LanternSpirit",
+	"PhantomKing", "GhostCarousel", "GhostMusicBox", "GhostShipBottle", "GhostBalloonRide",
 }
 
 -- PET EGGS (v1.8): the only way to get pets with Spirit Shards (direct pet purchases are gone;
@@ -1777,8 +1785,19 @@ Config.Eggs = {
 		},
 		Color = Color3.fromRGB(30, 40, 120), Accent = Color3.fromRGB(255, 235, 150),
 	},
+	-- top tier; fractional chances are exact in binary (multiples of 0.25) so the total is exactly 100
+	CursedEgg = {
+		Id = "CursedEgg", Name = "Cursed Egg", Price = 20000, Unlock = 50,
+		Odds = {
+			{ Pet = "GhostPhoenix", Chance = 35 }, { Pet = "CrystalSkull", Chance = 35 },
+			{ Pet = "PhantomKing", Chance = 12.5 }, { Pet = "GhostCarousel", Chance = 12.5 },
+			{ Pet = "GhostMusicBox", Chance = 2.25 }, { Pet = "GhostShipBottle", Chance = 2.25 },
+			{ Pet = "GhostBalloonRide", Chance = 0.5 },
+		},
+		Color = Color3.fromRGB(28, 12, 34), Accent = Color3.fromRGB(190, 40, 90),
+	},
 } :: { [string]: EggDef }
-Config.EggOrder = { "HauntedEgg", "PhantomEgg", "MoonlightEgg" }
+Config.EggOrder = { "HauntedEgg", "PhantomEgg", "MoonlightEgg", "CursedEgg" }
 
 --==================================================================
 -- ENDLESS BOSS TOWER (v1.6). Party of up to 4 (pad at the entrance); every run starts at
