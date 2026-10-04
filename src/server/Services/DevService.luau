@@ -123,6 +123,45 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 			end
 		end
 		HunterService.Refresh(player)
+	elseif cmd == "ShinyCrew" then
+		for _, uid in d.Equipped do
+			local h = d.Hunters[uid]
+			if h then
+				(h :: any).Tier = 1
+				d.Variants[h.Id .. ":1"] = true
+				markDevHunter(d, uid)
+			end
+		end
+		HunterService.Refresh(player)
+	elseif cmd == "MergeCopies" then
+		-- 4 more copies of each equipped hunter (5 in total: enough to test a merge)
+		for _, uid in table.clone(d.Equipped) do
+			local h = d.Hunters[uid]
+			if h then
+				for _ = 1, Config.Merge.Count - 1 do
+					markDevHunter(d, (HunterService.Add(player, h.Id)))
+				end
+			end
+		end
+		HunterService.Refresh(player)
+	elseif cmd == "Teleport" then
+		-- quick trips around the lobby (outside the Boss Tower only)
+		if player:GetAttribute("InTower") then
+			return "Leave the Boss Tower first"
+		end
+		local spots: { [string]: Vector3 } = {
+			Lobby = Config.Layout.Spawn,
+			Tower = Config.Layout.TowerEntrance.Pad,
+			Hatchery = Config.Layout.Hatchery,
+		}
+		local spot = if type(arg) == "string" then spots[arg] else nil
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not spot or not char or not root then
+			return "Can't teleport"
+		end
+		local to = spot + Vector3.new(0, 4, if arg == "Lobby" then 0 else 8)
+		char:PivotTo(CFrame.new(to))
 	elseif cmd == "UnlockEggs" then
 		-- the tower checkpoint every egg needs (checkpoint and best room only ever go up)
 		local need = 0

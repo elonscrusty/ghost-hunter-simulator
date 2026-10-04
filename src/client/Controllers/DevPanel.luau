@@ -83,6 +83,14 @@ local ACTIONS: { Action } = {
 	{ Text = "MAX UPGRADES", Cmd = "MaxUpgrades", Color = "Teal" },
 	{ Text = "GIVE ALL PETS", Cmd = "AllPets", Color = "Pink" },
 	{ Text = "UNLOCK ALL EGGS", Cmd = "UnlockEggs", Color = "Pink" },
+	{ Text = "+1K SPIRIT SHARDS", Cmd = "Shards", Arg = 1000, Color = "Purple" },
+	{ Text = "+10K SPIRIT SHARDS", Cmd = "Shards", Arg = 10000, Color = "Purple" },
+	{ Text = "+100K SPIRIT SHARDS", Cmd = "Shards", Arg = 100000, Color = "Purple" },
+	{ Text = "EQUIPPED CREW → SHINY", Cmd = "ShinyCrew", Color = "Purple" },
+	{ Text = "+4 COPIES OF CREW (MERGE TEST)", Cmd = "MergeCopies", Color = "Orange" },
+	{ Text = "TELEPORT: LOBBY", Cmd = "Teleport", Arg = "Lobby", Color = "Blue" },
+	{ Text = "TELEPORT: BOSS TOWER", Cmd = "Teleport", Arg = "Tower", Color = "Blue" },
+	{ Text = "TELEPORT: PET HATCHERY", Cmd = "Teleport", Arg = "Hatchery", Color = "Blue" },
 	{ Text = "MAX LUCKY OPENS", Cmd = "LuckyOpens", Color = "Green" },
 	{ Text = "+10 SKIP TOKENS", Cmd = "SkipTokens", Color = "Teal" },
 	{ Text = "2X ECTO + LUCK BOOSTS 30M", Cmd = "Boosts", Color = "Green" },
@@ -119,7 +127,7 @@ local function run(a: Action)
 	end
 	local res = State.Request("Dev", a.Cmd, a.Arg)
 	if res.ok then
-		Kit.Toast(if a.Cmd == "Ecto" then "+" .. Format.Short(a.Arg :: number) .. " Ectoplasm" else a.Text .. " ✅", "Good")
+		Kit.Toast(if a.Cmd == "Ecto" then "+" .. Format.Short(a.Arg :: number) .. " Ectoplasm" elseif a.Cmd == "Shards" then "+" .. Format.Short(a.Arg :: number) .. " Spirit Shards" else a.Text .. " ✅", "Good")
 	else
 		Kit.Toast(res.err or "Failed", "Bad")
 	end
