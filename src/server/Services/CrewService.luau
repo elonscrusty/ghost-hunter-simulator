@@ -5,7 +5,6 @@
 --  * A hunter at 0 HP is KNOCKED OUT: d.Knocked[uid] = os.time() when it recovers. The timer is
 --    real time, so it keeps running while the player is offline and rejoining can't reset or
 --    skip it. Knocked-out hunters are never deleted; they just don't fight until they recover.
---  * The temporary Backup Rookie (uid "backup") can be hit but never knocked out.
 -- Ghosts call CrewService.Hit through GhostService, only for crews attacking that ghost.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -44,13 +43,9 @@ local function entry(player: Player, uid: string): Health
 	return e
 end
 
--- Crew uids that can be hit right now (the Backup Rookie when nobody else can fight).
+-- Crew uids that can be hit right now.
 function CrewService.Targets(player: Player): { string }
-	local list = HunterService.ActiveUids(player)
-	if #list == 0 and HunterService.UsesBackup(player) then
-		return { "backup" }
-	end
-	return list
+	return HunterService.ActiveUids(player)
 end
 
 -- Pushes "uid=pct,..." for the owner's HP bars (and everyone's crew rigs).
@@ -70,7 +65,7 @@ function CrewService.Hit(player: Player, uid: string, amount: number): boolean
 	if not d or amount ~= amount or amount <= 0 then
 		return false
 	end
-	if uid ~= "backup" and (not d.Hunters[uid] or HunterService.IsKnocked(d, uid)) then
+	if not d.Hunters[uid] or HunterService.IsKnocked(d, uid) then
 		return false
 	end
 	local e = entry(player, uid)
@@ -78,10 +73,6 @@ function CrewService.Hit(player: Player, uid: string, amount: number): boolean
 	e.LastHit = os.clock()
 	dirty[player] = true
 	if e.HP > 0 then
-		return false
-	end
-	if uid == "backup" then
-		e.HP = 1 -- the Backup Rookie can't be knocked out
 		return false
 	end
 	local seconds = Rules.RecoverySeconds(R.RecoverySeconds, PlayerInfo.PetBonus(player, "Recovery"))
@@ -94,7 +85,7 @@ function CrewService.Hit(player: Player, uid: string, amount: number): boolean
 	local def = Config.Hunters[d.Hunters[uid].Id]
 	Fx.To(player, "Knocked", { Uid = uid, Name = def and def.Name or "Hunter", Until = d.Knocked[uid] })
 	if #HunterService.ActiveUids(player) == 0 and player:GetAttribute("InTower") ~= true then
-		Fx.Toast(player, "Your crew is recovering! A Backup Rookie will help until they're back.", "Bad")
+		Fx.Toast(player, "Your whole crew is recovering! Equip other hunters (EQUIP BEST) or wait for them.", "Bad")
 	end
 	return true
 end

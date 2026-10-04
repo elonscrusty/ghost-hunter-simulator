@@ -146,7 +146,7 @@ local function clearPlayer(player: Player)
 	player:SetAttribute("TowerRoom", nil)
 	player:SetAttribute("TowerSafe", nil)
 	if player.Parent then
-		HunterService.Refresh(player) -- the Backup Rookie may step in again outside the tower
+		HunterService.Refresh(player)
 	end
 end
 

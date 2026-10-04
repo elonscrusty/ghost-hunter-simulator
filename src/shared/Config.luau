@@ -1493,10 +1493,6 @@ Config.Retaliation = {
 	RegenDelay = 4, -- seconds without being hit before a hunter starts healing
 	RegenPerSecond = 0.15, -- fraction of max HP per second
 	RecoverySeconds = 120, -- knockout timer (configurable)
-	-- beginner fallback: when no equipped hunter can fight and no spare is free, a temporary
-	-- BACKUP ROOKIE fights for the player (never saved, can't be knocked out, not in the tower)
-	BackupHunter = "RookieHunter",
-	BackupPower = 5,
 }
 
 --==================================================================

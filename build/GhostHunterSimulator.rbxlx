@@ -1510,10 +1510,6 @@ Config.Retaliation = {
 	RegenDelay = 4, -- seconds without being hit before a hunter starts healing
 	RegenPerSecond = 0.15, -- fraction of max HP per second
 	RecoverySeconds = 120, -- knockout timer (configurable)
-	-- beginner fallback: when no equipped hunter can fight and no spare is free, a temporary
-	-- BACKUP ROOKIE fights for the player (never saved, can't be knocked out, not in the tower)
-	BackupHunter = "RookieHunter",
-	BackupPower = 5,
 }
 
 --==================================================================
@@ -6038,7 +6034,6 @@ end)
 --  * A hunter at 0 HP is KNOCKED OUT: d.Knocked[uid] = os.time() when it recovers. The timer is
 --    real time, so it keeps running while the player is offline and rejoining can't reset or
 --    skip it. Knocked-out hunters are never deleted; they just don't fight until they recover.
---  * The temporary Backup Rookie (uid "backup") can be hit but never knocked out.
 -- Ghosts call CrewService.Hit through GhostService, only for crews attacking that ghost.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -6077,13 +6072,9 @@ local function entry(player: Player, uid: string): Health
 	return e
 end
 
--- Crew uids that can be hit right now (the Backup Rookie when nobody else can fight).
+-- Crew uids that can be hit right now.
 function CrewService.Targets(player: Player): { string }
-	local list = HunterService.ActiveUids(player)
-	if #list == 0 and HunterService.UsesBackup(player) then
-		return { "backup" }
-	end
-	return list
+	return HunterService.ActiveUids(player)
 end
 
 -- Pushes "uid=pct,..." for the owner's HP bars (and everyone's crew rigs).
@@ -6103,7 +6094,7 @@ function CrewService.Hit(player: Player, uid: string, amount: number): boolean
 	if not d or amount ~= amount or amount <= 0 then
 		return false
 	end
-	if uid ~= "backup" and (not d.Hunters[uid] or HunterService.IsKnocked(d, uid)) then
+	if not d.Hunters[uid] or HunterService.IsKnocked(d, uid) then
 		return false
 	end
 	local e = entry(player, uid)
@@ -6111,10 +6102,6 @@ function CrewService.Hit(player: Player, uid: string, amount: number): boolean
 	e.LastHit = os.clock()
 	dirty[player] = true
 	if e.HP > 0 then
-		return false
-	end
-	if uid == "backup" then
-		e.HP = 1 -- the Backup Rookie can't be knocked out
 		return false
 	end
 	local seconds = Rules.RecoverySeconds(R.RecoverySeconds, PlayerInfo.PetBonus(player, "Recovery"))
@@ -6127,7 +6114,7 @@ function CrewService.Hit(player: Player, uid: string, amount: number): boolean
 	local def = Config.Hunters[d.Hunters[uid].Id]
 	Fx.To(player, "Knocked", { Uid = uid, Name = def and def.Name or "Hunter", Until = d.Knocked[uid] })
 	if #HunterService.ActiveUids(player) == 0 and player:GetAttribute("InTower") ~= true then
-		Fx.Toast(player, "Your crew is recovering! A Backup Rookie will help until they're back.", "Bad")
+		Fx.Toast(player, "Your whole crew is recovering! Equip other hunters (EQUIP BEST) or wait for them.", "Bad")
 	end
 	return true
 end
@@ -8529,8 +8516,7 @@ return GlobalEventService
             <string name="Source"><![CDATA[--!strict
 -- Hunter inventory, equipping and crate opening (server-authoritative rolls).
 -- Replicates each player's crew to everyone through player attributes:
---   Crew = "HunterId|tier|uid,..." (equipped hunters that can fight, in order; uid "backup" =
---   the temporary Backup Rookie), CrewPower = number.
+--   Crew = "HunterId|tier|uid,..." (equipped hunters that can fight, in order), CrewPower = number.
 -- v1.6: hunter tiers (Normal / Shiny / Mega), knockouts (d.Knocked, real-time timers), merging,
 -- and a per-player "busy" registry so one hunter can't be merged, traded or released at once.
 local Players = game:GetService("Players")
@@ -8613,32 +8599,19 @@ function HunterService.ActiveUids(player: Player): { string }
 	return out
 end
 
--- True when no equipped hunter can fight: the Backup Rookie steps in (outside the tower).
-function HunterService.UsesBackup(player: Player): boolean
-	return #HunterService.ActiveUids(player) == 0 and player:GetAttribute("InTower") ~= true
-end
-
 function HunterService.HunterPower(player: Player, uid: string): number
 	local d = DataService.Get(player)
-	if uid == "backup" then
-		return Config.Retaliation.BackupPower
-	end
 	local h = d and d.Hunters[uid]
 	return if h then powerOf(h.Id, h.Tier) else 0
 end
 
--- Damage per second of the player's crew: hunters that can fight (+ pet Power bonus). With no
--- hunter able to fight, the Backup Rookie's power (never in the Boss Tower).
+-- Damage per second of the player's crew: hunters that can fight (+ pet Power bonus).
 function HunterService.CrewPower(player: Player): number
 	local d = DataService.Get(player)
 	if not d then
 		return 0
 	end
-	local active = HunterService.ActiveUids(player)
-	local base = Rules.CrewPower(active, d.Hunters, powerOf)
-	if #active == 0 and player:GetAttribute("InTower") ~= true then
-		base = Config.Retaliation.BackupPower
-	end
+	local base = Rules.CrewPower(HunterService.ActiveUids(player), d.Hunters, powerOf)
 	return base * (1 + PlayerInfo.PetBonus(player, "Power"))
 end
 
@@ -8653,12 +8626,7 @@ function HunterService.Refresh(player: Player)
 		local h = d.Hunters[uid]
 		table.insert(ids, string.format("%s|%d|%s", h.Id, h.Tier or 0, uid))
 	end
-	local backup = #ids == 0 and player:GetAttribute("InTower") ~= true
-	if backup then
-		table.insert(ids, Config.Retaliation.BackupHunter .. "|0|backup")
-	end
 	player:SetAttribute("Crew", table.concat(ids, ","))
-	player:SetAttribute("Backup", backup)
 	player:SetAttribute("CrewPower", HunterService.CrewPower(player))
 	DataService.Changed(player)
 end
@@ -11212,7 +11180,7 @@ local function clearPlayer(player: Player)
 	player:SetAttribute("TowerRoom", nil)
 	player:SetAttribute("TowerSafe", nil)
 	if player.Parent then
-		HunterService.Refresh(player) -- the Backup Rookie may step in again outside the tower
+		HunterService.Refresh(player)
 	end
 end
 
@@ -23516,7 +23484,6 @@ end
 local function addTag(m: Member, isLocal: boolean)
 	local def = Config.Hunters[m.Id]
 	local rar = Config.Rarities[def.Rarity]
-	local backup = m.Uid == "backup"
 	local gui = WorldLabel.New({
 		Name = "Tag",
 		Adornee = m.Rig.Root,
@@ -23527,8 +23494,8 @@ local function addTag(m: Member, isLocal: boolean)
 		AlwaysOnTop = true, -- never cut by walls / the hunter's own body
 	})
 	local tier = Config.Tiers[m.Tier]
-	local text = if backup then "BACKUP" else (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
-	WorldLabel.Text(gui, text, { Style = "Tiny", Color = if backup then Color3.fromRGB(190, 190, 200) else rar.Color })
+	local text = (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
+	WorldLabel.Text(gui, text, { Style = "Tiny", Color = rar.Color })
 	-- HP bar: its own label at the tag's anchor point, drawn in the upper part so it always
 	-- sits just above the name. Own crew: readable at play distance; others: small and close only.
 	local hpGui = WorldLabel.New({
@@ -23557,7 +23524,7 @@ local function addTag(m: Member, isLocal: boolean)
 		m.Alert = WorldLabel.Text(hpGui, "", { Style = "Small", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.28) })
 	end
 	-- rare+ hunters stand on a soft rarity-coloured disc
-	if rar.Order >= 3 and not backup then
+	if rar.Order >= 3 then
 		local disc = Instance.new("Part")
 		disc.Name = "RarityDisc"
 		disc.Shape = Enum.PartType.Cylinder
@@ -23585,15 +23552,11 @@ local function newMember(id: string, tier: number, uid: string, at: Vector3, isL
 	local scale = if tier >= 2 then HUNTER_SCALE * 1.2 else HUNTER_SCALE
 	rig.Model:ScaleTo(scale)
 	rig.Height *= scale
-	local backup = uid == "backup"
 	for _, p in rig.Model:GetDescendants() do
 		if p:IsA("BasePart") then
 			p.CanCollide = false
 			p.CanQuery = false
 			p.CanTouch = false
-			if backup then
-				p.Transparency = math.max(p.Transparency, 0.45)
-			end
 		end
 	end
 	rig.Model:PivotTo(CFrame.new(at))

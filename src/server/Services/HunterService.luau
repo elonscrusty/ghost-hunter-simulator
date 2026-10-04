@@ -1,8 +1,7 @@
 --!strict
 -- Hunter inventory, equipping and crate opening (server-authoritative rolls).
 -- Replicates each player's crew to everyone through player attributes:
---   Crew = "HunterId|tier|uid,..." (equipped hunters that can fight, in order; uid "backup" =
---   the temporary Backup Rookie), CrewPower = number.
+--   Crew = "HunterId|tier|uid,..." (equipped hunters that can fight, in order), CrewPower = number.
 -- v1.6: hunter tiers (Normal / Shiny / Mega), knockouts (d.Knocked, real-time timers), merging,
 -- and a per-player "busy" registry so one hunter can't be merged, traded or released at once.
 local Players = game:GetService("Players")
@@ -85,32 +84,19 @@ function HunterService.ActiveUids(player: Player): { string }
 	return out
 end
 
--- True when no equipped hunter can fight: the Backup Rookie steps in (outside the tower).
-function HunterService.UsesBackup(player: Player): boolean
-	return #HunterService.ActiveUids(player) == 0 and player:GetAttribute("InTower") ~= true
-end
-
 function HunterService.HunterPower(player: Player, uid: string): number
 	local d = DataService.Get(player)
-	if uid == "backup" then
-		return Config.Retaliation.BackupPower
-	end
 	local h = d and d.Hunters[uid]
 	return if h then powerOf(h.Id, h.Tier) else 0
 end
 
--- Damage per second of the player's crew: hunters that can fight (+ pet Power bonus). With no
--- hunter able to fight, the Backup Rookie's power (never in the Boss Tower).
+-- Damage per second of the player's crew: hunters that can fight (+ pet Power bonus).
 function HunterService.CrewPower(player: Player): number
 	local d = DataService.Get(player)
 	if not d then
 		return 0
 	end
-	local active = HunterService.ActiveUids(player)
-	local base = Rules.CrewPower(active, d.Hunters, powerOf)
-	if #active == 0 and player:GetAttribute("InTower") ~= true then
-		base = Config.Retaliation.BackupPower
-	end
+	local base = Rules.CrewPower(HunterService.ActiveUids(player), d.Hunters, powerOf)
 	return base * (1 + PlayerInfo.PetBonus(player, "Power"))
 end
 
@@ -125,12 +111,7 @@ function HunterService.Refresh(player: Player)
 		local h = d.Hunters[uid]
 		table.insert(ids, string.format("%s|%d|%s", h.Id, h.Tier or 0, uid))
 	end
-	local backup = #ids == 0 and player:GetAttribute("InTower") ~= true
-	if backup then
-		table.insert(ids, Config.Retaliation.BackupHunter .. "|0|backup")
-	end
 	player:SetAttribute("Crew", table.concat(ids, ","))
-	player:SetAttribute("Backup", backup)
 	player:SetAttribute("CrewPower", HunterService.CrewPower(player))
 	DataService.Changed(player)
 end

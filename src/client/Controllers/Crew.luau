@@ -121,7 +121,6 @@ end
 local function addTag(m: Member, isLocal: boolean)
 	local def = Config.Hunters[m.Id]
 	local rar = Config.Rarities[def.Rarity]
-	local backup = m.Uid == "backup"
 	local gui = WorldLabel.New({
 		Name = "Tag",
 		Adornee = m.Rig.Root,
@@ -132,8 +131,8 @@ local function addTag(m: Member, isLocal: boolean)
 		AlwaysOnTop = true, -- never cut by walls / the hunter's own body
 	})
 	local tier = Config.Tiers[m.Tier]
-	local text = if backup then "BACKUP" else (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
-	WorldLabel.Text(gui, text, { Style = "Tiny", Color = if backup then Color3.fromRGB(190, 190, 200) else rar.Color })
+	local text = (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
+	WorldLabel.Text(gui, text, { Style = "Tiny", Color = rar.Color })
 	-- HP bar: its own label at the tag's anchor point, drawn in the upper part so it always
 	-- sits just above the name. Own crew: readable at play distance; others: small and close only.
 	local hpGui = WorldLabel.New({
@@ -162,7 +161,7 @@ local function addTag(m: Member, isLocal: boolean)
 		m.Alert = WorldLabel.Text(hpGui, "", { Style = "Small", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.28) })
 	end
 	-- rare+ hunters stand on a soft rarity-coloured disc
-	if rar.Order >= 3 and not backup then
+	if rar.Order >= 3 then
 		local disc = Instance.new("Part")
 		disc.Name = "RarityDisc"
 		disc.Shape = Enum.PartType.Cylinder
@@ -190,15 +189,11 @@ local function newMember(id: string, tier: number, uid: string, at: Vector3, isL
 	local scale = if tier >= 2 then HUNTER_SCALE * 1.2 else HUNTER_SCALE
 	rig.Model:ScaleTo(scale)
 	rig.Height *= scale
-	local backup = uid == "backup"
 	for _, p in rig.Model:GetDescendants() do
 		if p:IsA("BasePart") then
 			p.CanCollide = false
 			p.CanQuery = false
 			p.CanTouch = false
-			if backup then
-				p.Transparency = math.max(p.Transparency, 0.45)
-			end
 		end
 	end
 	rig.Model:PivotTo(CFrame.new(at))
