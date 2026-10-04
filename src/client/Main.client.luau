@@ -90,6 +90,7 @@ local order = {
 	"Payouts",
 	"RarePetEvent",
 	"Ambience",
+	"MenuTour",
 	"Tutorial",
 }
 -- one broken controller must not take the whole UI down with it: each one loads, inits and

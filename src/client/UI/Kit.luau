@@ -949,6 +949,15 @@ function Kit.Toast(text: string, color: string?)
 	local icons: { ImageLabel } = {}
 	if textH <= lineH then
 		Kit.IconText(l, text)
+		-- the icon gaps are wider than the emoji: if that pushes it onto 2 lines, keep the emoji
+		if TextService:GetTextSize(l.Text, l.TextSize, l.Font, Vector2.new(384, 1000)).Y > lineH then
+			for _, c in l:GetChildren() do
+				if c:IsA("ImageLabel") then
+					c:Destroy()
+				end
+			end
+			l.Text = text
+		end
 		for _, c in l:GetChildren() do
 			if c:IsA("ImageLabel") and c.Visible then
 				c.ImageTransparency = 1

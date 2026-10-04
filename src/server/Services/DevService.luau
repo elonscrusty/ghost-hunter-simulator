@@ -116,7 +116,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		-- equipped hunters become Mega (tests tiers, power and HP without merging)
 		for _, uid in d.Equipped do
 			local h = d.Hunters[uid]
-			if h then
+			if h and (h.Tier or 0) < Config.Merge.MaxTier then -- only hunters it changes get the dev flag
 				(h :: any).Tier = Config.Merge.MaxTier
 				d.Variants[h.Id .. ":" .. Config.Merge.MaxTier] = true
 				markDevHunter(d, uid)
@@ -126,7 +126,7 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 	elseif cmd == "ShinyCrew" then
 		for _, uid in d.Equipped do
 			local h = d.Hunters[uid]
-			if h then
+			if h and (h.Tier or 0) < 1 then -- never downgrades a Mega
 				(h :: any).Tier = 1
 				d.Variants[h.Id .. ":1"] = true
 				markDevHunter(d, uid)

@@ -1,5 +1,12 @@
 # Status
 
+## v1.16 (built, not yet published)
+- New lobby (Boss Tower + Pet Hatchery by spawn), 4 eggs incl. Cursed Egg, 23 pets, booth-only
+  trading, TOP POWER board, WHAT'S NEW popup (Config.UpdateNotes), menu tour after the tutorial
+  (replay in Settings), hunter HP on cards, names toggle, icon pass, HATCH AGAIN, dev panel extras.
+- Dev tools + Rare Pet event admins: Config.DevUserIds / RarePetEvent.AdminUserIds (20194281, 837974693).
+- PUBLISH with "Shut down all servers". Check product/pass prices in Creator Dashboard match labels.
+
 ## v1.10 audit fixes (built, not yet published)
 - Fixed everything in the fresh audit: Slots pass trim, pass-check retries + purchase verify,
   Studio uses a separate "studio" data scope, save version check (newer saves refused, caps

@@ -1,7 +1,7 @@
 --!strict
 -- First-time guidance without walls of text:
 --   1 TAP A GHOST!  →  2 COLLECT ECTOPLASM!  →  3 OPEN A HUNTER CRATE!  →
---   4 EQUIP YOUR NEW HUNTER!  →  5 UNLOCK THE CEMETERY!  →  done
+--   4 EQUIP YOUR NEW HUNTER!  →  5 UNLOCK THE CEMETERY!  →  done  →  MENU TOUR (MenuTour)
 -- A glowing breadcrumb trail on the ground + a bouncing arrow over the target show where to
 -- go; menu buttons pulse when they're the next step. After the tutorial a small NEXT GOAL
 -- chip keeps the next zone in view. Progress is saved (server only accepts forward steps).
@@ -26,6 +26,7 @@ local Reveal = require(script.Parent.Reveal)
 local CratePanel = require(script.Parent.CratePanel)
 local HuntersPanel = require(script.Parent.HuntersPanel)
 local Sound = require(script.Parent.Sound)
+local MenuTour = require(script.Parent.MenuTour)
 
 local Tutorial = {}
 
@@ -203,7 +204,7 @@ local function wantsTowerGoal(d: any): boolean
 	return (school ~= nil and d.Zones[school.Id] == true) or State.CountOwned() >= 6
 end
 
-local function advance(to: number)
+local function advance(to: number, skipped: boolean?)
 	if to <= step then
 		return
 	end
@@ -214,6 +215,9 @@ local function advance(to: number)
 		setGuide(nil)
 		Hud.Pulse("Hunters", false)
 		Hud.Banner("TUTORIAL COMPLETE!", "Keep hunting, collecting and unlocking!", Theme.Gold)
+		if not skipped then
+			MenuTour.AfterTutorial() -- then a quick tour of the menu buttons (SKIP leaves it out)
+		end
 	end
 end
 
@@ -432,7 +436,7 @@ function Tutorial.Init()
 		TextStyle = "Tiny",
 		ZIndex = 42,
 		OnClick = function()
-			advance(STEPS + 1)
+			advance(STEPS + 1, true)
 		end,
 	})
 	-- pulse the prompt gently

@@ -1853,7 +1853,7 @@ Config.RarePetEvent = {
 	Key = "RarePetEvent",
 	Topic = "GHRarePetEvent",
 	RefreshSeconds = 60,
-	AdminUserIds = { 20194281 } :: { number }, -- ONLY these accounts may start it (live servers)
+	AdminUserIds = { 20194281, 837974693 } :: { number }, -- ONLY these accounts may start it (live servers)
 }
 
 --==================================================================
@@ -2045,7 +2045,7 @@ Config.RateLimits = {
 
 -- Extra developer accounts (UserIds) that get the DEV button in live servers. The game's
 -- creator (or the owner of the creator group) and anyone in Studio always get it.
-Config.DevUserIds = { 20194281 } :: { number } -- kcdrewcarter (only these get dev tools live)
+Config.DevUserIds = { 20194281, 837974693 } :: { number } -- kcdrewcarter + 837974693 (only these get dev tools live)
 
 -- Player feedback (FEEDBACK button in Settings; read in the DEV panel)
 Config.Feedback = {

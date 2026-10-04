@@ -189,6 +189,7 @@ local function buildTop(screen: ScreenGui)
 	Kit.Icon(shards, "shards", "🔮", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 4 })
 	shardLabel = Kit.Label(shards, "0", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(42, 0), Color = Color3.fromRGB(200, 160, 255), Style = "Currency", Fit = true })
 	Hud.ShardsPill = shards
+	Hud.Counters = { Ecto = ectoPill, Power = power, Shards = shards } -- menu tour targets
 	-- boosts (only while active)
 	-- directly under the counters: next-area progress bar (Tutorial), boss event bar (Boss) and
 	-- active boosts, stacked so they never overlap and never sit in the middle of the play area
@@ -241,6 +242,7 @@ local menu: Frame -- left column
 local menuScale: UIScale
 Hud.TopStack = nil :: Frame?
 Hud.ShardsPill = nil :: Frame?
+Hud.Counters = {} :: { [string]: Frame }
 local rightStack: Frame
 local rightScale: UIScale
 local lowerRow: Frame
@@ -382,7 +384,7 @@ end
 
 -- Settings panel (gear, top right)
 local function buildSettings(screen: ScreenGui)
-	local panel = Kit.Panel("Settings", "SETTINGS", Vector2.new(400, 410), "Gray")
+	local panel = Kit.Panel("Settings", "SETTINGS", Vector2.new(400, 460), "Gray")
 	local list: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = panel.Body, ZIndex = 61 })
 	Kit.new("UIListLayout", { Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Parent = list })
 	local toggles = {
@@ -420,6 +422,16 @@ local function buildSettings(screen: ScreenGui)
 		OnClick = function()
 			panel:Close()
 			Hud.Open("Feedback")
+		end,
+	})
+	Kit.Button(list, {
+		Text = "📖 MENU TOUR",
+		Color = "Purple",
+		Size = UDim2.fromOffset(320, 44),
+		ZIndex = 62,
+		OnClick = function()
+			panel:Close()
+			Hud.Open("MenuTour") -- registered by MenuTour
 		end,
 	})
 	State.OnData(function(d)
@@ -473,6 +485,7 @@ local function buildSettings(screen: ScreenGui)
 		end,
 	})
 	feedback.LayoutOrder = 3
+	Hud.Buttons.Feedback = feedback
 	local gear = Kit.Button(lowerRow, {
 		Text = "",
 		Color = "Gray",
@@ -483,6 +496,7 @@ local function buildSettings(screen: ScreenGui)
 		end,
 	})
 	gear.LayoutOrder = 4
+	Hud.Buttons.Settings = gear
 	Kit.Icon(gear, "menu_settings", "⚙", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Heading", Stroke = 0, ZIndex = 3 })
 end
 

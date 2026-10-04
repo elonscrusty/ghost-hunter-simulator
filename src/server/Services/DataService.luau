@@ -39,7 +39,9 @@ export type Data = {
 	Daily: { Last: number, Streak: number },
 	Boosts: { [string]: number }, -- boost id -> os.time expiry
 	FreeCrates: { [string]: number },
-	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean, Names: boolean },
+	-- Tour = the menu tour is still owed (set when the tutorial is finished in-session, cleared
+	-- when the tour ends): saves from before the tour fill in false, so they never get it forced
+	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean, Names: boolean, Tour: boolean },
 	Tutorial: number,
 	SeenUpdate: string, -- Config.UpdateNotes.Version the player has seen ("" = none)
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
@@ -82,7 +84,7 @@ local function defaults(): Data
 		Daily = { Last = 0, Streak = 0 },
 		Boosts = {},
 		FreeCrates = {},
-		Settings = { Music = true, Sfx = true, FastReveal = false, Names = true },
+		Settings = { Music = true, Sfx = true, FastReveal = false, Names = true, Tour = false },
 		Tutorial = 1,
 		SeenUpdate = "",
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
