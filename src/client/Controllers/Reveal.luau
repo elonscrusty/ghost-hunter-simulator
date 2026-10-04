@@ -304,7 +304,7 @@ local function buildStage(rarity: Config.RarityDef)
 		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
 		PixelsPerStud = 14,
 		LightInfluence = 0,
-		Brightness = 0.7,
+		Brightness = 0.45,
 		Parent = back,
 	})
 	local bg: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = sg })
@@ -351,7 +351,7 @@ local function buildStage(rarity: Config.RarityDef)
 	rays = holder
 	-- lights
 	local l1 = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(STAGE + Vector3.new(0, 7, -6)) })
-	Kit.new("PointLight", { Range = 18, Brightness = 1.4, Color = Color3.fromRGB(255, 240, 255), Parent = l1 })
+	Kit.new("PointLight", { Range = 14, Brightness = 0.55, Color = Color3.fromRGB(255, 240, 255), Parent = l1 }) -- owner: chests washed out (was 1.4)
 	local l2 = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(STAGE + Vector3.new(0, 3, 3)) })
 	Kit.new("PointLight", { Name = "RarityLight", Range = 12, Brightness = 0, Color = rarity.Color, Parent = l2 })
 end
@@ -773,7 +773,7 @@ local function shakePhase(rarity: Config.RarityDef, f: number, base: CFrame, pla
 			charge.Rate = 15 + 110 * a
 		end
 		if rl then
-			rl.Brightness = 1.8 * a * math.min(1, rarity.Order / 3)
+			rl.Brightness = 0.8 * a * math.min(1, rarity.Order / 3)
 		end
 		if onAlpha then
 			onAlpha(a)
@@ -801,7 +801,7 @@ local function burstFx(rarity: Config.RarityDef, burstPos: Vector3, cam: Camera)
 	Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = math.floor(rarity.Particles * 0.6), Size = 0.65, Speed = 26, Life = 1.1, Gravity = 18 })
 	Effects.Ring(STAGE + Vector3.new(0, 0.2, 0), rarity.Color, 10, 0.6)
 	if cc then
-		tween(cc, TweenInfo.new(0.5), { Brightness = 0.04, Saturation = 0.1 })
+		tween(cc, TweenInfo.new(0.5), { Brightness = -0.06, Saturation = 0.1, Contrast = 0.06 }) -- crisper, not washed out
 		task.delay(0.5, function()
 			if cc then
 				tween(cc, TweenInfo.new(0.6), { Brightness = 0, Saturation = 0 })
@@ -822,10 +822,10 @@ local function landFx(rarity: Config.RarityDef, to: Vector3)
 		Effects.Burst(to + Vector3.new(0, 3, 0), { Color = rarity.Color, Count = math.floor(rarity.Particles / 5), Size = 0.45, Speed = 14, Life = 0.7 })
 	end
 	local key = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(to + Vector3.new(0, 4.5, -4)) })
-	Kit.new("PointLight", { Range = 11, Brightness = 1.3, Color = Color3.new(1, 1, 1), Shadows = false, Parent = key })
+	Kit.new("PointLight", { Range = 10, Brightness = 0.5, Color = Color3.new(1, 1, 1), Shadows = false, Parent = key }) -- was 1.3
 	local rl = (if stage then stage:FindFirstChild("RarityLight", true) else nil) :: any
 	if rl then
-		tween(rl, TweenInfo.new(0.5), { Brightness = 0.6 })
+		tween(rl, TweenInfo.new(0.5), { Brightness = 0.3 })
 	end
 	if rays then
 		for _, ray in rays:GetChildren() do
