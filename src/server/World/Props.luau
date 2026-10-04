@@ -92,16 +92,17 @@ function Props.TwistedTree(parent: Instance, pos: Vector3, height: number)
 end
 
 -- Street lamp: pole, arm and a glowing globe.
-function Props.StreetLamp(parent: Instance, pos: Vector3, color: Color3, withLight: boolean)
+-- soft = a frosted, dim globe (no neon) for busy spots like the spawn plaza
+function Props.StreetLamp(parent: Instance, pos: Vector3, color: Color3, withLight: boolean, soft: boolean?)
 	local pole = C(60, 45, 90)
 	local metal: Kit.Opts = { Mat = Enum.Material.Metal }
 	Kit.Cyl(parent, 13, 0.8, CFrame.new(pos + Vector3.new(0, 6.5, 0)), pole, metal)
 	Kit.Cyl(parent, 0.8, 1.8, CFrame.new(pos + Vector3.new(0, 0.4, 0)), pole, metal)
 	Kit.Box(parent, pos + Vector3.new(-0.3, 12.6, -0.3), pos + Vector3.new(0.3, 13.2, 0.3), pole, metal)
-	local globe = Kit.Ball(parent, 2.4, pos + Vector3.new(0, 14, 0), color, { Mat = NEON })
+	local globe = Kit.Ball(parent, 2.4, pos + Vector3.new(0, 14, 0), if soft then color:Lerp(C(60, 45, 90), 0.35) else color, { Mat = if soft then Enum.Material.Glass else NEON })
 	Kit.Cyl(parent, 0.5, 2.8, CFrame.new(pos + Vector3.new(0, 15.3, 0)), pole, metal)
 	if withLight then
-		Kit.Light(globe, color, 22, 1.6)
+		Kit.Light(globe, color, if soft then 16 else 22, if soft then 0.7 else 1.6)
 	end
 end
 

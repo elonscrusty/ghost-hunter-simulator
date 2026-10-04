@@ -176,7 +176,7 @@ local function plaza(f: Instance)
 	-- plaza lamps flank the spawn at the sides, clear of the diagonal paths to the kiosks/crate/upgrade
 	-- stations and of the north (ghosts) and south (HQ door) sightlines
 	for i, p in { { -13, 6 }, { 13, 6 }, { -13, -4 }, { 13, -4 } } do
-		Props.StreetLamp(f, V(sx + p[1], 0.25, sz + p[2]), C(200, 140, 255), i <= 2)
+		Props.StreetLamp(f, V(sx + p[1], 0.25, sz + p[2]), C(200, 160, 240), i <= 2, true) -- soft: no neon glare at spawn
 	end
 
 	-- guide chevrons to the Beginner crate and the upgrade booth
