@@ -109,7 +109,7 @@ local function pedestal(parent: Instance, egg: Config.EggDef, x: number)
 	crystal(m, V(x + 2.6, 8.2, z), 0.6, SHARD, true)
 
 	-- price / unlock sign in front of the pedestal, facing north
-	local signCF = CFrame.new(x, 2.1, z + 4.2) * CFrame.Angles(0, NORTH, 0) * CFrame.Angles(math.rad(-12), 0, 0)
+	local signCF = CFrame.new(x, 2.6, z + 4.2) * CFrame.Angles(0, NORTH, 0) * CFrame.Angles(math.rad(-12), 0, 0)
 	local board = Kit.Part(m, V(5.6, 3.2, 0.4), signCF, C(35, 22, 60), { Name = "EggSign" })
 	Kit.Part(m, V(6.1, 3.7, 0.3), signCF * CFrame.new(0, 0, 0.3), Kit.Vivid(egg.Accent))
 	Kit.Box(m, V(x - 0.25, 0, z + 4.4), V(x + 0.25, 0.8, z + 4.9), STONE_DARK)
@@ -197,12 +197,13 @@ function Hatchery.Build(map: Instance)
 	end
 
 	-- graveyard garden: tombstones, lanterns and a big shard cluster by the entrance
-	tomb(m, X1 + 3, Z2 - 6, 6)
-	tomb(m, X1 + 3.5, Z2 - 10, -5)
-	tomb(m, X2 - 3, Z2 - 7, -7)
-	Props.Lantern(m, V(X1 + 2, 0.2, Z2 - 1.5), SHARD, true, false)
-	Props.Lantern(m, V(X2 - 2, 0.2, Z2 - 1.5), SHARD, false, false)
-	local cluster = V(X2 - 3.5, 0.2, Z2 - 11.5)
+	-- (all outside the fence, so nothing stands between the visitor and the egg price signs)
+	tomb(m, X1 - 3, Z1 + 6, 6)
+	tomb(m, X1 - 3.5, Z1 + 11, -5)
+	tomb(m, X2 + 3, Z1 + 7, -7)
+	Props.Lantern(m, V(X1 - 2.5, 0.2, Z2 + 1), SHARD, true, false)
+	Props.Lantern(m, V(X2 + 2.5, 0.2, Z2 + 1), SHARD, false, false)
+	local cluster = V(X2 + 3.5, 0.2, Z1 + 13)
 	crystal(m, cluster + V(0, 1.4, 0), 1.2, SHARD, false)
 	crystal(m, cluster + V(-0.9, 0.9, 0.6), 0.8, C(170, 130, 255), false)
 	crystal(m, cluster + V(0.8, 0.8, -0.5), 0.7, C(220, 190, 255), false)
