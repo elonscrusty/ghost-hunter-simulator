@@ -43,16 +43,6 @@ local function rarityOrder(id: string): number
 	return if h then Config.Rarities[h.Rarity].Order else 1
 end
 
--- AUTO OPEN can only be bought once its game pass exists (PassId filled in Config)
-local function autoPassOnSale(): boolean
-	for _, gp in Config.GamePasses do
-		if gp.Key == Config.AutoOpen.Pass then
-			return gp.PassId ~= nil
-		end
-	end
-	return false
-end
-
 -- The server may stop a multi-open early (e.g. storage full): say why after the results.
 local function toastStopped(res: any)
 	if type(res.Stopped) == "string" and res.Stopped ~= "" then
@@ -196,7 +186,7 @@ function refreshButton(crateId: string, d: any, luck: number)
 	Kit.SetButtonText(autoButton, if not autoOwned then "🔒 AUTO OPEN" elseif autoOn then "AUTO OPEN: ON" else "AUTO OPEN: OFF")
 	autoButton:SetAttribute("Color", if not autoOwned then "Gray" elseif autoOn then "Green" else "Purple")
 	-- no "🔒 AUTO OPEN" while the pass isn't on sale (owners keep their button)
-	autoButton.Visible = autoOwned == true or autoPassOnSale()
+	autoButton.Visible = autoOwned == true -- a paid pass: only owners see it here (it's sold in the shop)
 	luckyButton.Position = if autoButton.Visible then UDim2.new(1, -180, 0, 8) else UDim2.new(1, 0, 0, 8)
 	local triple = d.Passes and d.Passes[Config.TripleOpen.Pass] == true
 	tripleButton.Visible = triple == true

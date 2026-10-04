@@ -1984,7 +1984,7 @@ Config.GamePasses = {
 	-- bought it get AUTO OPEN for free instead (Config.LegacyAutoAttackGrantsAutoOpen).
 	{ Key = "AutoAttack", Name = "AUTO ATTACK", Icon = "🤖", PassId = 2007026293, PriceLabel = "R$ 199", Blurb = "Your crew picks the next ghost for you", Hidden = true },
 	{ Key = "LuckyHunter", Name = "LUCKY HUNTER", Icon = "🍀", PassId = 2005532289, PriceLabel = "R$ 349", Multiplier = 1.5, Blurb = "Better crate luck forever (x1.5)" },
-	{ Key = "TripleOpen", Name = "TRIPLE OPEN", Icon = "📦", PassId = 2004530357, PriceLabel = "R$ 199", Blurb = "Open 3 crates at once" },
+	{ Key = "TripleOpen", Name = "TRIPLE OPEN", Icon = "📦", PassId = 2004530357, PriceLabel = "R$ 99", Blurb = "Open 3 crates at once" },
 	{ Key = "SuperMagnet", Name = "SUPER MAGNET", Icon = "🧲", PassId = 2006720281, PriceLabel = "R$ 149", Multiplier = 1.6, Blurb = "Grab Ectoplasm from much further away" },
 	{ Key = "VIP", Name = "VIP", Icon = "👑", PassId = 2005856286, PriceLabel = "R$ 249", Multiplier = 1.1, Blurb = "VIP tag, gold name, +10% Ectoplasm" },
 	{ Key = "Storage", Name = "+50 HUNTER STORAGE", Icon = "🗃️", PassId = 2005124303, PriceLabel = "R$ 99", Storage = 50, Blurb = "Keep 50 more hunters" },
