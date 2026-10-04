@@ -91,6 +91,109 @@ T.boss_damage_share = function()
 	eq(Rules.DamageShare(0, 100), 0)
 	eq(Rules.DamageShare(5, 0), 0)
 end
+-- v1.6 shared rewards
+local function sum(t) local n = 0 for _, v in t do n += v end return n end
+T.split_equal_damage = function()
+	local o = Rules.SplitPool(100, { 40, 40 })
+	eq(o[1], 50); eq(o[2], 50)
+end
+T.split_unequal_damage = function()
+	local o = Rules.SplitPool(100, { 70, 30 })
+	eq(o[1], 70); eq(o[2], 30)
+end
+T.split_rounding_keeps_pool = function()
+	local o = Rules.SplitPool(10, { 1, 1, 1 })
+	eq(sum(o), 10); eq(o[1], 4); eq(o[2], 3); eq(o[3], 3)
+	local o2 = Rules.SplitPool(7, { 0.333, 0.667 })
+	eq(sum(o2), 7); eq(o2[2], 5)
+	local o3 = Rules.SplitPool(1, { 1, 1, 1, 1 })
+	eq(sum(o3), 1)
+end
+T.split_largest_remainder = function()
+	-- exact 2.6 / 4.4 / 3.0 -> floors 2/4/3 (=9), the 1 leftover goes to the .6 remainder
+	local o = Rules.SplitPool(10, { 26, 44, 30 })
+	eq(o[1], 3); eq(o[2], 4); eq(o[3], 3)
+end
+T.split_zero_contribution_gets_nothing = function()
+	local o = Rules.SplitPool(50, { 0, 10, -5, 0 / 0 })
+	eq(o[1], 0); eq(o[2], 50); eq(o[3], 0); eq(o[4], 0)
+	eq(sum(Rules.SplitPool(50, { 0, 0 })), 0)
+	eq(sum(Rules.SplitPool(0, { 1, 2 })), 0)
+end
+T.split_multiple_hunters_sum_per_player = function()
+	-- player A's three hunters + player B's one hunter: weights are per-player totals
+	local a = 10 + 15 + 5
+	local b = 30
+	local o = Rules.SplitPool(60, { a, b })
+	eq(o[1], 30); eq(o[2], 30)
+end
+T.overkill_not_counted = function()
+	eq(Rules.Effective(500, 20), 20)
+	eq(Rules.Effective(5, 20), 5)
+	eq(Rules.Effective(5, 0), 0)
+	eq(Rules.Effective(-1, 20), 0)
+	eq(Rules.Effective(0 / 0, 20), 0)
+end
+T.retaliation_hit_capped = function()
+	eq(Rules.RetaliationHit(1000, 0.04, 100, 0.25), 25)
+	eq(Rules.RetaliationHit(100, 0.04, 1000, 0.25), 4)
+	eq(Rules.RetaliationHit(1, 0.01, 1, 0.1), 1)
+end
+T.recovery_bonus = function()
+	eq(Rules.RecoverySeconds(120, 0), 120)
+	eq(Rules.RecoverySeconds(120, 0.25), 90)
+	eq(Rules.RecoverySeconds(120, 5), 12)
+end
+T.pet_bonuses_add_and_cap = function()
+	local b = Rules.PetBonuses({ { Kind = "Power", Value = 0.3 }, { Kind = "Power", Value = 0.4 }, { Kind = "Ecto", Value = 0.05 } }, { Power = 0.6 })
+	eq(b.Power, 0.6); eq(b.Ecto, 0.05)
+end
+local towerCfg = { KillSecondsBase = 9, KillSecondsGrowth = 1.11, HitFractionBase = 0.1, HitFractionGrowth = 1.075, HitFractionCap = 0.95,
+	MaxScaledRoom = 400, ShardsBase = 4, ShardsPerRoom = 1, EctoBase = 150, MilestoneEvery = { [10] = 3, [5] = 2 } }
+T.tower_scaling_grows_and_stays_finite = function()
+	local k1, h1 = Rules.TowerScale(1, towerCfg)
+	local k10, h10 = Rules.TowerScale(10, towerCfg)
+	assert(k10 > k1 and h10 > h1)
+	local kBig, hBig = Rules.TowerScale(1e12, towerCfg)
+	assert(kBig < math.huge and kBig == kBig and hBig <= 0.95)
+end
+T.tower_rewards_and_milestones = function()
+	local s1 = Rules.TowerReward(1, towerCfg)
+	eq(s1, 5)
+	local s5 = Rules.TowerReward(5, towerCfg)
+	eq(s5, 18) -- (4 + 5) * 2
+	local s10 = Rules.TowerReward(10, towerCfg)
+	eq(s10, 42) -- (4 + 10) * 3
+	-- a short intro run (rooms 1-5) buys the basic 40-shard pet
+	local total = 0
+	for r = 1, 5 do total += (Rules.TowerReward(r, towerCfg)) end
+	assert(total >= 40, "intro run total " .. total)
+end
+T.merge_rules = function()
+	local owned = {
+		a = { Id = "X" }, b = { Id = "X" }, c = { Id = "X" }, d = { Id = "X" }, e = { Id = "X" },
+		f = { Id = "X", Locked = true }, g = { Id = "Y" }, h = { Id = "X", Tier = 1 }, m = { Id = "X", Tier = 2 },
+	}
+	local free = function() return nil end
+	local ok, _, id, tier = Rules.MergeCheck(owned, { "a", "b", "c", "d", "e" }, 5, 2, free)
+	assert(ok and id == "X" and tier == 0)
+	assert(not (Rules.MergeCheck(owned, { "a", "b", "c", "d" }, 5, 2, free)))
+	assert(not (Rules.MergeCheck(owned, { "a", "a", "c", "d", "e" }, 5, 2, free)))
+	assert(not (Rules.MergeCheck(owned, { "a", "b", "c", "d", "f" }, 5, 2, free)))
+	assert(not (Rules.MergeCheck(owned, { "a", "b", "c", "d", "g" }, 5, 2, free)))
+	assert(not (Rules.MergeCheck(owned, { "a", "b", "c", "d", "h" }, 5, 2, free)))
+	assert(not (Rules.MergeCheck(owned, { "a", "b", "c", "d", "zz" }, 5, 2, free)))
+	assert(not (Rules.MergeCheck({ m1 = owned.m, m2 = owned.m, m3 = owned.m, m4 = owned.m, m5 = owned.m }, { "m1", "m2", "m3", "m4", "m5" }, 5, 2, free)))
+	local busy = function(uid) return if uid == "c" then "In a trade" else nil end
+	local ok2, err = Rules.MergeCheck(owned, { "a", "b", "c", "d", "e" }, 5, 2, busy)
+	assert(not ok2 and err == "In a trade")
+end
+T.event_credit_window = function()
+	eq(Rules.EventCredit(99, 100, 200, 5), 0)
+	eq(Rules.EventCredit(100, 100, 200, 5), 5)
+	eq(Rules.EventCredit(198, 100, 200, 5), 2)
+	eq(Rules.EventCredit(200, 100, 200, 5), 0)
+end
 T.limiter = function()
 	local l = Rules.NewLimiter(2, 1)
 	assert(Rules.Allow(l, "p", 0)); assert(Rules.Allow(l, "p", 0.1)); assert(not Rules.Allow(l, "p", 0.2))

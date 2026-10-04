@@ -43,28 +43,29 @@ function Rules.Roll(pool: { PoolEntry }, rarityOrder: (string) -> number, luckMu
 	return pool[#pool].Hunter
 end
 
-export type OwnedHunter = { Id: string, Locked: boolean?, T: number? }
+export type OwnedHunter = { Id: string, Locked: boolean?, T: number?, Tier: number? }
 
 -- Sum of Capture Power of the equipped hunters (unknown / missing uids are ignored).
-function Rules.CrewPower(equipped: { string }, owned: { [string]: OwnedHunter }, powerOf: (string) -> number): number
+-- powerOf(id, tier) gives one hunter's power (tier 0 = Normal, 1 = Shiny, 2 = Mega).
+function Rules.CrewPower(equipped: { string }, owned: { [string]: OwnedHunter }, powerOf: (string, number) -> number): number
 	local sum = 0
 	for _, uid in equipped do
 		local h = owned[uid]
 		if h then
-			sum += powerOf(h.Id)
+			sum += powerOf(h.Id, h.Tier or 0)
 		end
 	end
 	return sum
 end
 
 -- Sorts uids strongest first (ties: rarity order, then uid for stability).
-function Rules.SortByPower(owned: { [string]: OwnedHunter }, powerOf: (string) -> number, rarityOrder: (string) -> number): { string }
+function Rules.SortByPower(owned: { [string]: OwnedHunter }, powerOf: (string, number) -> number, rarityOrder: (string) -> number): { string }
 	local uids = {}
 	for uid in owned do
 		table.insert(uids, uid)
 	end
 	table.sort(uids, function(a, b)
-		local pa, pb = powerOf(owned[a].Id), powerOf(owned[b].Id)
+		local pa, pb = powerOf(owned[a].Id, owned[a].Tier or 0), powerOf(owned[b].Id, owned[b].Tier or 0)
 		if pa ~= pb then
 			return pa > pb
 		end
@@ -81,7 +82,7 @@ function Rules.SortByPower(owned: { [string]: OwnedHunter }, powerOf: (string) -
 	return uids
 end
 
-function Rules.EquipBest(owned: { [string]: OwnedHunter }, powerOf: (string) -> number, rarityOrder: (string) -> number, slots: number): { string }
+function Rules.EquipBest(owned: { [string]: OwnedHunter }, powerOf: (string, number) -> number, rarityOrder: (string) -> number, slots: number): { string }
 	local sorted = Rules.SortByPower(owned, powerOf, rarityOrder)
 	local out = {}
 	for i = 1, math.min(slots, #sorted) do
@@ -207,6 +208,186 @@ function Rules.ZoneIndexAt(z: number, ranges: { { number } }): number
 		return #ranges
 	end
 	return 1
+end
+
+--==================================================================
+-- v1.6: shared rewards, tiers, retaliation, pets, tower, events
+--==================================================================
+
+-- Splits an integer pool by weights so the parts always add up to the pool: everyone gets the
+-- floor of their exact share, then leftover units go to the largest fractional remainders
+-- (ties: bigger weight, then earlier index). Zero / negative / NaN weights get nothing.
+function Rules.SplitPool(pool: number, weights: { number }): { number }
+	pool = if pool == pool then math.max(0, math.floor(pool)) else 0
+	local out = table.create(#weights, 0)
+	local total = 0
+	for _, w in weights do
+		if w == w and w > 0 then
+			total += w
+		end
+	end
+	if total <= 0 or pool == 0 then
+		return out
+	end
+	local rems = {}
+	local given = 0
+	for i, w in weights do
+		if w == w and w > 0 then
+			local exact = pool * w / total
+			local base = math.floor(exact)
+			out[i] = base
+			given += base
+			table.insert(rems, { I = i, R = exact - base, W = w })
+		end
+	end
+	table.sort(rems, function(a, b)
+		if a.R ~= b.R then
+			return a.R > b.R
+		end
+		if a.W ~= b.W then
+			return a.W > b.W
+		end
+		return a.I < b.I
+	end)
+	local k = 1
+	while given < pool and #rems > 0 do
+		out[rems[k].I] += 1
+		given += 1
+		k = k % #rems + 1
+	end
+	return out
+end
+
+-- Damage that really counts: never more than the Spirit the ghost had left (no overkill).
+function Rules.Effective(damage: number, spiritLeft: number): number
+	if damage ~= damage or damage <= 0 or spiritLeft <= 0 then
+		return 0
+	end
+	return math.min(damage, spiritLeft)
+end
+
+function Rules.HunterPower(base: number, tierMult: number): number
+	return base * tierMult
+end
+
+function Rules.HunterMaxHP(power: number, hpPerPower: number, hpBonus: number): number
+	return math.max(1, power * hpPerPower * (1 + math.max(0, hpBonus)))
+end
+
+-- One ghost hit: a share of the ghost's max Spirit, capped to a share of the target's max HP.
+function Rules.RetaliationHit(maxSpirit: number, perSpirit: number, targetMaxHP: number, cap: number): number
+	return math.max(1, math.min(maxSpirit * perSpirit, targetMaxHP * cap))
+end
+
+-- Knockout length after the pet Recovery bonus (never below 10% of the base timer).
+function Rules.RecoverySeconds(base: number, recoveryBonus: number): number
+	return math.max(base * 0.1, base * (1 - math.clamp(recoveryBonus, 0, 0.9)))
+end
+
+-- Total bonus per kind from a list of {Kind, Value}, each kind capped.
+function Rules.PetBonuses(bonuses: { { Kind: string, Value: number } }, caps: { [string]: number }): { [string]: number }
+	local out: { [string]: number } = {}
+	for _, b in bonuses do
+		if type(b.Value) == "number" and b.Value == b.Value and b.Value > 0 then
+			out[b.Kind] = (out[b.Kind] or 0) + b.Value
+		end
+	end
+	for kind, v in out do
+		local cap = caps[kind]
+		if cap then
+			out[kind] = math.min(v, cap)
+		end
+	end
+	return out
+end
+
+export type TowerCfg = {
+	KillSecondsBase: number,
+	KillSecondsGrowth: number,
+	HitFractionBase: number,
+	HitFractionGrowth: number,
+	HitFractionCap: number,
+	MaxScaledRoom: number,
+	ShardsBase: number,
+	ShardsPerRoom: number,
+	EctoBase: number,
+	MilestoneEvery: { [number]: number },
+}
+
+-- Seconds a party needs to beat room `room` at its power, and the boss hit as a fraction of
+-- the average hunter max HP. Room is clamped so numbers stay finite at any height.
+function Rules.TowerScale(room: number, cfg: TowerCfg): (number, number)
+	local r = math.clamp(math.floor(room), 1, cfg.MaxScaledRoom)
+	local kill = cfg.KillSecondsBase * cfg.KillSecondsGrowth ^ (r - 1)
+	local hit = math.min(cfg.HitFractionCap, cfg.HitFractionBase * cfg.HitFractionGrowth ^ (r - 1))
+	return kill, hit
+end
+
+function Rules.TowerMilestone(room: number, cfg: TowerCfg): number
+	local best = 1
+	for every, mult in cfg.MilestoneEvery do
+		if room % every == 0 and mult > best then
+			best = mult
+		end
+	end
+	return best
+end
+
+-- Reward pool PER PARTY MEMBER for beating `room` (the run's pool = this * party size, then
+-- split by damage). Ecto is in base units before the zone multiplier.
+function Rules.TowerReward(room: number, cfg: TowerCfg): (number, number)
+	local r = math.max(1, math.floor(room))
+	local m = Rules.TowerMilestone(r, cfg)
+	local shards = math.floor((cfg.ShardsBase + math.min(r, cfg.MaxScaledRoom) * cfg.ShardsPerRoom) * m)
+	local ecto = math.floor(cfg.EctoBase * math.min(r, cfg.MaxScaledRoom) ^ 0.75 * m)
+	return shards, ecto
+end
+
+export type MergeHunter = { Id: string, Locked: boolean?, Tier: number? }
+
+-- Checks a merge request. Returns (ok, error text, hunter id, current tier).
+-- blocked(uid) -> reason text if the hunter is busy (in a trade, knocked out, ...).
+function Rules.MergeCheck(owned: { [string]: MergeHunter }, uids: { any }, count: number, maxTier: number, blocked: (string) -> string?): (boolean, string?, string?, number?)
+	if type(uids) ~= "table" or #uids ~= count then
+		return false, string.format("Pick exactly %d hunters", count), nil, nil
+	end
+	local seen = {}
+	local id, tier = nil, nil
+	for _, uid in uids do
+		if type(uid) ~= "string" or seen[uid] then
+			return false, "Pick different hunters", nil, nil
+		end
+		seen[uid] = true
+		local h = owned[uid]
+		if not h then
+			return false, "You don't own that hunter", nil, nil
+		end
+		if h.Locked then
+			return false, "Locked hunters can't be merged", nil, nil
+		end
+		local why = blocked(uid)
+		if why then
+			return false, why, nil, nil
+		end
+		local t = h.Tier or 0
+		if id == nil then
+			id, tier = h.Id, t
+		elseif h.Id ~= id or t ~= tier then
+			return false, "All hunters must be the same hunter and tier", nil, nil
+		end
+	end
+	if (tier :: number) >= maxTier then
+		return false, "Already the highest tier", nil, nil
+	end
+	return true, nil, id, tier
+end
+
+-- Active play credit for a timed event: seconds `step` count only inside [startT, endT).
+function Rules.EventCredit(nowT: number, startT: number, endT: number, step: number): number
+	if nowT < startT or nowT >= endT or step <= 0 then
+		return 0
+	end
+	return math.min(step, endT - nowT)
 end
 
 return Rules

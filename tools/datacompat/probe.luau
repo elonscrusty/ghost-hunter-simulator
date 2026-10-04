@@ -76,6 +76,47 @@ check(newer.Upgrades.PickupRadius == #Config.Upgrades.PickupRadius.Levels, "out-
 local hopped = migrate({ Ecto = 5, Extra = { SkipTokens = 4 } })
 check(hopped.SkipTokens == 4 and hopped.Extra.SkipTokens == nil, "skip tokens restored from Extra after an old server")
 
+-- v1.6: old saves get the new fields as safe defaults and keep everything else
+check(d.Shards == 0, "new Shards field added as 0")
+check(type(d.Pets) == "table" and next(d.Pets) == nil and #d.EquippedPets == 0, "no pets for old saves")
+check(type(d.Knocked) == "table" and next(d.Knocked) == nil, "no knockouts for old saves")
+check(d.TowerBest == 0 and d.TowerRuns == 0 and d.TowerShards == 0, "tower records start at 0")
+check(type(d.EventPlay) == "table" and #d.TradesApplied == 0, "event/trade records start empty")
+check(d.Hunters["2"].Tier == nil and d.Hunters["2"].Locked == true, "old hunters stay Normal tier and keep their lock")
+check(d.Ecto == 123456 and d.TotalEcto == 999999, "currencies untouched by v1.6 fields")
+
+-- a v1.6 save round-trips: tiers, knockouts, pets, shards, tower and event records
+local v16 = migrate({
+	Ecto = 10,
+	Hunters = { ["1"] = { Id = "RookieHunter", Tier = 2 }, ["2"] = { Id = "RookieHunter", Tier = 9 }, ["3"] = { Id = "RookieHunter", Tier = "x" } },
+	Equipped = { "1" },
+	Knocked = { ["1"] = 1800000000, ["77"] = 1800000000, ["2"] = "soon" },
+	Shards = 55.7,
+	Pets = { p1 = { Id = "GlowWisp", T = 5 }, p4 = { Id = "RetiredPet", T = 6 }, bad = 5 },
+	PetNextUid = 2,
+	EquippedPets = { "p1", "p1", "p4", "nope" },
+	TowerBest = 12, TowerRuns = 3, TowerRooms = 20, TowerShards = 140,
+	EventPlay = { launch_rare_pet_1 = { S = 900, G = false }, junk = 3 },
+	TradesApplied = { "t1", "t2", 5 },
+})
+check(v16.Hunters["1"].Tier == 2, "mega tier kept")
+check(v16.Hunters["2"].Tier == Config.Merge.MaxTier, "out-of-range tier clamped, hunter kept")
+check(v16.Hunters["3"] ~= nil and v16.Hunters["3"].Tier == nil, "bad tier value -> Normal, hunter kept")
+check(v16.Knocked["1"] == 1800000000 and v16.Knocked["77"] == nil and v16.Knocked["2"] == nil, "knockout timers kept, junk dropped")
+check(v16.Shards == 55, "shards kept (floored)")
+check(v16.Pets.p1 ~= nil and v16.Pets.p4 ~= nil and v16.Pets.bad == nil, "pets kept (unknown pet ids kept too)")
+check(#v16.EquippedPets == 1 and v16.EquippedPets[1] == "p1", "equipped pets de-duplicated and validated")
+check(v16.PetNextUid == 5, "pet uids never reused")
+check(v16.TowerBest == 12 and v16.TowerRuns == 3 and v16.TowerRooms == 20 and v16.TowerShards == 140, "tower records kept")
+check(v16.EventPlay.launch_rare_pet_1.S == 900 and v16.EventPlay.launch_rare_pet_1.G == false and v16.EventPlay.junk == nil, "event progress kept")
+check(#v16.TradesApplied == 2, "trade ids kept")
+local v16b = migrate(v16)
+check(v16b.Shards == 55 and v16b.Hunters["1"].Tier == 2 and #v16b.EquippedPets == 1 and v16b.PetNextUid == 5, "v1.6 migration idempotent")
+
+-- a v1.6 save re-saved by a v1.5 server parks the new fields in Extra: they come back
+local rolled = migrate({ Ecto = 1, Extra = { Shards = 30, Pets = { p1 = { Id = "BooBat", T = 1 } }, TowerBest = 4 } })
+check(rolled.Shards == 30 and rolled.Pets.p1 ~= nil and rolled.TowerBest == 4, "v1.6 fields restored from Extra after an older server")
+
 -- garbage / missing data never crashes and gives a fresh profile
 local blank = migrate(nil)
 check(blank.Ecto == 0 and blank.Zones.Neighborhood == true, "empty save -> fresh profile")

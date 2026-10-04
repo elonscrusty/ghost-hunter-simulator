@@ -458,6 +458,27 @@ Config.Ghosts = {
 		Spirit = 164000000000000, Reward = 21800000000000, Drops = 18, Respawn = 30, Scale = 6.20, Hover = 14, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(220, 210, 255), Glow = Color3.fromRGB(255, 230, 140), Style = "GhostKing",
 	},
+	-- BOSS TOWER (Spirit and hit are scaled per room by Config.Tower at spawn time)
+	TowerWarden = {
+		Id = "TowerWarden", Name = "TOWER WARDEN", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4, Hover = 9, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(120, 110, 200), Glow = Color3.fromRGB(110, 255, 160), Style = "Warden",
+	},
+	TowerJester = {
+		Id = "TowerJester", Name = "TOWER JESTER", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.3, Hover = 9, Speed = 3.5, Wander = 3.5,
+		Kind = "Tower", Color = Color3.fromRGB(230, 70, 80), Glow = Color3.fromRGB(255, 210, 80), Style = "Ringmaster",
+	},
+	TowerBaron = {
+		Id = "TowerBaron", Name = "TOWER BARON", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.6, Hover = 10, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(120, 140, 200), Glow = Color3.fromRGB(110, 255, 160), Style = "King",
+	},
+	TowerTitan = {
+		Id = "TowerTitan", Name = "TOWER TITAN", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 5, Hover = 10, Speed = 2.5, Wander = 5,
+		Kind = "Tower", Color = Color3.fromRGB(170, 140, 255), Glow = Color3.fromRGB(90, 255, 230), Style = "Overlord",
+	},
 	-- EVENT (scaled at spawn time by Config.Event)
 	GiantPoltergeist = {
 		Id = "GiantPoltergeist", Name = "GIANT POLTERGEIST", Zone = "Neighborhood",
@@ -1455,6 +1476,140 @@ Config.Combat = {
 
 --==================================================================
 -- ECTOPLASM DROPS + PICKUP RADIUS
+-- GHOST RETALIATION + HUNTER KNOCKOUTS (v1.6)
+-- Ghosts are passive until a crew attacks them. Then, every Interval seconds, the ghost
+-- telegraphs (Windup) and hits ONE hunter of a crew that is still attacking it. Hunters that
+-- reach 0 HP are knocked out for RecoverySeconds (real time: keeps counting offline); they are
+-- never deleted. Hunter max HP = (tiered) power * HPPerPower * (1 + pet HP bonus).
+-- Hit = ghost max Spirit * HitPerSpirit[kind], but never more than HitCap[kind] of the target's
+-- max HP (so a knockout always takes several hits and the telegraph gives time to react).
+--==================================================================
+Config.Retaliation = {
+	Interval = 2.5,
+	Windup = 0.9,
+	HPPerPower = 8,
+	HitPerSpirit = { Normal = 0.04, MiniBoss = 0.06, Boss = 0.08, Event = 0.05 } :: { [string]: number },
+	HitCap = { Normal = 0.25, MiniBoss = 0.4, Boss = 0.5, Event = 0.35 } :: { [string]: number },
+	RegenDelay = 4, -- seconds without being hit before a hunter starts healing
+	RegenPerSecond = 0.15, -- fraction of max HP per second
+	RecoverySeconds = 120, -- knockout timer (configurable)
+	-- beginner fallback: when no equipped hunter can fight and no spare is free, a temporary
+	-- BACKUP ROOKIE fights for the player (never saved, can't be knocked out, not in the tower)
+	BackupHunter = "RookieHunter",
+	BackupPower = 5,
+}
+
+--==================================================================
+-- HUNTER TIERS + MERGING (v1.6): 5 identical hunters of one tier -> 1 of the next tier
+--==================================================================
+export type TierDef = { Name: string, Icon: string, Mult: number, Color: Color3 }
+Config.Tiers = {
+	[0] = { Name = "NORMAL", Icon = "", Mult = 1, Color = Color3.fromRGB(255, 255, 255) },
+	[1] = { Name = "SHINY", Icon = "✨", Mult = 2.5, Color = Color3.fromRGB(255, 225, 90) },
+	[2] = { Name = "MEGA", Icon = "💎", Mult = 6.25, Color = Color3.fromRGB(120, 230, 255) },
+} :: { [number]: TierDef }
+Config.Merge = {
+	Count = 5,
+	MaxTier = 2,
+	-- Ectoplasm cost = the hunter's crate price * CostMult[result tier]
+	CostMult = { [1] = 2, [2] = 10 } :: { [number]: number },
+}
+
+--==================================================================
+-- TRADING (v1.6): hunters only, both players in the same server
+--==================================================================
+Config.Trade = {
+	MaxOffer = 8, -- hunters per side
+	RequestSeconds = 30, -- a trade request expires after this
+	ConfirmCooldown = 2, -- seconds after the last offer change before CONFIRM is accepted
+	DataStoreName = "GhostHunterTrades_v1", -- durable trade records for crash recovery
+	AppliedMemory = 100, -- trade ids remembered per profile (exactly-once)
+}
+
+--==================================================================
+-- SPIRIT SHARDS + GHOST PETS (v1.6). Shards come ONLY from Boss Tower chests.
+--==================================================================
+export type PetDef = {
+	Id: string,
+	Name: string,
+	Rarity: string,
+	Price: number?, -- Spirit Shards; nil = not sold (event pets)
+	Bonus: { Kind: string, Value: number }, -- Kind: Power | Ecto | HP | Recovery
+	Color: Color3,
+	Glow: Color3,
+	Shape: string, -- visual: Wisp | Bat | Blob | Cat | Owl | Fox | Drake | Phoenix | Lantern
+}
+Config.PetRules = {
+	MaxEquipped = 3,
+	MaxOwned = 60,
+	-- total bonus per kind from all equipped pets is capped (upgrades and hunters stay the main power)
+	Caps = { Power = 0.6, Ecto = 0.5, HP = 0.75, Recovery = 0.5 } :: { [string]: number },
+}
+Config.Pets = {
+	GlowWisp = { Id = "GlowWisp", Name = "Glow Wisp", Rarity = "Common", Price = 40, Bonus = { Kind = "Power", Value = 0.05 }, Color = Color3.fromRGB(200, 255, 220), Glow = Color3.fromRGB(120, 255, 170), Shape = "Wisp" },
+	BooBat = { Id = "BooBat", Name = "Boo Bat", Rarity = "Common", Price = 60, Bonus = { Kind = "Ecto", Value = 0.05 }, Color = Color3.fromRGB(130, 100, 190), Glow = Color3.fromRGB(200, 150, 255), Shape = "Bat" },
+	JellyGhost = { Id = "JellyGhost", Name = "Jelly Ghost", Rarity = "Uncommon", Price = 150, Bonus = { Kind = "HP", Value = 0.15 }, Color = Color3.fromRGB(255, 160, 220), Glow = Color3.fromRGB(255, 120, 200), Shape = "Blob" },
+	PhantomKitty = { Id = "PhantomKitty", Name = "Phantom Kitty", Rarity = "Uncommon", Price = 200, Bonus = { Kind = "Recovery", Value = 0.15 }, Color = Color3.fromRGB(230, 230, 255), Glow = Color3.fromRGB(170, 200, 255), Shape = "Cat" },
+	MoonOwl = { Id = "MoonOwl", Name = "Moon Owl", Rarity = "Rare", Price = 500, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(150, 190, 255), Glow = Color3.fromRGB(110, 200, 255), Shape = "Owl" },
+	SpiritFox = { Id = "SpiritFox", Name = "Spirit Fox", Rarity = "Rare", Price = 600, Bonus = { Kind = "Ecto", Value = 0.12 }, Color = Color3.fromRGB(255, 190, 120), Glow = Color3.fromRGB(255, 150, 80), Shape = "Fox" },
+	SpookyDrake = { Id = "SpookyDrake", Name = "Spooky Drake", Rarity = "Epic", Price = 2000, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(150, 110, 230), Glow = Color3.fromRGB(190, 120, 255), Shape = "Drake" },
+	GhostPhoenix = { Id = "GhostPhoenix", Name = "Ghost Phoenix", Rarity = "Legendary", Price = 8000, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 220, 140), Glow = Color3.fromRGB(255, 160, 60), Shape = "Phoenix" },
+	-- launch event reward (not sold): a Rare with a useful mixed bonus
+	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Shape = "Lantern" },
+} :: { [string]: PetDef }
+Config.PetOrder = { "GlowWisp", "BooBat", "JellyGhost", "PhantomKitty", "MoonOwl", "SpiritFox", "SpookyDrake", "GhostPhoenix", "LanternSpirit" }
+
+--==================================================================
+-- ENDLESS BOSS TOWER (v1.6). Party of up to 4 (pad at the entrance); every run starts at
+-- Room 1; rewards are paid the moment a boss is beaten and are never taken back.
+-- Boss Spirit = party power at room start * KillSeconds(room); boss hit = average hunter max HP
+-- * HitFraction(room). Both grow per room and are capped so very high rooms stay finite.
+--==================================================================
+Config.Tower = {
+	MaxParty = 4,
+	PadRadius = 9, -- players on the entrance pad join the party
+	Countdown = 6, -- seconds after START before the party enters
+	RoomSeconds = 180, -- a boss not beaten in time ends the run (rewards kept)
+	BetweenRoomsSeconds = 30, -- time to choose CONTINUE / LEAVE before the run ends
+	KillSecondsBase = 9,
+	KillSecondsGrowth = 1.11,
+	HitFractionBase = 0.1,
+	HitFractionGrowth = 1.075,
+	HitFractionCap = 0.95,
+	Interval = 2.3,
+	MaxScaledRoom = 400, -- scaling stops growing past this room (numbers stay finite)
+	-- rewards per player for beating room r:
+	ShardsBase = 4, -- shards = ShardsBase + r * ShardsPerRoom (x milestone)
+	ShardsPerRoom = 1,
+	EctoBase = 150, -- ecto = EctoBase * r^0.75 * zone multiplier (x milestone)
+	MilestoneEvery = { [10] = 3, [5] = 2 } :: { [number]: number }, -- room % key == 0 -> multiplier (largest wins)
+	Bosses = { "TowerWarden", "TowerJester", "TowerBaron", "TowerTitan" }, -- cycles by room
+	Slots = 12, -- simultaneous runs per server (each gets its own room space)
+}
+
+--==================================================================
+-- RARE PET LAUNCH EVENT (v1.6). Started ONLY by the developer button (DEV panel).
+-- A new event needs a NEW Id: an Id that was ever started can never be started again.
+--==================================================================
+Config.RarePetEvent = {
+	Id = "launch_rare_pet_1",
+	Seconds = 48 * 3600,
+	RequiredSeconds = 30 * 60,
+	Pet = "LanternSpirit",
+	TickSeconds = 5,
+	IdleSeconds = 120, -- no movement and no actions for this long = idle (not counted)
+	DataStoreName = "GhostHunterGlobal_v1", -- same store as the other global events
+	Key = "RarePetEvent",
+	Topic = "GHRarePetEvent",
+	RefreshSeconds = 60,
+	AdminUserIds = { 20194281 } :: { number }, -- ONLY these accounts may start it (live servers)
+}
+
+--==================================================================
+-- FALL SAFETY (v1.6): characters below this height are put back on solid ground
+--==================================================================
+Config.FallSafety = { MinY = -40, CheckSeconds = 0.5, SafeEvery = 1 }
+
 --==================================================================
 Config.Drops = {
 	Lifetime = 45, -- seconds before an uncollected orb despawns
