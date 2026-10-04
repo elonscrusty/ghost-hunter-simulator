@@ -10330,9 +10330,10 @@ function PetService.Init()
 			end
 			return { ok = true, Egg = done.Egg, Pet = done.Pet, Uid = done.Uid, Shards = d.Shards }
 		end
-		-- buy at the hatchery (pavilion around X 48..68, Z 66..88), like crates at their station
+		-- buy at the hatchery (pavilion centred at X -27, Z -23 behind the spawn plaza, see
+		-- World/Hatchery), like crates at their station
 		-- (checked after the retry lookup, so a retry of a hatch that already went through succeeds)
-		if not Remotes.Near(player, Vector3.new(58, 0, 77), 45) then
+		if not Remotes.Near(player, Vector3.new(-27, 0, -23), 25) then
 			return Remotes.Fail("Walk to the Pet Hatchery first!")
 		end
 		-- a double tap (two different ids) can't buy twice by accident
@@ -14145,7 +14146,8 @@ return Boundary
 	Layout (studs, +Z forward; ground top is Y = 0 everywhere walkable; play area |X| <= 140):
 
 	  Z -60 ........ hedge wall behind spawn
-	  Z -60..-36     Ghost Hunter HQ building (behind spawn)
+	  Z -60..-36     Ghost Hunter HQ building (behind spawn); Pet Hatchery (left) and the
+	                 Merge + Trading kiosks (right) in the pockets between HQ and the plaza
 	  Z   0          Spawn plaza (SpawnLocation at Config.Layout.Spawn, faces +Z)
 	  Z  28          Beginner crate station (X -28, beacon) | Upgrade booth (X +28)
 	  Z -36..260     ZONE 1 NEIGHBORHOOD: main road X -10..10 up to the gate, cross street
@@ -14221,12 +14223,10 @@ local function registerKeepOuts()
 	end
 	-- main path along X = 0 through zones 4-8 (zones 1-3 register their own roads)
 	Kit.AddRect(-10, 880, 10, Config.Zones[#Config.Zones].MaxZ, true)
-	-- spawn kiosk pockets behind the plaza (Trading | Merge + Pets, see Neighborhood.luau)
-	Kit.AddRect(-36, -36, -14, -12)
+	-- pockets behind the plaza: Pet Hatchery on the left (Hatchery.luau), the Merge + Trading
+	-- kiosks on the right (Neighborhood.luau)
+	Kit.AddRect(-40, -38, -12, -8)
 	Kit.AddRect(14, -36, 36, -12)
-	-- Pet Hatchery near the Boss Tower (see Hatchery.luau) + its path to the cross street
-	Kit.AddRect(46, 65, 70, 90)
-	Kit.AddRect(49, 90, 56, 106, true)
 end
 
 -- Last resort when the build throws: a plain anchored floor under the whole main strip and a
@@ -17451,14 +17451,15 @@ return Harbor
           <Properties>
             <string name="Name">Hatchery</string>
             <string name="Source"><![CDATA[--!strict
--- PET HATCHERY (workspace.Map.Hatchery): a small open pavilion in a graveyard garden near the
--- Boss Tower, south of the cross street and west of the tower plaza (footprint X 48..68,
--- Z 66..88; Builder reserves X 46..70, Z 65..90 plus the path X 50.5..54.5 to the street). Faces north
--- (+Z) toward the cross street.
---   Three pedestals (Config.EggOrder, west to east), each with a big egg, a price/unlock sign
---   and an invisible PromptAnchor (attribute Egg = egg id) holding a "View" ProximityPrompt.
---   The client (Controllers/Hatchery) opens the egg panel from the prompt; buying and rolling
---   happen only on the server (PetService "BuyEgg").
+-- PET HATCHERY (workspace.Map.Hatchery): a small open pavilion in the left pocket behind the
+-- spawn plaza (beside Ghost Hunter HQ), turned to face the plaza. Built in a local frame `base`
+-- (origin CENTER, local -Z = front, toward the spawn): footprint 21 x 13 studs, which lands at
+-- about X -39..-14, Z -36..-11 (Builder reserves X -40..-12, Z -38..-8; PetService's BuyEgg
+-- near check uses CENTER).
+--   Three pedestals (Config.EggOrder, left to right as seen from the plaza), each with a big egg,
+--   a price/unlock sign and an invisible PromptAnchor (attribute Egg = egg id) holding a "View"
+--   ProximityPrompt. The client (Controllers/Hatchery) opens the egg panel from the prompt;
+--   buying and rolling happen only on the server (PetService "BuyEgg").
 -- Built last in Builder and without Kit.Rng, so it never shifts other zones' random props.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
@@ -17472,14 +17473,16 @@ local C = Color3.fromRGB
 local V = Vector3.new
 local NEON = Enum.Material.Neon
 
-local X1, X2, Z1, Z2 = 48, 68, 66, 88
-local PED_Z = 73 -- pedestal row
-local ROOF_Y = 14
+local CENTER = V(-27, 0, -23) -- PetService BuyEgg near check uses this spot
+local HW, HD = 10.5, 6.5 -- floor half width (local X) / half depth (local Z)
+local PED_Z = 1.5 -- pedestal row (local Z, behind the middle)
+local PED_GAP = 6
+local PX, PZ = 9.5, 5.3 -- pillar offsets
+local ROOF_Y = 12
 local STONE = C(96, 84, 120)
 local STONE_DARK = C(64, 54, 86)
 local MOSS = C(70, 92, 70)
 local SHARD = C(200, 160, 255)
-local NORTH = math.pi -- yaw that turns a part's Front face (local -Z) toward +Z
 
 -- Spirit Shard crystal (a diamond: a block turned 45 degrees), optionally floating.
 local function crystal(parent: Instance, pos: Vector3, s: number, color: Color3, float: boolean)
@@ -17490,81 +17493,89 @@ local function crystal(parent: Instance, pos: Vector3, s: number, color: Color3,
 	return p
 end
 
+-- `at` is the pedestal top centre; dz > 0 moves toward the front (local -Z).
+local function off(at: CFrame, dx: number, dy: number, dz: number): CFrame
+	return at * CFrame.new(dx, dy, -dz)
+end
+
 -- The egg: two stacked balls (wide bottom, narrower top) read as an egg shape.
-local function eggShape(parent: Instance, x: number, y: number, z: number, color: Color3, opts: Kit.Opts?): Part
-	local low = Kit.Ball(parent, 4.2, V(x, y + 2.1, z), color, opts)
-	Kit.Ball(parent, 3.4, V(x, y + 3.6, z), color, opts)
+local function eggShape(parent: Instance, at: CFrame, color: Color3, opts: Kit.Opts?): Part
+	local low = Kit.Ball(parent, 4.2, off(at, 0, 2.1, 0).Position, color, opts)
+	Kit.Ball(parent, 3.4, off(at, 0, 3.6, 0).Position, color, opts)
 	return low
 end
 
-local function hauntedEgg(m: Instance, x: number, y: number, z: number, egg: Config.EggDef)
-	eggShape(m, x, y, z, Kit.Vivid(egg.Color))
+local function hauntedEgg(m: Instance, at: CFrame, egg: Config.EggDef)
+	eggShape(m, at, Kit.Vivid(egg.Color))
 	-- green ecto cracks across the front (thin neon strips: the egg's one glowing accent)
-	local front = z + 2.05
 	local cracks = { { -0.9, 2.4, 25 }, { 0.2, 2.9, -35 }, { 0.9, 2.2, 40 }, { -0.2, 3.9, 60 } }
 	for _, c in cracks do
-		Kit.Part(m, V(0.18, 1.2, 0.2), CFrame.new(x + c[1], y + c[2], front) * CFrame.Angles(0, 0, math.rad(c[3])), egg.Accent, { Mat = NEON })
+		Kit.Part(m, V(0.18, 1.2, 0.2), off(at, c[1], c[2], 2.05) * CFrame.Angles(0, 0, math.rad(c[3])), egg.Accent, { Mat = NEON })
 	end
 	-- dark speckles
 	for _, sp in { { -1.3, 1.6 }, { 1.2, 3.4 }, { 0.6, 1.2 } } do
-		Kit.Ball(m, 0.6, V(x + sp[1], y + sp[2], z + 1.75), C(70, 30, 120))
+		Kit.Ball(m, 0.6, off(at, sp[1], sp[2], 1.75).Position, C(70, 30, 120))
 	end
 end
 
-local function phantomEgg(m: Instance, x: number, y: number, z: number, egg: Config.EggDef)
-	eggShape(m, x, y, z, egg.Color, { Mat = Enum.Material.Glass, Transp = 0.3, Refl = 0.1 })
+local function phantomEgg(m: Instance, at: CFrame, egg: Config.EggDef)
+	eggShape(m, at, egg.Color, { Mat = Enum.Material.Glass, Transp = 0.3, Refl = 0.1 })
 	-- inner soft core
-	Kit.Ball(m, 2.4, V(x, y + 2.5, z), egg.Accent, { Transp = 0.4 })
+	Kit.Ball(m, 2.4, off(at, 0, 2.5, 0).Position, egg.Accent, { Transp = 0.4 })
 	-- ghost face on the front
 	local dark = C(30, 30, 60)
-	Kit.Ball(m, 0.8, V(x - 0.7, y + 3.4, z + 1.55), dark)
-	Kit.Ball(m, 0.8, V(x + 0.7, y + 3.4, z + 1.55), dark)
-	Kit.Part(m, V(0.9, 0.6, 0.3), CFrame.new(x, y + 2.4, z + 2.0), dark)
+	Kit.Ball(m, 0.8, off(at, -0.7, 3.4, 1.55).Position, dark)
+	Kit.Ball(m, 0.8, off(at, 0.7, 3.4, 1.55).Position, dark)
+	Kit.Part(m, V(0.9, 0.6, 0.3), off(at, 0, 2.4, 2.0), dark)
 end
 
-local function moonlightEgg(m: Instance, x: number, y: number, z: number, egg: Config.EggDef)
-	eggShape(m, x, y, z, egg.Color, { Refl = 0.15 })
+local function moonlightEgg(m: Instance, at: CFrame, egg: Config.EggDef)
+	eggShape(m, at, egg.Color, { Refl = 0.15 })
 	-- crescent moon: a pale disc partly covered by an egg-coloured disc
-	local front = z + 2.0
-	Kit.Part(m, V(0.2, 1.6, 1.6), CFrame.new(x - 0.2, y + 3.0, front) * CFrame.Angles(0, math.pi / 2, 0), egg.Accent, { Shape = Enum.PartType.Cylinder })
-	Kit.Part(m, V(0.2, 1.4, 1.4), CFrame.new(x + 0.2, y + 3.15, front + 0.08) * CFrame.Angles(0, math.pi / 2, 0), egg.Color, { Shape = Enum.PartType.Cylinder })
+	local spin = CFrame.Angles(0, math.pi / 2, 0)
+	Kit.Part(m, V(0.2, 1.6, 1.6), off(at, -0.2, 3.0, 2.0) * spin, egg.Accent, { Shape = Enum.PartType.Cylinder })
+	Kit.Part(m, V(0.2, 1.4, 1.4), off(at, 0.2, 3.15, 2.08) * spin, egg.Color, { Shape = Enum.PartType.Cylinder })
 	-- stars
 	for _, s in { { -1.2, 1.7 }, { 1.1, 2.0 }, { 0.8, 4.1 }, { -0.9, 4.0 }, { 0.1, 1.2 } } do
-		Kit.Ball(m, 0.35, V(x + s[1], y + s[2], z + 1.85), C(255, 245, 200), { Mat = NEON })
+		Kit.Ball(m, 0.35, off(at, s[1], s[2], 1.85).Position, C(255, 245, 200), { Mat = NEON })
 	end
 end
 
-local EGG_LOOK: { [string]: (Instance, number, number, number, Config.EggDef) -> () } = {
+local EGG_LOOK: { [string]: (Instance, CFrame, Config.EggDef) -> () } = {
 	HauntedEgg = hauntedEgg,
 	PhantomEgg = phantomEgg,
 	MoonlightEgg = moonlightEgg,
 }
 
-local function pedestal(parent: Instance, egg: Config.EggDef, x: number)
+local function pedestal(parent: Instance, base: CFrame, egg: Config.EggDef, x: number)
 	local m = Kit.Model(parent, "Pedestal_" .. egg.Id)
-	local z = PED_Z
+	local pcf = base * CFrame.new(x, 0, PED_Z)
+	local function at(dx: number, dy: number, dz: number): CFrame
+		return off(pcf, dx, dy, dz)
+	end
 	-- stepped stone pedestal
-	local base = Kit.Disc(m, x, z, 0.8, 6.4, 0.6, STONE_DARK, { Mat = Enum.Material.Slate, Solid = true, Name = "Base" })
-	Kit.Cyl(m, 2.2, 4.2, CFrame.new(x, 1.9, z), STONE, { Mat = Enum.Material.Slate, Solid = true })
-	Kit.Disc(m, x, z, 3.3, 5.2, 0.4, Kit.Vivid(egg.Accent))
+	local basePart = Kit.Cyl(m, 0.6, 5.6, at(0, 0.5, 0), STONE_DARK, { Mat = Enum.Material.Slate, Solid = true, Name = "Base" })
+	Kit.Cyl(m, 2.2, 4, at(0, 1.9, 0), STONE, { Mat = Enum.Material.Slate, Solid = true })
+	Kit.Cyl(m, 0.4, 4.8, at(0, 3.1, 0), Kit.Vivid(egg.Accent))
+	local top = at(0, 3.3, 0)
 	local look = EGG_LOOK[egg.Id]
 	if look then
-		look(m, x, 3.3, z, egg)
+		look(m, top, egg)
 	else
-		eggShape(m, x, 3.3, z, egg.Color)
+		eggShape(m, top, egg.Color)
 	end
 	-- soft glow under the egg (low brightness: no bloom spike)
-	local glow = Kit.Part(m, V(1, 1, 1), CFrame.new(x, 5, z + 2), egg.Accent, { Transp = 1, Name = "Glow" })
+	local glow = Kit.Part(m, V(1, 1, 1), at(0, 5, 2), egg.Accent, { Transp = 1, Name = "Glow" })
 	Kit.Light(glow, egg.Accent, 12, 0.7)
 	-- floating Spirit Shard crystals beside the egg
-	crystal(m, V(x - 2.6, 7.6, z), 0.7, SHARD, true)
-	crystal(m, V(x + 2.6, 8.2, z), 0.6, SHARD, true)
+	crystal(m, at(-2.4, 7.4, 0).Position, 0.7, SHARD, true)
+	crystal(m, at(2.4, 8, 0).Position, 0.6, SHARD, true)
 
-	-- price / unlock sign in front of the pedestal, facing north
-	local signCF = CFrame.new(x, 2.6, z + 4.2) * CFrame.Angles(0, NORTH, 0) * CFrame.Angles(math.rad(-12), 0, 0)
-	local board = Kit.Part(m, V(5.6, 3.2, 0.4), signCF, C(35, 22, 60), { Name = "EggSign" })
-	Kit.Part(m, V(6.1, 3.7, 0.3), signCF * CFrame.new(0, 0, 0.3), Kit.Vivid(egg.Accent))
-	Kit.Box(m, V(x - 0.25, 0, z + 4.4), V(x + 0.25, 0.8, z + 4.9), STONE_DARK)
+	-- price / unlock sign in front of the pedestal, facing the plaza
+	local signCF = at(0, 2.6, 4.2) * CFrame.Angles(math.rad(-12), 0, 0)
+	local board = Kit.Part(m, V(5, 3, 0.4), signCF, C(35, 22, 60), { Name = "EggSign" })
+	Kit.Part(m, V(5.5, 3.5, 0.3), signCF * CFrame.new(0, 0, 0.3), Kit.Vivid(egg.Accent))
+	Kit.Part(m, V(0.5, 0.8, 0.5), at(0, 0.4, 3.9), STONE_DARK)
 	local g = Kit.Gui(board, Enum.NormalId.Front)
 	Kit.Label(g, string.upper(egg.Name), C(255, 255, 255), { Size = UDim2.fromScale(0.94, 0.34), Pos = UDim2.fromScale(0.03, 0.04) })
 	Kit.Label(g, "🔮 " .. Format.Commas(egg.Price), SHARD, { Size = UDim2.fromScale(0.8, 0.3), Pos = UDim2.fromScale(0.1, 0.38) })
@@ -17572,7 +17583,7 @@ local function pedestal(parent: Instance, egg: Config.EggDef, x: number)
 	Kit.Label(g, unlock, C(150, 255, 170), { Size = UDim2.fromScale(0.94, 0.22), Pos = UDim2.fromScale(0.03, 0.72) })
 
 	-- invisible prompt anchor in front of the sign
-	local anchor = Kit.Part(m, V(1, 1, 1), CFrame.new(x, 3, z + 5.5), egg.Color, { Transp = 1, Name = "PromptAnchor" })
+	local anchor = Kit.Part(m, V(1, 1, 1), at(0, 3, 5.5), egg.Color, { Transp = 1, Name = "PromptAnchor" })
 	anchor:SetAttribute("Egg", egg.Id)
 	-- pcall: the headless world simulator (tools/worldsim) has no ProximityPrompt class
 	pcall(function()
@@ -17588,77 +17599,79 @@ local function pedestal(parent: Instance, egg: Config.EggDef, x: number)
 		prompt:SetAttribute("Egg", egg.Id)
 		prompt.Parent = anchor
 	end)
-	m.PrimaryPart = base
+	m.PrimaryPart = basePart
 end
 
--- Small leaning tombstone (garden decoration).
-local function tomb(parent: Instance, x: number, z: number, tilt: number)
-	local cf = CFrame.new(x, 1.4, z) * CFrame.Angles(0, NORTH, math.rad(tilt))
-	Kit.Part(parent, V(2, 2.8, 0.6), cf, C(150, 145, 165), { Mat = Enum.Material.Slate, Solid = true })
-	Kit.Part(parent, V(0.6, 2, 2), cf * CFrame.new(0, 1.4, 0) * CFrame.Angles(0, math.pi / 2, 0), C(150, 145, 165), { Mat = Enum.Material.Slate, Shape = Enum.PartType.Cylinder })
-	Kit.Part(parent, V(2.4, 0.3, 1), CFrame.new(x, 0.15, z), MOSS)
+-- Small leaning tombstone (garden decoration), facing the plaza.
+local function tomb(parent: Instance, cf: CFrame, tilt: number)
+	local t = cf * CFrame.new(0, 1.4, 0) * CFrame.Angles(0, 0, math.rad(tilt))
+	Kit.Part(parent, V(2, 2.8, 0.6), t, C(150, 145, 165), { Mat = Enum.Material.Slate, Solid = true })
+	Kit.Part(parent, V(0.6, 2, 2), t * CFrame.new(0, 1.4, 0) * CFrame.Angles(0, math.pi / 2, 0), C(150, 145, 165), { Mat = Enum.Material.Slate, Shape = Enum.PartType.Cylinder })
+	Kit.Part(parent, V(2.4, 0.3, 1), cf * CFrame.new(0, 0.15, 0), MOSS)
 end
 
 function Hatchery.Build(map: Instance)
 	local m = Kit.Model(map, "Hatchery")
+	local spawnPos = Config.Layout.Spawn
+	local c = CENTER
+	local base = CFrame.new(c) * CFrame.Angles(0, Kit.FaceYaw(spawnPos.X - c.X, spawnPos.Z - c.Z), 0)
+	local function L(x: number, y: number, z: number): CFrame
+		return base * CFrame.new(x, y, z)
+	end
 
-	-- mossy flagstone floor (low: stepped onto, not a wall)
-	local floor = Kit.Box(m, V(X1, -0.4, Z1), V(X2, 0.2, Z2), C(80, 72, 100), { Mat = Enum.Material.Slate, Solid = true, Name = "Floor" })
-	Kit.Box(m, V(X1 + 1, 0.2, Z1 + 1), V(X2 - 1, 0.24, Z1 + 13), C(105, 92, 135), { Mat = Enum.Material.Cobblestone, Solid = true })
-	-- path to the cross street sidewalk (flat; west of the tower plaza's entrance arch pillar)
-	Kit.Box(m, V(50.5, -0.4, Z2), V(54.5, 0.16, 106), C(110, 90, 150), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "HatcheryPath" })
+	-- mossy flagstone floor (low: stepped onto, not a wall) with a cobble apron at the front
+	local floor = Kit.Part(m, V(HW * 2, 0.6, HD * 2), L(0, -0.1, 0), C(80, 72, 100), { Mat = Enum.Material.Slate, Solid = true, Name = "Floor" })
+	Kit.Part(m, V(HW * 2 - 2, 0.04, 4.6), L(0, 0.22, -HD + 3.3), C(105, 92, 135), { Mat = Enum.Material.Cobblestone, Solid = true })
 
-	-- iron garden fence on the south, west and east sides (north stays open)
-	Props.Fence(m, V(X1, 0.2, Z1), V(X2, 0.2, Z1), "iron")
-	Props.Fence(m, V(X1, 0.2, Z1), V(X1, 0.2, Z2 - 2), "iron")
-	Props.Fence(m, V(X2, 0.2, Z1), V(X2, 0.2, Z2 - 2), "iron")
+	-- iron garden fence along the back and both sides (the front stays open)
+	local function at(x: number, z: number): Vector3
+		return L(x, 0.2, z).Position
+	end
+	Props.Fence(m, at(-HW, HD), at(HW, HD), "iron")
+	Props.Fence(m, at(-HW, HD), at(-HW, -HD + 2), "iron")
+	Props.Fence(m, at(HW, HD), at(HW, -HD + 2), "iron")
 
 	-- open pavilion: four stone pillars and a slate roof over the pedestals
-	local px1, px2, pz1, pz2 = X1 + 1.5, X2 - 1.5, Z1 + 1.5, PED_Z + 6
-	for _, px in { px1, px2 } do
-		for _, pz in { pz1, pz2 } do
-			Kit.Box(m, V(px - 0.9, 0.2, pz - 0.9), V(px + 0.9, ROOF_Y, pz + 0.9), STONE, { Mat = Enum.Material.Slate, Solid = true })
-			Kit.Box(m, V(px - 1.3, 0.2, pz - 1.3), V(px + 1.3, 1.2, pz + 1.3), STONE_DARK, { Mat = Enum.Material.Slate, Solid = true })
+	for _, px in { -PX, PX } do
+		for _, pz in { -PZ, PZ } do
+			Kit.Part(m, V(1.6, ROOF_Y - 0.2, 1.6), L(px, 0.2 + (ROOF_Y - 0.2) / 2, pz), STONE, { Mat = Enum.Material.Slate, Solid = true })
+			Kit.Part(m, V(2.4, 1, 2.4), L(px, 0.7, pz), STONE_DARK, { Mat = Enum.Material.Slate, Solid = true })
 		end
 	end
-	local cz = (pz1 + pz2) / 2
-	local depth = pz2 - pz1 + 4
-	Kit.Box(m, V(px1 - 2, ROOF_Y, pz1 - 2), V(px2 + 2, ROOF_Y + 1, pz2 + 2), STONE_DARK, { Mat = Enum.Material.Slate, Shadow = true })
+	local rw, rd = PX * 2 + 3, PZ * 2 + 3
+	Kit.Part(m, V(rw, 1, rd), L(0, ROOF_Y + 0.5, 0), STONE_DARK, { Mat = Enum.Material.Slate, Shadow = true })
 	local roofC = C(70, 40, 110)
-	Kit.Wedge(m, V(px2 - px1 + 4, 4, depth / 2), CFrame.new((px1 + px2) / 2, ROOF_Y + 3, cz - depth / 4), roofC, { Mat = Enum.Material.Slate })
-	Kit.Wedge(m, V(px2 - px1 + 4, 4, depth / 2), CFrame.new((px1 + px2) / 2, ROOF_Y + 3, cz + depth / 4) * CFrame.Angles(0, math.pi, 0), roofC, { Mat = Enum.Material.Slate })
-	-- back wall panel (south) so the eggs read against a dark backdrop
-	Kit.Box(m, V(px1, 0.2, pz1 - 0.4), V(px2, 9, pz1 + 0.4), C(45, 30, 75), { Mat = Enum.Material.Slate, Solid = true })
+	Kit.Wedge(m, V(rw, 3.5, rd / 2), L(0, ROOF_Y + 2.75, -rd / 4), roofC, { Mat = Enum.Material.Slate })
+	Kit.Wedge(m, V(rw, 3.5, rd / 2), L(0, ROOF_Y + 2.75, rd / 4) * CFrame.Angles(0, math.pi, 0), roofC, { Mat = Enum.Material.Slate })
+	-- back wall panel so the eggs read against a dark backdrop
+	Kit.Part(m, V(PX * 2, 8.4, 0.8), L(0, 4.4, PZ), C(45, 30, 75), { Mat = Enum.Material.Slate, Solid = true })
 
-	-- big sign over the front of the pavilion, facing the cross street
-	local signCF = CFrame.new((px1 + px2) / 2, ROOF_Y - 1.6, pz2 + 1.4) * CFrame.Angles(0, NORTH, 0)
-	local sign = Kit.Part(m, V(16, 3.4, 0.6), signCF, C(35, 22, 60), { Name = "HatcherySign" })
-	Kit.Part(m, V(17, 4.2, 0.4), signCF * CFrame.new(0, 0, 0.4), Kit.Vivid(SHARD))
+	-- big sign over the front of the pavilion, facing the plaza
+	local signCF = L(0, ROOF_Y - 1.5, -PZ - 1.1)
+	local sign = Kit.Part(m, V(14, 3, 0.6), signCF, C(35, 22, 60), { Name = "HatcherySign" })
+	Kit.Part(m, V(15, 3.8, 0.4), signCF * CFrame.new(0, 0, 0.4), Kit.Vivid(SHARD))
 	Kit.Sign(sign, Enum.NormalId.Front, "🥚 PET HATCHERY 🥚", C(255, 240, 160))
-	-- side sign facing west (toward the main road and spawn)
-	Props.SignBoard(m, V(X1 - 0.6, 6, Z2 - 4), 9, 2.6, -1, 0, "PET HATCHERY", C(35, 22, 60), C(255, 240, 160), SHARD)
-	Kit.Box(m, V(X1 - 0.9, 0, Z2 - 4.3), V(X1 - 0.3, 4.7, Z2 - 3.7), STONE_DARK)
 
-	-- pedestals (Config.EggOrder, west to east)
+	-- pedestals (Config.EggOrder, left to right as seen from the plaza)
 	local n = #Config.EggOrder
 	for i, id in Config.EggOrder do
 		local egg = Config.Eggs[id]
 		if egg then
-			pedestal(m, egg, (X1 + X2) / 2 + (i - (n + 1) / 2) * 6.5)
+			pedestal(m, base, egg, (i - (n + 1) / 2) * PED_GAP)
 		end
 	end
 
-	-- graveyard garden: tombstones, lanterns and a big shard cluster by the entrance
-	-- (all outside the fence, so nothing stands between the visitor and the egg price signs)
-	tomb(m, X1 - 3, Z1 + 6, 6)
-	tomb(m, X1 - 3.5, Z1 + 11, -5)
-	tomb(m, X2 + 3, Z1 + 7, -7)
-	Props.Lantern(m, V(X1 - 2.5, 0.2, Z2 + 1), SHARD, true, false)
-	Props.Lantern(m, V(X2 + 2.5, 0.2, Z2 + 1), SHARD, false, false)
-	local cluster = V(X2 + 3.5, 0.2, Z1 + 13)
+	-- graveyard garden outside the fence: tombstones, lanterns at the open front, a shard cluster
+	-- (nothing stands between the visitor and the egg price signs)
+	tomb(m, L(-HW - 1.8, 0.2, 1), 6)
+	tomb(m, L(-HW - 1.8, 0.2, 4.5), -5)
+	tomb(m, L(HW + 1.8, 0.2, 3), -7)
+	Props.Lantern(m, L(-HW - 1, 0.2, -HD - 1).Position, SHARD, true, false)
+	Props.Lantern(m, L(HW + 1, 0.2, -HD - 1).Position, SHARD, false, false)
+	local cluster = L(HW + 2, 0.2, -1).Position
 	crystal(m, cluster + V(0, 1.4, 0), 1.2, SHARD, false)
-	crystal(m, cluster + V(-0.9, 0.9, 0.6), 0.8, C(170, 130, 255), false)
-	crystal(m, cluster + V(0.8, 0.8, -0.5), 0.7, C(220, 190, 255), false)
+	crystal(m, cluster + V(-0.6, 0.9, 0.7), 0.8, C(170, 130, 255), false)
+	crystal(m, cluster + V(0.6, 0.8, -0.6), 0.7, C(220, 190, 255), false)
 	crystal(m, cluster + V(0, 4.2, 0), 0.6, SHARD, true)
 
 	m.PrimaryPart = floor
@@ -19332,6 +19345,7 @@ return LightingSetup
 -- Materials: Asphalt roads, Concrete sidewalks, Slate roof shingles, Brick chimneys, Wood posts.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
+local GhostRig = require(game:GetService("ReplicatedStorage").GH.Rigs.GhostRig)
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
 
@@ -19463,6 +19477,33 @@ local function chevron(parent: Instance, tip: Vector3, dir: Vector3, color: Colo
 	end
 end
 
+-- The first zone's ghost (GhostRig "WanderingSpirit") as a static statue hovering above the
+-- spawn pad, facing -Z: players spawn looking +Z, so the camera behind them sees its face. Pure decor: renamed, every part anchored and
+-- non-colliding/non-queryable, and kept out of the Ghosts folder, so nothing can target it.
+local function ghostStatue(f: Instance, pos: Vector3)
+	local ok, model = pcall(GhostRig.Build, "WanderingSpirit")
+	if not ok then
+		warn("[GH World] spawn ghost statue skipped: " .. tostring(model))
+		return
+	end
+	model.Name = "SpawnGhostStatue"
+	model:ScaleTo(1.6)
+	model:PivotTo(CFrame.new(pos)) -- the rig's front is -Z
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CanTouch = false
+			d.CastShadow = false
+			Kit.Stats.Parts += 1
+		elseif d:IsA("ParticleEmitter") then
+			Kit.Stats.Emitters += 1
+		end
+	end
+	model.Parent = f
+end
+
 local function plaza(f: Instance)
 	local spawnPos = Config.Layout.Spawn
 	local sx, sz = spawnPos.X, spawnPos.Z
@@ -19488,8 +19529,10 @@ local function plaza(f: Instance)
 	spawn.CastShadow = false
 	spawn.Parent = f
 	Kit.Stats.Parts += 1
-	local g = Kit.Gui(spawn, Enum.NormalId.Top, 20)
-	Kit.Label(g, "👻", C(255, 255, 255), { Pos = UDim2.fromScale(0.15, 0.15), Size = UDim2.fromScale(0.7, 0.7) })
+	-- emblem rings painted on the pad, under the hovering ghost statue
+	Kit.Disc(f, sx, sz, 1.16, 6, 0.1, Kit.Vivid(C(150, 255, 200)))
+	Kit.Disc(f, sx, sz, 1.18, 4.6, 0.1, C(120, 70, 210))
+	ghostStatue(f, V(sx, 12.5, sz))
 	local border = Kit.Vivid(C(150, 255, 140))
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(sx - 7.4, 0.4, sz + s * 7) - V(0, 0, 0.4), V(sx + 7.4, 1.3, sz + s * 7) + V(0, 0, 0.4), border)
@@ -19564,16 +19607,81 @@ local function hq(f: Instance)
 end
 
 --==================================================================
--- SPAWN KIOSKS (Trading / Merge / Pets) in the pockets behind the plaza
+-- SPAWN KIOSKS (Merge / Trading) in the right pocket behind the plaza
 --==================================================================
--- Small striped booths facing the plaza. Each has an invisible PromptAnchor part carrying
--- attribute Kiosk = "Trade" | "Merge" | "Pets" and a ProximityPrompt; the client opens the
--- matching panel from ProximityPromptService.PromptTriggered (prompt.Parent:GetAttribute("Kiosk")).
--- The pockets (X -36..-14 and 14..36, Z -36..-12) are reserved in Builder.registerKeepOuts.
+-- Market booths facing the plaza: plank deck, back wall, counter, striped awning with a
+-- scalloped edge, a sign board and a hanging lantern, plus themed counter props (Trading: two
+-- display pedestals with swap arrows and crates; Merge: a bubbling fusion cauldron with two
+-- orbs about to merge). Each has an invisible PromptAnchor part carrying attribute
+-- Kiosk = "Trade" | "Merge" and a ProximityPrompt; the client opens the matching panel from
+-- ProximityPromptService.PromptTriggered (prompt.Parent:GetAttribute("Kiosk")).
+-- The pocket (X 14..36, Z -36..-12) is reserved in Builder.registerKeepOuts; the left pocket
+-- holds the Pet Hatchery (Hatchery.luau).
 local KIOSKS = {
-	{ Id = "Trade", Title = "🤝 TRADING", Pos = V(-25, 0, -25), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
 	{ Id = "Merge", Title = "✨ MERGE", Pos = V(20, 0, -29), Main = C(190, 110, 255), Accent = C(255, 230, 90) },
-	{ Id = "Pets", Title = "🐾 PETS", Pos = V(30, 0, -19), Main = C(255, 130, 190), Accent = C(120, 230, 255) },
+	{ Id = "Trade", Title = "🤝 TRADING", Pos = V(31, 0, -19), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
+}
+
+local KIOSK_DARK = C(55, 35, 90)
+local COUNTER_TOP = 4.3 -- top of the counter (Y above the ground)
+
+-- Flat arrow on the back wall pointing along local `dir` (+1 = +X, -1 = -X).
+local function swapArrow(m: Instance, at: CFrame, dir: number, color: Color3)
+	Kit.Part(m, V(2.6, 0.45, 0.2), at, color)
+	for _, s in { -1, 1 } do
+		Kit.Part(m, V(1.2, 0.45, 0.2), at * CFrame.new(dir * 1.05, s * 0.32, 0) * CFrame.Angles(0, 0, dir * s * math.rad(-45)), color)
+	end
+end
+
+-- Wooden crate with dark corner bands.
+local function crate(m: Instance, cf: CFrame, s: number)
+	Kit.Part(m, V(s, s, s), cf, C(190, 135, 80), { Mat = Enum.Material.WoodPlanks })
+	Kit.Part(m, V(s + 0.08, s * 0.16, s + 0.08), cf * CFrame.new(0, s * 0.36, 0), C(95, 60, 40))
+	Kit.Part(m, V(s + 0.08, s * 0.16, s + 0.08), cf * CFrame.new(0, -s * 0.36, 0), C(95, 60, 40))
+end
+
+local function tradeDecor(m: Instance, base: CFrame, k: typeof(KIOSKS[1]))
+	-- two display pedestals on the counter: a spirit gem and a mini crate, ready to swap
+	for _, sx in { -1, 1 } do
+		Kit.Part(m, V(0.8, 1.6, 1.6), base * CFrame.new(sx * 2.7, COUNTER_TOP + 0.4, -2.3) * CFrame.Angles(0, 0, math.pi / 2), C(240, 235, 250), { Shape = Enum.PartType.Cylinder })
+	end
+	Kit.Part(m, V(0.9, 1.4, 0.9), base * CFrame.new(-2.7, COUNTER_TOP + 1.6, -2.3) * CFrame.Angles(0, math.rad(45), 0), C(120, 230, 255), { Mat = Enum.Material.Glass, Transp = 0.1, Refl = 0.2 })
+	crate(m, base * CFrame.new(2.7, COUNTER_TOP + 1.4, -2.3) * CFrame.Angles(0, math.rad(20), 0), 1.2)
+	-- swap arrows on the back wall (one each way)
+	swapArrow(m, base * CFrame.new(0, 6.6, 2.85), 1, Kit.Vivid(k.Main))
+	swapArrow(m, base * CFrame.new(0, 5.3, 2.85), -1, Kit.Vivid(k.Accent))
+	-- crates stacked beside the booth
+	crate(m, base * CFrame.new(-6.4, 1, 1), 2)
+	crate(m, base * CFrame.new(-6.3, 2.75, 1.1) * CFrame.Angles(0, math.rad(25), 0), 1.5)
+	crate(m, base * CFrame.new(-6.5, 0.7, -1.6) * CFrame.Angles(0, math.rad(-15), 0), 1.4)
+end
+
+local function mergeDecor(m: Instance, base: CFrame, k: typeof(KIOSKS[1]))
+	-- fusion cauldron on the counter: dark pot, gold rim, glowing brew with sparkles
+	local pot = base * CFrame.new(0, COUNTER_TOP, -2.3)
+	Kit.Cyl(m, 1.7, 2.6, pot * CFrame.new(0, 0.85, 0), C(45, 35, 70), { Refl = 0.1 })
+	Kit.Cyl(m, 0.35, 3, pot * CFrame.new(0, 1.7, 0), Kit.Vivid(k.Accent))
+	local brew = Kit.Cyl(m, 0.2, 2.4, pot * CFrame.new(0, 1.8, 0), C(225, 140, 255), { Mat = NEON })
+	Kit.Emitter(brew, C(255, 220, 255), 3, 0.7, 1.2)
+	-- two orbs above the brew, about to merge
+	for i, col in { C(120, 230, 255), C(255, 200, 90) } do
+		local orb = Kit.Ball(m, 0.8, (pot * CFrame.new(if i == 1 then -1 else 1, 3, 0)).Position, col, { Mat = NEON })
+		Kit.Float(orb, 0.5)
+	end
+	Kit.Ball(m, 0.45, (pot * CFrame.new(0, 3.6, 0)).Position, C(255, 250, 230), { Mat = NEON })
+	-- fusion crystals at both ends of the counter
+	for _, sx in { -1, 1 } do
+		Kit.Part(m, V(0.8, 1.5, 0.8), base * CFrame.new(sx * 3.6, COUNTER_TOP + 0.75, -2.3) * CFrame.Angles(0, math.rad(45), math.rad(sx * 10)), C(200, 160, 255), { Mat = Enum.Material.Glass, Transp = 0.15, Refl = 0.2 })
+	end
+	-- rune circle painted on the back wall
+	Kit.Part(m, V(0.2, 3.6, 3.6), base * CFrame.new(0, 6, 2.85) * CFrame.Angles(0, math.pi / 2, 0), Kit.Vivid(k.Accent), { Shape = Enum.PartType.Cylinder })
+	Kit.Part(m, V(0.2, 3, 3), base * CFrame.new(0, 6, 2.8) * CFrame.Angles(0, math.pi / 2, 0), k.Main, { Shape = Enum.PartType.Cylinder })
+	Kit.Part(m, V(1.4, 1.4, 0.2), base * CFrame.new(0, 6, 2.7) * CFrame.Angles(0, 0, math.rad(45)), Kit.Vivid(k.Accent))
+end
+
+local KIOSK_DECOR: { [string]: (Instance, CFrame, typeof(KIOSKS[1])) -> () } = {
+	Trade = tradeDecor,
+	Merge = mergeDecor,
 }
 
 local function kiosk(parent: Instance, k: typeof(KIOSKS[1]))
@@ -19581,34 +19689,45 @@ local function kiosk(parent: Instance, k: typeof(KIOSKS[1]))
 	-- local -Z (front) faces the spawn plaza
 	local base = CFrame.new(k.Pos) * CFrame.Angles(0, Kit.FaceYaw(spawnPos.X - k.Pos.X, spawnPos.Z - k.Pos.Z), 0)
 	local m = Kit.Model(parent, "Kiosk_" .. k.Id)
-	local dark = C(55, 35, 90)
+	local cream = C(250, 245, 255)
 	local wood: Kit.Opts = { Mat = Enum.Material.WoodPlanks, Solid = true }
-	-- floor deck and back wall
-	Kit.Part(m, V(9, 0.6, 7), base * CFrame.new(0, 0.3, 0), C(150, 110, 80), wood)
-	Kit.Part(m, V(9, 8, 0.8), base * CFrame.new(0, 4.6, 3.1), k.Main, { Solid = true, Shadow = true })
-	-- counter with a coloured top
-	Kit.Part(m, V(8, 3.4, 1.6), base * CFrame.new(0, 2.3, -2.2), dark, wood)
-	Kit.Part(m, V(8.4, 0.3, 2), base * CFrame.new(0, 4.15, -2.2), Kit.Vivid(k.Accent))
+	-- floor deck and back wall with a painted accent band
+	Kit.Part(m, V(10, 0.6, 8), base * CFrame.new(0, 0.3, 0), C(150, 110, 80), wood)
+	Kit.Part(m, V(9.4, 8, 0.8), base * CFrame.new(0, 4.6, 3.3), k.Main, { Solid = true, Shadow = true })
+	Kit.Part(m, V(9.4, 0.5, 0.2), base * CFrame.new(0, 3.6, 2.85), Kit.Vivid(k.Accent))
+	-- counter: dark planks, coloured top, a front stripe and a trim at the foot
+	Kit.Part(m, V(9, 3.4, 1.6), base * CFrame.new(0, 2.3, -2.3), KIOSK_DARK, wood)
+	Kit.Part(m, V(9.4, 0.3, 2), base * CFrame.new(0, COUNTER_TOP - 0.15, -2.3), Kit.Vivid(k.Accent))
+	Kit.Part(m, V(9.02, 0.6, 0.1), base * CFrame.new(0, 3, -3.12), Kit.Vivid(k.Main))
+	Kit.Part(m, V(9.02, 0.3, 0.1), base * CFrame.new(0, 0.75, -3.12), cream)
 	-- corner posts
 	for _, sx in { -1, 1 } do
-		for _, lz in { -3.1, 3.1 } do
-			Kit.Part(m, V(0.6, 8, 0.6), base * CFrame.new(sx * 4.2, 4.6, lz), C(240, 235, 250), { Mat = Enum.Material.Wood })
+		for _, lz in { -3.6, 3.3 } do
+			Kit.Part(m, V(0.6, 8, 0.6), base * CFrame.new(sx * 4.7, 4.6, lz), cream, { Mat = Enum.Material.Wood })
 		end
 	end
-	-- striped awning roof
+	-- striped awning roof with a scalloped front edge
 	for i = 0, 5 do
-		local col = if i % 2 == 0 then k.Main else C(250, 245, 255)
-		Kit.Part(m, V(1.6, 0.5, 8.4), base * CFrame.new(-4 + i * 1.6, 8.85, -0.3) * CFrame.Angles(math.rad(-8), 0, 0), col)
+		local col = if i % 2 == 0 then k.Main else cream
+		local x = -4.25 + i * 1.7
+		Kit.Part(m, V(1.7, 0.5, 9), base * CFrame.new(x, 8.85, -0.4) * CFrame.Angles(math.rad(-8), 0, 0), col)
+		Kit.Ball(m, 1.5, (base * CFrame.new(x, 8.05, -4.85)).Position, col)
 	end
+	Kit.Part(m, V(10.4, 0.4, 0.4), base * CFrame.new(0, 8.3, -4.75), Kit.Vivid(k.Accent))
 	-- sign board above the awning, facing the plaza
-	local board = Kit.Part(m, V(8, 2.2, 0.5), base * CFrame.new(0, 10.6, -1.2), dark, { Name = "KioskSign" })
-	Kit.Part(m, V(8.8, 3, 0.3), base * CFrame.new(0, 10.6, -0.85), Kit.Vivid(k.Accent))
+	local board = Kit.Part(m, V(8, 2.2, 0.5), base * CFrame.new(0, 10.8, -1.2), KIOSK_DARK, { Name = "KioskSign" })
+	Kit.Part(m, V(8.8, 3, 0.3), base * CFrame.new(0, 10.8, -0.85), Kit.Vivid(k.Accent))
 	Kit.Sign(board, Enum.NormalId.Front, k.Title, C(255, 255, 255))
-	-- a little glowing lantern on the counter (accent glow, meaning "open")
-	local lantern = Kit.Ball(m, 0.9, (base * CFrame.new(3.2, 4.85, -2.2)).Position, k.Accent, { Mat = NEON })
+	-- lantern hanging from the front-left post (accent glow, meaning "open")
+	Kit.Part(m, V(0.15, 0.9, 0.15), base * CFrame.new(-4.7, 7.25, -4.1), KIOSK_DARK)
+	local lantern = Kit.Ball(m, 0.9, (base * CFrame.new(-4.7, 6.5, -4.1)).Position, k.Accent, { Mat = NEON })
 	Kit.Light(lantern, k.Accent, 12, 0.8)
+	local decor = KIOSK_DECOR[k.Id]
+	if decor then
+		decor(m, base, k)
+	end
 	-- invisible prompt anchor in front of the counter
-	local anchor = Kit.Part(m, V(1, 1, 1), base * CFrame.new(0, 3, -3.6), k.Main, { Transp = 1, Name = "PromptAnchor" })
+	local anchor = Kit.Part(m, V(1, 1, 1), base * CFrame.new(0, 3, -3.9), k.Main, { Transp = 1, Name = "PromptAnchor" })
 	anchor:SetAttribute("Kiosk", k.Id)
 	-- pcall: the headless world simulator (tools/worldsim) has no ProximityPrompt class
 	pcall(function()
@@ -27744,6 +27863,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local PetPortrait = require(Client.UI.PetPortrait)
 local PetsPanel = require(script.Parent.PetsPanel)
 local Reveal = require(script.Parent.Reveal)
 
@@ -27806,13 +27926,13 @@ local function petCard(order: number, pet: Config.PetDef, chance: number)
 		Size = UDim2.fromOffset(80, 80),
 		Position = UDim2.new(0.5, 0, 0, 8),
 		AnchorPoint = Vector2.new(0.5, 0),
-		BackgroundColor3 = pet.Color,
+		BackgroundColor3 = pet.Color:Lerp(Color3.new(0, 0, 0), 0.5),
 		ZIndex = 63,
 		Parent = card,
 	})
 	Kit.Corner(pic, UDim.new(1, 0))
 	Kit.Stroke(pic, 3, pet.Glow, Enum.ApplyStrokeMode.Border)
-	Kit.Icon(pic, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 40, Stroke = 0, ZIndex = 64 })
+	PetPortrait.New(pic, pet.Id)
 	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 92), ZIndex = 64, Style = "Body", Fit = true })
 	Kit.Label(card, r and r.Name or string.upper(pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 113), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
 	-- two short lines (a one-line "+25% POWER for all hunters" was cut to "+25% PO…" here)
@@ -29639,6 +29759,7 @@ local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Portrait = require(Client.UI.Portrait)
+local PetPortrait = require(Client.UI.PetPortrait)
 local Hud = require(script.Parent.Hud)
 local CratePanel = require(script.Parent.CratePanel)
 local PetsPanel = require(script.Parent.PetsPanel)
@@ -29943,11 +30064,7 @@ local function rebuildPets()
 		end
 		local pic: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = if known then pet.Glow else Color3.fromRGB(30, 18, 55), BackgroundTransparency = 0.35, ZIndex = 64, Parent = card })
 		Kit.Corner(pic, UDim.new(1, 0))
-		local icon = Kit.Label(pic, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Heading", Fit = true, ZIndex = 65, Stroke = 0 })
-		if not known then
-			-- dark silhouette: emoji glyphs ignore TextColor3, so dim them instead
-			icon.TextTransparency = 0.85
-		end
+		PetPortrait.New(pic, id, not known) -- undiscovered: dark silhouette
 		Kit.Label(card, if known then string.upper(pet.Name) else "???", { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 72), ZIndex = 66, Style = "Small", Fit = true })
 		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 90), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color, Style = "Tiny", Fit = true })
 		if known then
@@ -30926,6 +31043,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local PetPortrait = require(Client.UI.PetPortrait)
 local Hud = require(script.Parent.Hud)
 
 local PetsPanel = {}
@@ -30962,7 +31080,6 @@ local function bonusText(kind: string, value: number): string
 end
 
 -- shared with the egg panel (Controllers/Hatchery)
-PetsPanel.ShapeIcon = SHAPE_ICON
 PetsPanel.BonusText = bonusText
 
 local function rarityName(pet: Config.PetDef): string
@@ -30982,10 +31099,10 @@ local function card(parent: Instance, order: number, pet: Config.PetDef, nick: s
 	Kit.Corner(f, UDim.new(0, 14))
 	Kit.Stroke(f, 3, r and r.Color or Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(f, Theme.Panel3, Theme.Panel, 90)
-	local orb: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = pet.Color, ZIndex = 63, Parent = f })
+	local orb: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = pet.Color:Lerp(Color3.new(0, 0, 0), 0.5), ZIndex = 63, Parent = f })
 	Kit.Corner(orb, UDim.new(1, 0))
 	Kit.Stroke(orb, 2.5, pet.Glow, Enum.ApplyStrokeMode.Border)
-	Kit.Icon(orb, "pet_" .. pet.Id, SHAPE_ICON[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 26, Stroke = 0, ZIndex = 64 })
+	PetPortrait.New(orb, pet.Id)
 	local named = nick ~= nil and nick ~= ""
 	Kit.Label(f, if named then nick :: string else string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56), Style = "Body", Fit = true, ZIndex = 63 })
 	Kit.Label(f, if named then pet.Name .. " · " .. rarityName(pet) else (r and r.Name or pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 78), Color = r and r.Color or Theme.Text, Style = "Tiny", Fit = true, ZIndex = 63 })
@@ -31436,6 +31553,7 @@ local Sound = require(script.Parent.Sound)
 local Targeting = require(script.Parent.Targeting)
 local PetFollowers = require(script.Parent.PetFollowers)
 local PetsPanel = require(script.Parent.PetsPanel)
+local PetPortrait = require(Client.UI.PetPortrait)
 
 local Reveal = {}
 
@@ -31952,6 +32070,11 @@ local function petCard(g: ScreenGui, pet: Config.PetDef, rarity: Config.RarityDe
 	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
 	Kit.Label(card, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -30, 0, 22), Position = UDim2.fromOffset(15, 56), Color = Theme.Ecto, Style = "Body", Fit = true, ZIndex = 11 })
 	Kit.Label(card, "Equip it in PETS", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 84), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 11 })
+	-- the hatched pet's portrait in the free bottom-left corner (left of the OK button)
+	local pic: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0, 16, 1, -10), AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = pet.Color:Lerp(Color3.new(0, 0, 0), 0.5), ZIndex = 11, Parent = card })
+	Kit.Corner(pic, UDim.new(1, 0))
+	Kit.Stroke(pic, 2.5, pet.Glow, Enum.ApplyStrokeMode.Border)
+	PetPortrait.New(pic, pet.Id)
 	okButton = Kit.Button(card, {
 		Text = "OK",
 		Color = "Blue",
@@ -36119,6 +36242,86 @@ return Kit
           </Item>
           <Item class="ModuleScript" referent="111">
             <Properties>
+              <string name="Name">PetPortrait</string>
+              <string name="Source"><![CDATA[--!strict
+-- Pet portraits: the real pet model (PetFollowers.BuildPet) in a ViewportFrame. Static: no
+-- RenderStepped, the ViewportFrame renders once and only redraws when something inside changes.
+-- One template model is built per pet id and cloned for every portrait, so rebuilding a list
+-- never rebuilds models. The clone lives inside the ViewportFrame, so destroying the list item
+-- destroys the portrait with it. The camera is framed from the model's bounding box, so any pet
+-- shape fits without per-pet numbers.
+local PetFollowers = require(script.Parent.Parent.Controllers.PetFollowers)
+local Kit = require(script.Parent.Kit)
+
+local PetPortrait = {}
+
+local FOV = 30
+local YAW = math.rad(-25) -- pets face -Z and the camera sits on the -Z side: a slight 3/4 turn
+local VIEW_DIR = Vector3.new(0, 0.3, -1).Unit -- from the front, a little above
+local FILL = 0.92 -- < 1 zooms in a little (the bounding sphere is loose around round pets)
+local SILHOUETTE = Color3.fromRGB(15, 8, 30)
+
+type Template = { Model: Model, Cam: CFrame }
+local templates: { [string]: Template } = {}
+
+local function template(petId: string): Template?
+	local t = templates[petId]
+	if t then
+		return t
+	end
+	local model = PetFollowers.BuildPet(petId) -- nil only for an unknown id (cheap to retry)
+	if not model then
+		return nil
+	end
+	-- lights don't render in a ViewportFrame; drop them so clones stay light
+	for _, d in model:GetDescendants() do
+		if d:IsA("Light") or d:IsA("ParticleEmitter") or d:IsA("BillboardGui") then
+			d:Destroy()
+		end
+	end
+	model:PivotTo(CFrame.Angles(0, YAW, 0))
+	local box, size = model:GetBoundingBox()
+	local radius = math.max(size.Magnitude / 2, 0.1)
+	local dist = radius / math.tan(math.rad(FOV / 2)) * FILL
+	local centre = box.Position
+	local made: Template = { Model = model, Cam = CFrame.lookAt(centre + VIEW_DIR * dist, centre) }
+	templates[petId] = made
+	return made
+end
+
+-- Fills `parent` with a transparent ViewportFrame showing the pet. silhouette = undiscovered
+-- (rendered as a dark shape via ImageColor3). Returns the ViewportFrame.
+function PetPortrait.New(parent: GuiObject, petId: string, silhouette: boolean?, size: UDim2?): ViewportFrame
+	local vf: ViewportFrame = Kit.new("ViewportFrame", {
+		Size = size or UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundTransparency = 1,
+		Ambient = Color3.fromRGB(200, 195, 225),
+		LightColor = Color3.fromRGB(255, 255, 255),
+		LightDirection = Vector3.new(-0.5, -1, -0.7), -- same as the hunter portraits (UI/Portrait)
+		ImageColor3 = if silhouette then SILHOUETTE else Color3.new(1, 1, 1),
+		ZIndex = parent.ZIndex + 1,
+		Parent = parent,
+	})
+	local t = template(petId)
+	if t then
+		t.Model:Clone().Parent = vf
+		local cam = Instance.new("Camera")
+		cam.FieldOfView = FOV
+		cam.CFrame = t.Cam
+		cam.Parent = vf
+		vf.CurrentCamera = cam
+	end
+	return vf
+end
+
+return PetPortrait
+]]></string>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="112">
+            <Properties>
               <string name="Name">Portrait</string>
               <string name="Source"><![CDATA[--!strict
 -- Hunter portraits. Face(): cheap 2D portrait built from Frames (used in big grids).
@@ -36521,7 +36724,7 @@ return Portrait
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="112">
+          <Item class="ModuleScript" referent="113">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -36602,7 +36805,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="113">
+          <Item class="ModuleScript" referent="114">
             <Properties>
               <string name="Name">WorldLabel</string>
               <string name="Source"><![CDATA[--!strict
@@ -36784,7 +36987,7 @@ return WorldLabel
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="114">
+  <Item class="Workspace" referent="115">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

@@ -8,6 +8,7 @@
 -- Materials: Asphalt roads, Concrete sidewalks, Slate roof shingles, Brick chimneys, Wood posts.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
+local GhostRig = require(game:GetService("ReplicatedStorage").GH.Rigs.GhostRig)
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
 
@@ -139,6 +140,33 @@ local function chevron(parent: Instance, tip: Vector3, dir: Vector3, color: Colo
 	end
 end
 
+-- The first zone's ghost (GhostRig "WanderingSpirit") as a static statue hovering above the
+-- spawn pad, facing -Z: players spawn looking +Z, so the camera behind them sees its face. Pure decor: renamed, every part anchored and
+-- non-colliding/non-queryable, and kept out of the Ghosts folder, so nothing can target it.
+local function ghostStatue(f: Instance, pos: Vector3)
+	local ok, model = pcall(GhostRig.Build, "WanderingSpirit")
+	if not ok then
+		warn("[GH World] spawn ghost statue skipped: " .. tostring(model))
+		return
+	end
+	model.Name = "SpawnGhostStatue"
+	model:ScaleTo(1.6)
+	model:PivotTo(CFrame.new(pos)) -- the rig's front is -Z
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CanTouch = false
+			d.CastShadow = false
+			Kit.Stats.Parts += 1
+		elseif d:IsA("ParticleEmitter") then
+			Kit.Stats.Emitters += 1
+		end
+	end
+	model.Parent = f
+end
+
 local function plaza(f: Instance)
 	local spawnPos = Config.Layout.Spawn
 	local sx, sz = spawnPos.X, spawnPos.Z
@@ -164,8 +192,10 @@ local function plaza(f: Instance)
 	spawn.CastShadow = false
 	spawn.Parent = f
 	Kit.Stats.Parts += 1
-	local g = Kit.Gui(spawn, Enum.NormalId.Top, 20)
-	Kit.Label(g, "👻", C(255, 255, 255), { Pos = UDim2.fromScale(0.15, 0.15), Size = UDim2.fromScale(0.7, 0.7) })
+	-- emblem rings painted on the pad, under the hovering ghost statue
+	Kit.Disc(f, sx, sz, 1.16, 6, 0.1, Kit.Vivid(C(150, 255, 200)))
+	Kit.Disc(f, sx, sz, 1.18, 4.6, 0.1, C(120, 70, 210))
+	ghostStatue(f, V(sx, 12.5, sz))
 	local border = Kit.Vivid(C(150, 255, 140))
 	for _, s in { -1, 1 } do
 		Kit.Box(f, V(sx - 7.4, 0.4, sz + s * 7) - V(0, 0, 0.4), V(sx + 7.4, 1.3, sz + s * 7) + V(0, 0, 0.4), border)
@@ -240,16 +270,81 @@ local function hq(f: Instance)
 end
 
 --==================================================================
--- SPAWN KIOSKS (Trading / Merge / Pets) in the pockets behind the plaza
+-- SPAWN KIOSKS (Merge / Trading) in the right pocket behind the plaza
 --==================================================================
--- Small striped booths facing the plaza. Each has an invisible PromptAnchor part carrying
--- attribute Kiosk = "Trade" | "Merge" | "Pets" and a ProximityPrompt; the client opens the
--- matching panel from ProximityPromptService.PromptTriggered (prompt.Parent:GetAttribute("Kiosk")).
--- The pockets (X -36..-14 and 14..36, Z -36..-12) are reserved in Builder.registerKeepOuts.
+-- Market booths facing the plaza: plank deck, back wall, counter, striped awning with a
+-- scalloped edge, a sign board and a hanging lantern, plus themed counter props (Trading: two
+-- display pedestals with swap arrows and crates; Merge: a bubbling fusion cauldron with two
+-- orbs about to merge). Each has an invisible PromptAnchor part carrying attribute
+-- Kiosk = "Trade" | "Merge" and a ProximityPrompt; the client opens the matching panel from
+-- ProximityPromptService.PromptTriggered (prompt.Parent:GetAttribute("Kiosk")).
+-- The pocket (X 14..36, Z -36..-12) is reserved in Builder.registerKeepOuts; the left pocket
+-- holds the Pet Hatchery (Hatchery.luau).
 local KIOSKS = {
-	{ Id = "Trade", Title = "🤝 TRADING", Pos = V(-25, 0, -25), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
 	{ Id = "Merge", Title = "✨ MERGE", Pos = V(20, 0, -29), Main = C(190, 110, 255), Accent = C(255, 230, 90) },
-	{ Id = "Pets", Title = "🐾 PETS", Pos = V(30, 0, -19), Main = C(255, 130, 190), Accent = C(120, 230, 255) },
+	{ Id = "Trade", Title = "🤝 TRADING", Pos = V(31, 0, -19), Main = C(255, 170, 60), Accent = C(150, 255, 140) },
+}
+
+local KIOSK_DARK = C(55, 35, 90)
+local COUNTER_TOP = 4.3 -- top of the counter (Y above the ground)
+
+-- Flat arrow on the back wall pointing along local `dir` (+1 = +X, -1 = -X).
+local function swapArrow(m: Instance, at: CFrame, dir: number, color: Color3)
+	Kit.Part(m, V(2.6, 0.45, 0.2), at, color)
+	for _, s in { -1, 1 } do
+		Kit.Part(m, V(1.2, 0.45, 0.2), at * CFrame.new(dir * 1.05, s * 0.32, 0) * CFrame.Angles(0, 0, dir * s * math.rad(-45)), color)
+	end
+end
+
+-- Wooden crate with dark corner bands.
+local function crate(m: Instance, cf: CFrame, s: number)
+	Kit.Part(m, V(s, s, s), cf, C(190, 135, 80), { Mat = Enum.Material.WoodPlanks })
+	Kit.Part(m, V(s + 0.08, s * 0.16, s + 0.08), cf * CFrame.new(0, s * 0.36, 0), C(95, 60, 40))
+	Kit.Part(m, V(s + 0.08, s * 0.16, s + 0.08), cf * CFrame.new(0, -s * 0.36, 0), C(95, 60, 40))
+end
+
+local function tradeDecor(m: Instance, base: CFrame, k: typeof(KIOSKS[1]))
+	-- two display pedestals on the counter: a spirit gem and a mini crate, ready to swap
+	for _, sx in { -1, 1 } do
+		Kit.Part(m, V(0.8, 1.6, 1.6), base * CFrame.new(sx * 2.7, COUNTER_TOP + 0.4, -2.3) * CFrame.Angles(0, 0, math.pi / 2), C(240, 235, 250), { Shape = Enum.PartType.Cylinder })
+	end
+	Kit.Part(m, V(0.9, 1.4, 0.9), base * CFrame.new(-2.7, COUNTER_TOP + 1.6, -2.3) * CFrame.Angles(0, math.rad(45), 0), C(120, 230, 255), { Mat = Enum.Material.Glass, Transp = 0.1, Refl = 0.2 })
+	crate(m, base * CFrame.new(2.7, COUNTER_TOP + 1.4, -2.3) * CFrame.Angles(0, math.rad(20), 0), 1.2)
+	-- swap arrows on the back wall (one each way)
+	swapArrow(m, base * CFrame.new(0, 6.6, 2.85), 1, Kit.Vivid(k.Main))
+	swapArrow(m, base * CFrame.new(0, 5.3, 2.85), -1, Kit.Vivid(k.Accent))
+	-- crates stacked beside the booth
+	crate(m, base * CFrame.new(-6.4, 1, 1), 2)
+	crate(m, base * CFrame.new(-6.3, 2.75, 1.1) * CFrame.Angles(0, math.rad(25), 0), 1.5)
+	crate(m, base * CFrame.new(-6.5, 0.7, -1.6) * CFrame.Angles(0, math.rad(-15), 0), 1.4)
+end
+
+local function mergeDecor(m: Instance, base: CFrame, k: typeof(KIOSKS[1]))
+	-- fusion cauldron on the counter: dark pot, gold rim, glowing brew with sparkles
+	local pot = base * CFrame.new(0, COUNTER_TOP, -2.3)
+	Kit.Cyl(m, 1.7, 2.6, pot * CFrame.new(0, 0.85, 0), C(45, 35, 70), { Refl = 0.1 })
+	Kit.Cyl(m, 0.35, 3, pot * CFrame.new(0, 1.7, 0), Kit.Vivid(k.Accent))
+	local brew = Kit.Cyl(m, 0.2, 2.4, pot * CFrame.new(0, 1.8, 0), C(225, 140, 255), { Mat = NEON })
+	Kit.Emitter(brew, C(255, 220, 255), 3, 0.7, 1.2)
+	-- two orbs above the brew, about to merge
+	for i, col in { C(120, 230, 255), C(255, 200, 90) } do
+		local orb = Kit.Ball(m, 0.8, (pot * CFrame.new(if i == 1 then -1 else 1, 3, 0)).Position, col, { Mat = NEON })
+		Kit.Float(orb, 0.5)
+	end
+	Kit.Ball(m, 0.45, (pot * CFrame.new(0, 3.6, 0)).Position, C(255, 250, 230), { Mat = NEON })
+	-- fusion crystals at both ends of the counter
+	for _, sx in { -1, 1 } do
+		Kit.Part(m, V(0.8, 1.5, 0.8), base * CFrame.new(sx * 3.6, COUNTER_TOP + 0.75, -2.3) * CFrame.Angles(0, math.rad(45), math.rad(sx * 10)), C(200, 160, 255), { Mat = Enum.Material.Glass, Transp = 0.15, Refl = 0.2 })
+	end
+	-- rune circle painted on the back wall
+	Kit.Part(m, V(0.2, 3.6, 3.6), base * CFrame.new(0, 6, 2.85) * CFrame.Angles(0, math.pi / 2, 0), Kit.Vivid(k.Accent), { Shape = Enum.PartType.Cylinder })
+	Kit.Part(m, V(0.2, 3, 3), base * CFrame.new(0, 6, 2.8) * CFrame.Angles(0, math.pi / 2, 0), k.Main, { Shape = Enum.PartType.Cylinder })
+	Kit.Part(m, V(1.4, 1.4, 0.2), base * CFrame.new(0, 6, 2.7) * CFrame.Angles(0, 0, math.rad(45)), Kit.Vivid(k.Accent))
+end
+
+local KIOSK_DECOR: { [string]: (Instance, CFrame, typeof(KIOSKS[1])) -> () } = {
+	Trade = tradeDecor,
+	Merge = mergeDecor,
 }
 
 local function kiosk(parent: Instance, k: typeof(KIOSKS[1]))
@@ -257,34 +352,45 @@ local function kiosk(parent: Instance, k: typeof(KIOSKS[1]))
 	-- local -Z (front) faces the spawn plaza
 	local base = CFrame.new(k.Pos) * CFrame.Angles(0, Kit.FaceYaw(spawnPos.X - k.Pos.X, spawnPos.Z - k.Pos.Z), 0)
 	local m = Kit.Model(parent, "Kiosk_" .. k.Id)
-	local dark = C(55, 35, 90)
+	local cream = C(250, 245, 255)
 	local wood: Kit.Opts = { Mat = Enum.Material.WoodPlanks, Solid = true }
-	-- floor deck and back wall
-	Kit.Part(m, V(9, 0.6, 7), base * CFrame.new(0, 0.3, 0), C(150, 110, 80), wood)
-	Kit.Part(m, V(9, 8, 0.8), base * CFrame.new(0, 4.6, 3.1), k.Main, { Solid = true, Shadow = true })
-	-- counter with a coloured top
-	Kit.Part(m, V(8, 3.4, 1.6), base * CFrame.new(0, 2.3, -2.2), dark, wood)
-	Kit.Part(m, V(8.4, 0.3, 2), base * CFrame.new(0, 4.15, -2.2), Kit.Vivid(k.Accent))
+	-- floor deck and back wall with a painted accent band
+	Kit.Part(m, V(10, 0.6, 8), base * CFrame.new(0, 0.3, 0), C(150, 110, 80), wood)
+	Kit.Part(m, V(9.4, 8, 0.8), base * CFrame.new(0, 4.6, 3.3), k.Main, { Solid = true, Shadow = true })
+	Kit.Part(m, V(9.4, 0.5, 0.2), base * CFrame.new(0, 3.6, 2.85), Kit.Vivid(k.Accent))
+	-- counter: dark planks, coloured top, a front stripe and a trim at the foot
+	Kit.Part(m, V(9, 3.4, 1.6), base * CFrame.new(0, 2.3, -2.3), KIOSK_DARK, wood)
+	Kit.Part(m, V(9.4, 0.3, 2), base * CFrame.new(0, COUNTER_TOP - 0.15, -2.3), Kit.Vivid(k.Accent))
+	Kit.Part(m, V(9.02, 0.6, 0.1), base * CFrame.new(0, 3, -3.12), Kit.Vivid(k.Main))
+	Kit.Part(m, V(9.02, 0.3, 0.1), base * CFrame.new(0, 0.75, -3.12), cream)
 	-- corner posts
 	for _, sx in { -1, 1 } do
-		for _, lz in { -3.1, 3.1 } do
-			Kit.Part(m, V(0.6, 8, 0.6), base * CFrame.new(sx * 4.2, 4.6, lz), C(240, 235, 250), { Mat = Enum.Material.Wood })
+		for _, lz in { -3.6, 3.3 } do
+			Kit.Part(m, V(0.6, 8, 0.6), base * CFrame.new(sx * 4.7, 4.6, lz), cream, { Mat = Enum.Material.Wood })
 		end
 	end
-	-- striped awning roof
+	-- striped awning roof with a scalloped front edge
 	for i = 0, 5 do
-		local col = if i % 2 == 0 then k.Main else C(250, 245, 255)
-		Kit.Part(m, V(1.6, 0.5, 8.4), base * CFrame.new(-4 + i * 1.6, 8.85, -0.3) * CFrame.Angles(math.rad(-8), 0, 0), col)
+		local col = if i % 2 == 0 then k.Main else cream
+		local x = -4.25 + i * 1.7
+		Kit.Part(m, V(1.7, 0.5, 9), base * CFrame.new(x, 8.85, -0.4) * CFrame.Angles(math.rad(-8), 0, 0), col)
+		Kit.Ball(m, 1.5, (base * CFrame.new(x, 8.05, -4.85)).Position, col)
 	end
+	Kit.Part(m, V(10.4, 0.4, 0.4), base * CFrame.new(0, 8.3, -4.75), Kit.Vivid(k.Accent))
 	-- sign board above the awning, facing the plaza
-	local board = Kit.Part(m, V(8, 2.2, 0.5), base * CFrame.new(0, 10.6, -1.2), dark, { Name = "KioskSign" })
-	Kit.Part(m, V(8.8, 3, 0.3), base * CFrame.new(0, 10.6, -0.85), Kit.Vivid(k.Accent))
+	local board = Kit.Part(m, V(8, 2.2, 0.5), base * CFrame.new(0, 10.8, -1.2), KIOSK_DARK, { Name = "KioskSign" })
+	Kit.Part(m, V(8.8, 3, 0.3), base * CFrame.new(0, 10.8, -0.85), Kit.Vivid(k.Accent))
 	Kit.Sign(board, Enum.NormalId.Front, k.Title, C(255, 255, 255))
-	-- a little glowing lantern on the counter (accent glow, meaning "open")
-	local lantern = Kit.Ball(m, 0.9, (base * CFrame.new(3.2, 4.85, -2.2)).Position, k.Accent, { Mat = NEON })
+	-- lantern hanging from the front-left post (accent glow, meaning "open")
+	Kit.Part(m, V(0.15, 0.9, 0.15), base * CFrame.new(-4.7, 7.25, -4.1), KIOSK_DARK)
+	local lantern = Kit.Ball(m, 0.9, (base * CFrame.new(-4.7, 6.5, -4.1)).Position, k.Accent, { Mat = NEON })
 	Kit.Light(lantern, k.Accent, 12, 0.8)
+	local decor = KIOSK_DECOR[k.Id]
+	if decor then
+		decor(m, base, k)
+	end
 	-- invisible prompt anchor in front of the counter
-	local anchor = Kit.Part(m, V(1, 1, 1), base * CFrame.new(0, 3, -3.6), k.Main, { Transp = 1, Name = "PromptAnchor" })
+	local anchor = Kit.Part(m, V(1, 1, 1), base * CFrame.new(0, 3, -3.9), k.Main, { Transp = 1, Name = "PromptAnchor" })
 	anchor:SetAttribute("Kiosk", k.Id)
 	-- pcall: the headless world simulator (tools/worldsim) has no ProximityPrompt class
 	pcall(function()

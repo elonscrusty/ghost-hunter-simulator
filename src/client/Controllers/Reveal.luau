@@ -34,6 +34,7 @@ local Sound = require(script.Parent.Sound)
 local Targeting = require(script.Parent.Targeting)
 local PetFollowers = require(script.Parent.PetFollowers)
 local PetsPanel = require(script.Parent.PetsPanel)
+local PetPortrait = require(Client.UI.PetPortrait)
 
 local Reveal = {}
 
@@ -550,6 +551,11 @@ local function petCard(g: ScreenGui, pet: Config.PetDef, rarity: Config.RarityDe
 	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
 	Kit.Label(card, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -30, 0, 22), Position = UDim2.fromOffset(15, 56), Color = Theme.Ecto, Style = "Body", Fit = true, ZIndex = 11 })
 	Kit.Label(card, "Equip it in PETS", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 84), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 11 })
+	-- the hatched pet's portrait in the free bottom-left corner (left of the OK button)
+	local pic: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0, 16, 1, -10), AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = pet.Color:Lerp(Color3.new(0, 0, 0), 0.5), ZIndex = 11, Parent = card })
+	Kit.Corner(pic, UDim.new(1, 0))
+	Kit.Stroke(pic, 2.5, pet.Glow, Enum.ApplyStrokeMode.Border)
+	PetPortrait.New(pic, pet.Id)
 	okButton = Kit.Button(card, {
 		Text = "OK",
 		Color = "Blue",

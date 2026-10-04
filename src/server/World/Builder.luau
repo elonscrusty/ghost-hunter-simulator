@@ -5,7 +5,8 @@
 	Layout (studs, +Z forward; ground top is Y = 0 everywhere walkable; play area |X| <= 140):
 
 	  Z -60 ........ hedge wall behind spawn
-	  Z -60..-36     Ghost Hunter HQ building (behind spawn)
+	  Z -60..-36     Ghost Hunter HQ building (behind spawn); Pet Hatchery (left) and the
+	                 Merge + Trading kiosks (right) in the pockets between HQ and the plaza
 	  Z   0          Spawn plaza (SpawnLocation at Config.Layout.Spawn, faces +Z)
 	  Z  28          Beginner crate station (X -28, beacon) | Upgrade booth (X +28)
 	  Z -36..260     ZONE 1 NEIGHBORHOOD: main road X -10..10 up to the gate, cross street
@@ -81,12 +82,10 @@ local function registerKeepOuts()
 	end
 	-- main path along X = 0 through zones 4-8 (zones 1-3 register their own roads)
 	Kit.AddRect(-10, 880, 10, Config.Zones[#Config.Zones].MaxZ, true)
-	-- spawn kiosk pockets behind the plaza (Trading | Merge + Pets, see Neighborhood.luau)
-	Kit.AddRect(-36, -36, -14, -12)
+	-- pockets behind the plaza: Pet Hatchery on the left (Hatchery.luau), the Merge + Trading
+	-- kiosks on the right (Neighborhood.luau)
+	Kit.AddRect(-40, -38, -12, -8)
 	Kit.AddRect(14, -36, 36, -12)
-	-- Pet Hatchery near the Boss Tower (see Hatchery.luau) + its path to the cross street
-	Kit.AddRect(46, 65, 70, 90)
-	Kit.AddRect(49, 90, 56, 106, true)
 end
 
 -- Last resort when the build throws: a plain anchored floor under the whole main strip and a

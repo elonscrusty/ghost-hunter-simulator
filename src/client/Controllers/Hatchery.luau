@@ -19,6 +19,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local PetPortrait = require(Client.UI.PetPortrait)
 local PetsPanel = require(script.Parent.PetsPanel)
 local Reveal = require(script.Parent.Reveal)
 
@@ -81,13 +82,13 @@ local function petCard(order: number, pet: Config.PetDef, chance: number)
 		Size = UDim2.fromOffset(80, 80),
 		Position = UDim2.new(0.5, 0, 0, 8),
 		AnchorPoint = Vector2.new(0.5, 0),
-		BackgroundColor3 = pet.Color,
+		BackgroundColor3 = pet.Color:Lerp(Color3.new(0, 0, 0), 0.5),
 		ZIndex = 63,
 		Parent = card,
 	})
 	Kit.Corner(pic, UDim.new(1, 0))
 	Kit.Stroke(pic, 3, pet.Glow, Enum.ApplyStrokeMode.Border)
-	Kit.Icon(pic, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 40, Stroke = 0, ZIndex = 64 })
+	PetPortrait.New(pic, pet.Id)
 	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 92), ZIndex = 64, Style = "Body", Fit = true })
 	Kit.Label(card, r and r.Name or string.upper(pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 113), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
 	-- two short lines (a one-line "+25% POWER for all hunters" was cut to "+25% PO…" here)

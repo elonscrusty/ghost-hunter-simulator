@@ -86,9 +86,10 @@ function PetService.Init()
 			end
 			return { ok = true, Egg = done.Egg, Pet = done.Pet, Uid = done.Uid, Shards = d.Shards }
 		end
-		-- buy at the hatchery (pavilion around X 48..68, Z 66..88), like crates at their station
+		-- buy at the hatchery (pavilion centred at X -27, Z -23 behind the spawn plaza, see
+		-- World/Hatchery), like crates at their station
 		-- (checked after the retry lookup, so a retry of a hatch that already went through succeeds)
-		if not Remotes.Near(player, Vector3.new(58, 0, 77), 45) then
+		if not Remotes.Near(player, Vector3.new(-27, 0, -23), 25) then
 			return Remotes.Fail("Walk to the Pet Hatchery first!")
 		end
 		-- a double tap (two different ids) can't buy twice by accident

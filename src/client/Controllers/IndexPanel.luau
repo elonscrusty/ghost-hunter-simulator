@@ -17,6 +17,7 @@ local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
 local Portrait = require(Client.UI.Portrait)
+local PetPortrait = require(Client.UI.PetPortrait)
 local Hud = require(script.Parent.Hud)
 local CratePanel = require(script.Parent.CratePanel)
 local PetsPanel = require(script.Parent.PetsPanel)
@@ -321,11 +322,7 @@ local function rebuildPets()
 		end
 		local pic: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = if known then pet.Glow else Color3.fromRGB(30, 18, 55), BackgroundTransparency = 0.35, ZIndex = 64, Parent = card })
 		Kit.Corner(pic, UDim.new(1, 0))
-		local icon = Kit.Label(pic, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Heading", Fit = true, ZIndex = 65, Stroke = 0 })
-		if not known then
-			-- dark silhouette: emoji glyphs ignore TextColor3, so dim them instead
-			icon.TextTransparency = 0.85
-		end
+		PetPortrait.New(pic, id, not known) -- undiscovered: dark silhouette
 		Kit.Label(card, if known then string.upper(pet.Name) else "???", { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 72), ZIndex = 66, Style = "Small", Fit = true })
 		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 90), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color, Style = "Tiny", Fit = true })
 		if known then

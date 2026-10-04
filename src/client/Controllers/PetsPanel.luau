@@ -12,6 +12,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local PetPortrait = require(Client.UI.PetPortrait)
 local Hud = require(script.Parent.Hud)
 
 local PetsPanel = {}
@@ -48,7 +49,6 @@ local function bonusText(kind: string, value: number): string
 end
 
 -- shared with the egg panel (Controllers/Hatchery)
-PetsPanel.ShapeIcon = SHAPE_ICON
 PetsPanel.BonusText = bonusText
 
 local function rarityName(pet: Config.PetDef): string
@@ -68,10 +68,10 @@ local function card(parent: Instance, order: number, pet: Config.PetDef, nick: s
 	Kit.Corner(f, UDim.new(0, 14))
 	Kit.Stroke(f, 3, r and r.Color or Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(f, Theme.Panel3, Theme.Panel, 90)
-	local orb: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = pet.Color, ZIndex = 63, Parent = f })
+	local orb: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = pet.Color:Lerp(Color3.new(0, 0, 0), 0.5), ZIndex = 63, Parent = f })
 	Kit.Corner(orb, UDim.new(1, 0))
 	Kit.Stroke(orb, 2.5, pet.Glow, Enum.ApplyStrokeMode.Border)
-	Kit.Icon(orb, "pet_" .. pet.Id, SHAPE_ICON[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 26, Stroke = 0, ZIndex = 64 })
+	PetPortrait.New(orb, pet.Id)
 	local named = nick ~= nil and nick ~= ""
 	Kit.Label(f, if named then nick :: string else string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56), Style = "Body", Fit = true, ZIndex = 63 })
 	Kit.Label(f, if named then pet.Name .. " · " .. rarityName(pet) else (r and r.Name or pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 78), Color = r and r.Color or Theme.Text, Style = "Tiny", Fit = true, ZIndex = 63 })
