@@ -261,10 +261,10 @@ local function startRoom(run: Run, n: number)
 		power += HunterService.CrewPower(p)
 	end
 	power = math.max(1, power)
-	local killSeconds, hitFrac = Rules.TowerScale(n, TC)
+	local bossHP, hitFrac = Rules.TowerScale(n, TC, power)
 	local def = Config.Ghosts[TC.Bosses[(n - 1) % #TC.Bosses + 1]]
 	local g = GhostService.Spawn(def, TowerRoom.BossCenter(run.Origin), TowerRoom.BossRadius, {
-		Spirit = math.max(1, power * killSeconds),
+		Spirit = bossHP,
 		Tower = run,
 		HitFrac = hitFrac,
 	})

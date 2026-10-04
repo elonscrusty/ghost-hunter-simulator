@@ -1562,8 +1562,10 @@ Config.PetOrder = { "GlowWisp", "BooBat", "JellyGhost", "PhantomKitty", "MoonOwl
 --==================================================================
 -- ENDLESS BOSS TOWER (v1.6). Party of up to 4 (pad at the entrance); every run starts at
 -- Room 1; rewards are paid the moment a boss is beaten and are never taken back.
--- Boss Spirit = party power at room start * KillSeconds(room); boss hit = average hunter max HP
--- * HitFraction(room). Both grow per room and are capped so very high rooms stay finite.
+-- v1.7 scaling (starting values for testing): boss health is an ABSOLUTE curve, so stronger
+-- teams climb further: HP = BaseHP * HPGrowth^(room-1) * FiveRoomBump^floor((room-1)/5),
+-- but never less than party power * MinKillSeconds (strong teams can't one-shot rooms).
+-- Boss hit = target hunter max HP * HitFraction(room), which grows more gently than health.
 --==================================================================
 Config.Tower = {
 	MaxParty = 4,
@@ -1571,17 +1573,20 @@ Config.Tower = {
 	Countdown = 6, -- seconds after START before the party enters
 	RoomSeconds = 180, -- a boss not beaten in time ends the run (rewards kept)
 	BetweenRoomsSeconds = 30, -- time to choose CONTINUE / LEAVE before the run ends
-	KillSecondsBase = 9,
-	KillSecondsGrowth = 1.11,
+	BaseHP = 180, -- room 1: ~9 s for a beginner crew (~20 power)
+	HPGrowth = 1.15, -- +15% health per room
+	FiveRoomBump = 1.25, -- extra x1.25 after every 5 rooms
+	MinKillSeconds = 4,
+	CheckpointEvery = 5, -- clearing room 5, 10, ... saves a checkpoint (next run may start at 6, 11, ...)
 	HitFractionBase = 0.1,
-	HitFractionGrowth = 1.075,
+	HitFractionGrowth = 1.05,
 	HitFractionCap = 0.95,
 	Interval = 2.3,
 	MaxScaledRoom = 400, -- scaling stops growing past this room (numbers stay finite)
 	-- rewards per player for beating room r:
 	ShardsBase = 4, -- shards = ShardsBase + r * ShardsPerRoom (x milestone)
-	ShardsPerRoom = 1,
-	EctoBase = 150, -- ecto = EctoBase * r^0.75 * zone multiplier (x milestone)
+	ShardsPerRoom = 1.5,
+	EctoBase = 150, -- ecto = EctoBase * r^0.9 * zone multiplier (x milestone)
 	MilestoneEvery = { [10] = 3, [5] = 2 } :: { [number]: number }, -- room % key == 0 -> multiplier (largest wins)
 	Bosses = { "TowerWarden", "TowerJester", "TowerBaron", "TowerTitan" }, -- cycles by room
 	Slots = 12, -- simultaneous runs per server (each gets its own room space)

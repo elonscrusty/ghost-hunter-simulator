@@ -153,26 +153,36 @@ T.pet_bonuses_add_and_cap = function()
 	local b = Rules.PetBonuses({ { Kind = "Power", Value = 0.3 }, { Kind = "Power", Value = 0.4 }, { Kind = "Ecto", Value = 0.05 } }, { Power = 0.6 })
 	eq(b.Power, 0.6); eq(b.Ecto, 0.05)
 end
-local towerCfg = { KillSecondsBase = 9, KillSecondsGrowth = 1.11, HitFractionBase = 0.1, HitFractionGrowth = 1.075, HitFractionCap = 0.95,
-	MaxScaledRoom = 400, ShardsBase = 4, ShardsPerRoom = 1, EctoBase = 150, MilestoneEvery = { [10] = 3, [5] = 2 } }
+local towerCfg = { BaseHP = 180, HPGrowth = 1.15, FiveRoomBump = 1.25, MinKillSeconds = 4, HitFractionBase = 0.1, HitFractionGrowth = 1.05,
+	HitFractionCap = 0.95, MaxScaledRoom = 400, ShardsBase = 4, ShardsPerRoom = 1.5, EctoBase = 150, MilestoneEvery = { [10] = 3, [5] = 2 } }
 T.tower_scaling_grows_and_stays_finite = function()
-	local k1, h1 = Rules.TowerScale(1, towerCfg)
-	local k10, h10 = Rules.TowerScale(10, towerCfg)
-	assert(k10 > k1 and h10 > h1)
-	local kBig, hBig = Rules.TowerScale(1e12, towerCfg)
-	assert(kBig < math.huge and kBig == kBig and hBig <= 0.95)
+	local h1, f1 = Rules.TowerScale(1, towerCfg, 0)
+	local h2 = Rules.TowerScale(2, towerCfg, 0)
+	local h6 = Rules.TowerScale(6, towerCfg, 0)
+	local h5, f5 = Rules.TowerScale(5, towerCfg, 0)
+	eq(h1, 180)
+	assert(math.abs(h2 / h1 - 1.15) < 0.01, "+15% per room")
+	assert(h6 / h5 > 1.4, "extra bump after room 5") -- 1.15 * 1.25
+	assert(f5 > f1 and (f5 / f1) < (h5 / h1), "damage grows more gently than health")
+	local hBig, fBig = Rules.TowerScale(1e12, towerCfg, 1e308)
+	assert(hBig < math.huge and hBig == hBig and fBig <= 0.95)
+	-- kill times for three kinds of team (seconds = hp / power)
+	local function secs(room, power) return (Rules.TowerScale(room, towerCfg, power)) / power end
+	assert(secs(1, 20) <= 10, "beginner crew clears room 1 in ~9 s")
+	assert(secs(5, 20) > secs(1, 20) * 1.5, "beginner feels the climb by room 5")
+	assert(secs(1, 1e6) == 4, "a Mega team still needs MinKillSeconds per room")
+	assert(secs(60, 1e6) > secs(20, 1e6), "even a Mega team hits a wall eventually")
 end
-T.tower_rewards_and_milestones = function()
+T.tower_rewards_and_checkpoints = function()
 	local s1 = Rules.TowerReward(1, towerCfg)
 	eq(s1, 5)
-	local s5 = Rules.TowerReward(5, towerCfg)
-	eq(s5, 18) -- (4 + 5) * 2
-	local s10 = Rules.TowerReward(10, towerCfg)
-	eq(s10, 42) -- (4 + 10) * 3
-	-- a short intro run (rooms 1-5) buys the basic 40-shard pet
+	eq((Rules.TowerReward(5, towerCfg)), 23) -- floor((4 + 7.5) * 2)
 	local total = 0
 	for r = 1, 5 do total += (Rules.TowerReward(r, towerCfg)) end
-	assert(total >= 40, "intro run total " .. total)
+	assert(total >= 40, "intro run buys the 40-shard pet: " .. total)
+	eq(Rules.TowerCheckpoint(4, 5), 0)
+	eq(Rules.TowerCheckpoint(5, 5), 5)
+	eq(Rules.TowerCheckpoint(14, 5), 10)
 end
 T.merge_rules = function()
 	local owned = {

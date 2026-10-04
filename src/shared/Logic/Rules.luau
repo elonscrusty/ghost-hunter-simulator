@@ -320,8 +320,10 @@ function Rules.PetBonuses(bonuses: { { Kind: string, Value: number } }, caps: { 
 end
 
 export type TowerCfg = {
-	KillSecondsBase: number,
-	KillSecondsGrowth: number,
+	BaseHP: number,
+	HPGrowth: number,
+	FiveRoomBump: number,
+	MinKillSeconds: number,
 	HitFractionBase: number,
 	HitFractionGrowth: number,
 	HitFractionCap: number,
@@ -332,13 +334,21 @@ export type TowerCfg = {
 	MilestoneEvery: { [number]: number },
 }
 
--- Seconds a party needs to beat room `room` at its power, and the boss hit as a fraction of
--- the average hunter max HP. Room is clamped so numbers stay finite at any height.
-function Rules.TowerScale(room: number, cfg: TowerCfg): (number, number)
+-- Boss health for room `room` (absolute curve, floored at partyPower * MinKillSeconds) and the
+-- boss hit as a fraction of the target hunter's max HP. Room is clamped and health capped so
+-- numbers stay finite at any height.
+function Rules.TowerScale(room: number, cfg: TowerCfg, partyPower: number): (number, number)
 	local r = math.clamp(math.floor(room), 1, cfg.MaxScaledRoom)
-	local kill = cfg.KillSecondsBase * cfg.KillSecondsGrowth ^ (r - 1)
+	local hp = cfg.BaseHP * cfg.HPGrowth ^ (r - 1) * cfg.FiveRoomBump ^ ((r - 1) // 5)
+	local power = if partyPower == partyPower then math.max(0, partyPower) else 0
+	hp = math.min(1e300, math.max(hp, power * cfg.MinKillSeconds))
 	local hit = math.min(cfg.HitFractionCap, cfg.HitFractionBase * cfg.HitFractionGrowth ^ (r - 1))
-	return kill, hit
+	return math.max(1, math.floor(hp)), hit
+end
+
+-- Highest checkpoint reached after clearing `room` (0 = none): rooms 5, 10, ... with every=5.
+function Rules.TowerCheckpoint(room: number, every: number): number
+	return math.max(0, math.floor(room / every) * every)
 end
 
 function Rules.TowerMilestone(room: number, cfg: TowerCfg): number
@@ -357,7 +367,7 @@ function Rules.TowerReward(room: number, cfg: TowerCfg): (number, number)
 	local r = math.max(1, math.floor(room))
 	local m = Rules.TowerMilestone(r, cfg)
 	local shards = math.floor((cfg.ShardsBase + math.min(r, cfg.MaxScaledRoom) * cfg.ShardsPerRoom) * m)
-	local ecto = math.floor(cfg.EctoBase * math.min(r, cfg.MaxScaledRoom) ^ 0.75 * m)
+	local ecto = math.floor(cfg.EctoBase * math.min(r, cfg.MaxScaledRoom) ^ 0.9 * m)
 	return shards, ecto
 end
 

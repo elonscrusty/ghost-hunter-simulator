@@ -23,7 +23,7 @@ local Signal = require(GH.Signal)
 local DataService = {}
 
 export type HunterRecord = { Id: string, Locked: boolean?, T: number?, Tier: number? } -- Tier nil = Normal
-export type PetRecord = { Id: string, T: number }
+export type PetRecord = { Id: string, T: number, Nick: string? } -- Nick: server-filtered nickname
 export type EventPlay = { S: number, G: boolean } -- active seconds counted, reward granted
 export type Data = {
 	Version: number,
@@ -56,6 +56,9 @@ export type Data = {
 	TowerShards: number, -- shards earned from the tower in total (reward record)
 	EventPlay: { [string]: EventPlay }, -- event id -> progress
 	TradesApplied: { string }, -- recent trade ids applied to this profile (exactly-once)
+	-- v1.7
+	TowerCheckpoint: number, -- highest checkpoint room cleared (5, 10, ...); next run may start after it
+	Variants: { [string]: boolean }, -- "HunterId:1" / "HunterId:2" = Shiny / Mega discovered (Normal stays in Discovered)
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
 }
@@ -93,6 +96,8 @@ local function defaults(): Data
 		TowerShards = 0,
 		EventPlay = {},
 		TradesApplied = {},
+		TowerCheckpoint = 0,
+		Variants = {},
 		Orphans = {},
 		Extra = {},
 	}
@@ -193,6 +198,12 @@ local function migrate(raw: any): Data
 	d.TowerRuns = num(d.TowerRuns, 0)
 	d.TowerRooms = num(d.TowerRooms, 0)
 	d.TowerShards = num(d.TowerShards, 0)
+	d.TowerCheckpoint = num(d.TowerCheckpoint, 0)
+	for k, v in d.Variants do
+		if type(k) ~= "string" or v ~= true then
+			d.Variants[k] = nil
+		end
+	end
 	if type(d.TotalEcto) ~= "number" or d.TotalEcto ~= d.TotalEcto then
 		d.TotalEcto = 0
 	end
@@ -203,6 +214,9 @@ local function migrate(raw: any): Data
 			d.Pets[uid] = nil
 		else
 			pet.T = num(pet.T, 0)
+			if pet.Nick ~= nil and (type(pet.Nick) ~= "string" or #pet.Nick > 40) then
+				pet.Nick = nil
+			end
 			local n = tonumber(string.match(uid, "^p(%d+)$"))
 			if n and n > maxPet then
 				maxPet = n
@@ -259,6 +273,11 @@ local function migrate(raw: any): Data
 		end
 		if h.Locked ~= nil and type(h.Locked) ~= "boolean" then
 			h.Locked = false
+		end
+	end
+	for _, h in d.Hunters do
+		if h.Tier and h.Tier > 0 then
+			d.Variants[h.Id .. ":" .. h.Tier] = true -- owned Shiny/Mega count as discovered
 		end
 	end
 	for uid, t in d.Knocked do
@@ -556,6 +575,8 @@ local function snapshot(player: Player, d: Data): any
 		SkipTokens = d.SkipTokens,
 		TowerRuns = d.TowerRuns,
 		TowerBest = d.TowerBest,
+		TowerCheckpoint = d.TowerCheckpoint,
+		Variants = d.Variants,
 		Settings = d.Settings,
 		Tutorial = d.Tutorial,
 		Stats = d.Stats,

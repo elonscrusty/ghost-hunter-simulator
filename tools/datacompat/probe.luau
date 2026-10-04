@@ -117,6 +117,16 @@ check(v16b.Shards == 55 and v16b.Hunters["1"].Tier == 2 and #v16b.EquippedPets =
 local rolled = migrate({ Ecto = 1, Extra = { Shards = 30, Pets = { p1 = { Id = "BooBat", T = 1 } }, TowerBest = 4 } })
 check(rolled.Shards == 30 and rolled.Pets.p1 ~= nil and rolled.TowerBest == 4, "v1.6 fields restored from Extra after an older server")
 
+-- v1.7: checkpoint + variant discoveries + pet nicknames
+check(d.TowerCheckpoint == 0 and type(d.Variants) == "table" and next(d.Variants) == nil, "v1.7 fields default for old saves")
+check(d.Discovered.PhantomExorcist == true, "normal discoveries untouched")
+local v17 = migrate({ Hunters = { ["1"] = { Id = "RookieHunter", Tier = 1 } }, TowerCheckpoint = 10, Variants = { ["VoidHunter:2"] = true, bad = 5 },
+	Pets = { p1 = { Id = "BooBat", T = 1, Nick = "Spooky" }, p2 = { Id = "BooBat", T = 1, Nick = 7 } } })
+check(v17.TowerCheckpoint == 10, "checkpoint kept")
+check(v17.Variants["VoidHunter:2"] == true and v17.Variants.bad == nil, "variant discoveries kept, junk dropped")
+check(v17.Variants["RookieHunter:1"] == true, "owned shiny backfilled as discovered")
+check(v17.Pets.p1.Nick == "Spooky" and v17.Pets.p2.Nick == nil and v17.Pets.p2 ~= nil, "pet nicknames kept, bad nick dropped, pet kept")
+
 -- garbage / missing data never crashes and gives a fresh profile
 local blank = migrate(nil)
 check(blank.Ecto == 0 and blank.Zones.Neighborhood == true, "empty save -> fresh profile")
