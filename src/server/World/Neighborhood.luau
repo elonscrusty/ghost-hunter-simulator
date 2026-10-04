@@ -180,11 +180,6 @@ local function plaza(f: Instance)
 		Kit.Box(f, V(sx + s * 7, 0.4, sz - 7) - V(0.4, 0, 0), V(sx + s * 7, 1.3, sz + 7) + V(0.4, 0, 0), border)
 	end
 
-	-- plaza lamps flank the spawn at the sides, clear of the diagonal paths to the kiosks/crate/upgrade
-	-- stations and of the north (ghosts) and south (HQ door) sightlines
-	for i, p in { { -13, 6 }, { 13, 6 }, { -13, -4 }, { 13, -4 } } do
-		Props.StreetLamp(f, V(sx + p[1], 0.25, sz + p[2]), C(200, 160, 240), i <= 2, true) -- soft: no neon glare at spawn
-	end
 
 	-- guide chevrons to the Beginner crate and the upgrade booth
 	local beg = Config.Layout.CrateStations.Beginner
@@ -194,19 +189,6 @@ local function plaza(f: Instance)
 		for i = 1, 3 do
 			chevron(f, V(sx, 0.55, sz) + dir * (8 + i * 4.5), dir, if target == beg then C(255, 180, 60) else C(90, 210, 255))
 		end
-	end
-	-- signpost beside the walkway (right of it as seen from spawn) so the path straight ahead to
-	-- the entrance arch stays clear; the boards still face spawn
-	local post = V(sx - 17, 0, sz + 14)
-	Kit.Box(f, post - V(0.4, 0, 0.4), post + V(0.4, 11, 0.4), C(110, 80, 60), { Mat = Enum.Material.Wood })
-	local boards = {
-		{ Y = 10, Off = 0, Text = "GHOSTS AHEAD ▲", Col = C(150, 255, 140) },
-		-- the player faces +Z, so -X is on their right
-		{ Y = 7.6, Off = -3, Text = "CRATES ▶", Col = C(255, 190, 70) },
-		{ Y = 5.2, Off = 3, Text = "◀ UPGRADES", Col = C(110, 220, 255) },
-	}
-	for _, b in boards do
-		Props.SignBoard(f, post + V(b.Off, b.Y, -0.6), 8, 2, 0, -1, b.Text, C(50, 30, 85), b.Col)
 	end
 end
 
