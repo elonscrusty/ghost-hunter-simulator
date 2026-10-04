@@ -1970,7 +1970,7 @@ Config.Products = {
 	{ Key = "Ecto2", Name = "BARREL OF ECTOPLASM", Icon = "🛢️", Kind = "Ecto", Amount = 30000, ProductId = 3715909987, PriceLabel = "R$ 199" }, -- ~151 Ecto/R$: the bigger pack is the better deal,
 	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 199" },
 	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 149" },
-	{ Key = "SingleSkip", Name = "SINGLE CRATE SKIP", Icon = "⏩", Kind = "CrateSkip", ProductId = nil, PriceLabel = "R$ 10", Blurb = "Skip one crate animation" },
+	{ Key = "SingleSkip", Name = "SINGLE CRATE SKIP", Icon = "⏩", Kind = "CrateSkip", ProductId = nil, PriceLabel = "R$ 9", Blurb = "Skip one crate animation" },
 	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", Amount = 12000, ProductId = 3715915055, PriceLabel = "R$ 199", Blurb = "Opens your next locked area right now" },
 	{ Key = "ExclusiveCrate", Name = "EXCLUSIVE CRATE", Icon = "💎", Kind = "ExclusiveCrate", ProductId = 3715915093, PriceLabel = "R$ 199", Blurb = "An EXCLUSIVE hunter for your best area" },
 	{ Key = "ServerLuck", Name = "SERVER LUCK 15 MIN", Icon = "🍀", Kind = "ServerLuck", Seconds = 900, ProductId = 3715915133, PriceLabel = "R$ 149", Blurb = "2x crate luck for EVERYONE in the server" },
@@ -1989,7 +1989,7 @@ Config.GamePasses = {
 	{ Key = "VIP", Name = "VIP", Icon = "👑", PassId = 2005856286, PriceLabel = "R$ 249", Multiplier = 1.1, Blurb = "VIP tag, gold name, +10% Ectoplasm" },
 	{ Key = "Storage", Name = "+50 HUNTER STORAGE", Icon = "🗃️", PassId = 2005124303, PriceLabel = "R$ 99", Storage = 50, Blurb = "Keep 50 more hunters" },
 	{ Key = "RainbowBeams", Name = "RAINBOW BEAMS", Icon = "🌈", PassId = 2004968300, PriceLabel = "R$ 149", Blurb = "Your crew fires rainbow beams (looks only)" },
-	{ Key = "PermanentSkip", Name = "PERMANENT CRATE SKIP", Icon = "⏩", PassId = nil, PriceLabel = "R$ 129", Blurb = "Skip every crate animation, forever" },
+	{ Key = "PermanentSkip", Name = "PERMANENT CRATE SKIP", Icon = "⏩", PassId = nil, PriceLabel = "R$ 49", Blurb = "Skip every crate animation, forever" },
 	{ Key = "AutoOpen", Name = "AUTO OPEN", Icon = "🔁", PassId = nil, PriceLabel = "R$ 99", Blurb = "Crates open by themselves while you stand at them" },
 	{ Key = "SparkleTrail", Name = "SPARKLE TRAIL", Icon = "✨", PassId = 2006036302, PriceLabel = "R$ 99", Blurb = "A sparkly trail follows you (looks only)" },
 } :: { PassDef }

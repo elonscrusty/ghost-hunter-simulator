@@ -29,6 +29,14 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 
 -- max HP of a hunter with this power (incl. the equipped pets' HP bonus), as the server counts it
+
+-- price shown on the reveal's buy-a-skip button (the real price is set on Roblox)
+local SINGLE_SKIP_PRICE = "R$ 9"
+for _, p in Config.Products do
+	if p.Key == "SingleSkip" and p.PriceLabel then
+		SINGLE_SKIP_PRICE = p.PriceLabel
+	end
+end
 local function hpFor(power: number): number
 	local d = State.Data
 	local bonus = if d and d.PetBonuses then tonumber(d.PetBonuses.HP) or 0 else 0
@@ -142,7 +150,7 @@ local function skipLabel(): string
 		return "SKIP ⏩"
 	end
 	local tokens = if d then d.SkipTokens or 0 else 0
-	return if tokens > 0 then "SKIP ⏩ (" .. tokens .. ")" else "SKIP ⏩ R$10"
+	return if tokens > 0 then "SKIP ⏩ (" .. tokens .. ")" else "SKIP ⏩ " .. string.gsub(SINGLE_SKIP_PRICE, " ", "")
 end
 
 local function requestSkip()
@@ -361,7 +369,7 @@ local function buildGui(): (ScreenGui, TextButton)
 		end,
 	})
 	skipButton = skip
-	-- no "SKIP R$10" while the Single Crate Skip product isn't on sale (it could only fail)
+	-- no "SKIP R$9" while the Single Crate Skip product isn't on sale (it could only fail)
 	skip.Visible = canSkip()
 	if autoMode then
 		Kit.Button(g, {
