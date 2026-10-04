@@ -28669,7 +28669,7 @@ end
 
 -- Room to keep free above the bottom edge on the right (the touch jump button), logical px,
 -- plus MENU_LIFT so both menu columns sit a little higher (the fit scaling still shrinks them).
-local MENU_LIFT = 40
+local MENU_LIFT = 90 -- owner: a bit higher again (was 40)
 local function bottomReserve(): number
 	if not touchOnly() then
 		return 10 + MENU_LIFT
