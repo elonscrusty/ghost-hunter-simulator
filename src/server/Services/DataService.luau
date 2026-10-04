@@ -41,6 +41,7 @@ export type Data = {
 	FreeCrates: { [string]: number },
 	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean, Names: boolean },
 	Tutorial: number,
+	SeenUpdate: string, -- Config.UpdateNotes.Version the player has seen ("" = none)
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
 	SkipTokens: number, -- bought Single Crate Skips not used yet (added in 1.4; old saves get 0)
@@ -83,6 +84,7 @@ local function defaults(): Data
 		FreeCrates = {},
 		Settings = { Music = true, Sfx = true, FastReveal = false, Names = true },
 		Tutorial = 1,
+		SeenUpdate = "",
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
 		SkipTokens = 0,
@@ -788,6 +790,7 @@ local function snapshot(player: Player, d: Data): any
 		Variants = d.Variants,
 		Settings = d.Settings,
 		Tutorial = d.Tutorial,
+		SeenUpdate = d.SeenUpdate,
 		Stats = d.Stats,
 		ServerTime = os.time(),
 	}

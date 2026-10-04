@@ -2262,4 +2262,20 @@ Config.Tutorial = {
 	},
 }
 
+--==================================================================
+-- WHAT'S NEW popup: shown once per Version to returning players when they join (players who
+-- haven't finished the tutorial skip it). Bump Version and rewrite Lines for each update.
+Config.UpdateNotes = {
+	Version = "1.15",
+	Title = "WHAT'S NEW!",
+	Lines = {
+		"🏰 New lobby! The Boss Tower and Pet Hatchery are now right by spawn",
+		"🥚 18 new pets + the CURSED EGG with Mythic, Secret and Ultra pets",
+		"⚡ New TOP POWER leaderboard",
+		"🤝 Trading now happens at the TRADING booth",
+		"❤️ Hunter health shown on every hunter card",
+		"⚙️ Hide hunter & pet names in Settings",
+	},
+}
+
 return Config

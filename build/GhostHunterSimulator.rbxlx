@@ -2279,6 +2279,22 @@ Config.Tutorial = {
 	},
 }
 
+--==================================================================
+-- WHAT'S NEW popup: shown once per Version to returning players when they join (players who
+-- haven't finished the tutorial skip it). Bump Version and rewrite Lines for each update.
+Config.UpdateNotes = {
+	Version = "1.15",
+	Title = "WHAT'S NEW!",
+	Lines = {
+		"🏰 New lobby! The Boss Tower and Pet Hatchery are now right by spawn",
+		"🥚 18 new pets + the CURSED EGG with Mythic, Secret and Ultra pets",
+		"⚡ New TOP POWER leaderboard",
+		"🤝 Trading now happens at the TRADING booth",
+		"❤️ Hunter health shown on every hunter card",
+		"⚙️ Hide hunter & pet names in Settings",
+	},
+}
+
 return Config
 ]]></string>
         </Properties>
@@ -6835,6 +6851,7 @@ export type Data = {
 	FreeCrates: { [string]: number },
 	Settings: { Music: boolean, Sfx: boolean, FastReveal: boolean, Names: boolean },
 	Tutorial: number,
+	SeenUpdate: string, -- Config.UpdateNotes.Version the player has seen ("" = none)
 	Stats: { Ghosts: number, Crates: number, Events: number, Seconds: number },
 	Purchases: { string }, -- recent receipt ids (ring buffer)
 	SkipTokens: number, -- bought Single Crate Skips not used yet (added in 1.4; old saves get 0)
@@ -6877,6 +6894,7 @@ local function defaults(): Data
 		FreeCrates = {},
 		Settings = { Music = true, Sfx = true, FastReveal = false, Names = true },
 		Tutorial = 1,
+		SeenUpdate = "",
 		Stats = { Ghosts = 0, Crates = 0, Events = 0, Seconds = 0 },
 		Purchases = {},
 		SkipTokens = 0,
@@ -7582,6 +7600,7 @@ local function snapshot(player: Player, d: Data): any
 		Variants = d.Variants,
 		Settings = d.Settings,
 		Tutorial = d.Tutorial,
+		SeenUpdate = d.SeenUpdate,
 		Stats = d.Stats,
 		ServerTime = os.time(),
 	}
@@ -11119,6 +11138,17 @@ function ProgressService.Init()
 			return Remotes.Fail("Bad setting")
 		end
 		(d.Settings :: any)[key] = value
+		DataService.Changed(player)
+		return { ok = true }
+	end)
+
+	-- The "what's new" popup was closed: remember this version so it shows once per update.
+	Remotes.Register("SeenUpdate", "Default", function(player)
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		d.SeenUpdate = Config.UpdateNotes.Version
 		DataService.Changed(player)
 		return { ok = true }
 	end)
@@ -26821,6 +26851,7 @@ local ACTIONS: { Action } = {
 	{ Text = "REPLAY TUTORIAL", Cmd = "Tutorial", Color = "Gray" },
 	{ Text = "+5 MIN RARE PET PLAY", Cmd = "RarePetAddMinutes", Arg = 5, Color = "Orange", StudioOnly = true },
 	{ Text = "💬 READ FEEDBACK", Cmd = "Inbox", Color = "Blue" },
+	{ Text = "PREVIEW UPDATE POPUP", Cmd = "UpdatePopup", Color = "Purple" },
 	{ Text = "⚠️ RESET MY PROGRESS", Cmd = "ResetProgress", Color = "Red", Confirm = true },
 }
 
@@ -26829,6 +26860,11 @@ local armed: { [string]: number } = {} -- dangerous actions need a second tap wi
 local function run(a: Action)
 	if a.Cmd == "Inbox" then
 		showInbox()
+		return
+	end
+	if a.Cmd == "UpdatePopup" then
+		panel:Close()
+		require(script.Parent.UpdatePopup).Show()
 		return
 	end
 	if a.Confirm then
@@ -35960,6 +35996,87 @@ return Tutorial
           </Item>
           <Item class="ModuleScript" referent="105">
             <Properties>
+              <string name="Name">UpdatePopup</string>
+              <string name="Source"><![CDATA[--!strict
+-- WHAT'S NEW popup (Config.UpdateNotes): once per update version, a short list of what changed.
+-- Waits until no menu or crate reveal is open; closing it tells the server it was seen.
+-- Brand-new players (tutorial not finished) skip it: everything is new to them anyway.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GH = ReplicatedStorage:WaitForChild("GH")
+local Config = require(GH.Config)
+local Client = script.Parent.Parent
+local State = require(Client.State)
+local Kit = require(Client.UI.Kit)
+local Theme = require(Client.UI.Theme)
+local Sound = require(script.Parent.Sound)
+
+local UpdatePopup = {}
+
+local panel: Kit.Panel
+local notes = Config.UpdateNotes
+
+function UpdatePopup.Init()
+	local lines = #notes.Lines
+	panel = Kit.Panel("UpdateNotes", notes.Title, Vector2.new(480, 130 + lines * 34), "Purple")
+	local body = panel.Body
+	Kit.Label(body, "Update " .. notes.Version, { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 6), Color = Theme.Gold, Style = "Body", ZIndex = 62 })
+	for i, text in notes.Lines do
+		Kit.Label(body, text, {
+			Size = UDim2.new(1, -24, 0, 30),
+			Position = UDim2.fromOffset(12, 6 + i * 34),
+			Align = Enum.TextXAlignment.Left,
+			Font = Theme.Body,
+			Style = "Small",
+			Wrap = true,
+			ZIndex = 62,
+			Stroke = 0,
+		})
+	end
+	local ok = Kit.Button(body, {
+		Text = "LET'S GO!",
+		Color = "Green",
+		Size = UDim2.fromOffset(200, 46),
+		Position = UDim2.new(0.5, 0, 1, -4),
+		AnchorPoint = Vector2.new(0.5, 1),
+		ZIndex = 63,
+		OnClick = function()
+			panel:Close()
+		end,
+	})
+	panel.Primary = ok
+end
+
+-- DEV panel preview
+function UpdatePopup.Show()
+	panel:Open()
+end
+
+function UpdatePopup.Start()
+	task.spawn(function()
+		local d = State.WaitForData()
+		if d.SeenUpdate == notes.Version then
+			return
+		end
+		if (d.Tutorial or 1) <= #Config.Tutorial.Steps then
+			State.Request("SeenUpdate") -- new player: nothing to catch up on
+			return
+		end
+		task.wait(3)
+		Kit.WhenFree(function()
+			Sound.Play("ZoneUnlock")
+			panel:Open()
+			State.Request("SeenUpdate")
+		end)
+	end)
+end
+
+return UpdatePopup
+]]></string>
+            </Properties>
+          </Item>
+          <Item class="ModuleScript" referent="106">
+            <Properties>
               <string name="Name">UpgradesPanel</string>
               <string name="Source"><![CDATA[--!strict
 -- UPGRADES: Pickup Radius, Ectoplasm Bonus, Movement Speed. Level pips, current → next value
@@ -36133,7 +36250,7 @@ return UpgradesPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="106">
+          <Item class="ModuleScript" referent="107">
             <Properties>
               <string name="Name">WorldsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -36303,7 +36420,7 @@ return WorldsPanel
             </Properties>
           </Item>
         </Item>
-        <Item class="LocalScript" referent="107">
+        <Item class="LocalScript" referent="108">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -36391,6 +36508,7 @@ local order = {
 	"DevPanel",
 	"FeedbackPanel",
 	"EventPopup",
+	"UpdatePopup",
 	"LikeReminder",
 	"Boss",
 	"TowerHud",
@@ -36430,7 +36548,7 @@ end
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="108">
+        <Item class="ModuleScript" referent="109">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -36578,11 +36696,11 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="109">
+        <Item class="Folder" referent="110">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="110">
+          <Item class="ModuleScript" referent="111">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!strict
@@ -37594,7 +37712,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="111">
+          <Item class="ModuleScript" referent="112">
             <Properties>
               <string name="Name">PetPortrait</string>
               <string name="Source"><![CDATA[--!strict
@@ -37674,7 +37792,7 @@ return PetPortrait
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="112">
+          <Item class="ModuleScript" referent="113">
             <Properties>
               <string name="Name">Portrait</string>
               <string name="Source"><![CDATA[--!strict
@@ -38078,7 +38196,7 @@ return Portrait
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="113">
+          <Item class="ModuleScript" referent="114">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -38166,7 +38284,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="114">
+          <Item class="ModuleScript" referent="115">
             <Properties>
               <string name="Name">WorldLabel</string>
               <string name="Source"><![CDATA[--!strict
@@ -38348,7 +38466,7 @@ return WorldLabel
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="115">
+  <Item class="Workspace" referent="116">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

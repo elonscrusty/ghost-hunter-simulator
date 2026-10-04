@@ -83,6 +83,7 @@ local order = {
 	"DevPanel",
 	"FeedbackPanel",
 	"EventPopup",
+	"UpdatePopup",
 	"LikeReminder",
 	"Boss",
 	"TowerHud",

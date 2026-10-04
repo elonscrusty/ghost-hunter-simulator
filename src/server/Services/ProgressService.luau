@@ -183,6 +183,17 @@ function ProgressService.Init()
 		return { ok = true }
 	end)
 
+	-- The "what's new" popup was closed: remember this version so it shows once per update.
+	Remotes.Register("SeenUpdate", "Default", function(player)
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		d.SeenUpdate = Config.UpdateNotes.Version
+		DataService.Changed(player)
+		return { ok = true }
+	end)
+
 	-- Tutorial progress is cosmetic (client-driven guidance); only allow moving forward.
 	Remotes.Register("Tutorial", "Default", function(player, step)
 		local d = DataService.Get(player)

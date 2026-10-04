@@ -106,6 +106,7 @@ local ACTIONS: { Action } = {
 	{ Text = "REPLAY TUTORIAL", Cmd = "Tutorial", Color = "Gray" },
 	{ Text = "+5 MIN RARE PET PLAY", Cmd = "RarePetAddMinutes", Arg = 5, Color = "Orange", StudioOnly = true },
 	{ Text = "💬 READ FEEDBACK", Cmd = "Inbox", Color = "Blue" },
+	{ Text = "PREVIEW UPDATE POPUP", Cmd = "UpdatePopup", Color = "Purple" },
 	{ Text = "⚠️ RESET MY PROGRESS", Cmd = "ResetProgress", Color = "Red", Confirm = true },
 }
 
@@ -114,6 +115,11 @@ local armed: { [string]: number } = {} -- dangerous actions need a second tap wi
 local function run(a: Action)
 	if a.Cmd == "Inbox" then
 		showInbox()
+		return
+	end
+	if a.Cmd == "UpdatePopup" then
+		panel:Close()
+		require(script.Parent.UpdatePopup).Show()
 		return
 	end
 	if a.Confirm then
