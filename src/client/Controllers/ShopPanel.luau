@@ -87,7 +87,8 @@ local function refresh()
 	for _, p in Config.Products do
 		local l = ectoLabels[p.Key]
 		if l and p.Amount then
-			l.Text = "+" .. Format.Short(p.Amount * mult) .. " ECTOPLASM"
+			-- the amount the player really gets now; it grows with their best unlocked area
+			l.Text = "+" .. Format.Short(p.Amount * mult) .. " ECTOPLASM\nGrows with your best area!"
 		end
 	end
 	for _, pass in Config.GamePasses do
