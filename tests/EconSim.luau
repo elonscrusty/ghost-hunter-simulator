@@ -20,9 +20,9 @@ local PATIENCE = 60 -- a beginner leaves the tower once a room takes longer than
 local ROOM_OVERHEAD = 8 -- walking in, vote, boss intro (seconds per room)
 
 local seed = 777
+math.randomseed(seed)
 local function rnd(): number
-	seed = (seed * 1103515245 + 12345) % 2147483648
-	return seed / 2147483648
+	return math.random() -- the old LCG repeated after ~10k draws
 end
 
 local function powerOf(id: string, _tier: number?): number

@@ -1656,7 +1656,7 @@ Config.Retaliation = {
 	HitCap = { Normal = 0.25, MiniBoss = 0.4, Boss = 0.5, Event = 0.35 } :: { [string]: number },
 	RegenDelay = 4, -- seconds without being hit before a hunter starts healing
 	RegenPerSecond = 0.15, -- fraction of max HP per second
-	RecoverySeconds = 120, -- knockout timer (configurable)
+	RecoverySeconds = 60, -- knockout timer (owner-approved v1.16, was 120)
 }
 
 --==================================================================
@@ -1705,7 +1705,8 @@ Config.PetRules = {
 	MaxEquipped = 3,
 	MaxOwned = 60,
 	-- total bonus per kind from all equipped pets is capped (upgrades and hunters stay the main power)
-	Caps = { Power = 0.6, Ecto = 0.5, HP = 0.75, Recovery = 0.5 } :: { [string]: number },
+	-- owner-approved (v1.16): Secret/Ultra pets stack above two Legendaries (was 0.6/0.5/0.75/0.5)
+	Caps = { Power = 0.95, Ecto = 0.85, HP = 1.0, Recovery = 0.65 } :: { [string]: number },
 }
 Config.Pets = {
 	-- ids, rarities and bonuses of the first nine pets are save data: never change them (v2 only
@@ -1917,17 +1918,20 @@ Config.Boosts = {
 --==================================================================
 export type RewardDef = { Kind: string, Amount: number?, Boost: string?, Seconds: number?, Crate: string?, Label: string }
 
+-- all luck sources multiplied together (boost x pass x Server Luck x Lucky Opens) never exceed this
+Config.LuckCap = 6
+
 Config.Daily = {
 	Cooldown = 20 * 3600, -- can claim again after this
 	StreakReset = 48 * 3600, -- streak resets if you wait longer than this
 	Rewards = {
-		{ Kind = "Ecto", Amount = 50, Label = "50 ECTOPLASM" },
-		{ Kind = "Ecto", Amount = 150, Label = "150 ECTOPLASM" },
-		{ Kind = "Boost", Boost = "Luck", Seconds = 600, Label = "10 MIN LUCK" },
+		{ Kind = "Ecto", Amount = 200, Label = "200 ECTOPLASM" },
 		{ Kind = "Ecto", Amount = 500, Label = "500 ECTOPLASM" },
-		{ Kind = "Boost", Boost = "Ecto", Seconds = 900, Label = "15 MIN 2x ECTO" },
+		{ Kind = "Boost", Boost = "Luck", Seconds = 600, Label = "10 MIN LUCK" },
 		{ Kind = "Ecto", Amount = 1500, Label = "1,500 ECTOPLASM" },
-		{ Kind = "Day7", Amount = 5000, Crate = "Beginner", Boost = "Luck", Seconds = 1800, Label = "5,000 ECTO + FREE CRATE + 30 MIN LUCK" },
+		{ Kind = "Boost", Boost = "Ecto", Seconds = 900, Label = "15 MIN 2x ECTO" },
+		{ Kind = "Ecto", Amount = 3000, Label = "3,000 ECTOPLASM" },
+		{ Kind = "Day7", Amount = 5000, Crate = "Best", Boost = "Luck", Seconds = 1800, Label = "5,000 ECTO + FREE CRATE + 30 MIN LUCK" }, -- "Best" = your best area's crate
 	} :: { RewardDef },
 	-- Ecto rewards scale with your best unlocked zone so late players still care
 	-- (roughly the ratio of typical farming income per zone).
@@ -1971,7 +1975,7 @@ Config.Products = {
 	{ Key = "Luck30", Name = "30 MIN LUCK BOOST", Icon = "🍀", Kind = "Boost", Boost = "Luck", Seconds = 1800, ProductId = 3715910020, PriceLabel = "R$ 199" },
 	{ Key = "Ecto30", Name = "30 MIN 2x ECTOPLASM", Icon = "⚡", Kind = "Boost", Boost = "Ecto", Seconds = 1800, ProductId = 3715910145, PriceLabel = "R$ 149" },
 	{ Key = "SingleSkip", Name = "SINGLE CRATE SKIP", Icon = "⏩", Kind = "CrateSkip", ProductId = nil, PriceLabel = "R$ 9", Blurb = "Skip one crate animation" },
-	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", Amount = 12000, ProductId = 3715915055, PriceLabel = "R$ 199", Blurb = "Opens your next locked area right now" },
+	{ Key = "SkipArea", Name = "UNLOCK NEXT AREA", Icon = "🔓", Kind = "SkipArea", Amount = 12000, ProductId = 3715915055, PriceLabel = "R$ 99", Blurb = "Opens your next locked area right now" },
 	{ Key = "ExclusiveCrate", Name = "EXCLUSIVE CRATE", Icon = "💎", Kind = "ExclusiveCrate", ProductId = 3715915093, PriceLabel = "R$ 199", Blurb = "An EXCLUSIVE hunter for your best area" },
 	{ Key = "ServerLuck", Name = "SERVER LUCK 15 MIN", Icon = "🍀", Kind = "ServerLuck", Seconds = 900, ProductId = 3715915133, PriceLabel = "R$ 149", Blurb = "2x crate luck for EVERYONE in the server" },
 	{ Key = "SummonEvent", Name = "SUMMON GIANT POLTERGEIST", Icon = "👻", Kind = "SummonEvent", ProductId = 3715915181, PriceLabel = "R$ 299", Blurb = "Starts the boss event for the whole server" },

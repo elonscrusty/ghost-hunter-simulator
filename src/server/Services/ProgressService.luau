@@ -44,7 +44,13 @@ local function grantReward(player: Player, d: DataService.Data, reward: Config.R
 		PlayerInfo.AddBoost(d, reward.Boost, reward.Seconds)
 	end
 	if reward.Crate then
-		d.FreeCrates[reward.Crate] = (d.FreeCrates[reward.Crate] or 0) + 1
+		-- "Best" = the crate of the player's best unlocked area (a Beginner crate is useless later)
+		local crateId = reward.Crate
+		if crateId == "Best" then
+			local zone = Config.Zones[PlayerInfo.BestZone(player)]
+			crateId = if zone then zone.Crate else "Beginner"
+		end
+		d.FreeCrates[crateId] = (d.FreeCrates[crateId] or 0) + 1
 	end
 	if reward.Amount and mult > 1 then
 		return (reward.Label:gsub(Format.Commas(reward.Amount), Format.Commas(reward.Amount * mult)))

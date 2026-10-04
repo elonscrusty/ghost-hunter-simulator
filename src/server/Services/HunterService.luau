@@ -206,7 +206,7 @@ end
 HunterService.ReleaseRefund = releaseRefund
 
 local function crateRoll(player: Player, crate: Config.CrateDef, extraLuck: number): string
-	return Rules.Roll(crate.Pool :: any, rarityOrder, PlayerInfo.LuckMultiplier(player) * extraLuck, Config.LuckAffectsFromOrder, rng:NextNumber())
+	return Rules.Roll(crate.Pool :: any, rarityOrder, math.min(PlayerInfo.LuckMultiplier(player) * extraLuck, Config.LuckCap), Config.LuckAffectsFromOrder, rng:NextNumber())
 end
 
 -- Opens one crate. `free` = paid by a free-crate token (daily day 7) instead of Ectoplasm.

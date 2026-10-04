@@ -78,6 +78,7 @@ local function refresh()
 	if d.LuckyOpens and (d.LuckyOpens[crateId] or 0) > 0 then
 		luck *= Config.LuckyOpens.Multiplier
 	end
+	luck = math.min(luck, Config.LuckCap) -- same cap the server rolls with
 	local odds = Rules.Odds(crate.Pool :: any, rarityOrder, luck, Config.LuckAffectsFromOrder)
 	-- cards only change with the crate, luck or discoveries; the button changes with Ectoplasm
 	local key = crateId .. "|" .. luck
