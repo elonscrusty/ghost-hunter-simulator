@@ -34980,7 +34980,7 @@ local function refreshButtons()
 	if phase == "Between" then
 		Kit.SetButtonText(continueButton, if voted then "✔ WAITING..." else "▶ CONTINUE")
 	end
-	Kit.SetButtonText(leaveButton, if os.clock() < leaveArmedUntil then "SURE? TAP AGAIN" else "🚪 LEAVE")
+	Kit.SetButtonText(leaveButton, if os.clock() < leaveArmedUntil then "SURE? TAP AGAIN" else "LEAVE")
 end
 
 local function setPhase(p: string)
@@ -34998,7 +34998,7 @@ local function onTower(data: any)
 	local s = data.State
 	if s == "Pad" then
 		padEndsAt = tonumber(data.EndsAt) or 0
-		padBase = string.format("👻 BOSS TOWER  ·  party %d/%d  ·  Room %d", tonumber(data.Count) or 1, tonumber(data.Max) or Config.Tower.MaxParty, tonumber(data.StartRoom) or 1)
+		padBase = string.format("Party %d/%d  ·  Room %d", tonumber(data.Count) or 1, tonumber(data.Max) or Config.Tower.MaxParty, tonumber(data.StartRoom) or 1)
 		padPill.Visible = true
 	elseif s == "PadCancel" then
 		padEndsAt = 0
@@ -35246,6 +35246,9 @@ function TowerHud.Init()
 	Kit.Corner(bar, UDim.new(0, 14))
 	Kit.Stroke(bar, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(bar, PURPLE_A, PURPLE_B, 90)
+	-- the whole room bar (text, health bar, timer, padding) drawn smaller so it blocks less of
+	-- the fight; a fixed scale on top of the screen's own phone/tablet/PC scaling (never animated)
+	Kit.new("UIScale", { Scale = 0.68, Parent = bar })
 	titleLabel = Kit.Label(bar, "🏰 ROOM 1", { Size = UDim2.new(0.7, 0, 0, 22), Position = UDim2.fromOffset(10, 4), Align = Enum.TextXAlignment.Left, Color = Theme.Ecto, Style = "Heading", Fit = true, ZIndex = 31 })
 	timerLabel = Kit.Label(bar, "", { Size = UDim2.new(0.28, 0, 0, 22), Position = UDim2.new(1, -10, 0, 4), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Style = "Body", Fit = true, ZIndex = 31 })
 	local track: Frame = Kit.new("Frame", { Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 31), BackgroundColor3 = Color3.fromRGB(30, 12, 45), ZIndex = 31, Parent = bar })
@@ -35260,7 +35263,7 @@ function TowerHud.Init()
 	-- pad countdown pill
 	padPill = Kit.new("Frame", {
 		Name = "TowerPadPill",
-		Size = UDim2.fromOffset(320, 34),
+		Size = UDim2.fromOffset(360, 34),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
 		ZIndex = 30,
@@ -35332,7 +35335,7 @@ function TowerHud.Init()
 		OnClick = onContinue,
 	})
 	leaveButton = Kit.Button(actions, {
-		Text = "🚪 LEAVE",
+		Text = "LEAVE",
 		Color = "Red",
 		Size = UDim2.fromOffset(160, 48),
 		Position = UDim2.new(0.5, 6, 1, 0),
@@ -35409,7 +35412,7 @@ function TowerHud.Start()
 		end
 		if padEndsAt > 0 then
 			local left = math.max(0, math.ceil(padEndsAt - t))
-			padLabel.Text = padBase .. "  ·  starts in " .. left
+			padLabel.Text = "Starting in " .. left .. "  ·  " .. padBase -- countdown first: never the part cut off
 		end
 		if phase == "Fight" then
 			local left = math.max(0, endsAt - t)
