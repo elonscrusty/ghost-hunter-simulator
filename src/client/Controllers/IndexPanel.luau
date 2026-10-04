@@ -19,6 +19,7 @@ local Theme = require(Client.UI.Theme)
 local Portrait = require(Client.UI.Portrait)
 local Hud = require(script.Parent.Hud)
 local CratePanel = require(script.Parent.CratePanel)
+local PetsPanel = require(script.Parent.PetsPanel)
 
 local IndexPanel = {}
 
@@ -40,6 +41,12 @@ local detailTier = 0
 local newIds: { [string]: boolean } = {}
 local spinConn: RBXScriptConnection? = nil
 local lastKey = ""
+-- HUNTERS / PETS tabs
+local tab = "Hunters"
+local tabButtons: { [string]: TextButton } = {}
+local petScroll: ScrollingFrame
+local petTotal: TextLabel
+local petKey = ""
 
 local function hunterList(zoneId: string): { Config.HunterDef }
 	local out = {}
@@ -259,10 +266,141 @@ local function rebuild()
 	Kit.Tween(totalFill, 0.4, { Size = UDim2.fromScale(math.max(pct, 0.02), 1) })
 end
 
+-- "Haunted Egg 40%" lines for every egg that can hatch this pet.
+local function petSource(id: string): string
+	local lines = {}
+	for _, eggId in Config.EggOrder do
+		local egg = Config.Eggs[eggId]
+		for _, o in egg.Odds do
+			if o.Pet == id then
+				table.insert(lines, egg.Name .. " " .. o.Chance .. "%")
+			end
+		end
+	end
+	if #lines == 0 then
+		return if id == Config.RarePetEvent.Pet then "Launch event reward" else "Special reward"
+	end
+	return table.concat(lines, "\n")
+end
+
+local function rebuildPets()
+	local d = State.Data
+	if not d then
+		return
+	end
+	local owned: { [string]: boolean } = {}
+	for _, p in d.Pets or {} do
+		owned[p.Id] = true
+	end
+	local key = ""
+	for _, id in Config.PetOrder do
+		key ..= if owned[id] then "1" else "0"
+	end
+	if key == petKey then
+		return
+	end
+	petKey = key
+	for _, c in petScroll:GetChildren() do
+		if c:IsA("TextButton") then
+			c:Destroy()
+		end
+	end
+	local found = 0
+	for i, id in Config.PetOrder do
+		local pet = Config.Pets[id]
+		local rar = Config.Rarities[pet.Rarity]
+		local known = owned[id] == true
+		found += if known then 1 else 0
+		local card: TextButton = Kit.new("TextButton", { Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = i, ZIndex = 63, Parent = petScroll })
+		Kit.Corner(card, UDim.new(0, 12))
+		Kit.Stroke(card, 2.5, Theme.Outline, Enum.ApplyStrokeMode.Border)
+		if known then
+			Kit.Gradient(card, rar.Color, rar.Color2, 90)
+		else
+			Kit.Gradient(card, Color3.fromRGB(70, 60, 100), Color3.fromRGB(40, 32, 66), 90)
+		end
+		local pic: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(62, 62), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = if known then pet.Glow else Color3.fromRGB(30, 18, 55), BackgroundTransparency = 0.35, ZIndex = 64, Parent = card })
+		Kit.Corner(pic, UDim.new(1, 0))
+		local icon = Kit.Label(pic, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Heading", Fit = true, ZIndex = 65, Stroke = 0 })
+		if not known then
+			-- dark silhouette: emoji glyphs ignore TextColor3, so dim them instead
+			icon.TextTransparency = 0.85
+		end
+		Kit.Label(card, if known then string.upper(pet.Name) else "???", { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 72), ZIndex = 66, Style = "Small", Fit = true })
+		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 90), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color, Style = "Tiny", Fit = true })
+		if known then
+			Kit.Label(card, (string.gsub(PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), " for all hunters", "")), { Size = UDim2.new(1, -8, 0, 26), Position = UDim2.fromOffset(4, 106), ZIndex = 66, Color = Theme.Ecto, Style = "Tiny", Fit = true })
+		end
+		Kit.Label(card, petSource(id), { Size = UDim2.new(1, -8, 0, 38), Position = UDim2.fromOffset(4, 134), ZIndex = 66, Color = Theme.Text, Font = Theme.Body, Style = "Tiny", Fit = true, Stroke = 0 })
+	end
+	petTotal.Text = (if found == #Config.PetOrder then "⭐ " else "") .. "PETS FOUND " .. found .. "/" .. #Config.PetOrder
+end
+
+local function setTab(t: string)
+	tab = t
+	for name, b in tabButtons do
+		local on = name == t
+		b.BackgroundColor3 = if on then Theme.Ecto else Theme.Bg
+		b.TextColor3 = if on then Theme.Bg else Theme.Text
+	end
+	local hunters = t == "Hunters"
+	bar.Visible = hunters
+	scroll.Visible = hunters
+	side.Visible = hunters
+	petScroll.Visible = not hunters
+	if hunters then
+		rebuild()
+	else
+		rebuildPets()
+	end
+end
+
 function IndexPanel.Init()
 	panel = Kit.Panel("Index", "HUNTER INDEX", Vector2.new(860, 500), "Blue")
 	local body = panel.Body
-	bar = Kit.new("Frame", { Size = UDim2.new(1, -270, 0, 28), Position = UDim2.fromOffset(0, 12), BackgroundColor3 = Theme.Bg, ZIndex = 62, Parent = body })
+	-- HUNTERS / PETS tab row
+	local tabRow: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 6), BackgroundTransparency = 1, ZIndex = 62, Parent = body })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tabRow })
+	for i, t in { "Hunters", "Pets" } do
+		local b: TextButton = Kit.new("TextButton", {
+			Text = if t == "Hunters" then "👻 HUNTERS" else "🐾 PETS",
+			Size = UDim2.fromOffset(130, 28),
+			AutoButtonColor = false,
+			BackgroundColor3 = Theme.Bg,
+			Font = Theme.Body,
+			TextScaled = true,
+			TextColor3 = Theme.Text,
+			LayoutOrder = i,
+			ZIndex = 63,
+			Parent = tabRow,
+		})
+		Kit.Corner(b, UDim.new(1, 0))
+		Kit.Stroke(b, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+		Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), Parent = b })
+		b.Activated:Connect(function()
+			Kit.Play("Click")
+			setTab(t)
+		end)
+		tabButtons[t] = b
+	end
+	petScroll = Kit.new("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, -42),
+		Position = UDim2.fromOffset(0, 42),
+		BackgroundTransparency = 1,
+		ScrollBarThickness = 6,
+		ScrollBarImageColor3 = Theme.Panel3,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		BorderSizePixel = 0,
+		Visible = false,
+		ZIndex = 62,
+		Parent = body,
+	})
+	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 8), Parent = petScroll })
+	Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(112, 176), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = petScroll })
+	petTotal = Kit.Label(tabRow, "PETS FOUND 0/" .. #Config.PetOrder, { Size = UDim2.new(1, -276, 1, 0), Align = Enum.TextXAlignment.Right, Color = Theme.Gold, Style = "Small", Fit = true, ZIndex = 63 })
+	petTotal.LayoutOrder = 3
+	bar = Kit.new("Frame", { Size = UDim2.new(1, -270, 0, 28), Position = UDim2.fromOffset(0, 42), BackgroundColor3 = Theme.Bg, ZIndex = 62, Parent = body })
 	Kit.Corner(bar, UDim.new(1, 0))
 	Kit.Stroke(bar, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	totalFill = Kit.new("Frame", { Size = UDim2.fromScale(0.02, 1), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 63, Parent = bar })
@@ -270,7 +408,7 @@ function IndexPanel.Init()
 	Kit.Gradient(totalFill, Theme.Ecto, Theme.Ecto2, 0)
 	totalLabel = Kit.Label(bar, "COLLECTION", { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), Style = "Body", Fit = true, ZIndex = 64 })
 	scroll = Kit.new("ScrollingFrame", {
-		Position = UDim2.fromOffset(0, 50),
+		Position = UDim2.fromOffset(0, 80),
 		BackgroundTransparency = 1,
 		ScrollBarThickness = 6,
 		ScrollBarImageColor3 = Theme.Panel3,
@@ -281,7 +419,7 @@ function IndexPanel.Init()
 		Parent = body,
 	})
 	Kit.new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = scroll })
-	side = Kit.new("Frame", { Position = UDim2.new(1, 0, 0, 12), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.5, ZIndex = 62, Parent = body })
+	side = Kit.new("Frame", { Position = UDim2.new(1, 0, 0, 42), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.5, ZIndex = 62, Parent = body })
 	Kit.Corner(side, UDim.new(0, 12))
 	Kit.Label(side, "Tap a card to take a closer look!", { Size = UDim2.new(1, -24, 0, 60), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 63, Stroke = 0 })
 	detail = Kit.new("ScrollingFrame", {
@@ -359,16 +497,17 @@ local function layout()
 	local w = panel.Root.Size.X.Offset - 28
 	local sideW = math.clamp(math.floor(w * 0.3), 190, 250)
 	bar.Size = UDim2.new(1, -(sideW + 10), 0, 28)
-	scroll.Size = UDim2.new(1, -(sideW + 10), 1, -50)
-	side.Size = UDim2.new(0, sideW, 1, -12)
+	scroll.Size = UDim2.new(1, -(sideW + 10), 1, -80)
+	side.Size = UDim2.new(0, sideW, 1, -42)
 end
 
 function IndexPanel.Start()
 	panel.OnOpen:Connect(function()
 		layout()
 		lastKey = ""
+		petKey = ""
 		detail.Visible = false
-		rebuild()
+		setTab(tab)
 	end)
 	Kit.ScaleChanged:Connect(function()
 		if panel.IsOpen then
@@ -386,7 +525,11 @@ function IndexPanel.Start()
 	end)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
-			rebuild()
+			if tab == "Hunters" then
+				rebuild()
+			else
+				rebuildPets()
+			end
 		end
 	end)
 	CratePanel.Opened:Connect(function(res: any)

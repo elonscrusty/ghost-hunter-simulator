@@ -182,6 +182,27 @@ local function buildPet(def: Config.PetDef, slot: number, label: string): Pet
 	return { Pieces = pieces, Slot = slot }
 end
 
+-- A standalone pet Model (no name tag), pivot = body centre. Used by the egg hatch reveal.
+function PetFollowers.BuildPet(petId: string): Model?
+	local def = Config.Pets[petId]
+	if not def then
+		return nil
+	end
+	local pet = buildPet(def, 1, def.Name)
+	local m = Instance.new("Model")
+	m.Name = "Pet_" .. petId
+	for _, pc in pet.Pieces do
+		local tag = pc.Part:FindFirstChild("PetTag")
+		if tag then
+			tag:Destroy()
+		end
+		pc.Part.CFrame = pc.Offset
+		pc.Part.Parent = m
+	end
+	m.PrimaryPart = pet.Pieces[1].Part
+	return m
+end
+
 local function clear(e: Entry)
 	for _, pet in e.Pets do
 		for _, pc in pet.Pieces do

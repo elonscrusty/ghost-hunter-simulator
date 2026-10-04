@@ -1,11 +1,11 @@
 --!strict
--- PET HATCHERY egg panel + hatch animation. The world pedestals (server World/Hatchery) carry a
+-- PET HATCHERY egg panel (looks like the hunter crate panel). The world pedestals (server World/Hatchery) carry a
 -- "View" ProximityPrompt with attribute Egg = egg id; triggering it opens this panel for that
--- egg: price, lock state, every possible pet with its rarity, bonus and EXACT odds, and a
+-- egg: price, lock state, a grid of every possible pet with its rarity, bonus and EXACT odds, and a
 -- BUY & HATCH button. The server ("BuyEgg") checks, rolls, charges and saves in one step;
 -- each purchase carries a request id, and a failed/timed-out request is retried ONCE with the
--- SAME id, so a retry can never charge twice or roll again. The hatch animation only shows the
--- result the server already saved.
+-- SAME id, so a retry can never charge twice or roll again. The hatch plays as a crate-style
+-- cinematic (Reveal.PlayPet) of the result the server already saved.
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -19,7 +19,6 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
-local Sound = require(script.Parent.Sound)
 local PetsPanel = require(script.Parent.PetsPanel)
 local Reveal = require(script.Parent.Reveal)
 
@@ -44,7 +43,6 @@ local buyButton: TextButton
 local reasonLabel: TextLabel
 local currentEgg: string? = nil
 local busy = false
-local playing = false
 
 local function countPets(d: any): number
 	local n = 0
@@ -72,22 +70,28 @@ local function blockReason(egg: Config.EggDef, d: any): string?
 	return nil
 end
 
-local function petRow(order: number, pet: Config.PetDef, chance: number)
+-- One pet card, laid out like a CratePanel hunter card (rarity gradient, round picture).
+local function petCard(order: number, pet: Config.PetDef, chance: number)
 	local r = Config.Rarities[pet.Rarity]
-	local rc = if r then r.Color else Theme.Text
-	local f: Frame = Kit.new("Frame", { Size = UDim2.new(1, -8, 0, 56), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ZIndex = 62, Parent = list })
-	Kit.Corner(f, UDim.new(0, 12))
-	Kit.Stroke(f, 2.5, rc, Enum.ApplyStrokeMode.Border)
-	Kit.Gradient(f, Theme.Panel3, Theme.Panel, 90)
-	local orb: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(42, 42), Position = UDim2.fromOffset(8, 7), BackgroundColor3 = pet.Color, ZIndex = 63, Parent = f })
-	Kit.Corner(orb, UDim.new(1, 0))
-	Kit.Stroke(orb, 2, pet.Glow, Enum.ApplyStrokeMode.Border)
-	Kit.Icon(orb, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 22, Stroke = 0, ZIndex = 64 })
-	Kit.Label(f, pet.Name, { Size = UDim2.new(1, -150, 0, 22), Position = UDim2.fromOffset(58, 5), Align = Enum.TextXAlignment.Left, Style = "Body", Fit = true, ZIndex = 63 })
-	local rarity = string.upper(r and r.Name or pet.Rarity)
-	Kit.Label(f, rarity, { Size = UDim2.new(0, 90, 0, 18), Position = UDim2.fromOffset(58, 30), Align = Enum.TextXAlignment.Left, Color = rc, Style = "Tiny", Fit = true, ZIndex = 63 })
-	Kit.Label(f, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -250, 0, 18), Position = UDim2.fromOffset(150, 30), Align = Enum.TextXAlignment.Left, Color = Theme.Ecto, Font = Theme.Body, Style = "Tiny", Fit = true, ZIndex = 63 })
-	Kit.Label(f, pct(chance), { Size = UDim2.new(0, 80, 1, 0), Position = UDim2.new(1, -10, 0, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 63 })
+	local card: Frame = Kit.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ZIndex = 62, Parent = list })
+	Kit.Corner(card, UDim.new(0, 14))
+	Kit.Stroke(card, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(card, if r then r.Color else Theme.Panel3, if r then r.Color2 else Theme.Panel, 90)
+	local pic: Frame = Kit.new("Frame", {
+		Size = UDim2.fromOffset(80, 80),
+		Position = UDim2.new(0.5, 0, 0, 8),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundColor3 = pet.Color,
+		ZIndex = 63,
+		Parent = card,
+	})
+	Kit.Corner(pic, UDim.new(1, 0))
+	Kit.Stroke(pic, 3, pet.Glow, Enum.ApplyStrokeMode.Border)
+	Kit.Icon(pic, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 40, Stroke = 0, ZIndex = 64 })
+	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 92), ZIndex = 64, Style = "Body", Fit = true })
+	Kit.Label(card, r and r.Name or string.upper(pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 113), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
+	Kit.Label(card, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(0.6, -8, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Ecto, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
+	Kit.Label(card, pct(chance), { Size = UDim2.new(0.4, 0, 0, 24), Position = UDim2.new(1, -8, 1, -29), AnchorPoint = Vector2.new(1, 0), ZIndex = 64, Align = Enum.TextXAlignment.Right, Style = "Heading", Fit = true })
 end
 
 local function refresh()
@@ -121,7 +125,7 @@ local function fill(eggId: string)
 	for i, o in egg.Odds do
 		local pet = Config.Pets[o.Pet]
 		if pet then
-			petRow(i, pet, o.Chance)
+			petCard(i, pet, o.Chance)
 		end
 	end
 end
@@ -145,98 +149,11 @@ local function requestBuy(eggId: string, requestId: string): any
 	return result
 end
 
---------------------------------------------------------------------------------
--- Hatch animation: egg wobbles, a soft crack, the pet appears. Brightness stays controlled
--- (half-dim backdrop, a 30% flash at most) so nothing blooms on phones.
---------------------------------------------------------------------------------
-local function playHatch(egg: Config.EggDef, pet: Config.PetDef)
-	playing = true
-	local r = Config.Rarities[pet.Rarity]
-	local rc = if r then r.Color else Theme.Text
-	local root: Frame = Kit.new("Frame", { Name = "HatchFx", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, ZIndex = 80, Parent = Kit.Overlay() })
-	Kit.Tween(root, 0.3, { BackgroundTransparency = 0.45 })
-	local eggFrame: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(150, 190),
-		Position = UDim2.fromScale(0.5, 0.48),
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = egg.Color,
-		ZIndex = 81,
-		Parent = root,
-	})
-	Kit.Corner(eggFrame, UDim.new(0.5, 0))
-	Kit.Stroke(eggFrame, 4, egg.Accent, Enum.ApplyStrokeMode.Border)
-	Kit.Gradient(eggFrame, egg.Color:Lerp(Color3.new(1, 1, 1), 0.25), egg.Color, 90)
-	local scale = Kit.new("UIScale", { Scale = 0.6, Parent = eggFrame })
-	Kit.Tween(scale, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-	task.wait(0.4)
-	-- wobble, getting stronger
-	for i = 1, 6 do
-		Sound.Play("CrateShake", 0.05)
-		local a = 4 + i * 2
-		Kit.Tween(eggFrame, 0.09, { Rotation = if i % 2 == 0 then a else -a })
-		task.wait(0.1)
-		Kit.Tween(eggFrame, 0.09, { Rotation = 0 })
-		task.wait(0.12 + (6 - i) * 0.03)
-	end
-	-- soft crack: a zigzag line across the egg
-	local crack = Kit.Label(eggFrame, "⚡", { Size = UDim2.fromScale(1, 0.4), Position = UDim2.fromScale(0.5, 0.45), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 44, Stroke = 0, ZIndex = 82 })
-	crack.TextColor3 = egg.Accent
-	task.wait(0.35)
-	local flash: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, ZIndex = 83, Parent = root })
-	Kit.Tween(flash, 0.5, { BackgroundTransparency = 1 })
-	Kit.Tween(scale, 0.2, { Scale = 0.2 })
-	Kit.Tween(eggFrame, 0.2, { BackgroundTransparency = 1 })
-	if r and r.Sound then
-		Sound.Play(r.Sound)
-	else
-		Sound.Play("Upgrade")
-	end
-	task.wait(0.2)
-	eggFrame:Destroy()
-	-- the pet card
-	local card: Frame = Kit.new("Frame", {
-		Size = UDim2.fromOffset(300, 290),
-		Position = UDim2.fromScale(0.5, 0.48),
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		ZIndex = 84,
-		Parent = root,
-	})
-	Kit.Corner(card, UDim.new(0, 18))
-	Kit.Stroke(card, 4, rc, Enum.ApplyStrokeMode.Border)
-	Kit.Gradient(card, Theme.Panel3, Theme.Panel, 90)
-	local cardScale = Kit.new("UIScale", { Scale = 0.5, Parent = card })
-	Kit.Tween(cardScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
-	Kit.Label(card, "YOU HATCHED", { Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 10), Color = Theme.Muted, Style = "Small", Fit = true, ZIndex = 85 })
-	local orb: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(84, 84), Position = UDim2.new(0.5, 0, 0, 38), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = pet.Color, ZIndex = 85, Parent = card })
-	Kit.Corner(orb, UDim.new(1, 0))
-	Kit.Stroke(orb, 3, pet.Glow, Enum.ApplyStrokeMode.Border)
-	Kit.Icon(orb, "pet_" .. pet.Id, PetsPanel.ShapeIcon[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 44, Stroke = 0, ZIndex = 86 })
-	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 128), Style = "Title", Fit = true, ZIndex = 85 })
-	Kit.Label(card, string.upper(r and r.Name or pet.Rarity), { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 160), Color = rc, Style = "Heading", Fit = true, ZIndex = 85 })
-	Kit.Label(card, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 186), Color = Theme.Ecto, Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 85 })
-	local closed = false
-	local function close()
-		if closed then
-			return
-		end
-		closed = true
-		Kit.Tween(root, 0.2, { BackgroundTransparency = 1 })
-		Kit.Tween(cardScale, 0.15, { Scale = 0.7 })
-		task.delay(0.2, function()
-			root:Destroy()
-			playing = false
-		end)
-	end
-	Kit.Button(card, { Text = "NICE!", Color = "Green", Size = UDim2.fromOffset(160, 44), Position = UDim2.new(0.5, 0, 1, -12), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 86, OnClick = close })
-	task.delay(8, close)
-end
-
 local function buy()
 	local eggId = currentEgg
 	local d = State.Data
 	local egg = eggId and Config.Eggs[eggId]
-	if busy or playing or not eggId or not egg or not d then
+	if busy or Reveal.IsPlaying() or not eggId or not egg or not d then
 		return
 	end
 	local reason = blockReason(egg, d)
@@ -265,13 +182,12 @@ local function buy()
 	local pet: Config.PetDef? = if type(res.Pet) == "string" then Config.Pets[res.Pet] else nil
 	panel:Close()
 	if pet then
-		playHatch(egg, pet)
-		Kit.Toast("You got " .. pet.Name .. "! Equip it in PETS.", "Good")
+		Reveal.PlayPet({ Egg = eggId, Pet = pet.Id })
 	end
 end
 
 function Hatchery.Open(eggId: string)
-	if not Config.Eggs[eggId] or playing then
+	if not Config.Eggs[eggId] or Reveal.IsPlaying() then
 		return
 	end
 	currentEgg = eggId
@@ -281,28 +197,36 @@ function Hatchery.Open(eggId: string)
 end
 
 function Hatchery.Init()
-	panel = Kit.Panel("Hatchery", "PET HATCHERY", Vector2.new(600, 480), "Purple")
+	panel = Kit.Panel("Hatchery", "PET HATCHERY", Vector2.new(700, 420), "Purple")
 	local body = panel.Body
 	priceLabel = Kit.Label(body, "", { Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 10), Color = SHARD, Style = "Currency", Fit = true, ZIndex = 62 })
 	lockLabel = Kit.Label(body, "", { Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 40), Style = "Small", Fit = true, ZIndex = 62 })
 	list = Kit.new("ScrollingFrame", {
-		Size = UDim2.new(1, 0, 1, -142),
-		Position = UDim2.fromOffset(0, 66),
+		Size = UDim2.new(1, 0, 1, -146),
+		Position = UDim2.fromOffset(0, 64),
 		BackgroundTransparency = 1,
 		ScrollBarThickness = 6,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(),
 		BorderSizePixel = 0,
 		ZIndex = 61,
 		Parent = body,
 	})
-	Kit.new("UIListLayout", { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
+	-- cards wrap onto more rows (and scroll) when the panel is narrow (phones, portrait)
+	Kit.new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(148, 160),
+		CellPadding = UDim2.fromOffset(10, 10),
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = list,
+	})
 	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), Parent = list })
 	reasonLabel = Kit.Label(body, "", { Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0, 0, 1, -72), Font = Theme.Body, Style = "Small", Fit = true, Stroke = 0, ZIndex = 62 })
 	buyButton = Kit.Button(body, {
 		Text = "🥚 BUY & HATCH",
 		Color = "Gray",
-		Size = UDim2.fromOffset(240, 46),
+		Size = UDim2.fromOffset(280, 50),
 		Position = UDim2.new(0.5, 0, 1, -2),
 		AnchorPoint = Vector2.new(0.5, 1),
 		ZIndex = 63,

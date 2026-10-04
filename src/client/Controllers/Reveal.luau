@@ -6,6 +6,8 @@
 -- CameraPunch). Commons are quick; "Fast crate opening" in settings shortens everything; SKIP
 -- jumps straight to the result. Every step is written as anim(duration, apply(alpha)) so a
 -- skip simply applies each step's end state.
+-- Reveal.PlayPet runs the same sequence for a PET EGG: the egg shakes and cracks, the shell
+-- pops and the hatched pet (PetFollowers.BuildPet) pops out.
 local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
 local Lighting = game:GetService("Lighting")
@@ -29,6 +31,8 @@ local Theme = require(Client.UI.Theme)
 local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 local Targeting = require(script.Parent.Targeting)
+local PetFollowers = require(script.Parent.PetFollowers)
+local PetsPanel = require(script.Parent.PetsPanel)
 
 local Reveal = {}
 
@@ -53,6 +57,8 @@ local raySpeed = 20
 local poseConn: RBXScriptConnection? = nil
 local hunterRig: HunterRig.Rig? = nil
 local hunterState = "Idle"
+local hunterT0 = 0
+local idleFn: ((number) -> ())? = nil -- per-frame idle of a hatched pet
 local againFn: (() -> ())? = nil
 local liveTweens: { Tween } = {}
 local shakeToken = 0
@@ -96,8 +102,13 @@ local pendingSkip = false
 local skipButton: TextButton? = nil
 local autoMode = false
 
+local petMode = false -- egg hatches skip for free (crate skips are a paid product)
+
 local function skipLabel(): string
 	local d = State.Data
+	if petMode then
+		return "SKIP ⏩"
+	end
 	if hasPermanentSkip() then
 		return "SKIP ⏩"
 	end
@@ -107,6 +118,10 @@ end
 
 local function requestSkip()
 	if skipping or cardShown or not playing or skipBusy then
+		return
+	end
+	if petMode then
+		skipping = true
 		return
 	end
 	skipBusy = true
@@ -452,6 +467,50 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	})
 end
 
+-- Pet hatch result card: same look as the hunter card (rarity ribbon, name, bonus, OK).
+local function petCard(g: ScreenGui, pet: Config.PetDef, rarity: Config.RarityDef)
+	local card: Frame = Kit.new("Frame", {
+		Size = UDim2.fromOffset(360, 200),
+		Position = UDim2.new(1, 380, 0.5, 10),
+		AnchorPoint = Vector2.new(1, 0.5),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		ZIndex = 10,
+		Parent = g,
+	})
+	Kit.Corner(card, UDim.new(0, 18))
+	Kit.Stroke(card, 4, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(card, Theme.Panel2, Theme.Bg, 90)
+	local sc = Kit.new("UIScale", { Scale = 0.3, Parent = card })
+	Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+	Kit.Tween(card, 0.35, { Position = UDim2.new(1, -20, 0.5, 10) }, Enum.EasingStyle.Back)
+	local ribbon: Frame = Kit.new("Frame", {
+		Size = UDim2.fromOffset(200, 32),
+		Position = UDim2.new(0.5, 0, 0, -16),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		ZIndex = 12,
+		Parent = card,
+	})
+	Kit.Corner(ribbon, UDim.new(0, 10))
+	Kit.Stroke(ribbon, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(ribbon, rarity.Color, rarity.Color2, 0)
+	Kit.Label(ribbon, rarity.Name, { Style = "Heading", ZIndex = 13 })
+	Kit.Label(card, string.upper(pet.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
+	Kit.Label(card, PetsPanel.BonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -30, 0, 22), Position = UDim2.fromOffset(15, 56), Color = Theme.Ecto, Style = "Body", Fit = true, ZIndex = 11 })
+	Kit.Label(card, "Equip it in PETS", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 84), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 11 })
+	okButton = Kit.Button(card, {
+		Text = "OK",
+		Color = "Blue",
+		Size = UDim2.fromOffset(120, 44),
+		Position = UDim2.new(0.5, 0, 1, -12),
+		AnchorPoint = Vector2.new(0.5, 1),
+		ZIndex = 12,
+		OnClick = function()
+			Reveal.Close()
+		end,
+	})
+end
+
 local function teardownStage()
 	shakeToken += 1
 	for _, tw in liveTweens do
@@ -473,6 +532,7 @@ local function teardownStage()
 		gui = nil
 	end
 	hunterRig = nil
+	idleFn = nil
 	rays = nil
 end
 
@@ -512,17 +572,8 @@ end
 
 export type PlayOpts = { Auto: boolean? }
 
--- Plays the opening for a server-confirmed result. `again` (optional) re-buys the same crate.
--- opts.Auto: Auto Open reveal (STOP button, the card closes by itself).
-function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
-	autoMode = opts ~= nil and opts.Auto == true
-	local def = Config.Hunters[res.Hunter]
-	local crateDef = Config.Crates[res.Crate]
-	if not def or not crateDef then
-		return
-	end
-	local rarity = Config.Rarities[def.Rarity]
-	againFn = again
+-- Shared opening: locks input, builds the stage + GUI, frames the camera, starts the spin loop.
+local function begin(rarity: Config.RarityDef): (ScreenGui, TextButton, Camera, CFrame, number)
 	if playing then
 		teardownStage() -- "AGAIN": keep the camera, rebuild the stage
 	end
@@ -552,23 +603,9 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	cam.CFrame = camCF
 	cam.Focus = CFrame.new(STAGE + Vector3.new(0, 2.6, 0)) -- lighting detail follows Focus
 	flash(Color3.new(1, 1, 1), 0.35)
-
-	local f = if fast() then 0.5 else 1
-	local my = stage
-
-	-- crate
-	local crate = CrateRig.Build(res.Crate)
-	crate.Model:ScaleTo(1.25)
-	crate.Model.Parent = stage
-	local base = CFrame.new(STAGE)
-	local function placeCrate(cf: CFrame)
-		crate.Model:PivotTo(cf)
-	end
-	placeCrate(base + Vector3.new(0, 9, 0))
-
-	-- rays spin + hunter poses
+	-- rays spin + the hunter poses / the pet bobs
 	raySpeed = 20
-	local hunterT0 = os.clock()
+	hunterT0 = os.clock()
 	poseConn = RunService.RenderStepped:Connect(function(dt: number)
 		if rays then
 			rays.Rotation = (rays.Rotation + dt * raySpeed) % 360
@@ -576,17 +613,16 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 		if hunterRig then
 			HunterRig.Pose(hunterRig, hunterState, os.clock() - hunterT0, 1)
 		end
+		if idleFn then
+			idleFn(os.clock() - hunterT0)
+		end
 	end)
+	return g, skip, cam, camCF, if fast() then 0.5 else 1
+end
 
-	Sound.Play("CrateBuy")
-	-- 1) drop in with a bounce
-	anim(0.45 * f, function(a)
-		placeCrate(base + Vector3.new(0, 9 * (1 - easeOutBounce(a)), 0))
-	end)
-	if stage ~= my then
-		return
-	end
-	-- 2) shake (+ levitate, darken and converging energy for rarer pulls)
+-- Build-up: shake (+ levitate, darken and converging energy for rarer pulls). onAlpha(a) runs
+-- every frame (egg cracks). Returns the levitation height.
+local function shakePhase(rarity: Config.RarityDef, f: number, base: CFrame, place: (CFrame) -> (), onAlpha: ((number) -> ())?): number
 	local shakeT = (0.55 + rarity.RevealPause) * f
 	local levitate = if rarity.Order >= 3 then 1.4 else 0
 	local charge: ParticleEmitter? = nil
@@ -619,13 +655,16 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 		local tt = os.clock()
 		local wob = CFrame.Angles(math.sin(tt * 38) * 0.06 * k, math.sin(tt * 29) * 0.1 * k, math.sin(tt * 47) * 0.09 * k)
 		local lift = levitate * math.sin(math.min(a * 1.6, 1) * math.pi / 2)
-		placeCrate(base * CFrame.new(math.sin(tt * 53) * 0.12 * k, lift, 0) * wob)
+		place(base * CFrame.new(math.sin(tt * 53) * 0.12 * k, lift, 0) * wob)
 		raySpeed = 20 + 160 * a * math.min(rarity.Order, 8) / 5 -- capped: Ultra/Exclusive don't keep scaling
 		if charge then
 			charge.Rate = 15 + 110 * a
 		end
 		if rl then
 			rl.Brightness = 1.8 * a * math.min(1, rarity.Order / 3)
+		end
+		if onAlpha then
+			onAlpha(a)
 		end
 		if tt >= nextShakeSound and a < 0.95 then
 			nextShakeSound = tt + 0.45
@@ -635,10 +674,127 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	if charge then
 		charge.Rate = 0
 	end
+	place(base + Vector3.new(0, levitate, 0))
+	return levitate
+end
+
+-- The pop: rarity sound, a short tinted flash, sparks and a ring (brightness kept low).
+local function burstFx(rarity: Config.RarityDef, burstPos: Vector3, cam: Camera)
+	if skipping then
+		return
+	end
+	Sound.Play(rarity.Sound)
+	flash(rarity.Color, 0.45)
+	Effects.Flash(burstPos, rarity.Color, 3 + math.min(rarity.Order, 8) * 0.6, 0.4)
+	Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = math.floor(rarity.Particles * 0.6), Size = 0.65, Speed = 26, Life = 1.1, Gravity = 18 })
+	Effects.Ring(STAGE + Vector3.new(0, 0.2, 0), rarity.Color, 10, 0.6)
+	if cc then
+		tween(cc, TweenInfo.new(0.5), { Brightness = 0.04, Saturation = 0.1 })
+		task.delay(0.5, function()
+			if cc then
+				tween(cc, TweenInfo.new(0.6), { Brightness = 0, Saturation = 0 })
+			end
+		end)
+	end
+	if rarity.CameraPunch then
+		cam.FieldOfView = CAM_FOV - 10
+		tween(cam, TweenInfo.new(0.45, Enum.EasingStyle.Back), { FieldOfView = CAM_FOV })
+		task.spawn(cameraShake, 0.5 * rarity.ShakeIntensity, 0.35)
+	end
+end
+
+-- Landing: ring + sparks, then spotlight the winner (neutral key light; rarity light and rays dimmed).
+local function landFx(rarity: Config.RarityDef, to: Vector3)
+	if not skipping then
+		Effects.Ring(to + Vector3.new(0, 0.15, 0), Color3.new(1, 1, 1), 5, 0.4)
+		Effects.Burst(to + Vector3.new(0, 3, 0), { Color = rarity.Color, Count = math.floor(rarity.Particles / 5), Size = 0.45, Speed = 14, Life = 0.7 })
+	end
+	local key = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(to + Vector3.new(0, 4.5, -4)) })
+	Kit.new("PointLight", { Range = 11, Brightness = 1.3, Color = Color3.new(1, 1, 1), Shadows = false, Parent = key })
+	local rl = (if stage then stage:FindFirstChild("RarityLight", true) else nil) :: any
+	if rl then
+		tween(rl, TweenInfo.new(0.5), { Brightness = 0.6 })
+	end
+	if rays then
+		for _, ray in rays:GetChildren() do
+			if ray:IsA("Frame") then
+				tween(ray, TweenInfo.new(0.5), { BackgroundTransparency = 0.8 })
+			end
+		end
+	end
+end
+
+-- Shared ending: legendary title slam, camera slides left, the result card, auto-close.
+local function finish(g: ScreenGui, skip: TextButton, cam: Camera, camCF: CFrame, rarity: Config.RarityDef, card: () -> ())
+	if rarity.Order >= 5 and not skipping then
+		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", TextSize = 54, ZIndex = 8, Stroke = 4 })
+		-- solid colour (a UIGradient on big text dropped letters on phones)
+		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
+		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+		task.spawn(cameraShake, 0.35, 0.3)
+	end
+	skip.Visible = false
+	skipping = false
+	raySpeed = 25
+	cam.CFrame = camCF
+	cam.Focus = CFrame.new(STAGE + Vector3.new(0, 2.6, 0))
+	-- slide the camera so the winner sits left of centre, clear of the info card on the right
+	local side = Vector3.new(-3.6, 0, 0)
+	tween(cam, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { CFrame = CFrame.lookAt(STAGE + Vector3.new(0, 4.6, -13) + side, STAGE + Vector3.new(0, 2.6, 0) + side) })
+	card()
+	cardShown = true
+	if autoMode then
+		-- Auto Open: the card closes by itself so the next crate can play
+		local myStage = stage
+		task.delay(if hasPermanentSkip() then 0.6 else 1.4, function()
+			if playing and stage == myStage then
+				Reveal.Close()
+			end
+		end)
+	end
+	if okButton and UserInputService.GamepadEnabled and UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1 then
+		GuiService.SelectedObject = okButton
+	end
+end
+
+-- Plays the opening for a server-confirmed result. `again` (optional) re-buys the same crate.
+-- opts.Auto: Auto Open reveal (STOP button, the card closes by itself).
+function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
+	petMode = false
+	local def = Config.Hunters[res.Hunter]
+	local crateDef = Config.Crates[res.Crate]
+	if not def or not crateDef then
+		return
+	end
+	autoMode = opts ~= nil and opts.Auto == true
+	local rarity = Config.Rarities[def.Rarity]
+	againFn = again
+	local g, skip, cam, camCF, f = begin(rarity)
+	local my = stage
+
+	-- crate
+	local crate = CrateRig.Build(res.Crate)
+	crate.Model:ScaleTo(1.25)
+	crate.Model.Parent = stage
+	local base = CFrame.new(STAGE)
+	local function placeCrate(cf: CFrame)
+		crate.Model:PivotTo(cf)
+	end
+	placeCrate(base + Vector3.new(0, 9, 0))
+
+	Sound.Play("CrateBuy")
+	-- 1) drop in with a bounce
+	anim(0.45 * f, function(a)
+		placeCrate(base + Vector3.new(0, 9 * (1 - easeOutBounce(a)), 0))
+	end)
 	if stage ~= my then
 		return
 	end
-	placeCrate(base + Vector3.new(0, levitate, 0))
+	-- 2) shake
+	local levitate = shakePhase(rarity, f, base, placeCrate)
+	if stage ~= my then
+		return
+	end
 	-- 3) locks pop off
 	if not skipping then
 		Sound.Play("LockPop")
@@ -652,27 +808,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	crate.Motors.LockL.Transform = CFrame.new(0, -60, 0)
 	crate.Motors.LockR.Transform = CFrame.new(0, -60, 0)
 	-- 4) lid flies open + light burst
-	local burstPos = crate.Burst.WorldPosition
-	if not skipping then
-		Sound.Play(rarity.Sound)
-		flash(rarity.Color, 0.45)
-		Effects.Flash(burstPos, rarity.Color, 3 + math.min(rarity.Order, 8) * 0.6, 0.4)
-		Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = math.floor(rarity.Particles * 0.6), Size = 0.65, Speed = 26, Life = 1.1, Gravity = 18 })
-		Effects.Ring(STAGE + Vector3.new(0, 0.2, 0), rarity.Color, 10, 0.6)
-		if cc then
-			tween(cc, TweenInfo.new(0.5), { Brightness = 0.04, Saturation = 0.1 })
-			task.delay(0.5, function()
-				if cc then
-					tween(cc, TweenInfo.new(0.6), { Brightness = 0, Saturation = 0 })
-				end
-			end)
-		end
-		if rarity.CameraPunch then
-			cam.FieldOfView = CAM_FOV - 10
-			tween(cam, TweenInfo.new(0.45, Enum.EasingStyle.Back), { FieldOfView = CAM_FOV })
-			task.spawn(cameraShake, 0.5 * rarity.ShakeIntensity, 0.35)
-		end
-	end
+	burstFx(rarity, crate.Burst.WorldPosition, cam)
 	crate.Glow.Color = rarity.Color
 	anim(0.3 * f, function(a)
 		crate.Motors.Lid.Transform = CFrame.Angles(math.rad(115) * easeOutBack(a), 0, 0)
@@ -698,57 +834,175 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	rig.Model:PivotTo(CFrame.new(to))
 	-- the crate settles back down behind the hunter
 	placeCrate(base)
-	if not skipping then
-		Effects.Ring(to + Vector3.new(0, 0.15, 0), Color3.new(1, 1, 1), 5, 0.4)
-		Effects.Burst(to + Vector3.new(0, 3, 0), { Color = rarity.Color, Count = math.floor(rarity.Particles / 5), Size = 0.45, Speed = 14, Life = 0.7 })
-	end
-	-- spotlight the hunter: neutral key light in front, dim the chest glow, rarity light and rays behind it
-	local key = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(to + Vector3.new(0, 4.5, -4)) })
-	Kit.new("PointLight", { Range = 11, Brightness = 1.3, Color = Color3.new(1, 1, 1), Shadows = false, Parent = key })
+	landFx(rarity, to)
 	tween(crate.Glow, TweenInfo.new(0.5), { Transparency = 0.75 })
-	if rl then
-		tween(rl, TweenInfo.new(0.5), { Brightness = 0.6 })
+	if stage ~= my then
+		return
 	end
-	if rays then
-		for _, ray in rays:GetChildren() do
-			if ray:IsA("Frame") then
-				tween(ray, TweenInfo.new(0.5), { BackgroundTransparency = 0.8 })
-			end
+	-- 6) title slam + result card
+	finish(g, skip, cam, camCF, rarity, function()
+		resultCard(g, res, rarity)
+	end)
+end
+
+--------------------------------------------------------------------------------
+-- PET EGG HATCH: same stage, camera and pacing as a crate, with the egg in the crate's place.
+-- The egg copies the hatchery pedestal looks (World/Hatchery); its front faces the camera (-Z).
+--------------------------------------------------------------------------------
+type EggPiece = { Part: Part, Offset: CFrame, Top: boolean, Tr: number }
+
+local function buildEgg(egg: Config.EggDef): ({ EggPiece }, { Part })
+	local pieces: { EggPiece } = {}
+	local cracks: { Part } = {}
+	local SMOOTH, NEON, GLASS = Enum.Material.SmoothPlastic, Enum.Material.Neon, Enum.Material.Glass
+	local function add(props: { [string]: any }, offset: CFrame): Part
+		local p = part(props)
+		table.insert(pieces, { Part = p, Offset = offset, Top = offset.Y > 3.1, Tr = p.Transparency })
+		return p
+	end
+	local function ball(d: number, x: number, y: number, z: number, col: Color3, mat: Enum.Material?, tr: number?): Part
+		return add({ Shape = Enum.PartType.Ball, Size = Vector3.one * d, Color = col, Material = mat or SMOOTH, Transparency = tr or 0 }, CFrame.new(x, y, z))
+	end
+	local function block(size: Vector3, cf: CFrame, col: Color3, mat: Enum.Material?, shape: Enum.PartType?): Part
+		return add({ Shape = shape or Enum.PartType.Block, Size = size, Color = col, Material = mat or SMOOTH }, cf)
+	end
+	local glass = egg.Id == "PhantomEgg"
+	local shellMat = if glass then GLASS else SMOOTH
+	local shellTr = if glass then 0.3 else 0
+	local low = ball(4.2, 0, 2.1, 0, egg.Color, shellMat, shellTr)
+	local high = ball(3.4, 0, 3.6, 0, egg.Color, shellMat, shellTr)
+	low.Reflectance = if glass then 0.1 else 0.15
+	high.Reflectance = low.Reflectance
+	if egg.Id == "HauntedEgg" then
+		-- green ecto cracks across the front and dark speckles
+		for _, c in { { -0.9, 2.4, 25 }, { 0.2, 2.9, -35 }, { 0.9, 2.2, 40 }, { -0.2, 3.9, 60 } } do
+			block(Vector3.new(0.18, 1.2, 0.2), CFrame.new(c[1], c[2], -2.05) * CFrame.Angles(0, 0, math.rad(c[3])), egg.Accent, NEON)
+		end
+		for _, sp in { { -1.3, 1.6 }, { 1.2, 3.4 }, { 0.6, 1.2 } } do
+			ball(0.6, sp[1], sp[2], -1.75, Color3.fromRGB(70, 30, 120))
+		end
+	elseif egg.Id == "PhantomEgg" then
+		-- soft inner core and a ghost face
+		ball(2.4, 0, 2.5, 0, egg.Accent, SMOOTH, 0.4)
+		local dark = Color3.fromRGB(30, 30, 60)
+		ball(0.8, -0.7, 3.4, -1.55, dark)
+		ball(0.8, 0.7, 3.4, -1.55, dark)
+		block(Vector3.new(0.9, 0.6, 0.3), CFrame.new(0, 2.4, -2.0), dark)
+	elseif egg.Id == "MoonlightEgg" then
+		-- crescent moon (pale disc partly covered by an egg-coloured disc) and stars
+		local cyl = Enum.PartType.Cylinder
+		block(Vector3.new(0.2, 1.6, 1.6), CFrame.new(0.2, 3.0, -2.0) * CFrame.Angles(0, math.pi / 2, 0), egg.Accent, SMOOTH, cyl)
+		block(Vector3.new(0.2, 1.4, 1.4), CFrame.new(-0.2, 3.15, -2.08) * CFrame.Angles(0, math.pi / 2, 0), egg.Color, SMOOTH, cyl)
+		for _, s in { { -1.2, 1.7 }, { 1.1, 2.0 }, { 0.8, 4.1 }, { -0.9, 4.0 }, { 0.1, 1.2 } } do
+			ball(0.35, s[1], s[2], -1.85, Color3.fromRGB(255, 245, 200), NEON)
+		end
+	end
+	-- hatch cracks: a zigzag around the waist that shows up bit by bit while the egg shakes
+	for i, c in { { -1.5, 3.0, 40 }, { -0.75, 3.15, -40 }, { 0, 3.0, 40 }, { 0.75, 3.15, -40 }, { 1.5, 3.0, 40 } } do
+		local z = -math.sqrt(math.max(0, 1.87 ^ 2 - c[1] ^ 2)) - 0.05 -- shell radius at the waist (y 3)
+		local p = block(Vector3.new(0.16, 0.95, 0.16), CFrame.new(c[1], c[2], z) * CFrame.Angles(0, 0, math.rad(c[3])), egg.Accent, NEON)
+		p.Transparency = 1
+		cracks[i] = p
+	end
+	return pieces, cracks
+end
+
+export type PetResult = { Egg: string, Pet: string }
+
+-- Hatch cinematic for a pet the server already granted (presentation only).
+function Reveal.PlayPet(res: PetResult)
+	local egg = Config.Eggs[res.Egg]
+	local pet = Config.Pets[res.Pet]
+	local rarity = pet and Config.Rarities[pet.Rarity]
+	if not egg or not pet or not rarity then
+		return
+	end
+	autoMode = false
+	againFn = nil
+	petMode = true
+	local g, skip, cam, camCF, f = begin(rarity)
+	local my = stage
+
+	local pieces, cracks = buildEgg(egg)
+	local base = CFrame.new(STAGE)
+	local topCF = CFrame.identity
+	local function placeEgg(cf: CFrame)
+		for _, pc in pieces do
+			pc.Part.CFrame = if pc.Top then cf * topCF * pc.Offset else cf * pc.Offset
+		end
+	end
+	placeEgg(base + Vector3.new(0, 9, 0))
+
+	Sound.Play("CrateBuy")
+	-- 1) drop in with a bounce
+	anim(0.45 * f, function(a)
+		placeEgg(base + Vector3.new(0, 9 * (1 - easeOutBounce(a)), 0))
+	end)
+	if stage ~= my then
+		return
+	end
+	-- 2) shake while the cracks spread
+	local levitate = shakePhase(rarity, f, base, placeEgg, function(a)
+		for i, c in cracks do
+			c.Transparency = if a >= i / (#cracks + 1) then 0 else 1
+		end
+	end)
+	for _, c in cracks do
+		c.Transparency = 0
+	end
+	if stage ~= my then
+		return
+	end
+	-- 3) the shell pops: the top flies off, the bottom fades
+	local eggCF = base + Vector3.new(0, levitate, 0)
+	burstFx(rarity, eggCF.Position + Vector3.new(0, 3.2, 0), cam)
+	anim(0.3 * f, function(a)
+		local e = easeOutBack(a)
+		topCF = CFrame.new(1.2 * a, 3.5 * e, 1.5 * a) * CFrame.Angles(-1.4 * a, 0, -0.9 * a)
+		for _, pc in pieces do
+			pc.Part.Transparency = if pc.Top then pc.Tr + (1 - pc.Tr) * a else pc.Tr
+		end
+		placeEgg(eggCF)
+	end)
+	for _, pc in pieces do
+		if not pc.Top then
+			tween(pc.Part, TweenInfo.new(0.45 * f), { Transparency = 1 })
 		end
 	end
 	if stage ~= my then
 		return
 	end
-	-- 6) legendary title slam
-	if rarity.Order >= 5 and not skipping then
-		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.fromScale(0.5, 0.2), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", TextSize = 54, ZIndex = 8, Stroke = 4 })
-		-- solid colour (a UIGradient on big text dropped letters on phones)
-		local tsc = Kit.new("UIScale", { Scale = 3, Parent = title })
-		Kit.Tween(tsc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-		task.spawn(cameraShake, 0.35, 0.3)
+	-- 4) the pet pops out (PetFollowers' ghost, scaled up, rarity glow kept soft)
+	local model = PetFollowers.BuildPet(pet.Id)
+	if not model then
+		return
 	end
-	skip.Visible = false
-	skipping = false
-	raySpeed = 25
-	cam.CFrame = camCF
-	cam.Focus = CFrame.new(STAGE + Vector3.new(0, 2.6, 0))
-	-- slide the camera so the hunter sits left of centre, clear of the info card on the right
-	local side = Vector3.new(-3.6, 0, 0)
-	tween(cam, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { CFrame = CFrame.lookAt(STAGE + Vector3.new(0, 4.6, -13) + side, STAGE + Vector3.new(0, 2.6, 0) + side) })
-	resultCard(g, res, rarity)
-	cardShown = true
-	if autoMode then
-		-- Auto Open: the card closes by itself so the next crate can play
-		local myStage = stage
-		task.delay(if hasPermanentSkip() then 0.6 else 1.4, function()
-			if playing and stage == myStage then
-				Reveal.Close()
-			end
-		end)
+	model:ScaleTo(3)
+	for _, d in model:GetDescendants() do
+		if d:IsA("PointLight") then
+			d.Brightness = math.min(d.Brightness, 1)
+		end
 	end
-	if okButton and UserInputService.GamepadEnabled and UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1 then
-		GuiService.SelectedObject = okButton
+	model.Parent = stage
+	local from = eggCF.Position + Vector3.new(0, 2.5, 0)
+	local to = STAGE + Vector3.new(0, 3, -4.6)
+	anim(0.55 * f, function(a)
+		local p = from:Lerp(to, a) + Vector3.new(0, 5.5 * 4 * a * (1 - a), 0)
+		model:PivotTo(CFrame.new(p) * CFrame.Angles(0, (1 - a) * math.pi * 2, 0))
+	end)
+	model:PivotTo(CFrame.new(to))
+	hunterT0 = os.clock()
+	idleFn = function(t: number)
+		model:PivotTo(CFrame.new(to + Vector3.new(0, math.sin(t * 2.2) * 0.3, 0)) * CFrame.Angles(0, math.sin(t * 1.3) * 0.35, 0))
 	end
+	landFx(rarity, to - Vector3.new(0, 3, 0))
+	if stage ~= my then
+		return
+	end
+	-- 5) title slam + pet card
+	finish(g, skip, cam, camCF, rarity, function()
+		petCard(g, pet, rarity)
+	end)
 end
 
 function Reveal.Init()

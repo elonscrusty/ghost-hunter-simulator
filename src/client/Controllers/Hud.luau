@@ -437,7 +437,7 @@ local function buildSettings(screen: ScreenGui)
 	-- lower-right row: [TRADE] FEEDBACK SETTINGS (the DEV button, for developers, goes first)
 	local _ = screen
 	tradeButton = Kit.Button(lowerRow, {
-		Text = "🤝",
+		Text = "",
 		Color = "Teal",
 		Size = UDim2.fromOffset(SMALL, SMALL),
 		TextStyle = "Heading",
@@ -445,6 +445,7 @@ local function buildSettings(screen: ScreenGui)
 			Hud.Open("Trade")
 		end,
 	})
+	Kit.Icon(tradeButton, "menu_trade", "🤝", { Size = UDim2.fromScale(0.85, 0.85), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Heading", Stroke = 0, ZIndex = 3 })
 	tradeButton.LayoutOrder = 2
 	tradeButton.Visible = false
 	Hud.Buttons.Trade = tradeButton
