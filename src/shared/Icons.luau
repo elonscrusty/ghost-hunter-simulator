@@ -9,6 +9,7 @@ Icons.Images = {
 	menu_pets = "rbxthumb://type=Asset&id=129763548691514&w=420&h=420",
 	menu_trade = "rbxthumb://type=Asset&id=117692734126738&w=420&h=420",
 	-- MERGE booth sign: upload the merge picture as a Decal and put its id here
+	-- tower = "rbxthumb://type=Asset&id=<decal id>&w=420&h=420", -- BOSS TOWER arch (shards icon until then)
 	-- menu_merge = "rbxthumb://type=Asset&id=<decal id>&w=420&h=420",
 	shards = "rbxthumb://type=Asset&id=134472965366566&w=420&h=420",
 	menu_hunters = "rbxassetid://78038914324289",

@@ -12,6 +12,7 @@
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Kit = require(script.Parent.Kit)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 local Props = require(script.Parent.Props)
 
 local Arena = {}
@@ -190,7 +191,25 @@ function Arena.Build(map: Instance)
 	local archCF = CFrame.new(ax, 19, cz + 7) * CFrame.Angles(0, Kit.FaceYaw(-1, 0), 0)
 	local arch = Kit.Part(m, V(24, 5, 0.8), archCF, C(45, 25, 80))
 	Kit.Part(m, V(25, 6, 0.4), archCF * CFrame.new(0, 0, 0.5), Kit.Vivid(C(190, 120, 255)))
-	Kit.Sign(arch, Enum.NormalId.Front, "👻 BOSS TOWER 👻", C(150, 255, 170))
+	-- title between two icon images: the tower icon once uploaded, else the Spirit Shards icon
+	-- (shards are what the tower pays); plain text if neither image exists
+	local icon = Icons.Get("tower") or Icons.Get("shards")
+	if icon then
+		local g = Kit.Gui(arch, Enum.NormalId.Front)
+		for _, x in { 0.02, 0.8 } do
+			local img = Instance.new("ImageLabel")
+			img.Name = "TowerIcon"
+			img.BackgroundTransparency = 1
+			img.Image = icon
+			img.ScaleType = Enum.ScaleType.Fit
+			img.Position = UDim2.fromScale(x, 0.07)
+			img.Size = UDim2.fromScale(0.18, 0.86) -- square on the 24 x 5 board
+			img.Parent = g
+		end
+		Kit.Label(g, "BOSS TOWER", C(150, 255, 170), { Size = UDim2.fromScale(0.58, 0.8), Pos = UDim2.fromScale(0.21, 0.1) })
+	else
+		Kit.Sign(arch, Enum.NormalId.Front, "BOSS TOWER", C(150, 255, 170))
+	end
 
 	-- keep-out reservations of the old arena plot (circle + the two former bleacher strips)
 	Kit.AddCircle(cx, cz, r + 6)

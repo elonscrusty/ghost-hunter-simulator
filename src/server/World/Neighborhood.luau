@@ -200,7 +200,7 @@ local function plaza(f: Instance)
 	local post = V(sx - 17, 0, sz + 14)
 	Kit.Box(f, post - V(0.4, 0, 0.4), post + V(0.4, 11, 0.4), C(110, 80, 60), { Mat = Enum.Material.Wood })
 	local boards = {
-		{ Y = 10, Off = 0, Text = "👻 GHOSTS AHEAD ▲", Col = C(150, 255, 140) },
+		{ Y = 10, Off = 0, Text = "GHOSTS AHEAD ▲", Col = C(150, 255, 140) },
 		-- the player faces +Z, so -X is on their right
 		{ Y = 7.6, Off = -3, Text = "CRATES ▶", Col = C(255, 190, 70) },
 		{ Y = 5.2, Off = 3, Text = "◀ UPGRADES", Col = C(110, 220, 255) },
@@ -438,7 +438,7 @@ local function entrance(f: Instance)
 	local zone = Config.Zones[1]
 	local gui = Kit.Gui(sign, Enum.NormalId.Front, 30)
 	Kit.Label(gui, "THE NEIGHBORHOOD", zone.Accent, { Name = "ZoneLabel", Pos = UDim2.fromScale(0.03, 0.06), Size = UDim2.fromScale(0.94, 0.52) })
-	Kit.Label(gui, "👻 GHOSTS AHEAD", C(255, 230, 120), { Name = "SubLabel", Pos = UDim2.fromScale(0.15, 0.6), Size = UDim2.fromScale(0.7, 0.34) })
+	Kit.Label(gui, "GHOSTS AHEAD ▲", C(255, 230, 120), { Name = "SubLabel", Pos = UDim2.fromScale(0.15, 0.6), Size = UDim2.fromScale(0.7, 0.34) })
 	Kit.AddRect(-(half + pw + 2), z - 10, half + pw + 2, z + 6)
 end
 
