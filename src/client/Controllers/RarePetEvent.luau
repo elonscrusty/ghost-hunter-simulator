@@ -77,9 +77,9 @@ local function update()
 	local mins = math.min(seconds, req) // 60
 	local reqMins = req // 60
 	if got then
-		chipLabel.Text = "🏮 RARE PET EARNED!  ·  " .. Format.Time(left)
+		chipLabel.Text = "🏮 LEGENDARY PET EARNED!  ·  " .. Format.Time(left)
 	else
-		chipLabel.Text = string.format("🏮 FREE RARE PET %d/%d MIN  ·  %s", mins, reqMins, Format.Time(left))
+		chipLabel.Text = string.format("🏮 FREE LEGENDARY PET %d/%d MIN  ·  %s", mins, reqMins, Format.Time(left))
 	end
 	if panel.IsOpen then
 		local frac = math.clamp(seconds / req, 0, 1)
@@ -117,7 +117,7 @@ function RarePetEvent.Init()
 		update()
 	end)
 
-	panel = Kit.Panel("RarePetEvent", "🏮 FREE RARE PET!", Vector2.new(480, 320), "Orange")
+	panel = Kit.Panel("RarePetEvent", "🏮 FREE LEGENDARY PET!", Vector2.new(480, 320), "Orange")
 	local body = panel.Body
 	Kit.Label(body, if def then def.Name else E.Pet, { Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 14), Color = if rarity then Theme.RarityText(rarity) else Theme.Gold, Style = "Heading", TextSize = 26, ZIndex = 62 })
 	local sub = (if rarity then rarity.Name else (if def then def.Rarity else "Legendary")) .. " ghost pet  ·  " .. (if def then bonusText(def.Bonus.Kind, def.Bonus.Value) else "")
