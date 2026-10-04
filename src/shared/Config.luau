@@ -1393,214 +1393,214 @@ Config.Crates = {
 		Id = "Beginner", Name = "BEGINNER HUNTER CRATE", Zone = "Neighborhood", Price = 25,
 		Color = C(255, 150, 50), Trim = C(140, 255, 120), Style = "Basic",
 		Pool = {
-			{ Hunter = "RookieHunter", Weight = 25 }, -- Common 50% (split 2 ways)
-			{ Hunter = "BowBelle", Weight = 25 }, -- Common 50% (split 2 ways)
-			{ Hunter = "ParanormalIntern", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "GhostInvestigator", Weight = 10 }, -- Rare 10%
-			{ Hunter = "SpectralSpecialist", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "MoonlightMedium", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "NightWatcher", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "CaptainBoo", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "RookieHunter", Weight = 23 }, -- Common 46% (split 2 ways)
+			{ Hunter = "BowBelle", Weight = 23 }, -- Common 46% (split 2 ways)
+			{ Hunter = "ParanormalIntern", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "GhostInvestigator", Weight = 14 }, -- Rare 14%
+			{ Hunter = "SpectralSpecialist", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "MoonlightMedium", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "NightWatcher", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "CaptainBoo", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Haunted = {
 		Id = "Haunted", Name = "HAUNTED HUNTER CRATE", Zone = "Cemetery", Price = 600,
 		Color = C(110, 80, 200), Trim = C(90, 255, 180), Style = "Haunted",
 		Pool = {
-			{ Hunter = "GraveScout", Weight = 50 }, -- Common 50%
-			{ Hunter = "CryptInvestigator", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
-			{ Hunter = "LilMoonWitch", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
-			{ Hunter = "SpiritWarden", Weight = 10 }, -- Rare 10%
-			{ Hunter = "PhantomExorcist", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "GravelightOracle", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "ReapersApprentice", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "PetalChomper", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "GraveScout", Weight = 46 }, -- Common 46%
+			{ Hunter = "CryptInvestigator", Weight = 16 }, -- Uncommon 32% (split 2 ways)
+			{ Hunter = "LilMoonWitch", Weight = 16 }, -- Uncommon 32% (split 2 ways)
+			{ Hunter = "SpiritWarden", Weight = 14 }, -- Rare 14%
+			{ Hunter = "PhantomExorcist", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "GravelightOracle", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "ReapersApprentice", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "PetalChomper", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Elite = {
 		Id = "Elite", Name = "ELITE HUNTER CRATE", Zone = "School", Price = 5000,
 		Color = C(40, 30, 70), Trim = C(220, 120, 255), Style = "Elite",
 		Pool = {
-			{ Hunter = "SchoolInvestigator", Weight = 50 }, -- Common 50%
-			{ Hunter = "ParanormalProfessor", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
-			{ Hunter = "GloomyGus", Weight = 17.5 }, -- Uncommon 35% (split 2 ways)
-			{ Hunter = "EliteContainmentAgent", Weight = 10 }, -- Rare 10%
-			{ Hunter = "VoidHunter", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "SpiritValedictorian", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "TheSubstitute", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "CelestiaMoonwitch", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "SchoolInvestigator", Weight = 46 }, -- Common 46%
+			{ Hunter = "ParanormalProfessor", Weight = 16 }, -- Uncommon 32% (split 2 ways)
+			{ Hunter = "GloomyGus", Weight = 16 }, -- Uncommon 32% (split 2 ways)
+			{ Hunter = "EliteContainmentAgent", Weight = 14 }, -- Rare 14%
+			{ Hunter = "VoidHunter", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "SpiritValedictorian", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheSubstitute", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "CelestiaMoonwitch", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Carnival = {
 		Id = "Carnival", Name = "CARNIVAL HUNTER CRATE", Zone = "Carnival", Price = 40000,
 		Color = C(230, 60, 70), Trim = C(255, 210, 70), Style = "Carnival",
 		Pool = {
-			{ Hunter = "CarnivalScout", Weight = 50 }, -- Common 50%
-			{ Hunter = "ParanormalPerformer", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "SpectralRingmaster", Weight = 5 }, -- Rare 10% (split 2 ways)
-			{ Hunter = "HeartlightHealer", Weight = 5 }, -- Rare 10% (split 2 ways)
-			{ Hunter = "PhantomTamer", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "GrandIllusionist", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "TheLastClown", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "PumpkinKingJack", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "CarnivalScout", Weight = 46 }, -- Common 46%
+			{ Hunter = "ParanormalPerformer", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "SpectralRingmaster", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "HeartlightHealer", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "PhantomTamer", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "GrandIllusionist", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheLastClown", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "PumpkinKingJack", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Medical = {
 		Id = "Medical", Name = "PARANORMAL MEDICAL CRATE", Zone = "Hospital", Price = 400000,
 		Color = C(235, 240, 250), Trim = C(110, 200, 255), Style = "Medical",
 		Pool = {
-			{ Hunter = "MedicalInvestigator", Weight = 50 }, -- Common 50%
-			{ Hunter = "SpiritMedic", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "ParanormalDoctor", Weight = 10 }, -- Rare 10%
-			{ Hunter = "SpectralSurgeon", Weight = 1.75 }, -- Legendary 3.5% (split 2 ways)
-			{ Hunter = "StarlitHexPrincess", Weight = 1.75 }, -- Legendary 3.5% (split 2 ways)
-			{ Hunter = "ChiefOfSpiritMedicine", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "NightShiftNurse", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "DoctorMiracle", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "MedicalInvestigator", Weight = 46 }, -- Common 46%
+			{ Hunter = "SpiritMedic", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "ParanormalDoctor", Weight = 14 }, -- Rare 14%
+			{ Hunter = "SpectralSurgeon", Weight = 2.75 }, -- Legendary 5.5% (split 2 ways)
+			{ Hunter = "StarlitHexPrincess", Weight = 2.75 }, -- Legendary 5.5% (split 2 ways)
+			{ Hunter = "ChiefOfSpiritMedicine", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "NightShiftNurse", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "DoctorMiracle", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Sailor = {
 		Id = "Sailor", Name = "SPECTRAL SAILOR CRATE", Zone = "Harbor", Price = 3500000,
 		Color = C(140, 95, 55), Trim = C(80, 230, 220), Style = "Sailor",
 		Pool = {
-			{ Hunter = "HarborHunter", Weight = 50 }, -- Common 50%
-			{ Hunter = "ParanormalSailor", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "SpectralPirateHunter", Weight = 10 }, -- Rare 10%
-			{ Hunter = "GhostCaptainHunter", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "KrakenTamer", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "FlyingDutchman", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "SirenSeraphina", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "HarborHunter", Weight = 46 }, -- Common 46%
+			{ Hunter = "ParanormalSailor", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "SpectralPirateHunter", Weight = 14 }, -- Rare 14%
+			{ Hunter = "GhostCaptainHunter", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "KrakenTamer", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "FlyingDutchman", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "SirenSeraphina", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Royal = {
 		Id = "Royal", Name = "ROYAL HUNTER CRATE", Zone = "Castle", Price = 22000000,
 		Color = C(70, 40, 120), Trim = C(255, 200, 70), Style = "Royal",
 		Pool = {
-			{ Hunter = "CastleInvestigator", Weight = 50 }, -- Common 50%
-			{ Hunter = "SpiritKnight", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "RoyalExorcist", Weight = 10 }, -- Rare 10%
-			{ Hunter = "PhantomChampion", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "PhantomMonarch", Weight = 0.5 }, -- Mythic 1% (split 2 ways)
-			{ Hunter = "PumpkinKnight", Weight = 0.5 }, -- Mythic 1% (split 2 ways)
-			{ Hunter = "HeadlessKnight", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "CountBatula", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "CastleInvestigator", Weight = 46 }, -- Common 46%
+			{ Hunter = "SpiritKnight", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "RoyalExorcist", Weight = 14 }, -- Rare 14%
+			{ Hunter = "PhantomChampion", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "PhantomMonarch", Weight = 0.9 }, -- Mythic 1.8% (split 2 ways)
+			{ Hunter = "PumpkinKnight", Weight = 0.9 }, -- Mythic 1.8% (split 2 ways)
+			{ Hunter = "HeadlessKnight", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "CountBatula", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	SpiritRealm = {
 		Id = "SpiritRealm", Name = "SPIRIT REALM CRATE", Zone = "SpiritRealm", Price = 130000000,
 		Color = C(40, 35, 80), Trim = C(110, 240, 255), Style = "Spirit",
 		Pool = {
-			{ Hunter = "RealmExplorer", Weight = 50 }, -- Common 50%
-			{ Hunter = "SpiritWalker", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "VoidInvestigator", Weight = 10 }, -- Rare 10%
-			{ Hunter = "CelestialGhostHunter", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "AstralGuardian", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "GhostHunterZero", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "StarfallValkyrie", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "RealmExplorer", Weight = 46 }, -- Common 46%
+			{ Hunter = "SpiritWalker", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "VoidInvestigator", Weight = 14 }, -- Rare 14%
+			{ Hunter = "CelestialGhostHunter", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "AstralGuardian", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "GhostHunterZero", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "StarfallValkyrie", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Bog = {
 		Id = "Bog", Name = "BOG HUNTER CRATE", Zone = "Swamp", Price = 780000000,
 		Color = C(90, 120, 60), Trim = C(170, 255, 120), Style = "Swamp",
 		Pool = {
-			{ Hunter = "SwampScout", Weight = 50 }, -- Common 50%
-			{ Hunter = "BogTracker", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "MarshMystic", Weight = 10 }, -- Rare 10%
-			{ Hunter = "FireflySage", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "FrogPrince", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "GatorKing", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "Bogzilla", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "SwampScout", Weight = 46 }, -- Common 46%
+			{ Hunter = "BogTracker", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "MarshMystic", Weight = 14 }, -- Rare 14%
+			{ Hunter = "FireflySage", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "FrogPrince", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "GatorKing", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "Bogzilla", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Frost = {
 		Id = "Frost", Name = "FROSTBITE CRATE", Zone = "Frost", Price = 4680000000,
 		Color = C(200, 230, 255), Trim = C(110, 200, 255), Style = "Frost",
 		Pool = {
-			{ Hunter = "SnowScout", Weight = 50 }, -- Common 50%
-			{ Hunter = "IceClimber", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "FrostMage", Weight = 10 }, -- Rare 10%
-			{ Hunter = "YetiWhisperer", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "AuroraKnight", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "TheAbominable", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "CrystaliaSnowQueen", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "SnowScout", Weight = 46 }, -- Common 46%
+			{ Hunter = "IceClimber", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "FrostMage", Weight = 14 }, -- Rare 14%
+			{ Hunter = "YetiWhisperer", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "AuroraKnight", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheAbominable", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "CrystaliaSnowQueen", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Tomb = {
 		Id = "Tomb", Name = "PHARAOH CRATE", Zone = "Tomb", Price = 28100000000,
 		Color = C(220, 180, 100), Trim = C(70, 200, 220), Style = "Tomb",
 		Pool = {
-			{ Hunter = "TombExplorer", Weight = 50 }, -- Common 50%
-			{ Hunter = "ScarabSeeker", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "SandMage", Weight = 10 }, -- Rare 10%
-			{ Hunter = "PharaohHunter", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "SunKeeper", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "GoldenMummy", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "JackalAvenger", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "TombExplorer", Weight = 46 }, -- Common 46%
+			{ Hunter = "ScarabSeeker", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "SandMage", Weight = 14 }, -- Rare 14%
+			{ Hunter = "PharaohHunter", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "SunKeeper", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "GoldenMummy", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "JackalAvenger", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Toy = {
 		Id = "Toy", Name = "TOY BOX CRATE", Zone = "ToyFactory", Price = 168000000000,
 		Color = C(255, 120, 170), Trim = C(255, 220, 80), Style = "Toy",
 		Pool = {
-			{ Hunter = "ToyTinker", Weight = 50 }, -- Common 50%
-			{ Hunter = "WindUpKnight", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "MarionetteMaster", Weight = 10 }, -- Rare 10%
-			{ Hunter = "TeddyTitan", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "JackInTheBoxer", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "TheNutcracker", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "PrincessPomPom", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "ToyTinker", Weight = 46 }, -- Common 46%
+			{ Hunter = "WindUpKnight", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "MarionetteMaster", Weight = 14 }, -- Rare 14%
+			{ Hunter = "TeddyTitan", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "JackInTheBoxer", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheNutcracker", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "PrincessPomPom", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Sunken = {
 		Id = "Sunken", Name = "SUNKEN TREASURE CRATE", Zone = "Sunken", Price = 1010000000000,
 		Color = C(60, 140, 170), Trim = C(255, 220, 120), Style = "Sunken",
 		Pool = {
-			{ Hunter = "DeepDiver", Weight = 50 }, -- Common 50%
-			{ Hunter = "CoralKeeper", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "TideCaller", Weight = 10 }, -- Rare 10%
-			{ Hunter = "AtlanteanHunter", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "PearlSovereign", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "AbyssWalker", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "GlubbleTheDeepOne", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "DeepDiver", Weight = 46 }, -- Common 46%
+			{ Hunter = "CoralKeeper", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "TideCaller", Weight = 14 }, -- Rare 14%
+			{ Hunter = "AtlanteanHunter", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "PearlSovereign", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "AbyssWalker", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "GlubbleTheDeepOne", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Clockwork = {
 		Id = "Clockwork", Name = "CLOCKWORK CRATE", Zone = "Clockwork", Price = 6070000000000,
 		Color = C(150, 110, 70), Trim = C(230, 200, 120), Style = "Clock",
 		Pool = {
-			{ Hunter = "GearScout", Weight = 50 }, -- Common 50%
-			{ Hunter = "ClockTinker", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "ChronoMage", Weight = 10 }, -- Rare 10%
-			{ Hunter = "TimeBender", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "SteamTitan", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "TheTimeless", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "TickTockTitaness", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "GearScout", Weight = 46 }, -- Common 46%
+			{ Hunter = "ClockTinker", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "ChronoMage", Weight = 14 }, -- Rare 14%
+			{ Hunter = "TimeBender", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "SteamTitan", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheTimeless", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "TickTockTitaness", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Inferno = {
 		Id = "Inferno", Name = "INFERNO CRATE", Zone = "Inferno", Price = 36400000000000,
 		Color = C(80, 40, 40), Trim = C(255, 150, 60), Style = "Inferno",
 		Pool = {
-			{ Hunter = "EmberScout", Weight = 50 }, -- Common 50%
-			{ Hunter = "LavaDiver", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "FireDancer", Weight = 10 }, -- Rare 10%
-			{ Hunter = "PhoenixHunter", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "DragonCaller", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "TheEternalFlame", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "Scorchmaw", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "EmberScout", Weight = 46 }, -- Common 46%
+			{ Hunter = "LavaDiver", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "FireDancer", Weight = 14 }, -- Rare 14%
+			{ Hunter = "PhoenixHunter", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "DragonCaller", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheEternalFlame", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "Scorchmaw", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Throne = {
 		Id = "Throne", Name = "KING'S CRATE", Zone = "Throne", Price = 218000000000000,
 		Color = C(250, 245, 255), Trim = C(255, 215, 90), Style = "Throne",
 		Pool = {
-			{ Hunter = "ThronePage", Weight = 50 }, -- Common 50%
-			{ Hunter = "ShadowGuard", Weight = 35 }, -- Uncommon 35%
-			{ Hunter = "CrownMage", Weight = 10 }, -- Rare 10%
-			{ Hunter = "KingsChampion", Weight = 3.5 }, -- Legendary 3.5%
-			{ Hunter = "EternalMonarch", Weight = 1 }, -- Mythic 1%
-			{ Hunter = "TheFinalHunter", Weight = 0.4 }, -- Secret 0.4%
-			{ Hunter = "SovereignSupreme", Weight = 0.1 }, -- Ultra 0.1%
+			{ Hunter = "ThronePage", Weight = 46 }, -- Common 46%
+			{ Hunter = "ShadowGuard", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "CrownMage", Weight = 14 }, -- Rare 14%
+			{ Hunter = "KingsChampion", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "EternalMonarch", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheFinalHunter", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "SovereignSupreme", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Exclusive = {

@@ -169,7 +169,7 @@ T.each_zone_has_mythic_secret_and_one_ultra = function()
 end
 
 -- owner's agreed chest distribution (percent per rarity, every zone crate)
-local AGREED = { Common = 50, Uncommon = 35, Rare = 10, Legendary = 3.5, Mythic = 1, Secret = 0.4, Ultra = 0.1 }
+local AGREED = { Common = 46, Uncommon = 32, Rare = 14, Legendary = 5.5, Mythic = 1.8, Secret = 0.55, Ultra = 0.15 } -- owner-approved odds (v1.16)
 local function order(id: string): number return Config.Rarities[Config.Hunters[id].Rarity].Order end -- by hunter id, like the server
 
 T.crate_pools_match_agreed_distribution = function()
@@ -209,7 +209,7 @@ T.seeded_roll_matches_distribution = function()
 		counts[r] = (counts[r] or 0) + 1
 	end
 	local common = (counts.Common or 0) / n
-	assert(math.abs(common - 0.5) < 0.01, "Common rolled " .. common)
+	assert(math.abs(common - AGREED.Common / 100) < 0.01, "Common rolled " .. common)
 	local ultra = counts.Ultra or 0
 	assert(ultra > 0 and ultra / n < 0.003, "Ultra rolled " .. ultra .. " / " .. n)
 end
