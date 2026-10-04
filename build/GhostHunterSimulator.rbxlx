@@ -2318,7 +2318,7 @@ Icons.Images = {
 	-- uploaded as Decals: shown through the asset thumbnail (works with a Decal id)
 	menu_pets = "rbxthumb://type=Asset&id=129763548691514&w=420&h=420",
 	menu_trade = "rbxthumb://type=Asset&id=117692734126738&w=420&h=420",
-	menu_merge = "rbxthumb://type=Asset&id=98848723239234&w=420&h=420", -- MERGE booth sign
+	menu_merge = "rbxthumb://type=Asset&id=110851244446479&w=420&h=420", -- MERGE booth sign
 	tower = "rbxthumb://type=Asset&id=87355452772157&w=420&h=420", -- BOSS TOWER arch sign
 	shards = "rbxthumb://type=Asset&id=134472965366566&w=420&h=420",
 	menu_hunters = "rbxassetid://78038914324289",
