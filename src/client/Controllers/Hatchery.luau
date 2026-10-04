@@ -255,7 +255,11 @@ local function buy()
 	busy = false
 	Kit.SetButtonText(buyButton, "🥚 BUY & HATCH")
 	if not res.ok then
-		Kit.Toast(res.err or "Can't do that right now", "Bad")
+		local msg = res.err or "Can't do that right now"
+		if RETRY_ERRORS[tostring(res.err)] then
+			msg ..= " - if your shards went down, your pet is already in PETS"
+		end
+		Kit.Toast(msg, "Bad")
 		return
 	end
 	local pet: Config.PetDef? = if type(res.Pet) == "string" then Config.Pets[res.Pet] else nil

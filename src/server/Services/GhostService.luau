@@ -46,7 +46,7 @@ export type Ghost = {
 	Tower: any?, -- Boss Tower run that owns this boss (only its members may fight it)
 	HitFrac: number?, -- tower bosses: hit = target max HP * this
 	NextAttack: number, -- os.clock of the next retaliation
-	Pending: { Player: Player, Uid: string, Lands: number }?, -- telegraphed hit in flight
+	Pending: { Player: Player, Uid: string, Lands: number, Seen: { Player } }?, -- telegraphed hit in flight
 	LastKey: string?, -- "userId:uid" hit last (targets rotate)
 }
 
@@ -484,8 +484,10 @@ local function retaliationTick()
 			local still = tg and tg.Uid == g.Uid and table.find(list, pend.Player) ~= nil
 			-- everyone fighting this ghost sees the bolt land (or fizzle); damage only if the SAME
 			-- hunter is still eligible (never redirected to someone else)
-			if not table.find(list, pend.Player) then
-				table.insert(list, pend.Player)
+			for _, p in pend.Seen do -- everyone who saw the windup sees the bolt land / fizzle
+				if not table.find(list, p) then
+					table.insert(list, p)
+				end
 			end
 			if still and table.find(CrewService.Targets(pend.Player), pend.Uid) then
 				local maxHP = CrewService.MaxHP(pend.Player, pend.Uid)
@@ -498,7 +500,9 @@ local function retaliationTick()
 				end
 				local ko = CrewService.Hit(pend.Player, pend.Uid, hit)
 				for _, p in list do
-					Fx.To(p, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Owner = pend.Player.UserId, Knocked = ko })
+					if p.Parent then
+						Fx.To(p, "GhostHit", { Ghost = g.Uid, Hunter = pend.Uid, Owner = pend.Player.UserId, Knocked = ko })
+					end
 				end
 			else
 				for _, p in list do
@@ -533,7 +537,7 @@ local function retaliationTick()
 			g.LastKey = key
 			local interval = if g.Tower then Config.Tower.Interval else RC.Interval
 			g.NextAttack = clock + interval -- one attack per interval, whoever the target is
-			g.Pending = { Player = pick.P, Uid = pick.U, Lands = clock + RC.Windup }
+			g.Pending = { Player = pick.P, Uid = pick.U, Lands = clock + RC.Windup, Seen = table.clone(list) }
 			for _, p in list do
 				Fx.To(p, "GhostWindup", { Ghost = g.Uid, Hunter = pick.U, Owner = pick.P.UserId, Time = RC.Windup })
 			end
