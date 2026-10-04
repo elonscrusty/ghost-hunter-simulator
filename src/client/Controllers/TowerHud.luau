@@ -66,9 +66,9 @@ end
 
 local function setEarned(e: any)
 	if devRun then
-		earnedLabel.Text = "DEV RUN - no rewards"
+		Kit.IconText(earnedLabel, "DEV RUN - no rewards")
 	elseif type(e) == "table" then
-		earnedLabel.Text = string.format("This run: +%s Ecto  ·  +%s Shards", Format.Short(tonumber(e.Ecto) or 0), Format.Commas(tonumber(e.Shards) or 0))
+		Kit.IconText(earnedLabel, string.format("This run: +💚%s Ecto  ·  +🔮%s Shards", Format.Short(tonumber(e.Ecto) or 0), Format.Commas(tonumber(e.Shards) or 0)))
 	end
 end
 
@@ -271,7 +271,7 @@ local function onCleared(data: any)
 	if devRun then
 		sub = "DEV RUN - no rewards"
 	elseif ecto > 0 or shards > 0 then
-		sub = string.format("+%s 🔮 Spirit Shards  +%s 💚 Ectoplasm  (you did %d%% of the damage)", Format.Commas(shards), Format.Commas(ecto), pct)
+		sub = string.format("+🔮%s Spirit Shards  +💚%s Ectoplasm  (you did %d%% of the damage)", Format.Commas(shards), Format.Commas(ecto), pct)
 	else
 		sub = "You didn't hit this boss, so no share this time. Attack it to earn rewards!"
 	end

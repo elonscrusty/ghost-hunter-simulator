@@ -155,7 +155,8 @@ function refreshCards(crateId: string, d: any, odds: { [string]: number }, luck:
 		Portrait.Face(pic, e.Hunter, not found)
 		Kit.Label(card, if found then string.upper(def.Name) else "???", { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 100), ZIndex = 64, Style = "Body", Fit = true })
 		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 121), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
-		Kit.Label(card, "⚡ " .. Format.Commas(def.Power), { Size = UDim2.new(0.55, 0, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Gold, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
+		local powerText = Kit.Label(card, "", { Size = UDim2.new(0.55, 0, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Gold, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
+		Kit.IconText(powerText, "⚡ " .. Format.Commas(def.Power))
 		local pct = Kit.Label(card, Format.Percent(odds[e.Hunter]), { Size = UDim2.new(0.45, 0, 0, 24), Position = UDim2.new(1, -8, 1, -29), AnchorPoint = Vector2.new(1, 0), ZIndex = 64, Align = Enum.TextXAlignment.Right, Style = "Heading", Fit = true })
 		if luck > 1 and rar.Order >= Config.LuckAffectsFromOrder then
 			pct.TextColor3 = Theme.Ecto
@@ -186,9 +187,9 @@ function refreshButton(crateId: string, d: any, luck: number)
 	local L = Config.LuckyOpens
 	Kit.SetButtonText(luckyButton, string.format("🍀 x%d LUCKY  💚 %s", L.Opens, Format.Short(price * L.PriceMultiplier)))
 	luckyButton:SetAttribute("Color", if d.Ecto >= price * L.PriceMultiplier then "Teal" else "Gray")
-	luckLabel.Text = if left > 0
+	Kit.IconText(luckLabel, if left > 0
 		then string.format("🍀 %d LUCKY OPEN%s LEFT: rare odds x%d!", left, if left == 1 then "" else "S", L.Multiplier)
-		else "🍀 LUCK BOOST: rare odds boosted!"
+		else "🍀 LUCK BOOST: rare odds boosted!")
 	luckLabel.Visible = luck > 1
 	local autoOwned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true
 	local autoOn = player:GetAttribute("AutoOpen") ~= nil

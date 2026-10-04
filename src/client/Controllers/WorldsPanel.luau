@@ -52,17 +52,17 @@ local function refresh()
 		c.Lock.Visible = not owned
 		c.Frame.BackgroundTransparency = if owned then 0 else 0.35
 		if not owned then
-			c.Status.Text = "🔒 " .. Format.Short(z.Cost)
+			Kit.IconText(c.Status, "💚 " .. Format.Short(z.Cost))
 			c.Status.TextColor3 = Theme.Muted
 			Kit.SetButtonText(c.Go, "LOCKED")
 			c.Go:SetAttribute("Color", "Gray")
 		elseif z.Id == here then
-			c.Status.Text = "YOU ARE HERE"
+			Kit.IconText(c.Status, "YOU ARE HERE")
 			c.Status.TextColor3 = Theme.Ecto
 			Kit.SetButtonText(c.Go, "HERE")
 			c.Go:SetAttribute("Color", "Gray")
 		else
-			c.Status.Text = "UNLOCKED"
+			Kit.IconText(c.Status, "UNLOCKED")
 			c.Status.TextColor3 = Theme.Ecto
 			Kit.SetButtonText(c.Go, "GO!")
 			c.Go:SetAttribute("Color", "Green")

@@ -9,6 +9,7 @@
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Format = require(game:GetService("ReplicatedStorage").GH.Logic.Format)
 local Kit = require(script.Parent.Kit)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 local Props = require(script.Parent.Props)
 
 local Gates = {}
@@ -102,10 +103,17 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 		Pos = UDim2.fromScale(0.03, 0.04),
 		Size = UDim2.fromScale(0.94, 0.5),
 	})
-	Kit.Label(gui, "🔒 " .. Format.Short(zone.Cost) .. " ECTOPLASM", C(150, 255, 140), {
+	-- cost row: the uploaded lock icon left of the price (Ambience hides it once unlocked;
+	-- the canvas is 40 x 10 studs, so a 0.38-tall square is 0.095 of the width)
+	local lockImage = Icons.Get("lock")
+	if lockImage then
+		local img = Kit.IconImage(gui, lockImage, 0.1, 0.56, 0.095, 0.38)
+		img.Name = "CostIcon"
+	end
+	Kit.Label(gui, (if lockImage then "" else "🔒 ") .. Format.Short(zone.Cost) .. " ECTOPLASM", C(150, 255, 140), {
 		Name = "CostLabel",
-		Pos = UDim2.fromScale(0.08, 0.56),
-		Size = UDim2.fromScale(0.84, 0.38),
+		Pos = if lockImage then UDim2.fromScale(0.2, 0.56) else UDim2.fromScale(0.08, 0.56),
+		Size = if lockImage then UDim2.fromScale(0.7, 0.38) else UDim2.fromScale(0.84, 0.38),
 	})
 
 	-- Prompt anchor on the near side.

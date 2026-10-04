@@ -586,7 +586,15 @@ function Hud.Banner(title: string, sub: string?, color: Color3?)
 	local my = bannerToken
 	bannerLabel.Text = title
 	bannerLabel.TextColor3 = color or Theme.Ecto
-	bannerSub.Text = sub or ""
+	Kit.IconText(bannerSub, sub or "") -- 💚 / 🔮 / ⚡ ... as their uploaded images
+	local subIcons: { ImageLabel } = {}
+	for _, c in bannerSub:GetChildren() do
+		if c:IsA("ImageLabel") and c.Visible then
+			table.insert(subIcons, c)
+			c.ImageTransparency = 1
+			Kit.Tween(c, 0.3, { ImageTransparency = 0 })
+		end
+	end
 	local s1 = bannerLabel:FindFirstChildOfClass("UIStroke") :: UIStroke
 	local s2 = bannerSub:FindFirstChildOfClass("UIStroke") :: UIStroke
 	bannerLabel.TextTransparency = 1
@@ -608,6 +616,9 @@ function Hud.Banner(title: string, sub: string?, color: Color3?)
 		Kit.Tween(s1, 0.45, { Transparency = 1 })
 		Kit.Tween(bannerSub, 0.45, { TextTransparency = 1 })
 		Kit.Tween(s2, 0.45, { Transparency = 1 })
+		for _, c in subIcons do
+			Kit.Tween(c, 0.45, { ImageTransparency = 1 })
+		end
 	end)
 end
 

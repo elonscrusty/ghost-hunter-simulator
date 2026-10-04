@@ -31,7 +31,7 @@ local HuntersPanel = {}
 type Card = {
 	Frame: TextButton,
 	Equip: Frame,
-	Lock: TextLabel,
+	Lock: GuiObject,
 	Select: Frame,
 	SelectLabel: TextLabel,
 	Knock: Frame,
@@ -194,14 +194,14 @@ local function setInspect(uid: string?)
 	rarityLabel.Text = rar.Name
 	local g = rarityRibbon:FindFirstChildOfClass("UIGradient") :: UIGradient
 	g.Color = ColorSequence.new(rar.Color, rar.Color2)
-	statLabel.Text = "⚡ " .. Format.Short(powerOf(h)) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(powerOf(h))) .. " HP"
+	Kit.IconText(statLabel, "⚡ " .. Format.Short(powerOf(h)) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(powerOf(h))) .. " HP")
 	blurbLabel.Text = def.Blurb
 	local isEq = table.find(d.Equipped, uid) ~= nil
 	Kit.SetButtonText(equipButton, if isEq then "UNEQUIP" else "EQUIP")
 	equipButton:SetAttribute("Color", if isEq then "Red" else "Green")
 	Kit.SetButtonText(lockButton, if h.Locked then "🔓 UNLOCK" else "🔒 LOCK")
 	relOneButton.Visible = not isEq and not h.Locked
-	Kit.SetButtonText(relOneButton, "RELEASE +" .. Format.Short(hunterRefund(h)))
+	Kit.SetButtonText(relOneButton, "RELEASE +💚" .. Format.Short(hunterRefund(h)))
 end
 
 local function updateReleaseBar()
@@ -274,7 +274,7 @@ local function updateMergeBar()
 	end
 	local nextTier = Config.Tiers[pickTier + 1]
 	local cost = cratePrice(id) * Config.Merge.CostMult[pickTier + 1]
-	mergeInfo.Text = "Uses the " .. Config.Merge.Count .. " highlighted " .. name .. ".\n\nYou get: " .. nextTier.Icon .. " " .. nextTier.Name .. " " .. string.upper(def.Name) .. "\n⚡ " .. Format.Commas(def.Power * nextTier.Mult) .. " CAPTURE POWER\n\nCost: 💚" .. Format.Commas(cost)
+	mergeInfo.Text = "Uses the " .. Config.Merge.Count .. " highlighted " .. name .. ".\n\nYou get: " .. nextTier.Icon .. " " .. nextTier.Name .. " " .. string.upper(def.Name) .. "\n" .. Format.Commas(def.Power * nextTier.Mult) .. " CAPTURE POWER\n\nCost: " .. Format.Commas(cost) .. " ECTOPLASM"
 	Kit.SetButtonText(mergeConfirm, "CONFIRM 💚" .. Format.Short(cost))
 	mergeConfirm:SetAttribute("Color", if State.Ecto >= cost then "Green" else "Gray")
 end
@@ -341,7 +341,7 @@ local function makeCard(uid: string, hunter: any): Card
 	if (hunter.Tier or 0) > 0 then
 		Kit.Label(f, tier.Icon .. " " .. tier.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 64), ZIndex = 67, Color = tier.Color, Style = "Small", Fit = true })
 	end
-	Kit.Label(f, "⚡" .. Format.Short(powerOf(hunter)), { Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 98), ZIndex = 66, Color = Theme.Gold, Style = "Body", Fit = true })
+	Kit.IconText(Kit.Label(f, "", { Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 98), ZIndex = 66, Color = Theme.Gold, Style = "Body", Fit = true }), "⚡" .. Format.Short(powerOf(hunter)))
 	local eqBadge: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(24, 24),
 		Position = UDim2.fromOffset(-5, -5),
@@ -353,7 +353,7 @@ local function makeCard(uid: string, hunter: any): Card
 	Kit.Corner(eqBadge, UDim.new(1, 0))
 	Kit.Stroke(eqBadge, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Label(eqBadge, "✅", { Style = "Body", ZIndex = 69 })
-	local lock = Kit.Label(f, "🔒", { Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, 2, 0, -3), AnchorPoint = Vector2.new(1, 0), ZIndex = 68, Stroke = 0, Style = "Small" })
+	local lock = Kit.Icon(f, "lock", "🔒", { Size = UDim2.fromOffset(22, 22), Position = UDim2.new(1, 2, 0, -3), AnchorPoint = Vector2.new(1, 0), ZIndex = 68, Stroke = 0, Style = "Small" })
 	lock.Visible = false
 	local sel: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Bad, BackgroundTransparency = 0.45, Visible = false, ZIndex = 70, Parent = f })
 	Kit.Corner(sel, UDim.new(0, 12))
@@ -452,7 +452,7 @@ function rebuild()
 	local count = State.CountOwned()
 	local slots = d.Slots or Config.Inventory.BaseSlots
 	equippedLabel.Text = "EQUIPPED " .. #d.Equipped .. "/" .. slots
-	powerLabel.Text = "⚡ " .. Format.Short(d.CrewPower or 0)
+	Kit.IconText(powerLabel, "⚡ " .. Format.Short(d.CrewPower or 0))
 	local maxHunters = (State.Data and State.Data.MaxHunters) or Config.Inventory.MaxHunters
 	storageLabel.Text = "STORAGE " .. count .. "/" .. maxHunters
 	storageLabel.TextColor3 = if count >= maxHunters - 5 then Theme.Bad else Theme.Muted
@@ -493,7 +493,7 @@ function HuntersPanel.Init()
 	-- top bar: counts on the left, actions on the right (actions drop to a 2nd row when narrow)
 	top = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 10), BackgroundTransparency = 1, ZIndex = 61, Parent = body })
 	equippedLabel = Kit.Label(top, "EQUIPPED 0/4", { Size = UDim2.fromOffset(150, 22), Position = UDim2.fromOffset(0, 0), Align = Enum.TextXAlignment.Left, Style = "Heading", Fit = true, ZIndex = 62 })
-	powerLabel = Kit.Label(top, "⚡ 0", { Size = UDim2.fromOffset(120, 22), Position = UDim2.fromOffset(152, 0), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 62 })
+	powerLabel = Kit.Label(top, "", { Size = UDim2.fromOffset(120, 22), Position = UDim2.fromOffset(152, 0), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 62 })
 	storageLabel = Kit.Label(top, "STORAGE 0/150", { Size = UDim2.fromOffset(200, 16), Position = UDim2.fromOffset(0, 25), Align = Enum.TextXAlignment.Left, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	actionsRow = Kit.new("Frame", { Size = UDim2.new(0, 480, 0, 40), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 61, Parent = top })
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), Parent = actionsRow })

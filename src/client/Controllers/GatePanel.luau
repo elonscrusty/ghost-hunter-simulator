@@ -10,6 +10,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local Icons = require(GH.Icons)
 
 local GatePanel = {}
 
@@ -18,6 +19,7 @@ local costLabel: TextLabel
 local fill: Frame
 local progressLabel: TextLabel
 local unlockButton: TextButton
+local perkIcons: { [string]: ImageLabel } = {} -- per-zone perk pictures (area / crate)
 local current: string? = nil
 local busy = false
 
@@ -28,7 +30,9 @@ local function refresh()
 		return
 	end
 	panel.Title.Text = "UNLOCK " .. zone.Name .. "?"
-	Kit.EctoText(costLabel, "💚 " .. Format.Short(zone.Cost) .. " ECTOPLASM")
+	Kit.IconText(costLabel, "💚 " .. Format.Short(zone.Cost) .. " ECTOPLASM")
+	perkIcons.Ghosts.Image = Icons.Get(Icons.ForZone(zone.Id)) or ""
+	perkIcons.Crate.Image = Icons.Get(Icons.ForCrate[zone.Crate]) or ""
 	local frac = math.clamp(d.Ecto / math.max(zone.Cost, 1), 0, 1)
 	Kit.Tween(fill, 0.25, { Size = UDim2.fromScale(math.max(frac, 0.03), 1) })
 	progressLabel.Text = Format.Short(math.min(d.Ecto, zone.Cost)) .. " / " .. Format.Short(zone.Cost)
@@ -39,7 +43,7 @@ local function refresh()
 		Kit.SetButtonText(unlockButton, "UNLOCK!")
 		unlockButton:SetAttribute("Color", "Green")
 	else
-		Kit.SetButtonText(unlockButton, "NEED " .. Format.Short(zone.Cost - d.Ecto) .. " MORE")
+		Kit.SetButtonText(unlockButton, "NEED 💚 " .. Format.Short(zone.Cost - d.Ecto) .. " MORE")
 		unlockButton:SetAttribute("Color", "Gray")
 	end
 end
@@ -65,12 +69,20 @@ function GatePanel.Init()
 	Kit.Gradient(fill, Theme.Ecto, Theme.Ecto2, 0)
 	progressLabel = Kit.Label(bar, "", { Style = "Small", ZIndex = 64 })
 	local perks: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 86), Position = UDim2.fromOffset(0, 84), BackgroundTransparency = 1, ZIndex = 61, Parent = body })
-	Kit.new("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, 38), CellPadding = UDim2.fromOffset(10, 8), Parent = perks })
-	for _, p in { "👻 NEW GHOSTS", "📦 NEW CRATE", "🔦 BETTER HUNTERS", "💚 HIGHER REWARDS" } do
-		local f: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Panel3, ZIndex = 62, Parent = perks })
+	Kit.new("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, 38), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = perks })
+	-- each perk: a picture (this area's icon / its crate / hunters / Ectoplasm) + the words
+	local perkList: { { Id: string, Text: string, Key: string? } } = {
+		{ Id = "Ghosts", Text = "NEW GHOSTS" },
+		{ Id = "Crate", Text = "NEW CRATE" },
+		{ Id = "Hunters", Text = "BETTER HUNTERS", Key = "menu_hunters" },
+		{ Id = "Ecto", Text = "HIGHER REWARDS", Key = "ecto" },
+	}
+	for i, p in perkList do
+		local f: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Panel3, LayoutOrder = i, ZIndex = 62, Parent = perks })
 		Kit.Corner(f, UDim.new(0, 10))
-		local pl = Kit.Label(f, p, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Style = "Body", Fit = true, ZIndex = 63 })
-		Kit.EctoText(pl, p)
+		local img: ImageLabel = Kit.new("ImageLabel", { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Image = Icons.Get(p.Key) or "", ZIndex = 63, Parent = f })
+		perkIcons[p.Id] = img
+		Kit.Label(f, p.Text, { Size = UDim2.new(1, -44, 1, 0), Position = UDim2.fromOffset(40, 0), Align = Enum.TextXAlignment.Left, Style = "Body", Fit = true, ZIndex = 63 })
 	end
 	unlockButton = Kit.Button(body, {
 		Text = "UNLOCK!",

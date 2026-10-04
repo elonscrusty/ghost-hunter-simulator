@@ -63,7 +63,7 @@ local function crateStation(folder: Instance, crate: Config.CrateDef, pos: Vecto
 	local signCF = CFrame.new(ax, 19, z) * CFrame.Angles(0, yaw, 0)
 	local sign = Kit.Part(m, V(20, 4, 0.6), signCF, C(35, 22, 60))
 	Kit.Part(m, V(21, 5, 0.4), signCF * CFrame.new(0, 0, 0.4), trim)
-	Kit.Sign(sign, Enum.NormalId.Front, crate.Name, crate.Trim)
+	Kit.IconSign(sign, Enum.NormalId.Front, crate.Name, crate.Trim, Icons.ForCrate[crate.Id])
 
 	-- glowing corner jack-o'-lanterns
 	Props.Pumpkin(m, V(x + dir * 6, 0, z + 9), 2.8, dir, 0, true)
@@ -89,7 +89,13 @@ local function beginnerExtras(m: Model, x: number, z: number, crate: Config.Crat
 	bb.MaxDistance = 120
 	bb.LightInfluence = 0
 	bb.Parent = beacon
-	local label = Kit.Label(bb, "🎁 OPEN CRATES! 🎁", C(255, 230, 90), { Stroke = C(120, 50, 10) })
+	-- the crate's icon either side of the words (bb is 240 x 40 px)
+	local crateImage = Icons.Get(Icons.ForCrate[crate.Id])
+	local label = Kit.Label(bb, if crateImage then "OPEN CRATES!" else "🎁 OPEN CRATES! 🎁", C(255, 230, 90), { Stroke = C(120, 50, 10) })
+	if crateImage then
+		Kit.IconImage(bb, crateImage, 0, 0.05, 0.15, 0.9)
+		Kit.IconImage(bb, crateImage, 0.85, 0.05, 0.15, 0.9)
+	end
 	label.TextScaled = false
 	label.TextSize = 24
 	local st = label:FindFirstChildOfClass("UIStroke")
@@ -117,7 +123,7 @@ local function upgradeStation(folder: Instance, pos: Vector3)
 	local signCF = CFrame.new(back + dir * 0.9, 13.2, z) * CFrame.Angles(0, yaw, 0)
 	local sign = Kit.Part(m, V(19, 5, 0.6), signCF, C(35, 22, 60))
 	Kit.Part(m, V(20, 6, 0.3), signCF * CFrame.new(0, 0, 0.4), Kit.Vivid(trim))
-	Kit.Sign(sign, Enum.NormalId.Front, "⚡ UPGRADES ⚡", trim)
+	Kit.IconSign(sign, Enum.NormalId.Front, "UPGRADES", trim, "menu_upgrades")
 	-- upgrade icons
 	for i, upId in Config.UpgradeOrder do
 		local up = Config.Upgrades[upId]

@@ -12,10 +12,10 @@ function Payouts.Init() end
 
 function Payouts.Start()
 	State.OnFx("Payout", function(d: any)
-		local text = string.format("%s: %s damage -> +%s 💚", string.upper(tostring(d.Name)), Format.Percent(tonumber(d.Pct) or 0), Format.Short(tonumber(d.Ecto) or 0))
+		local text = string.format("%s: %s damage -> +💚%s", string.upper(tostring(d.Name)), Format.Percent(tonumber(d.Pct) or 0), Format.Short(tonumber(d.Ecto) or 0))
 		local shards = tonumber(d.Shards)
 		if shards and shards > 0 then
-			text ..= " +" .. Format.Short(shards) .. " 🔮 SHARDS"
+			text ..= " +🔮" .. Format.Short(shards) .. " SHARDS"
 		end
 		Kit.Toast(text, "Good")
 	end)

@@ -69,6 +69,24 @@ local function blendZone(idx: number)
 	end
 end
 
+-- Gate sign cost row (World/Gates): the lock icon + price while locked, "✅ UNLOCKED" (whole
+-- row, icon hidden) once owned. Without the icon (no image id) the text carries the 🔒.
+local function setCost(cost: TextLabel, owned: boolean, price: number)
+	local icon = cost.Parent and cost.Parent:FindFirstChild("CostIcon") :: GuiObject?
+	if not cost:GetAttribute("BasePos") then
+		cost:SetAttribute("BasePos", true)
+		cost:SetAttribute("PosX", cost.Position.X.Scale)
+		cost:SetAttribute("SizeX", cost.Size.X.Scale)
+	end
+	if icon then
+		icon.Visible = not owned
+		local x, w = cost:GetAttribute("PosX") :: number, cost:GetAttribute("SizeX") :: number
+		cost.Position = UDim2.new(if owned then 0.08 else x, 0, cost.Position.Y.Scale, cost.Position.Y.Offset)
+		cost.Size = UDim2.new(if owned then 0.84 else w, 0, cost.Size.Y.Scale, cost.Size.Y.Offset)
+	end
+	cost.Text = if owned then "✅ UNLOCKED" else (if icon then "" else "🔒 ") .. Format.Short(price) .. " ECTOPLASM"
+end
+
 local function gateParts(zoneId: string): (BasePart?, TextLabel?, ProximityPrompt?)
 	local map = workspace:FindFirstChild("Map")
 	local gates = map and map:FindFirstChild("Gates")
@@ -111,7 +129,7 @@ local function applyGates()
 			end
 		end
 		if cost then
-			cost.Text = if owned then "✅ UNLOCKED" else "🔒 " .. Format.Short(z.Cost) .. " ECTOPLASM"
+			setCost(cost, owned, z.Cost)
 		end
 		if prompt then
 			prompt.Enabled = not owned
@@ -132,7 +150,7 @@ local function unlockSequence(zoneId: string)
 		prompt.Enabled = false
 	end
 	if cost then
-		cost.Text = "✅ UNLOCKED"
+		setCost(cost, true, zone.Cost)
 	end
 	-- camera emphasis: quick punch-in + shake
 	local cam = workspace.CurrentCamera

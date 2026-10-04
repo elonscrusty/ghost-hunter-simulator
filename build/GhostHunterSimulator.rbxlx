@@ -16732,6 +16732,7 @@ return Frost
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Format = require(game:GetService("ReplicatedStorage").GH.Logic.Format)
 local Kit = require(script.Parent.Kit)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 local Props = require(script.Parent.Props)
 
 local Gates = {}
@@ -16825,10 +16826,17 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 		Pos = UDim2.fromScale(0.03, 0.04),
 		Size = UDim2.fromScale(0.94, 0.5),
 	})
-	Kit.Label(gui, "🔒 " .. Format.Short(zone.Cost) .. " ECTOPLASM", C(150, 255, 140), {
+	-- cost row: the uploaded lock icon left of the price (Ambience hides it once unlocked;
+	-- the canvas is 40 x 10 studs, so a 0.38-tall square is 0.095 of the width)
+	local lockImage = Icons.Get("lock")
+	if lockImage then
+		local img = Kit.IconImage(gui, lockImage, 0.1, 0.56, 0.095, 0.38)
+		img.Name = "CostIcon"
+	end
+	Kit.Label(gui, (if lockImage then "" else "🔒 ") .. Format.Short(zone.Cost) .. " ECTOPLASM", C(150, 255, 140), {
 		Name = "CostLabel",
-		Pos = UDim2.fromScale(0.08, 0.56),
-		Size = UDim2.fromScale(0.84, 0.38),
+		Pos = if lockImage then UDim2.fromScale(0.2, 0.56) else UDim2.fromScale(0.08, 0.56),
+		Size = if lockImage then UDim2.fromScale(0.7, 0.38) else UDim2.fromScale(0.84, 0.38),
 	})
 
 	-- Prompt anchor on the near side.
@@ -18866,6 +18874,7 @@ return Inferno
 -- Kit.Vivid colour instead. Kit.Stats.Neon counts the Neon parts so the build log shows it.
 
 local CollectionService = game:GetService("CollectionService")
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 
 local Kit = {}
 
@@ -19087,6 +19096,44 @@ function Kit.Sign(part: BasePart, face: Enum.NormalId, text: string, color: Colo
 	return Kit.Label(g, text, color, opts)
 end
 
+-- Square image at x (scale) inside a SurfaceGui / frame, `h` (scale) tall, `wFrac` (scale) wide.
+local function iconImage(parent: Instance, image: string, x: number, y: number, wFrac: number, h: number): ImageLabel
+	local img = Instance.new("ImageLabel")
+	img.Name = "SignIcon"
+	img.BackgroundTransparency = 1
+	img.Image = image
+	img.ScaleType = Enum.ScaleType.Fit
+	img.Position = UDim2.fromScale(x, y)
+	img.Size = UDim2.fromScale(wFrac, h)
+	img.Parent = parent
+	return img
+end
+
+-- Whole-face sign with the uploaded icon `iconKey` (shared Icons.luau) at both ends and the text
+-- between them. Without an image id it is a plain Kit.Sign (no emoji is drawn).
+function Kit.IconSign(part: BasePart, face: Enum.NormalId, text: string, color: Color3, iconKey: string?, opts: LabelOpts?): TextLabel
+	local g = Kit.Gui(part, face)
+	local image = Icons.Get(iconKey)
+	if not image then
+		return Kit.Label(g, text, color, opts)
+	end
+	local s = part.Size
+	local wide = if face == Enum.NormalId.Left or face == Enum.NormalId.Right then s.Z else s.X
+	local tall = if face == Enum.NormalId.Top or face == Enum.NormalId.Bottom then s.Z else s.Y
+	local h = 0.8
+	local f = math.min(0.22, tall * h / math.max(wide, 0.1)) -- square icon, as a width fraction
+	local margin = 0.02
+	iconImage(g, image, margin, (1 - h) / 2, f, h)
+	iconImage(g, image, 1 - margin - f, (1 - h) / 2, f, h)
+	local o: LabelOpts = table.clone(opts or NO_LABEL)
+	local inner = margin + f + 0.01
+	o.Pos = UDim2.fromScale(inner, 0)
+	o.Size = UDim2.fromScale(1 - 2 * inner, 1)
+	return Kit.Label(g, text, color, o)
+end
+
+Kit.IconImage = iconImage
+
 --==================================================================
 -- EFFECTS (budgeted)
 --==================================================================
@@ -19244,13 +19291,14 @@ return Kit
 -- Name / Value labels); LeaderboardService fills them in.
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Kit = require(script.Parent.Kit)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 
 local Leaderboard = {}
 
 local C = Color3.fromRGB
 local V = Vector3.new
 
-type BoardSpec = { Model: string, Title: string, Sub: string, Frame: Color3, Accent: Color3, ValueFit: string }
+type BoardSpec = { Model: string, Title: string, Icon: string?, Sub: string, Frame: Color3, Accent: Color3, ValueFit: string }
 
 local function build(folder: Instance, L: { Position: Vector3, Yaw: number }, spec: BoardSpec)
 	local m = Kit.Model(folder, spec.Model)
@@ -19276,7 +19324,18 @@ local function build(folder: Instance, L: { Position: Vector3, Yaw: number }, sp
 	gui.Name = "BoardGui"
 	local rows = Config.Leaderboard.Rows
 	local titleH = 0.15
-	Kit.Label(gui, spec.Title, C(255, 215, 80), { Name = "Title", Pos = UDim2.fromScale(0.04, 0.015), Size = UDim2.fromScale(0.92, titleH - 0.03) })
+	-- title, with the board's uploaded icon at both ends when it has one (square: the 18 x 20
+	-- stud board makes a (titleH - 0.03)-tall square that wide in width scale * 20 / 18)
+	local image = Icons.Get(spec.Icon)
+	if image then
+		local th = titleH - 0.03
+		local iw = th * 20 / 18
+		Kit.IconImage(gui, image, 0.04, 0.015, iw, th)
+		Kit.IconImage(gui, image, 0.96 - iw, 0.015, iw, th)
+		Kit.Label(gui, spec.Title, C(255, 215, 80), { Name = "Title", Pos = UDim2.fromScale(0.05 + iw, 0.015), Size = UDim2.fromScale(0.9 - 2 * iw, th) })
+	else
+		Kit.Label(gui, spec.Title, C(255, 215, 80), { Name = "Title", Pos = UDim2.fromScale(0.04, 0.015), Size = UDim2.fromScale(0.92, titleH - 0.03) })
+	end
 	Kit.Label(gui, spec.Sub, spec.Accent, { Name = "Sub", Pos = UDim2.fromScale(0.2, titleH - 0.02), Size = UDim2.fromScale(0.6, 0.05) })
 	local rowH = (1 - titleH - 0.06) / rows
 	for i = 1, rows do
@@ -19313,7 +19372,8 @@ function Leaderboard.Build(map: Instance)
 	})
 	build(folder, Config.Layout.PowerBoard, {
 		Model = "TopPower",
-		Title = "⚡ TOP POWER",
+		Title = "TOP POWER",
+		Icon = "power",
 		Sub = "BEST CREW POWER",
 		Frame = C(255, 150, 50),
 		Accent = C(255, 220, 110),
@@ -21402,7 +21462,7 @@ local function crateStation(folder: Instance, crate: Config.CrateDef, pos: Vecto
 	local signCF = CFrame.new(ax, 19, z) * CFrame.Angles(0, yaw, 0)
 	local sign = Kit.Part(m, V(20, 4, 0.6), signCF, C(35, 22, 60))
 	Kit.Part(m, V(21, 5, 0.4), signCF * CFrame.new(0, 0, 0.4), trim)
-	Kit.Sign(sign, Enum.NormalId.Front, crate.Name, crate.Trim)
+	Kit.IconSign(sign, Enum.NormalId.Front, crate.Name, crate.Trim, Icons.ForCrate[crate.Id])
 
 	-- glowing corner jack-o'-lanterns
 	Props.Pumpkin(m, V(x + dir * 6, 0, z + 9), 2.8, dir, 0, true)
@@ -21428,7 +21488,13 @@ local function beginnerExtras(m: Model, x: number, z: number, crate: Config.Crat
 	bb.MaxDistance = 120
 	bb.LightInfluence = 0
 	bb.Parent = beacon
-	local label = Kit.Label(bb, "🎁 OPEN CRATES! 🎁", C(255, 230, 90), { Stroke = C(120, 50, 10) })
+	-- the crate's icon either side of the words (bb is 240 x 40 px)
+	local crateImage = Icons.Get(Icons.ForCrate[crate.Id])
+	local label = Kit.Label(bb, if crateImage then "OPEN CRATES!" else "🎁 OPEN CRATES! 🎁", C(255, 230, 90), { Stroke = C(120, 50, 10) })
+	if crateImage then
+		Kit.IconImage(bb, crateImage, 0, 0.05, 0.15, 0.9)
+		Kit.IconImage(bb, crateImage, 0.85, 0.05, 0.15, 0.9)
+	end
 	label.TextScaled = false
 	label.TextSize = 24
 	local st = label:FindFirstChildOfClass("UIStroke")
@@ -21456,7 +21522,7 @@ local function upgradeStation(folder: Instance, pos: Vector3)
 	local signCF = CFrame.new(back + dir * 0.9, 13.2, z) * CFrame.Angles(0, yaw, 0)
 	local sign = Kit.Part(m, V(19, 5, 0.6), signCF, C(35, 22, 60))
 	Kit.Part(m, V(20, 6, 0.3), signCF * CFrame.new(0, 0, 0.4), Kit.Vivid(trim))
-	Kit.Sign(sign, Enum.NormalId.Front, "⚡ UPGRADES ⚡", trim)
+	Kit.IconSign(sign, Enum.NormalId.Front, "UPGRADES", trim, "menu_upgrades")
 	-- upgrade icons
 	for i, upId in Config.UpgradeOrder do
 		local up = Config.Upgrades[upId]
@@ -24603,6 +24669,24 @@ local function blendZone(idx: number)
 	end
 end
 
+-- Gate sign cost row (World/Gates): the lock icon + price while locked, "✅ UNLOCKED" (whole
+-- row, icon hidden) once owned. Without the icon (no image id) the text carries the 🔒.
+local function setCost(cost: TextLabel, owned: boolean, price: number)
+	local icon = cost.Parent and cost.Parent:FindFirstChild("CostIcon") :: GuiObject?
+	if not cost:GetAttribute("BasePos") then
+		cost:SetAttribute("BasePos", true)
+		cost:SetAttribute("PosX", cost.Position.X.Scale)
+		cost:SetAttribute("SizeX", cost.Size.X.Scale)
+	end
+	if icon then
+		icon.Visible = not owned
+		local x, w = cost:GetAttribute("PosX") :: number, cost:GetAttribute("SizeX") :: number
+		cost.Position = UDim2.new(if owned then 0.08 else x, 0, cost.Position.Y.Scale, cost.Position.Y.Offset)
+		cost.Size = UDim2.new(if owned then 0.84 else w, 0, cost.Size.Y.Scale, cost.Size.Y.Offset)
+	end
+	cost.Text = if owned then "✅ UNLOCKED" else (if icon then "" else "🔒 ") .. Format.Short(price) .. " ECTOPLASM"
+end
+
 local function gateParts(zoneId: string): (BasePart?, TextLabel?, ProximityPrompt?)
 	local map = workspace:FindFirstChild("Map")
 	local gates = map and map:FindFirstChild("Gates")
@@ -24645,7 +24729,7 @@ local function applyGates()
 			end
 		end
 		if cost then
-			cost.Text = if owned then "✅ UNLOCKED" else "🔒 " .. Format.Short(z.Cost) .. " ECTOPLASM"
+			setCost(cost, owned, z.Cost)
 		end
 		if prompt then
 			prompt.Enabled = not owned
@@ -24666,7 +24750,7 @@ local function unlockSequence(zoneId: string)
 		prompt.Enabled = false
 	end
 	if cost then
-		cost.Text = "✅ UNLOCKED"
+		setCost(cost, true, zone.Cost)
 	end
 	-- camera emphasis: quick punch-in + shake
 	local cam = workspace.CurrentCamera
@@ -25005,7 +25089,8 @@ function refreshCards(crateId: string, d: any, odds: { [string]: number }, luck:
 		Portrait.Face(pic, e.Hunter, not found)
 		Kit.Label(card, if found then string.upper(def.Name) else "???", { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 100), ZIndex = 64, Style = "Body", Fit = true })
 		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 121), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
-		Kit.Label(card, "⚡ " .. Format.Commas(def.Power), { Size = UDim2.new(0.55, 0, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Gold, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
+		local powerText = Kit.Label(card, "", { Size = UDim2.new(0.55, 0, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Gold, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
+		Kit.IconText(powerText, "⚡ " .. Format.Commas(def.Power))
 		local pct = Kit.Label(card, Format.Percent(odds[e.Hunter]), { Size = UDim2.new(0.45, 0, 0, 24), Position = UDim2.new(1, -8, 1, -29), AnchorPoint = Vector2.new(1, 0), ZIndex = 64, Align = Enum.TextXAlignment.Right, Style = "Heading", Fit = true })
 		if luck > 1 and rar.Order >= Config.LuckAffectsFromOrder then
 			pct.TextColor3 = Theme.Ecto
@@ -25036,9 +25121,9 @@ function refreshButton(crateId: string, d: any, luck: number)
 	local L = Config.LuckyOpens
 	Kit.SetButtonText(luckyButton, string.format("🍀 x%d LUCKY  💚 %s", L.Opens, Format.Short(price * L.PriceMultiplier)))
 	luckyButton:SetAttribute("Color", if d.Ecto >= price * L.PriceMultiplier then "Teal" else "Gray")
-	luckLabel.Text = if left > 0
+	Kit.IconText(luckLabel, if left > 0
 		then string.format("🍀 %d LUCKY OPEN%s LEFT: rare odds x%d!", left, if left == 1 then "" else "S", L.Multiplier)
-		else "🍀 LUCK BOOST: rare odds boosted!"
+		else "🍀 LUCK BOOST: rare odds boosted!")
 	luckLabel.Visible = luck > 1
 	local autoOwned = d.Passes and d.Passes[Config.AutoOpen.Pass] == true
 	local autoOn = player:GetAttribute("AutoOpen") ~= nil
@@ -25529,7 +25614,7 @@ local function addTag(m: Member, isLocal: boolean)
 	})
 	local tier = Config.Tiers[m.Tier]
 	local text = (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
-	WorldLabel.Text(gui, text, { Style = "Tiny", Color = rar.Color })
+	WorldLabel.Text(gui, text, { Style = "Tiny", Color = Theme.RarityText(rar) })
 	gui.Enabled = game:GetService("Players").LocalPlayer:GetAttribute("ShowNames") ~= false -- Settings: NAMES
 	-- HP bar: its own label at the tag's anchor point, drawn in the upper part so it always
 	-- sits just above the name. Own crew: readable at play distance; others: small and close only.
@@ -27354,6 +27439,7 @@ local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
 local Theme = require(Client.UI.Theme)
+local Icons = require(GH.Icons)
 
 local GatePanel = {}
 
@@ -27362,6 +27448,7 @@ local costLabel: TextLabel
 local fill: Frame
 local progressLabel: TextLabel
 local unlockButton: TextButton
+local perkIcons: { [string]: ImageLabel } = {} -- per-zone perk pictures (area / crate)
 local current: string? = nil
 local busy = false
 
@@ -27372,7 +27459,9 @@ local function refresh()
 		return
 	end
 	panel.Title.Text = "UNLOCK " .. zone.Name .. "?"
-	Kit.EctoText(costLabel, "💚 " .. Format.Short(zone.Cost) .. " ECTOPLASM")
+	Kit.IconText(costLabel, "💚 " .. Format.Short(zone.Cost) .. " ECTOPLASM")
+	perkIcons.Ghosts.Image = Icons.Get(Icons.ForZone(zone.Id)) or ""
+	perkIcons.Crate.Image = Icons.Get(Icons.ForCrate[zone.Crate]) or ""
 	local frac = math.clamp(d.Ecto / math.max(zone.Cost, 1), 0, 1)
 	Kit.Tween(fill, 0.25, { Size = UDim2.fromScale(math.max(frac, 0.03), 1) })
 	progressLabel.Text = Format.Short(math.min(d.Ecto, zone.Cost)) .. " / " .. Format.Short(zone.Cost)
@@ -27383,7 +27472,7 @@ local function refresh()
 		Kit.SetButtonText(unlockButton, "UNLOCK!")
 		unlockButton:SetAttribute("Color", "Green")
 	else
-		Kit.SetButtonText(unlockButton, "NEED " .. Format.Short(zone.Cost - d.Ecto) .. " MORE")
+		Kit.SetButtonText(unlockButton, "NEED 💚 " .. Format.Short(zone.Cost - d.Ecto) .. " MORE")
 		unlockButton:SetAttribute("Color", "Gray")
 	end
 end
@@ -27409,12 +27498,20 @@ function GatePanel.Init()
 	Kit.Gradient(fill, Theme.Ecto, Theme.Ecto2, 0)
 	progressLabel = Kit.Label(bar, "", { Style = "Small", ZIndex = 64 })
 	local perks: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 86), Position = UDim2.fromOffset(0, 84), BackgroundTransparency = 1, ZIndex = 61, Parent = body })
-	Kit.new("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, 38), CellPadding = UDim2.fromOffset(10, 8), Parent = perks })
-	for _, p in { "👻 NEW GHOSTS", "📦 NEW CRATE", "🔦 BETTER HUNTERS", "💚 HIGHER REWARDS" } do
-		local f: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Panel3, ZIndex = 62, Parent = perks })
+	Kit.new("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, 38), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = perks })
+	-- each perk: a picture (this area's icon / its crate / hunters / Ectoplasm) + the words
+	local perkList: { { Id: string, Text: string, Key: string? } } = {
+		{ Id = "Ghosts", Text = "NEW GHOSTS" },
+		{ Id = "Crate", Text = "NEW CRATE" },
+		{ Id = "Hunters", Text = "BETTER HUNTERS", Key = "menu_hunters" },
+		{ Id = "Ecto", Text = "HIGHER REWARDS", Key = "ecto" },
+	}
+	for i, p in perkList do
+		local f: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Panel3, LayoutOrder = i, ZIndex = 62, Parent = perks })
 		Kit.Corner(f, UDim.new(0, 10))
-		local pl = Kit.Label(f, p, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Style = "Body", Fit = true, ZIndex = 63 })
-		Kit.EctoText(pl, p)
+		local img: ImageLabel = Kit.new("ImageLabel", { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(0, 6, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Image = Icons.Get(p.Key) or "", ZIndex = 63, Parent = f })
+		perkIcons[p.Id] = img
+		Kit.Label(f, p.Text, { Size = UDim2.new(1, -44, 1, 0), Position = UDim2.fromOffset(40, 0), Align = Enum.TextXAlignment.Left, Style = "Body", Fit = true, ZIndex = 63 })
 	end
 	unlockButton = Kit.Button(body, {
 		Text = "UNLOCK!",
@@ -28231,12 +28328,12 @@ local function refresh()
 		return
 	end
 	panel.Title.Text = string.upper(egg.Name)
-	priceLabel.Text = string.format("🔮 %s  •  you have %s", Format.Commas(egg.Price), Format.Short(d.Shards or 0))
+	Kit.IconText(priceLabel, string.format("🔮 %s  •  you have 🔮 %s", Format.Commas(egg.Price), Format.Short(d.Shards or 0)))
 	if Eggs.Unlocked(egg, d.TowerCheckpoint or 0) then
-		lockLabel.Text = if egg.Unlock > 0 then string.format("UNLOCKED (Tower checkpoint %d)", egg.Unlock) else "Open to everyone"
+		Kit.IconText(lockLabel, if egg.Unlock > 0 then string.format("UNLOCKED (Tower checkpoint %d)", egg.Unlock) else "Open to everyone")
 		lockLabel.TextColor3 = Theme.Good
 	else
-		lockLabel.Text = string.format("🔒 Unlock: Tower checkpoint %d (yours: %d)", egg.Unlock, d.TowerCheckpoint or 0)
+		Kit.IconText(lockLabel, string.format("🔒 Unlock: Tower checkpoint %d (yours: %d)", egg.Unlock, d.TowerCheckpoint or 0))
 		lockLabel.TextColor3 = Theme.Bad
 	end
 	local reason = blockReason(egg, d)
@@ -28983,7 +29080,15 @@ function Hud.Banner(title: string, sub: string?, color: Color3?)
 	local my = bannerToken
 	bannerLabel.Text = title
 	bannerLabel.TextColor3 = color or Theme.Ecto
-	bannerSub.Text = sub or ""
+	Kit.IconText(bannerSub, sub or "") -- 💚 / 🔮 / ⚡ ... as their uploaded images
+	local subIcons: { ImageLabel } = {}
+	for _, c in bannerSub:GetChildren() do
+		if c:IsA("ImageLabel") and c.Visible then
+			table.insert(subIcons, c)
+			c.ImageTransparency = 1
+			Kit.Tween(c, 0.3, { ImageTransparency = 0 })
+		end
+	end
 	local s1 = bannerLabel:FindFirstChildOfClass("UIStroke") :: UIStroke
 	local s2 = bannerSub:FindFirstChildOfClass("UIStroke") :: UIStroke
 	bannerLabel.TextTransparency = 1
@@ -29005,6 +29110,9 @@ function Hud.Banner(title: string, sub: string?, color: Color3?)
 		Kit.Tween(s1, 0.45, { Transparency = 1 })
 		Kit.Tween(bannerSub, 0.45, { TextTransparency = 1 })
 		Kit.Tween(s2, 0.45, { Transparency = 1 })
+		for _, c in subIcons do
+			Kit.Tween(c, 0.45, { ImageTransparency = 1 })
+		end
 	end)
 end
 
@@ -29245,7 +29353,7 @@ local HuntersPanel = {}
 type Card = {
 	Frame: TextButton,
 	Equip: Frame,
-	Lock: TextLabel,
+	Lock: GuiObject,
 	Select: Frame,
 	SelectLabel: TextLabel,
 	Knock: Frame,
@@ -29408,14 +29516,14 @@ local function setInspect(uid: string?)
 	rarityLabel.Text = rar.Name
 	local g = rarityRibbon:FindFirstChildOfClass("UIGradient") :: UIGradient
 	g.Color = ColorSequence.new(rar.Color, rar.Color2)
-	statLabel.Text = "⚡ " .. Format.Short(powerOf(h)) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(powerOf(h))) .. " HP"
+	Kit.IconText(statLabel, "⚡ " .. Format.Short(powerOf(h)) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(powerOf(h))) .. " HP")
 	blurbLabel.Text = def.Blurb
 	local isEq = table.find(d.Equipped, uid) ~= nil
 	Kit.SetButtonText(equipButton, if isEq then "UNEQUIP" else "EQUIP")
 	equipButton:SetAttribute("Color", if isEq then "Red" else "Green")
 	Kit.SetButtonText(lockButton, if h.Locked then "🔓 UNLOCK" else "🔒 LOCK")
 	relOneButton.Visible = not isEq and not h.Locked
-	Kit.SetButtonText(relOneButton, "RELEASE +" .. Format.Short(hunterRefund(h)))
+	Kit.SetButtonText(relOneButton, "RELEASE +💚" .. Format.Short(hunterRefund(h)))
 end
 
 local function updateReleaseBar()
@@ -29488,7 +29596,7 @@ local function updateMergeBar()
 	end
 	local nextTier = Config.Tiers[pickTier + 1]
 	local cost = cratePrice(id) * Config.Merge.CostMult[pickTier + 1]
-	mergeInfo.Text = "Uses the " .. Config.Merge.Count .. " highlighted " .. name .. ".\n\nYou get: " .. nextTier.Icon .. " " .. nextTier.Name .. " " .. string.upper(def.Name) .. "\n⚡ " .. Format.Commas(def.Power * nextTier.Mult) .. " CAPTURE POWER\n\nCost: 💚" .. Format.Commas(cost)
+	mergeInfo.Text = "Uses the " .. Config.Merge.Count .. " highlighted " .. name .. ".\n\nYou get: " .. nextTier.Icon .. " " .. nextTier.Name .. " " .. string.upper(def.Name) .. "\n" .. Format.Commas(def.Power * nextTier.Mult) .. " CAPTURE POWER\n\nCost: " .. Format.Commas(cost) .. " ECTOPLASM"
 	Kit.SetButtonText(mergeConfirm, "CONFIRM 💚" .. Format.Short(cost))
 	mergeConfirm:SetAttribute("Color", if State.Ecto >= cost then "Green" else "Gray")
 end
@@ -29555,7 +29663,7 @@ local function makeCard(uid: string, hunter: any): Card
 	if (hunter.Tier or 0) > 0 then
 		Kit.Label(f, tier.Icon .. " " .. tier.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 64), ZIndex = 67, Color = tier.Color, Style = "Small", Fit = true })
 	end
-	Kit.Label(f, "⚡" .. Format.Short(powerOf(hunter)), { Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 98), ZIndex = 66, Color = Theme.Gold, Style = "Body", Fit = true })
+	Kit.IconText(Kit.Label(f, "", { Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 98), ZIndex = 66, Color = Theme.Gold, Style = "Body", Fit = true }), "⚡" .. Format.Short(powerOf(hunter)))
 	local eqBadge: Frame = Kit.new("Frame", {
 		Size = UDim2.fromOffset(24, 24),
 		Position = UDim2.fromOffset(-5, -5),
@@ -29567,7 +29675,7 @@ local function makeCard(uid: string, hunter: any): Card
 	Kit.Corner(eqBadge, UDim.new(1, 0))
 	Kit.Stroke(eqBadge, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Label(eqBadge, "✅", { Style = "Body", ZIndex = 69 })
-	local lock = Kit.Label(f, "🔒", { Size = UDim2.fromOffset(20, 20), Position = UDim2.new(1, 2, 0, -3), AnchorPoint = Vector2.new(1, 0), ZIndex = 68, Stroke = 0, Style = "Small" })
+	local lock = Kit.Icon(f, "lock", "🔒", { Size = UDim2.fromOffset(22, 22), Position = UDim2.new(1, 2, 0, -3), AnchorPoint = Vector2.new(1, 0), ZIndex = 68, Stroke = 0, Style = "Small" })
 	lock.Visible = false
 	local sel: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Bad, BackgroundTransparency = 0.45, Visible = false, ZIndex = 70, Parent = f })
 	Kit.Corner(sel, UDim.new(0, 12))
@@ -29666,7 +29774,7 @@ function rebuild()
 	local count = State.CountOwned()
 	local slots = d.Slots or Config.Inventory.BaseSlots
 	equippedLabel.Text = "EQUIPPED " .. #d.Equipped .. "/" .. slots
-	powerLabel.Text = "⚡ " .. Format.Short(d.CrewPower or 0)
+	Kit.IconText(powerLabel, "⚡ " .. Format.Short(d.CrewPower or 0))
 	local maxHunters = (State.Data and State.Data.MaxHunters) or Config.Inventory.MaxHunters
 	storageLabel.Text = "STORAGE " .. count .. "/" .. maxHunters
 	storageLabel.TextColor3 = if count >= maxHunters - 5 then Theme.Bad else Theme.Muted
@@ -29707,7 +29815,7 @@ function HuntersPanel.Init()
 	-- top bar: counts on the left, actions on the right (actions drop to a 2nd row when narrow)
 	top = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 10), BackgroundTransparency = 1, ZIndex = 61, Parent = body })
 	equippedLabel = Kit.Label(top, "EQUIPPED 0/4", { Size = UDim2.fromOffset(150, 22), Position = UDim2.fromOffset(0, 0), Align = Enum.TextXAlignment.Left, Style = "Heading", Fit = true, ZIndex = 62 })
-	powerLabel = Kit.Label(top, "⚡ 0", { Size = UDim2.fromOffset(120, 22), Position = UDim2.fromOffset(152, 0), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 62 })
+	powerLabel = Kit.Label(top, "", { Size = UDim2.fromOffset(120, 22), Position = UDim2.fromOffset(152, 0), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 62 })
 	storageLabel = Kit.Label(top, "STORAGE 0/150", { Size = UDim2.fromOffset(200, 16), Position = UDim2.fromOffset(0, 25), Align = Enum.TextXAlignment.Left, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, ZIndex = 62 })
 	actionsRow = Kit.new("Frame", { Size = UDim2.new(0, 480, 0, 40), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, ZIndex = 61, Parent = top })
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), Parent = actionsRow })
@@ -30105,6 +30213,7 @@ local RunService = game:GetService("RunService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Icons = require(GH.Icons)
 local Rules = require(GH.Logic.Rules)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
@@ -30187,7 +30296,7 @@ local function sections(d: any): { Section }
 		end
 	end
 	if #ex > 0 then
-		table.insert(out, { Id = "Exclusive", Name = "💎 EXCLUSIVE (ROBUX CRATE)", Accent = Config.Rarities.Exclusive.Color, List = ex, Unlocked = true })
+		table.insert(out, { Id = "Exclusive", Name = "EXCLUSIVE (ROBUX CRATE)", Accent = Config.Rarities.Exclusive.Color, List = ex, Unlocked = true })
 	end
 	return out
 end
@@ -30198,6 +30307,15 @@ local function has(d: any, id: string, tier: number): boolean
 		return d.Discovered[id] == true
 	end
 	return d.Variants ~= nil and d.Variants[id .. ":" .. tier] == true
+end
+
+-- "  ·  SHINY 3  ·  MEGA 1" in the tier colours (labels with RichText on)
+local function tierCounts(shiny: number, mega: number): string
+	local function part(t: number, n: number): string
+		local c = Config.Tiers[t].Color
+		return string.format('  ·  <font color="#%02X%02X%02X">%s %d</font>', math.floor(c.R * 255 + 0.5), math.floor(c.G * 255 + 0.5), math.floor(c.B * 255 + 0.5), Config.Tiers[t].Name, n)
+	end
+	return part(1, shiny) .. part(2, mega)
 end
 
 local function tierLabel(tier: number): string
@@ -30252,10 +30370,11 @@ local function showDetail(h: Config.HunterDef)
 		detailName.Text = if tier > 0 then Config.Tiers[tier].Icon .. " ???" else "???"
 		detailBlurb.Text = if tier == 0
 			then "Not discovered yet. Keep opening crates!"
-			else tierLabel(tier) .. " not discovered yet. Merge " .. Config.Merge.Count .. " " .. (if tier == 1 then "NORMAL" else "✨ SHINY") .. " copies to make one!"
+			else tierLabel(tier) .. " not discovered yet. Merge " .. Config.Merge.Count .. " " .. (if tier == 1 then "NORMAL" else "SHINY") .. " copies to make one!"
 	end
-	detailName.TextColor3 = if tier > 0 then Config.Tiers[tier].Color else rar.Color
-	detailInfo.Text = tierLabel(tier) .. "  ·  " .. rar.Name .. "  ·  ⚡ " .. (if found then Format.Short(h.Power * Config.Tiers[tier].Mult) .. "  ·  ❤️ " .. Format.Short(hpFor(h.Power * Config.Tiers[tier].Mult)) .. " HP" else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
+	detailName.TextColor3 = if tier > 0 then Config.Tiers[tier].Color else Theme.RarityText(rar)
+	-- one short fact per line (top aligned) so the power icon sits on a line that never wraps
+	Kit.IconText(detailInfo, tierLabel(tier) .. "  ·  " .. rar.Name .. "\n⚡ " .. (if found then Format.Short(h.Power * Config.Tiers[tier].Mult) .. "  ·  ❤️ " .. Format.Short(hpFor(h.Power * Config.Tiers[tier].Mult)) .. " HP" else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h))))
 end
 
 local function rebuild()
@@ -30315,8 +30434,14 @@ local function rebuild()
 		local unlocked = z.Unlocked
 		local complete = zf == #list
 		local header: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 62, Parent = section })
-		Kit.Label(header, (if unlocked then "" else "🔒 ") .. z.Name, { Size = UDim2.new(0.6, 0, 1, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
-		Kit.Label(header, (if complete then "⭐ " else "") .. zf .. "/" .. #list .. " DISCOVERED  ✨" .. zs .. " 💎" .. zm, { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
+		-- area icon (or the Exclusive crate) left of the name; a locked area adds the lock icon
+		Kit.Icon(header, if z.Id == "Exclusive" then "crate_exclusive" else Icons.ForZone(z.Id), "", { Size = UDim2.fromOffset(26, 26), Position = UDim2.fromScale(0, 0.5), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", ZIndex = 63 })
+		local zoneName = Kit.Label(header, "", { Size = UDim2.new(0.6, -30, 1, 0), Position = UDim2.fromOffset(30, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
+		Kit.IconText(zoneName, (if unlocked then "" else "🔒 ") .. z.Name)
+		-- Shiny / Mega counts as coloured words (no tier icons uploaded yet)
+		local counts = Kit.Label(header, "", { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
+		counts.RichText = true
+		counts.Text = (if complete then "⭐ " else "") .. zf .. "/" .. #list .. tierCounts(zs, zm)
 		local row: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 62, Parent = section })
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(100, 142), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for _, h in list do
@@ -30340,7 +30465,7 @@ local function rebuild()
 			Kit.Corner(pic, UDim.new(1, 0))
 			Portrait.Face(pic, h.Id, not has(d, h.Id, 0))
 			Kit.Label(card, if known then string.upper(h.Name) else "???", { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), ZIndex = 66, Style = "Small", Fit = true })
-			Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 100), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color, Style = "Tiny", Fit = true })
+			Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 100), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else Theme.RarityText(rar), Style = "Tiny", Fit = true })
 			-- one chip per variant: lit in the tier colour when discovered, "?" when not
 			for t = 0, 2 do
 				local on = has(d, h.Id, t)
@@ -30348,7 +30473,7 @@ local function rebuild()
 				local chip: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(28, 18), Position = UDim2.fromOffset(6 + t * 30, 118), BackgroundColor3 = if on then Theme.Bg else Color3.fromRGB(40, 32, 66), BackgroundTransparency = if on then 0.1 else 0.4, ZIndex = 66, Parent = card })
 				Kit.Corner(chip, UDim.new(1, 0))
 				Kit.Stroke(chip, 1.5, if on then tc else Theme.Outline, Enum.ApplyStrokeMode.Border)
-				Kit.Label(chip, if not on then "?" elseif t == 0 then "N" else Config.Tiers[t].Icon, { Color = if on then tc else Theme.Muted, Style = "Tiny", Fit = true, ZIndex = 67, Stroke = 0 })
+				Kit.Label(chip, if not on then "?" else string.sub(Config.Tiers[t].Name, 1, 1), { Color = if on then tc else Theme.Muted, Style = "Tiny", Fit = true, ZIndex = 67, Stroke = 0 })
 			end
 			if newIds[h.Id] then
 				local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(46, 18), Position = UDim2.new(1, 6, 0, -6), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Body", ZIndex = 70, Stroke = 2 })
@@ -30366,7 +30491,7 @@ local function rebuild()
 		end
 	end
 	local pct = if total > 0 then found / total else 0
-	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  ·  " .. math.floor(pct * 100 + 0.5) .. "%  ·  ✨" .. shiny .. "  💎" .. mega
+	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  ·  " .. math.floor(pct * 100 + 0.5) .. "%" .. tierCounts(shiny, mega)
 	Kit.Tween(totalFill, 0.4, { Size = UDim2.fromScale(math.max(pct, 0.02), 1) })
 end
 
@@ -30463,7 +30588,7 @@ function IndexPanel.Init()
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tabRow })
 	for i, t in { "Hunters", "Pets" } do
 		local b: TextButton = Kit.new("TextButton", {
-			Text = if t == "Hunters" then "👻 HUNTERS" else "🐾 PETS",
+			Text = if t == "Hunters" then "HUNTERS" else "PETS",
 			Size = UDim2.fromOffset(130, 28),
 			AutoButtonColor = false,
 			BackgroundColor3 = Theme.Bg,
@@ -30478,6 +30603,9 @@ function IndexPanel.Init()
 		Kit.FitText(b :: any, Theme.Type.Small, 0, true)
 		Kit.Corner(b, UDim.new(1, 0))
 		Kit.Stroke(b, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+		-- menu icon left of the tab name (text keeps clear of it)
+		Kit.new("UIPadding", { PaddingLeft = UDim.new(0, 26), Parent = b })
+		Kit.Icon(b, if t == "Hunters" then "menu_hunters" else "menu_pets", "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, -20, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", ZIndex = 64 })
 		b.Activated:Connect(function()
 			Kit.Play("Click")
 			setTab(t)
@@ -30508,6 +30636,7 @@ function IndexPanel.Init()
 	Kit.Corner(totalFill, UDim.new(1, 0))
 	Kit.Gradient(totalFill, Theme.Ecto, Theme.Ecto2, 0)
 	totalLabel = Kit.Label(bar, "COLLECTION", { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), Style = "Body", Fit = true, ZIndex = 64 })
+	totalLabel.RichText = true
 	scroll = Kit.new("ScrollingFrame", {
 		Position = UDim2.fromOffset(0, 80),
 		BackgroundTransparency = 1,
@@ -30572,6 +30701,7 @@ function IndexPanel.Init()
 	detailName.LayoutOrder = 3
 	detailInfo = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 0), ZIndex = 66, Color = Theme.Text, Font = Theme.Body, Style = "Small", Stroke = 0 })
 	detailInfo.AutomaticSize = Enum.AutomaticSize.Y
+	detailInfo.TextYAlignment = Enum.TextYAlignment.Top
 	detailInfo.LayoutOrder = 4
 	detailBlurb = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 0), ZIndex = 66, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0 })
 	detailBlurb.AutomaticSize = Enum.AutomaticSize.Y
@@ -31053,10 +31183,10 @@ function Payouts.Init() end
 
 function Payouts.Start()
 	State.OnFx("Payout", function(d: any)
-		local text = string.format("%s: %s damage -> +%s 💚", string.upper(tostring(d.Name)), Format.Percent(tonumber(d.Pct) or 0), Format.Short(tonumber(d.Ecto) or 0))
+		local text = string.format("%s: %s damage -> +💚%s", string.upper(tostring(d.Name)), Format.Percent(tonumber(d.Pct) or 0), Format.Short(tonumber(d.Ecto) or 0))
 		local shards = tonumber(d.Shards)
 		if shards and shards > 0 then
-			text ..= " +" .. Format.Short(shards) .. " 🔮 SHARDS"
+			text ..= " +🔮" .. Format.Short(shards) .. " SHARDS"
 		end
 		Kit.Toast(text, "Good")
 	end)
@@ -32042,7 +32172,7 @@ local panel: Kit.Panel
 local shardLabel: TextLabel
 local bonusLabel: TextLabel
 local equippedHead: TextLabel
-local equippedNames: TextLabel
+local equippedNames: Frame
 local equippedLabel: TextLabel
 local ownedRow: Frame
 local renameRow: Frame
@@ -32126,7 +32256,7 @@ local function refresh()
 		return
 	end
 	local shards = d.Shards or 0
-	shardLabel.Text = "🔮 " .. Format.Short(shards) .. " SPIRIT SHARDS"
+	Kit.IconText(shardLabel, "🔮 " .. Format.Short(shards) .. " SPIRIT SHARDS")
 	local parts = {}
 	for _, kind in { "Power", "Ecto", "HP", "Recovery" } do
 		local v = d.PetBonuses and d.PetBonuses[kind]
@@ -32146,15 +32276,28 @@ local function refresh()
 	end
 	equippedLabel.Text = "OWNED  •  EQUIPPED " .. nEquipped .. "/" .. Config.PetRules.MaxEquipped
 	equippedHead.Text = "EQUIPPED " .. nEquipped .. "/" .. Config.PetRules.MaxEquipped
-	local names = {}
-	for _, uid in d.EquippedPets or {} do
+	-- equipped line: a small live portrait + name per pet (rebuilt like the cards below)
+	for _, c in equippedNames:GetChildren() do
+		if c:IsA("GuiObject") then
+			c:Destroy()
+		end
+	end
+	local shown = 0
+	for i, uid in d.EquippedPets or {} do
 		local rec = d.Pets and d.Pets[uid]
 		local pet = rec and Config.Pets[rec.Id]
 		if rec and pet then
-			table.insert(names, pet.Icon .. " " .. displayName(pet, rec.Nick))
+			shown += 1
+			local item: Frame = Kit.new("Frame", { Size = UDim2.new(1 / Config.PetRules.MaxEquipped, -6, 1, 0), BackgroundTransparency = 1, LayoutOrder = i, ZIndex = 62, Parent = equippedNames })
+			local dot: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(24, 24), Position = UDim2.fromScale(0, 0.5), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = pet.Color:Lerp(Color3.new(0, 0, 0), 0.5), ZIndex = 62, Parent = item })
+			Kit.Corner(dot, UDim.new(1, 0))
+			PetPortrait.New(dot, pet.Id)
+			Kit.Label(item, if rec.Nick and rec.Nick ~= "" then rec.Nick else pet.Name, { Size = UDim2.new(1, -28, 1, 0), Position = UDim2.fromOffset(28, 0), Align = Enum.TextXAlignment.Left, Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
 		end
 	end
-	equippedNames.Text = if #names > 0 then table.concat(names, "   ") else "None: equip pets below"
+	if shown == 0 then
+		Kit.Label(equippedNames, "None: equip pets below", { Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
+	end
 	if renameUid and not (d.Pets and d.Pets[renameUid]) then
 		renameUid = nil
 	end
@@ -32226,8 +32369,8 @@ function PetsPanel.Init()
 	Kit.Label(scroll, "Earn shards in the Boss Tower", { Size = UDim2.new(1, -6, 0, 18), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Fit = true, Stroke = 0, ZIndex = 62 }).LayoutOrder = 2
 	equippedHead = Kit.Label(scroll, "", { Size = UDim2.new(1, 0, 0, 24), Style = "Heading", ZIndex = 62 })
 	equippedHead.LayoutOrder = 3
-	equippedNames = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
-	equippedNames.LayoutOrder = 4
+	equippedNames = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 26), BackgroundTransparency = 1, LayoutOrder = 4, ZIndex = 62, Parent = scroll })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = equippedNames })
 	bonusLabel = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Color = Theme.Ecto, Style = "Small", Fit = true, ZIndex = 62 })
 	bonusLabel.LayoutOrder = 5
 	local function section(order: number, title: string): (TextLabel, Frame)
@@ -32237,7 +32380,7 @@ function PetsPanel.Init()
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(160, 176), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		return l, row
 	end
-	local hint = Kit.Label(scroll, "🥚 Get pets from eggs at the PET HATCHERY near the Boss Tower", { Size = UDim2.new(1, -6, 0, 36), Color = SHARD, Font = Theme.Body, Style = "Small", Wrap = true, ZIndex = 62 })
+	local hint = Kit.Label(scroll, "Get pets from eggs at the PET HATCHERY in the lobby, next to the Boss Tower", { Size = UDim2.new(1, -6, 0, 36), Color = SHARD, Font = Theme.Body, Style = "Small", Wrap = true, ZIndex = 62 })
 	hint.LayoutOrder = 10
 	equippedLabel, ownedRow = section(20, "OWNED")
 	ownedRow.LayoutOrder = 22
@@ -32973,7 +33116,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Gradient(ribbon, rarity.Color, rarity.Color2, 0)
 	Kit.Label(ribbon, rarity.Name, { Style = "Heading", ZIndex = 13 })
 	Kit.Label(card, string.upper(def.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
-	Kit.Label(card, "⚡ " .. Format.Short(def.Power) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(def.Power)) .. " HP", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", Fit = true, ZIndex = 11 })
+	Kit.IconText(Kit.Label(card, "", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", Fit = true, ZIndex = 11 }), "⚡ " .. Format.Short(def.Power) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(def.Power)) .. " HP")
 	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 78), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
 		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, -26), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
@@ -33325,7 +33468,7 @@ end
 -- Shared ending: legendary title slam, camera slides left, the result card, auto-close.
 local function finish(g: ScreenGui, skip: TextButton, cam: Camera, camCF: CFrame, rarity: Config.RarityDef, card: () -> ())
 	if rarity.Order >= 5 and not skipping then
-		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.new(0.5, 0, 0.2, -60), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", ZIndex = 8, Stroke = 4 })
+		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.new(0.5, 0, 0.2, -60), AnchorPoint = Vector2.new(0.5, 0.5), Color = Theme.RarityText(rarity), Style = "Banner", ZIndex = 8, Stroke = 4 })
 		-- solid colour (a UIGradient on big text dropped letters on phones); slams down and fades
 		-- in rather than scaling, so the text renders at one size
 		title.TextTransparency = 1
@@ -34302,9 +34445,9 @@ end
 
 local function setEarned(e: any)
 	if devRun then
-		earnedLabel.Text = "DEV RUN - no rewards"
+		Kit.IconText(earnedLabel, "DEV RUN - no rewards")
 	elseif type(e) == "table" then
-		earnedLabel.Text = string.format("This run: +%s Ecto  ·  +%s Shards", Format.Short(tonumber(e.Ecto) or 0), Format.Commas(tonumber(e.Shards) or 0))
+		Kit.IconText(earnedLabel, string.format("This run: +💚%s Ecto  ·  +🔮%s Shards", Format.Short(tonumber(e.Ecto) or 0), Format.Commas(tonumber(e.Shards) or 0)))
 	end
 end
 
@@ -34507,7 +34650,7 @@ local function onCleared(data: any)
 	if devRun then
 		sub = "DEV RUN - no rewards"
 	elseif ecto > 0 or shards > 0 then
-		sub = string.format("+%s 🔮 Spirit Shards  +%s 💚 Ectoplasm  (you did %d%% of the damage)", Format.Commas(shards), Format.Commas(ecto), pct)
+		sub = string.format("+🔮%s Spirit Shards  +💚%s Ectoplasm  (you did %d%% of the damage)", Format.Commas(shards), Format.Commas(ecto), pct)
 	else
 		sub = "You didn't hit this boss, so no share this time. Attack it to earn rewards!"
 	end
@@ -34879,7 +35022,7 @@ local function miniCard(parent: Instance, id: string, tierN: number, order: numb
 		Kit.Label(f, tier.Icon .. " " .. tier.Name, { Size = UDim2.new(1, -6, 0, 12), Position = UDim2.fromOffset(3, 44), Color = tier.Color, Style = "Small", Fit = true, ZIndex = 66 })
 	end
 	Kit.Label(f, string.upper(def.Name), { Size = UDim2.new(1, -6, 0, 14), Position = UDim2.fromOffset(3, 57), Style = "Small", Fit = true, ZIndex = 66 })
-	Kit.Label(f, "⚡" .. Format.Short(def.Power * tier.Mult), { Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 72), Color = Theme.Gold, Style = "Small", Fit = true, ZIndex = 66 })
+	Kit.IconText(Kit.Label(f, "", { Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 72), Color = Theme.Gold, Style = "Small", Fit = true, ZIndex = 66 }), "⚡" .. Format.Short(def.Power * tier.Mult))
 	if onClick then
 		f.Activated:Connect(function()
 			Kit.Play("Click")
@@ -36010,17 +36153,17 @@ local function refresh()
 		c.Lock.Visible = not owned
 		c.Frame.BackgroundTransparency = if owned then 0 else 0.35
 		if not owned then
-			c.Status.Text = "🔒 " .. Format.Short(z.Cost)
+			Kit.IconText(c.Status, "💚 " .. Format.Short(z.Cost))
 			c.Status.TextColor3 = Theme.Muted
 			Kit.SetButtonText(c.Go, "LOCKED")
 			c.Go:SetAttribute("Color", "Gray")
 		elseif z.Id == here then
-			c.Status.Text = "YOU ARE HERE"
+			Kit.IconText(c.Status, "YOU ARE HERE")
 			c.Status.TextColor3 = Theme.Ecto
 			Kit.SetButtonText(c.Go, "HERE")
 			c.Go:SetAttribute("Color", "Gray")
 		else
-			c.Status.Text = "UNLOCKED"
+			Kit.IconText(c.Status, "UNLOCKED")
 			c.Status.TextColor3 = Theme.Ecto
 			Kit.SetButtonText(c.Go, "GO!")
 			c.Go:SetAttribute("Color", "Green")
@@ -36737,55 +36880,165 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	return b
 end
 
--- Sets a label's text; "💚" in it is drawn as the uploaded Ectoplasm icon (Icons "ecto") placed
--- just before the text instead of the heart emoji. Works for centre / left aligned labels.
-function Kit.EctoText(l: TextLabel, text: string)
-	local image = Icons.Get("ecto")
-	local icon = l:FindFirstChild("EctoIcon") :: ImageLabel?
-	if not image or not text:find("💚", 1, true) then
-		l.Text = text
-		if icon then
-			icon.Visible = false
+-- Emoji that have an uploaded image (Icons.luau). Kit.IconText draws each one as a small image
+-- in the text, in the emoji's place, instead of the emoji glyph.
+local INLINE_ICONS: { { Emoji: string, Key: string } } = {
+	{ Emoji = "💚", Key = "ecto" },
+	{ Emoji = "⚡", Key = "power" },
+	{ Emoji = "🔮", Key = "shards" },
+	{ Emoji = "🔒", Key = "lock" },
+	{ Emoji = "🍀", Key = "boost_luck" },
+	{ Emoji = "🤖", Key = "pass_autoattack" },
+}
+Kit.InlineIcons = INLINE_ICONS
+
+type Piece = { Text: string?, Image: string? }
+
+-- splits text into plain text and inline icons (an emoji without an uploaded image stays text)
+local function splitIcons(text: string): { Piece }
+	local out: { Piece } = {}
+	local i = 1
+	while i <= #text do
+		local bestAt, bestEnd, bestImage = nil :: number?, 0, nil :: string?
+		for _, e in INLINE_ICONS do
+			local image = Icons.Get(e.Key)
+			if image then
+				local a, b = string.find(text, e.Emoji, i, true)
+				if a and (bestAt == nil or a < (bestAt :: number)) then
+					bestAt, bestEnd, bestImage = a, b :: number, image
+				end
+			end
 		end
-		local pad = l:FindFirstChild("EctoPad") :: UIPadding?
-		if pad then
-			pad.PaddingLeft = UDim.new(0, 0)
+		if not bestAt then
+			table.insert(out, { Text = string.sub(text, i) })
+			break
 		end
-		return
+		local at = bestAt :: number
+		if at > i then
+			table.insert(out, { Text = string.sub(text, i, at - 1) })
+		end
+		table.insert(out, { Image = bestImage })
+		i = bestEnd + 1
+		if string.sub(text, i, i + 2) == "\u{FE0F}" then -- emoji variation selector
+			i += 3
+		end
+		if string.sub(text, i, i) == " " then -- the spacer already leaves a gap
+			i += 1
+		end
 	end
-	local clean = text:gsub("%+?💚%s*", function(m: string): string
-		return if m:sub(1, 1) == "+" then "+" else ""
-	end)
-	l.Text = clean
+	return out
+end
+
+local function textWidth(text: string, size: number, font: Enum.Font): number
+	return TextService:GetTextSize(text, size, font, Vector2.new(4000, 4000)).X
+end
+
+-- Sets a label's text. Each emoji listed in INLINE_ICONS ("💚" Ectoplasm, "⚡" power, "🔮"
+-- Spirit Shards, "🔒" lock, "🍀" luck, "🤖" auto attack) is drawn as its uploaded image where the emoji was; the
+-- text gets blank space there, so the image never overlaps a glyph. Lines may be split with
+-- "\n" but must not wrap on their own. Re-laid out when the screen scale changes the text size.
+function Kit.IconText(l: TextLabel, text: string)
+	l:SetAttribute("IconText", text)
+	local pieces = splitIcons(text)
 	local size = l.TextSize
+	local font = l.Font
 	local w = size + 4
-	if not icon then
-		icon = Kit.new("ImageLabel", {
-			Name = "EctoIcon",
-			BackgroundTransparency = 1,
-			Image = image,
-			ScaleType = Enum.ScaleType.Fit,
-			ZIndex = l.ZIndex + 1,
-			Parent = l,
-		})
+	local function width(t: string): number
+		return textWidth("a" .. t .. "a", size, font) - textWidth("aa", size, font)
 	end
-	local ic = icon :: ImageLabel
-	ic.Visible = true
-	ic.Size = UDim2.fromOffset(w, w)
-	if l.TextXAlignment == Enum.TextXAlignment.Center then
-		local tw = TextService:GetTextSize(clean, size, l.Font, Vector2.new(4000, 4000)).X
-		ic.AnchorPoint = Vector2.new(1, 0.5)
-		ic.Position = UDim2.new(0.5, -tw / 2 - 1, 0.5, 0)
-	else
-		local pad = l:FindFirstChild("EctoPad") :: UIPadding?
-		if not pad then
-			pad = Kit.new("UIPadding", { Name = "EctoPad", Parent = l })
+	local spaceW = math.max(1, width(" "))
+	local spacer = string.rep(" ", math.ceil((w + 4) / spaceW))
+	local spacerW = width(spacer)
+	local clean = ""
+	local line = "" -- text of the current line so far
+	local lineNo = 1
+	local centres: { { X: number, Line: number, Image: string } } = {}
+	for _, p in pieces do
+		if p.Image then
+			table.insert(centres, { X = width(line) + spacerW / 2, Line = lineNo, Image = p.Image })
+			clean ..= spacer
+			line ..= spacer
+		else
+			local t = p.Text :: string
+			clean ..= t
+			for ch in string.gmatch(t, "[^\n]*\n?") do
+				if string.sub(ch, -1) == "\n" then
+					lineNo += 1
+					line = ""
+				else
+					line ..= ch
+				end
+			end
 		end
-		(pad :: UIPadding).PaddingLeft = UDim.new(0, w + 3)
-		ic.AnchorPoint = Vector2.new(0, 0.5)
-		ic.Position = UDim2.new(0, -(w + 3), 0.5, 0)
+	end
+	l.Text = clean
+	l:SetAttribute("IconClean", clean)
+	local lineWidths: { number } = {}
+	for ln in string.gmatch(clean .. "\n", "([^\n]*)\n") do
+		table.insert(lineWidths, width(ln))
+	end
+	local lines = #lineWidths
+	local lineH = TextService:GetTextSize("a\na", size, font, Vector2.new(4000, 4000)).Y - TextService:GetTextSize("a", size, font, Vector2.new(4000, 4000)).Y
+	local pad = l:FindFirstChildOfClass("UIPadding")
+	local padL = if pad then pad.PaddingLeft.Offset else 0
+	local padR = if pad then pad.PaddingRight.Offset else 0
+	local n = 0
+	for _, c in centres do
+		n += 1
+		local name = "InlineIcon" .. n
+		local ic = l:FindFirstChild(name) :: ImageLabel?
+		if not ic then
+			ic = Kit.new("ImageLabel", {
+				Name = name,
+				BackgroundTransparency = 1,
+				ScaleType = Enum.ScaleType.Fit,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				ZIndex = l.ZIndex + 1,
+				Parent = l,
+			})
+		end
+		local img = ic :: ImageLabel
+		img.Image = c.Image
+		img.Visible = true
+		img.Size = UDim2.fromOffset(w, w)
+		local total = lineWidths[c.Line] or 0
+		local yScale, yOff = 0.5, (c.Line - (lines + 1) / 2) * lineH
+		if l.TextYAlignment == Enum.TextYAlignment.Top then
+			yScale, yOff = 0, (c.Line - 0.5) * lineH
+		elseif l.TextYAlignment == Enum.TextYAlignment.Bottom then
+			yScale, yOff = 1, -(lines - c.Line + 0.5) * lineH
+		end
+		if l.TextXAlignment == Enum.TextXAlignment.Left then
+			img.Position = UDim2.new(0, padL + c.X, yScale, yOff)
+		elseif l.TextXAlignment == Enum.TextXAlignment.Right then
+			img.Position = UDim2.new(1, -padR - total + c.X, yScale, yOff)
+		else
+			img.Position = UDim2.new(0.5, (padL - padR) / 2 - total / 2 + c.X, yScale, yOff)
+		end
+	end
+	-- hide icons left over from a longer earlier text
+	while true do
+		n += 1
+		local extra = l:FindFirstChild("InlineIcon" .. n) :: ImageLabel?
+		if not extra then
+			break
+		end
+		extra.Visible = false
+	end
+	if l:GetAttribute("IconTextHooked") == nil then
+		l:SetAttribute("IconTextHooked", true)
+		l:GetPropertyChangedSignal("TextSize"):Connect(function()
+			local raw = l:GetAttribute("IconText")
+			-- only when nobody replaced the text directly since
+			if type(raw) == "string" and l.Text == l:GetAttribute("IconClean") then
+				Kit.IconText(l, raw)
+			end
+		end)
 	end
 end
+
+-- Older name (kept for callers): same as Kit.IconText.
+Kit.EctoText = Kit.IconText
 
 function Kit.SetButtonText(b: TextButton, text: string)
 	local l = b:FindFirstChild("Label") :: TextLabel?
@@ -37242,6 +37495,18 @@ function Kit.Toast(text: string, color: string?)
 	local lineH = l.TextSize + 2
 	local textH = TextService:GetTextSize(text, l.TextSize, l.Font, Vector2.new(384, 1000)).Y
 	f.Size = UDim2.fromOffset(400, math.max(32, math.min(textH, lineH * TOAST_LINES) + 12))
+	-- one-line toasts draw 💚 / ⚡ / 🔮 ... as their uploaded images (wrapped text keeps the emoji)
+	local icons: { ImageLabel } = {}
+	if textH <= lineH then
+		Kit.IconText(l, text)
+		for _, c in l:GetChildren() do
+			if c:IsA("ImageLabel") and c.Visible then
+				c.ImageTransparency = 1
+				Kit.Tween(c, 0.18, { ImageTransparency = 0 })
+				table.insert(icons, c)
+			end
+		end
+	end
 	-- fade in (no scale pop: scaling text re-renders it through many sizes, see Kit.Panel)
 	local lStroke = l:FindFirstChildOfClass("UIStroke")
 	l.TextTransparency = 1
@@ -37275,6 +37540,9 @@ function Kit.Toast(text: string, color: string?)
 		if f.Parent then
 			Kit.Tween(f, 0.3, { BackgroundTransparency = 1 })
 			Kit.Tween(fStroke, 0.3, { Transparency = 1 })
+			for _, c in icons do
+				Kit.Tween(c, 0.3, { ImageTransparency = 1 })
+			end
 			Kit.Tween(l, 0.3, { TextTransparency = 1 })
 			if lStroke then
 				Kit.Tween(lStroke, 0.3, { Transparency = 1 })

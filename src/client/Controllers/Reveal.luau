@@ -469,7 +469,7 @@ local function resultCard(g: ScreenGui, res: Result, rarity: Config.RarityDef)
 	Kit.Gradient(ribbon, rarity.Color, rarity.Color2, 0)
 	Kit.Label(ribbon, rarity.Name, { Style = "Heading", ZIndex = 13 })
 	Kit.Label(card, string.upper(def.Name), { Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromOffset(15, 22), Style = "Title", Fit = true, ZIndex = 11 })
-	Kit.Label(card, "⚡ " .. Format.Short(def.Power) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(def.Power)) .. " HP", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", Fit = true, ZIndex = 11 })
+	Kit.IconText(Kit.Label(card, "", { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 54), Color = Theme.Gold, Style = "Body", Fit = true, ZIndex = 11 }), "⚡ " .. Format.Short(def.Power) .. " POWER  ·  ❤️ " .. Format.Short(hpFor(def.Power)) .. " HP")
 	Kit.Label(card, def.Blurb, { Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 78), Color = Theme.Muted, Font = Theme.Body, Style = "Small", ZIndex = 11, Stroke = 0 })
 	if res.IsNew then
 		local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(80, 30), Position = UDim2.new(1, 8, 0, -26), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Title", ZIndex = 14 })
@@ -821,7 +821,7 @@ end
 -- Shared ending: legendary title slam, camera slides left, the result card, auto-close.
 local function finish(g: ScreenGui, skip: TextButton, cam: Camera, camCF: CFrame, rarity: Config.RarityDef, card: () -> ())
 	if rarity.Order >= 5 and not skipping then
-		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.new(0.5, 0, 0.2, -60), AnchorPoint = Vector2.new(0.5, 0.5), Color = rarity.Color, Style = "Banner", ZIndex = 8, Stroke = 4 })
+		local title = Kit.Label(g, rarity.Name .. "!", { Size = UDim2.fromOffset(600, 70), Position = UDim2.new(0.5, 0, 0.2, -60), AnchorPoint = Vector2.new(0.5, 0.5), Color = Theme.RarityText(rarity), Style = "Banner", ZIndex = 8, Stroke = 4 })
 		-- solid colour (a UIGradient on big text dropped letters on phones); slams down and fades
 		-- in rather than scaling, so the text renders at one size
 		title.TextTransparency = 1

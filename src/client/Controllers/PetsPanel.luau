@@ -23,7 +23,7 @@ local panel: Kit.Panel
 local shardLabel: TextLabel
 local bonusLabel: TextLabel
 local equippedHead: TextLabel
-local equippedNames: TextLabel
+local equippedNames: Frame
 local equippedLabel: TextLabel
 local ownedRow: Frame
 local renameRow: Frame
@@ -107,7 +107,7 @@ local function refresh()
 		return
 	end
 	local shards = d.Shards or 0
-	shardLabel.Text = "🔮 " .. Format.Short(shards) .. " SPIRIT SHARDS"
+	Kit.IconText(shardLabel, "🔮 " .. Format.Short(shards) .. " SPIRIT SHARDS")
 	local parts = {}
 	for _, kind in { "Power", "Ecto", "HP", "Recovery" } do
 		local v = d.PetBonuses and d.PetBonuses[kind]
@@ -127,15 +127,28 @@ local function refresh()
 	end
 	equippedLabel.Text = "OWNED  •  EQUIPPED " .. nEquipped .. "/" .. Config.PetRules.MaxEquipped
 	equippedHead.Text = "EQUIPPED " .. nEquipped .. "/" .. Config.PetRules.MaxEquipped
-	local names = {}
-	for _, uid in d.EquippedPets or {} do
+	-- equipped line: a small live portrait + name per pet (rebuilt like the cards below)
+	for _, c in equippedNames:GetChildren() do
+		if c:IsA("GuiObject") then
+			c:Destroy()
+		end
+	end
+	local shown = 0
+	for i, uid in d.EquippedPets or {} do
 		local rec = d.Pets and d.Pets[uid]
 		local pet = rec and Config.Pets[rec.Id]
 		if rec and pet then
-			table.insert(names, pet.Icon .. " " .. displayName(pet, rec.Nick))
+			shown += 1
+			local item: Frame = Kit.new("Frame", { Size = UDim2.new(1 / Config.PetRules.MaxEquipped, -6, 1, 0), BackgroundTransparency = 1, LayoutOrder = i, ZIndex = 62, Parent = equippedNames })
+			local dot: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(24, 24), Position = UDim2.fromScale(0, 0.5), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = pet.Color:Lerp(Color3.new(0, 0, 0), 0.5), ZIndex = 62, Parent = item })
+			Kit.Corner(dot, UDim.new(1, 0))
+			PetPortrait.New(dot, pet.Id)
+			Kit.Label(item, if rec.Nick and rec.Nick ~= "" then rec.Nick else pet.Name, { Size = UDim2.new(1, -28, 1, 0), Position = UDim2.fromOffset(28, 0), Align = Enum.TextXAlignment.Left, Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
 		end
 	end
-	equippedNames.Text = if #names > 0 then table.concat(names, "   ") else "None: equip pets below"
+	if shown == 0 then
+		Kit.Label(equippedNames, "None: equip pets below", { Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
+	end
 	if renameUid and not (d.Pets and d.Pets[renameUid]) then
 		renameUid = nil
 	end
@@ -207,8 +220,8 @@ function PetsPanel.Init()
 	Kit.Label(scroll, "Earn shards in the Boss Tower", { Size = UDim2.new(1, -6, 0, 18), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Fit = true, Stroke = 0, ZIndex = 62 }).LayoutOrder = 2
 	equippedHead = Kit.Label(scroll, "", { Size = UDim2.new(1, 0, 0, 24), Style = "Heading", ZIndex = 62 })
 	equippedHead.LayoutOrder = 3
-	equippedNames = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
-	equippedNames.LayoutOrder = 4
+	equippedNames = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 26), BackgroundTransparency = 1, LayoutOrder = 4, ZIndex = 62, Parent = scroll })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = equippedNames })
 	bonusLabel = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Color = Theme.Ecto, Style = "Small", Fit = true, ZIndex = 62 })
 	bonusLabel.LayoutOrder = 5
 	local function section(order: number, title: string): (TextLabel, Frame)
@@ -218,7 +231,7 @@ function PetsPanel.Init()
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(160, 176), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		return l, row
 	end
-	local hint = Kit.Label(scroll, "🥚 Get pets from eggs at the PET HATCHERY near the Boss Tower", { Size = UDim2.new(1, -6, 0, 36), Color = SHARD, Font = Theme.Body, Style = "Small", Wrap = true, ZIndex = 62 })
+	local hint = Kit.Label(scroll, "Get pets from eggs at the PET HATCHERY in the lobby, next to the Boss Tower", { Size = UDim2.new(1, -6, 0, 36), Color = SHARD, Font = Theme.Body, Style = "Small", Wrap = true, ZIndex = 62 })
 	hint.LayoutOrder = 10
 	equippedLabel, ownedRow = section(20, "OWNED")
 	ownedRow.LayoutOrder = 22

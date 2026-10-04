@@ -5,13 +5,14 @@
 -- Name / Value labels); LeaderboardService fills them in.
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Kit = require(script.Parent.Kit)
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 
 local Leaderboard = {}
 
 local C = Color3.fromRGB
 local V = Vector3.new
 
-type BoardSpec = { Model: string, Title: string, Sub: string, Frame: Color3, Accent: Color3, ValueFit: string }
+type BoardSpec = { Model: string, Title: string, Icon: string?, Sub: string, Frame: Color3, Accent: Color3, ValueFit: string }
 
 local function build(folder: Instance, L: { Position: Vector3, Yaw: number }, spec: BoardSpec)
 	local m = Kit.Model(folder, spec.Model)
@@ -37,7 +38,18 @@ local function build(folder: Instance, L: { Position: Vector3, Yaw: number }, sp
 	gui.Name = "BoardGui"
 	local rows = Config.Leaderboard.Rows
 	local titleH = 0.15
-	Kit.Label(gui, spec.Title, C(255, 215, 80), { Name = "Title", Pos = UDim2.fromScale(0.04, 0.015), Size = UDim2.fromScale(0.92, titleH - 0.03) })
+	-- title, with the board's uploaded icon at both ends when it has one (square: the 18 x 20
+	-- stud board makes a (titleH - 0.03)-tall square that wide in width scale * 20 / 18)
+	local image = Icons.Get(spec.Icon)
+	if image then
+		local th = titleH - 0.03
+		local iw = th * 20 / 18
+		Kit.IconImage(gui, image, 0.04, 0.015, iw, th)
+		Kit.IconImage(gui, image, 0.96 - iw, 0.015, iw, th)
+		Kit.Label(gui, spec.Title, C(255, 215, 80), { Name = "Title", Pos = UDim2.fromScale(0.05 + iw, 0.015), Size = UDim2.fromScale(0.9 - 2 * iw, th) })
+	else
+		Kit.Label(gui, spec.Title, C(255, 215, 80), { Name = "Title", Pos = UDim2.fromScale(0.04, 0.015), Size = UDim2.fromScale(0.92, titleH - 0.03) })
+	end
 	Kit.Label(gui, spec.Sub, spec.Accent, { Name = "Sub", Pos = UDim2.fromScale(0.2, titleH - 0.02), Size = UDim2.fromScale(0.6, 0.05) })
 	local rowH = (1 - titleH - 0.06) / rows
 	for i = 1, rows do
@@ -74,7 +86,8 @@ function Leaderboard.Build(map: Instance)
 	})
 	build(folder, Config.Layout.PowerBoard, {
 		Model = "TopPower",
-		Title = "⚡ TOP POWER",
+		Title = "TOP POWER",
+		Icon = "power",
 		Sub = "BEST CREW POWER",
 		Frame = C(255, 150, 50),
 		Accent = C(255, 220, 110),

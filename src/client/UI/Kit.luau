@@ -330,55 +330,165 @@ function Kit.Button(parent: Instance?, p: ButtonProps): TextButton
 	return b
 end
 
--- Sets a label's text; "💚" in it is drawn as the uploaded Ectoplasm icon (Icons "ecto") placed
--- just before the text instead of the heart emoji. Works for centre / left aligned labels.
-function Kit.EctoText(l: TextLabel, text: string)
-	local image = Icons.Get("ecto")
-	local icon = l:FindFirstChild("EctoIcon") :: ImageLabel?
-	if not image or not text:find("💚", 1, true) then
-		l.Text = text
-		if icon then
-			icon.Visible = false
+-- Emoji that have an uploaded image (Icons.luau). Kit.IconText draws each one as a small image
+-- in the text, in the emoji's place, instead of the emoji glyph.
+local INLINE_ICONS: { { Emoji: string, Key: string } } = {
+	{ Emoji = "💚", Key = "ecto" },
+	{ Emoji = "⚡", Key = "power" },
+	{ Emoji = "🔮", Key = "shards" },
+	{ Emoji = "🔒", Key = "lock" },
+	{ Emoji = "🍀", Key = "boost_luck" },
+	{ Emoji = "🤖", Key = "pass_autoattack" },
+}
+Kit.InlineIcons = INLINE_ICONS
+
+type Piece = { Text: string?, Image: string? }
+
+-- splits text into plain text and inline icons (an emoji without an uploaded image stays text)
+local function splitIcons(text: string): { Piece }
+	local out: { Piece } = {}
+	local i = 1
+	while i <= #text do
+		local bestAt, bestEnd, bestImage = nil :: number?, 0, nil :: string?
+		for _, e in INLINE_ICONS do
+			local image = Icons.Get(e.Key)
+			if image then
+				local a, b = string.find(text, e.Emoji, i, true)
+				if a and (bestAt == nil or a < (bestAt :: number)) then
+					bestAt, bestEnd, bestImage = a, b :: number, image
+				end
+			end
 		end
-		local pad = l:FindFirstChild("EctoPad") :: UIPadding?
-		if pad then
-			pad.PaddingLeft = UDim.new(0, 0)
+		if not bestAt then
+			table.insert(out, { Text = string.sub(text, i) })
+			break
 		end
-		return
+		local at = bestAt :: number
+		if at > i then
+			table.insert(out, { Text = string.sub(text, i, at - 1) })
+		end
+		table.insert(out, { Image = bestImage })
+		i = bestEnd + 1
+		if string.sub(text, i, i + 2) == "\u{FE0F}" then -- emoji variation selector
+			i += 3
+		end
+		if string.sub(text, i, i) == " " then -- the spacer already leaves a gap
+			i += 1
+		end
 	end
-	local clean = text:gsub("%+?💚%s*", function(m: string): string
-		return if m:sub(1, 1) == "+" then "+" else ""
-	end)
-	l.Text = clean
+	return out
+end
+
+local function textWidth(text: string, size: number, font: Enum.Font): number
+	return TextService:GetTextSize(text, size, font, Vector2.new(4000, 4000)).X
+end
+
+-- Sets a label's text. Each emoji listed in INLINE_ICONS ("💚" Ectoplasm, "⚡" power, "🔮"
+-- Spirit Shards, "🔒" lock, "🍀" luck, "🤖" auto attack) is drawn as its uploaded image where the emoji was; the
+-- text gets blank space there, so the image never overlaps a glyph. Lines may be split with
+-- "\n" but must not wrap on their own. Re-laid out when the screen scale changes the text size.
+function Kit.IconText(l: TextLabel, text: string)
+	l:SetAttribute("IconText", text)
+	local pieces = splitIcons(text)
 	local size = l.TextSize
+	local font = l.Font
 	local w = size + 4
-	if not icon then
-		icon = Kit.new("ImageLabel", {
-			Name = "EctoIcon",
-			BackgroundTransparency = 1,
-			Image = image,
-			ScaleType = Enum.ScaleType.Fit,
-			ZIndex = l.ZIndex + 1,
-			Parent = l,
-		})
+	local function width(t: string): number
+		return textWidth("a" .. t .. "a", size, font) - textWidth("aa", size, font)
 	end
-	local ic = icon :: ImageLabel
-	ic.Visible = true
-	ic.Size = UDim2.fromOffset(w, w)
-	if l.TextXAlignment == Enum.TextXAlignment.Center then
-		local tw = TextService:GetTextSize(clean, size, l.Font, Vector2.new(4000, 4000)).X
-		ic.AnchorPoint = Vector2.new(1, 0.5)
-		ic.Position = UDim2.new(0.5, -tw / 2 - 1, 0.5, 0)
-	else
-		local pad = l:FindFirstChild("EctoPad") :: UIPadding?
-		if not pad then
-			pad = Kit.new("UIPadding", { Name = "EctoPad", Parent = l })
+	local spaceW = math.max(1, width(" "))
+	local spacer = string.rep(" ", math.ceil((w + 4) / spaceW))
+	local spacerW = width(spacer)
+	local clean = ""
+	local line = "" -- text of the current line so far
+	local lineNo = 1
+	local centres: { { X: number, Line: number, Image: string } } = {}
+	for _, p in pieces do
+		if p.Image then
+			table.insert(centres, { X = width(line) + spacerW / 2, Line = lineNo, Image = p.Image })
+			clean ..= spacer
+			line ..= spacer
+		else
+			local t = p.Text :: string
+			clean ..= t
+			for ch in string.gmatch(t, "[^\n]*\n?") do
+				if string.sub(ch, -1) == "\n" then
+					lineNo += 1
+					line = ""
+				else
+					line ..= ch
+				end
+			end
 		end
-		(pad :: UIPadding).PaddingLeft = UDim.new(0, w + 3)
-		ic.AnchorPoint = Vector2.new(0, 0.5)
-		ic.Position = UDim2.new(0, -(w + 3), 0.5, 0)
+	end
+	l.Text = clean
+	l:SetAttribute("IconClean", clean)
+	local lineWidths: { number } = {}
+	for ln in string.gmatch(clean .. "\n", "([^\n]*)\n") do
+		table.insert(lineWidths, width(ln))
+	end
+	local lines = #lineWidths
+	local lineH = TextService:GetTextSize("a\na", size, font, Vector2.new(4000, 4000)).Y - TextService:GetTextSize("a", size, font, Vector2.new(4000, 4000)).Y
+	local pad = l:FindFirstChildOfClass("UIPadding")
+	local padL = if pad then pad.PaddingLeft.Offset else 0
+	local padR = if pad then pad.PaddingRight.Offset else 0
+	local n = 0
+	for _, c in centres do
+		n += 1
+		local name = "InlineIcon" .. n
+		local ic = l:FindFirstChild(name) :: ImageLabel?
+		if not ic then
+			ic = Kit.new("ImageLabel", {
+				Name = name,
+				BackgroundTransparency = 1,
+				ScaleType = Enum.ScaleType.Fit,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				ZIndex = l.ZIndex + 1,
+				Parent = l,
+			})
+		end
+		local img = ic :: ImageLabel
+		img.Image = c.Image
+		img.Visible = true
+		img.Size = UDim2.fromOffset(w, w)
+		local total = lineWidths[c.Line] or 0
+		local yScale, yOff = 0.5, (c.Line - (lines + 1) / 2) * lineH
+		if l.TextYAlignment == Enum.TextYAlignment.Top then
+			yScale, yOff = 0, (c.Line - 0.5) * lineH
+		elseif l.TextYAlignment == Enum.TextYAlignment.Bottom then
+			yScale, yOff = 1, -(lines - c.Line + 0.5) * lineH
+		end
+		if l.TextXAlignment == Enum.TextXAlignment.Left then
+			img.Position = UDim2.new(0, padL + c.X, yScale, yOff)
+		elseif l.TextXAlignment == Enum.TextXAlignment.Right then
+			img.Position = UDim2.new(1, -padR - total + c.X, yScale, yOff)
+		else
+			img.Position = UDim2.new(0.5, (padL - padR) / 2 - total / 2 + c.X, yScale, yOff)
+		end
+	end
+	-- hide icons left over from a longer earlier text
+	while true do
+		n += 1
+		local extra = l:FindFirstChild("InlineIcon" .. n) :: ImageLabel?
+		if not extra then
+			break
+		end
+		extra.Visible = false
+	end
+	if l:GetAttribute("IconTextHooked") == nil then
+		l:SetAttribute("IconTextHooked", true)
+		l:GetPropertyChangedSignal("TextSize"):Connect(function()
+			local raw = l:GetAttribute("IconText")
+			-- only when nobody replaced the text directly since
+			if type(raw) == "string" and l.Text == l:GetAttribute("IconClean") then
+				Kit.IconText(l, raw)
+			end
+		end)
 	end
 end
+
+-- Older name (kept for callers): same as Kit.IconText.
+Kit.EctoText = Kit.IconText
 
 function Kit.SetButtonText(b: TextButton, text: string)
 	local l = b:FindFirstChild("Label") :: TextLabel?
@@ -835,6 +945,18 @@ function Kit.Toast(text: string, color: string?)
 	local lineH = l.TextSize + 2
 	local textH = TextService:GetTextSize(text, l.TextSize, l.Font, Vector2.new(384, 1000)).Y
 	f.Size = UDim2.fromOffset(400, math.max(32, math.min(textH, lineH * TOAST_LINES) + 12))
+	-- one-line toasts draw 💚 / ⚡ / 🔮 ... as their uploaded images (wrapped text keeps the emoji)
+	local icons: { ImageLabel } = {}
+	if textH <= lineH then
+		Kit.IconText(l, text)
+		for _, c in l:GetChildren() do
+			if c:IsA("ImageLabel") and c.Visible then
+				c.ImageTransparency = 1
+				Kit.Tween(c, 0.18, { ImageTransparency = 0 })
+				table.insert(icons, c)
+			end
+		end
+	end
 	-- fade in (no scale pop: scaling text re-renders it through many sizes, see Kit.Panel)
 	local lStroke = l:FindFirstChildOfClass("UIStroke")
 	l.TextTransparency = 1
@@ -868,6 +990,9 @@ function Kit.Toast(text: string, color: string?)
 		if f.Parent then
 			Kit.Tween(f, 0.3, { BackgroundTransparency = 1 })
 			Kit.Tween(fStroke, 0.3, { Transparency = 1 })
+			for _, c in icons do
+				Kit.Tween(c, 0.3, { ImageTransparency = 1 })
+			end
 			Kit.Tween(l, 0.3, { TextTransparency = 1 })
 			if lStroke then
 				Kit.Tween(lStroke, 0.3, { Transparency = 1 })

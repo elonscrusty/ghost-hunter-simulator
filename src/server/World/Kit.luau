@@ -11,6 +11,7 @@
 -- Kit.Vivid colour instead. Kit.Stats.Neon counts the Neon parts so the build log shows it.
 
 local CollectionService = game:GetService("CollectionService")
+local Icons = require(game:GetService("ReplicatedStorage").GH.Icons)
 
 local Kit = {}
 
@@ -231,6 +232,44 @@ function Kit.Sign(part: BasePart, face: Enum.NormalId, text: string, color: Colo
 	local g = Kit.Gui(part, face)
 	return Kit.Label(g, text, color, opts)
 end
+
+-- Square image at x (scale) inside a SurfaceGui / frame, `h` (scale) tall, `wFrac` (scale) wide.
+local function iconImage(parent: Instance, image: string, x: number, y: number, wFrac: number, h: number): ImageLabel
+	local img = Instance.new("ImageLabel")
+	img.Name = "SignIcon"
+	img.BackgroundTransparency = 1
+	img.Image = image
+	img.ScaleType = Enum.ScaleType.Fit
+	img.Position = UDim2.fromScale(x, y)
+	img.Size = UDim2.fromScale(wFrac, h)
+	img.Parent = parent
+	return img
+end
+
+-- Whole-face sign with the uploaded icon `iconKey` (shared Icons.luau) at both ends and the text
+-- between them. Without an image id it is a plain Kit.Sign (no emoji is drawn).
+function Kit.IconSign(part: BasePart, face: Enum.NormalId, text: string, color: Color3, iconKey: string?, opts: LabelOpts?): TextLabel
+	local g = Kit.Gui(part, face)
+	local image = Icons.Get(iconKey)
+	if not image then
+		return Kit.Label(g, text, color, opts)
+	end
+	local s = part.Size
+	local wide = if face == Enum.NormalId.Left or face == Enum.NormalId.Right then s.Z else s.X
+	local tall = if face == Enum.NormalId.Top or face == Enum.NormalId.Bottom then s.Z else s.Y
+	local h = 0.8
+	local f = math.min(0.22, tall * h / math.max(wide, 0.1)) -- square icon, as a width fraction
+	local margin = 0.02
+	iconImage(g, image, margin, (1 - h) / 2, f, h)
+	iconImage(g, image, 1 - margin - f, (1 - h) / 2, f, h)
+	local o: LabelOpts = table.clone(opts or NO_LABEL)
+	local inner = margin + f + 0.01
+	o.Pos = UDim2.fromScale(inner, 0)
+	o.Size = UDim2.fromScale(1 - 2 * inner, 1)
+	return Kit.Label(g, text, color, o)
+end
+
+Kit.IconImage = iconImage
 
 --==================================================================
 -- EFFECTS (budgeted)

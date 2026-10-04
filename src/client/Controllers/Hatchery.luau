@@ -104,12 +104,12 @@ local function refresh()
 		return
 	end
 	panel.Title.Text = string.upper(egg.Name)
-	priceLabel.Text = string.format("🔮 %s  •  you have %s", Format.Commas(egg.Price), Format.Short(d.Shards or 0))
+	Kit.IconText(priceLabel, string.format("🔮 %s  •  you have 🔮 %s", Format.Commas(egg.Price), Format.Short(d.Shards or 0)))
 	if Eggs.Unlocked(egg, d.TowerCheckpoint or 0) then
-		lockLabel.Text = if egg.Unlock > 0 then string.format("UNLOCKED (Tower checkpoint %d)", egg.Unlock) else "Open to everyone"
+		Kit.IconText(lockLabel, if egg.Unlock > 0 then string.format("UNLOCKED (Tower checkpoint %d)", egg.Unlock) else "Open to everyone")
 		lockLabel.TextColor3 = Theme.Good
 	else
-		lockLabel.Text = string.format("🔒 Unlock: Tower checkpoint %d (yours: %d)", egg.Unlock, d.TowerCheckpoint or 0)
+		Kit.IconText(lockLabel, string.format("🔒 Unlock: Tower checkpoint %d (yours: %d)", egg.Unlock, d.TowerCheckpoint or 0))
 		lockLabel.TextColor3 = Theme.Bad
 	end
 	local reason = blockReason(egg, d)

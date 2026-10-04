@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Icons = require(GH.Icons)
 local Rules = require(GH.Logic.Rules)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
@@ -92,7 +93,7 @@ local function sections(d: any): { Section }
 		end
 	end
 	if #ex > 0 then
-		table.insert(out, { Id = "Exclusive", Name = "💎 EXCLUSIVE (ROBUX CRATE)", Accent = Config.Rarities.Exclusive.Color, List = ex, Unlocked = true })
+		table.insert(out, { Id = "Exclusive", Name = "EXCLUSIVE (ROBUX CRATE)", Accent = Config.Rarities.Exclusive.Color, List = ex, Unlocked = true })
 	end
 	return out
 end
@@ -103,6 +104,15 @@ local function has(d: any, id: string, tier: number): boolean
 		return d.Discovered[id] == true
 	end
 	return d.Variants ~= nil and d.Variants[id .. ":" .. tier] == true
+end
+
+-- "  ·  SHINY 3  ·  MEGA 1" in the tier colours (labels with RichText on)
+local function tierCounts(shiny: number, mega: number): string
+	local function part(t: number, n: number): string
+		local c = Config.Tiers[t].Color
+		return string.format('  ·  <font color="#%02X%02X%02X">%s %d</font>', math.floor(c.R * 255 + 0.5), math.floor(c.G * 255 + 0.5), math.floor(c.B * 255 + 0.5), Config.Tiers[t].Name, n)
+	end
+	return part(1, shiny) .. part(2, mega)
 end
 
 local function tierLabel(tier: number): string
@@ -157,10 +167,11 @@ local function showDetail(h: Config.HunterDef)
 		detailName.Text = if tier > 0 then Config.Tiers[tier].Icon .. " ???" else "???"
 		detailBlurb.Text = if tier == 0
 			then "Not discovered yet. Keep opening crates!"
-			else tierLabel(tier) .. " not discovered yet. Merge " .. Config.Merge.Count .. " " .. (if tier == 1 then "NORMAL" else "✨ SHINY") .. " copies to make one!"
+			else tierLabel(tier) .. " not discovered yet. Merge " .. Config.Merge.Count .. " " .. (if tier == 1 then "NORMAL" else "SHINY") .. " copies to make one!"
 	end
-	detailName.TextColor3 = if tier > 0 then Config.Tiers[tier].Color else rar.Color
-	detailInfo.Text = tierLabel(tier) .. "  ·  " .. rar.Name .. "  ·  ⚡ " .. (if found then Format.Short(h.Power * Config.Tiers[tier].Mult) .. "  ·  ❤️ " .. Format.Short(hpFor(h.Power * Config.Tiers[tier].Mult)) .. " HP" else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
+	detailName.TextColor3 = if tier > 0 then Config.Tiers[tier].Color else Theme.RarityText(rar)
+	-- one short fact per line (top aligned) so the power icon sits on a line that never wraps
+	Kit.IconText(detailInfo, tierLabel(tier) .. "  ·  " .. rar.Name .. "\n⚡ " .. (if found then Format.Short(h.Power * Config.Tiers[tier].Mult) .. "  ·  ❤️ " .. Format.Short(hpFor(h.Power * Config.Tiers[tier].Mult)) .. " HP" else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h))))
 end
 
 local function rebuild()
@@ -220,8 +231,14 @@ local function rebuild()
 		local unlocked = z.Unlocked
 		local complete = zf == #list
 		local header: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 62, Parent = section })
-		Kit.Label(header, (if unlocked then "" else "🔒 ") .. z.Name, { Size = UDim2.new(0.6, 0, 1, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
-		Kit.Label(header, (if complete then "⭐ " else "") .. zf .. "/" .. #list .. " DISCOVERED  ✨" .. zs .. " 💎" .. zm, { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
+		-- area icon (or the Exclusive crate) left of the name; a locked area adds the lock icon
+		Kit.Icon(header, if z.Id == "Exclusive" then "crate_exclusive" else Icons.ForZone(z.Id), "", { Size = UDim2.fromOffset(26, 26), Position = UDim2.fromScale(0, 0.5), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", ZIndex = 63 })
+		local zoneName = Kit.Label(header, "", { Size = UDim2.new(0.6, -30, 1, 0), Position = UDim2.fromOffset(30, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
+		Kit.IconText(zoneName, (if unlocked then "" else "🔒 ") .. z.Name)
+		-- Shiny / Mega counts as coloured words (no tier icons uploaded yet)
+		local counts = Kit.Label(header, "", { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
+		counts.RichText = true
+		counts.Text = (if complete then "⭐ " else "") .. zf .. "/" .. #list .. tierCounts(zs, zm)
 		local row: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 62, Parent = section })
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(100, 142), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for _, h in list do
@@ -245,7 +262,7 @@ local function rebuild()
 			Kit.Corner(pic, UDim.new(1, 0))
 			Portrait.Face(pic, h.Id, not has(d, h.Id, 0))
 			Kit.Label(card, if known then string.upper(h.Name) else "???", { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), ZIndex = 66, Style = "Small", Fit = true })
-			Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 100), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color, Style = "Tiny", Fit = true })
+			Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 100), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else Theme.RarityText(rar), Style = "Tiny", Fit = true })
 			-- one chip per variant: lit in the tier colour when discovered, "?" when not
 			for t = 0, 2 do
 				local on = has(d, h.Id, t)
@@ -253,7 +270,7 @@ local function rebuild()
 				local chip: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(28, 18), Position = UDim2.fromOffset(6 + t * 30, 118), BackgroundColor3 = if on then Theme.Bg else Color3.fromRGB(40, 32, 66), BackgroundTransparency = if on then 0.1 else 0.4, ZIndex = 66, Parent = card })
 				Kit.Corner(chip, UDim.new(1, 0))
 				Kit.Stroke(chip, 1.5, if on then tc else Theme.Outline, Enum.ApplyStrokeMode.Border)
-				Kit.Label(chip, if not on then "?" elseif t == 0 then "N" else Config.Tiers[t].Icon, { Color = if on then tc else Theme.Muted, Style = "Tiny", Fit = true, ZIndex = 67, Stroke = 0 })
+				Kit.Label(chip, if not on then "?" else string.sub(Config.Tiers[t].Name, 1, 1), { Color = if on then tc else Theme.Muted, Style = "Tiny", Fit = true, ZIndex = 67, Stroke = 0 })
 			end
 			if newIds[h.Id] then
 				local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(46, 18), Position = UDim2.new(1, 6, 0, -6), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Body", ZIndex = 70, Stroke = 2 })
@@ -271,7 +288,7 @@ local function rebuild()
 		end
 	end
 	local pct = if total > 0 then found / total else 0
-	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  ·  " .. math.floor(pct * 100 + 0.5) .. "%  ·  ✨" .. shiny .. "  💎" .. mega
+	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  ·  " .. math.floor(pct * 100 + 0.5) .. "%" .. tierCounts(shiny, mega)
 	Kit.Tween(totalFill, 0.4, { Size = UDim2.fromScale(math.max(pct, 0.02), 1) })
 end
 
@@ -368,7 +385,7 @@ function IndexPanel.Init()
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tabRow })
 	for i, t in { "Hunters", "Pets" } do
 		local b: TextButton = Kit.new("TextButton", {
-			Text = if t == "Hunters" then "👻 HUNTERS" else "🐾 PETS",
+			Text = if t == "Hunters" then "HUNTERS" else "PETS",
 			Size = UDim2.fromOffset(130, 28),
 			AutoButtonColor = false,
 			BackgroundColor3 = Theme.Bg,
@@ -383,6 +400,9 @@ function IndexPanel.Init()
 		Kit.FitText(b :: any, Theme.Type.Small, 0, true)
 		Kit.Corner(b, UDim.new(1, 0))
 		Kit.Stroke(b, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+		-- menu icon left of the tab name (text keeps clear of it)
+		Kit.new("UIPadding", { PaddingLeft = UDim.new(0, 26), Parent = b })
+		Kit.Icon(b, if t == "Hunters" then "menu_hunters" else "menu_pets", "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, -20, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", ZIndex = 64 })
 		b.Activated:Connect(function()
 			Kit.Play("Click")
 			setTab(t)
@@ -413,6 +433,7 @@ function IndexPanel.Init()
 	Kit.Corner(totalFill, UDim.new(1, 0))
 	Kit.Gradient(totalFill, Theme.Ecto, Theme.Ecto2, 0)
 	totalLabel = Kit.Label(bar, "COLLECTION", { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), Style = "Body", Fit = true, ZIndex = 64 })
+	totalLabel.RichText = true
 	scroll = Kit.new("ScrollingFrame", {
 		Position = UDim2.fromOffset(0, 80),
 		BackgroundTransparency = 1,
@@ -477,6 +498,7 @@ function IndexPanel.Init()
 	detailName.LayoutOrder = 3
 	detailInfo = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 0), ZIndex = 66, Color = Theme.Text, Font = Theme.Body, Style = "Small", Stroke = 0 })
 	detailInfo.AutomaticSize = Enum.AutomaticSize.Y
+	detailInfo.TextYAlignment = Enum.TextYAlignment.Top
 	detailInfo.LayoutOrder = 4
 	detailBlurb = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 0), ZIndex = 66, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0 })
 	detailBlurb.AutomaticSize = Enum.AutomaticSize.Y

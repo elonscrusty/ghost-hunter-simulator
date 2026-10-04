@@ -94,7 +94,7 @@ local function miniCard(parent: Instance, id: string, tierN: number, order: numb
 		Kit.Label(f, tier.Icon .. " " .. tier.Name, { Size = UDim2.new(1, -6, 0, 12), Position = UDim2.fromOffset(3, 44), Color = tier.Color, Style = "Small", Fit = true, ZIndex = 66 })
 	end
 	Kit.Label(f, string.upper(def.Name), { Size = UDim2.new(1, -6, 0, 14), Position = UDim2.fromOffset(3, 57), Style = "Small", Fit = true, ZIndex = 66 })
-	Kit.Label(f, "⚡" .. Format.Short(def.Power * tier.Mult), { Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 72), Color = Theme.Gold, Style = "Small", Fit = true, ZIndex = 66 })
+	Kit.IconText(Kit.Label(f, "", { Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 72), Color = Theme.Gold, Style = "Small", Fit = true, ZIndex = 66 }), "⚡" .. Format.Short(def.Power * tier.Mult))
 	if onClick then
 		f.Activated:Connect(function()
 			Kit.Play("Click")
