@@ -4,6 +4,7 @@
 --   HunterRig.Build(hunterId) -> Rig        animated rig: anchored Root at the feet, Motor6D limbs
 --   HunterRig.Pose(rig, state, t, blend?)   procedural pose ("Idle" | "Run" | "Attack" | "Celebrate")
 --   HunterRig.BuildStatic(hunterId) -> Model fully anchored, posed copy for ViewportFrame portraits
+--   HunterRig.ApplyTier(model, tier)        Shiny/Mega finish, halo and particles (no scaling)
 --
 -- Layout (studs, model space, facing -Z): feet at Y=0, hips at Y=0.92, torso 0.9..1.95,
 -- head (1.9 ball) centred at Y=2.77. Total height ~3.8-4.4 depending on hair/hat.
@@ -714,6 +715,97 @@ function HunterRig.Pose(rig: Rig, state: string, t: number, blend: number?)
 		ra.Transform = CFa((0.22 + 0.05 * br) * b, 0, (0.1 + 0.03 * br) * b)
 		ll.Transform = CFa(0, 0, -0.04 * b)
 		rl.Transform = CFa(0, 0, 0.04 * b)
+	end
+end
+
+------------------------------------------------------------------ tier look
+-- Shiny (1): gold-tinted glossy finish on everything solid + gold sparkles.
+-- Mega (2): pearly finish, a cyan/magenta crown-halo over the head and a rising cyan/magenta
+-- ring of motes at the feet. Size (x1.2 for Mega) is left to the caller's ScaleTo.
+-- Works on both Build() rigs (parts get welded) and BuildStatic() copies (parts get anchored).
+local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
+local MEGA_A = Color3.fromRGB(120, 230, 255)
+local MEGA_B = Color3.fromRGB(255, 110, 230)
+
+local function emitter(parent: BasePart, color: ColorSequence, rate: number, size: number): ParticleEmitter
+	local e = Instance.new("ParticleEmitter")
+	e.Name = "TierFx"
+	e.Texture = SPARKLE
+	e.Color = color
+	e.LightEmission = 1
+	e.Rate = rate
+	e.Lifetime = NumberRange.new(0.7, 1.2)
+	e.Speed = NumberRange.new(0.5, 1.2)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Acceleration = Vector3.new(0, 2, 0)
+	e.Size = NumberSequence.new(size, 0)
+	e.Parent = parent
+	return e
+end
+
+function HunterRig.ApplyTier(model: Model, tier: number)
+	if tier <= 0 then
+		return
+	end
+	local head = model:FindFirstChild("Head") :: BasePart?
+	local torso = model:FindFirstChild("Torso") :: BasePart?
+	local root = model.PrimaryPart
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") and p ~= root and p.Transparency < 0.3 and p.Material ~= Enum.Material.Neon then
+			if tier == 1 then
+				p.Color = U.Mix(p.Color, GOLD, 0.22)
+				p.Reflectance = math.max(p.Reflectance, 0.3)
+			else
+				p.Color = U.Mix(p.Color, WHITE, 0.08)
+				p.Reflectance = math.max(p.Reflectance, 0.18)
+			end
+		end
+	end
+	if tier == 1 then
+		if torso then
+			emitter(torso, ColorSequence.new(GOLD), 4, 0.4)
+		end
+		return
+	end
+	-- static copies are fully anchored (head too); live rigs only anchor Root, so weld instead
+	local static = head ~= nil and head.Anchored
+	local function attach(base: BasePart, p: BasePart)
+		p.Name = "TierFx"
+		if static then
+			p.Anchored = true
+		else
+			U.FixedWeld(base, p)
+		end
+	end
+	if head then
+		-- crown-halo floating just above whatever the head wears
+		local top = U.TopY(head)
+		for _, w in model:GetDescendants() do
+			if w:IsA("Weld") and w.Part0 == head and w.Part1 then
+				top = math.max(top, U.TopY(w.Part1 :: BasePart))
+			end
+		end
+		local hcf = head.CFrame * CFrame.new(0, top - head.Position.Y + 0.35, 0.1)
+		local glow = { Material = Enum.Material.Neon, Shadow = false }
+		for i, p in U.Hoop(0.72, 0.12, 0.12, 10, hcf * CFrame.Angles(math.pi / 2, 0, 0), MEGA_A, model, glow) do
+			if i % 2 == 0 then
+				p.Color = MEGA_B
+			end
+			attach(head, p)
+		end
+		for i = 0, 4 do
+			local gem = U.Block(Vector3.new(0.2, 0.2, 0.2), hcf * CFrame.Angles(0, i * 2 * math.pi / 5, 0) * CFrame.new(0, 0.18, -0.78) * U.VertexUp, MEGA_B, model, glow)
+			attach(head, gem)
+		end
+	end
+	if root then
+		local ring = U.Block(Vector3.new(3.4, 0.1, 3.4), root.CFrame * CFrame.new(0, 0.1, 0), WHITE, model, { Transparency = 1, Shadow = false })
+		attach(root, ring)
+		local e = emitter(ring, ColorSequence.new(MEGA_A, MEGA_B), 10, 0.35)
+		e.Shape = Enum.ParticleEmitterShape.Disc
+		e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
+		e.SpreadAngle = Vector2.new(0, 0)
+		e.EmissionDirection = Enum.NormalId.Top
 	end
 end
 

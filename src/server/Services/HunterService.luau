@@ -522,6 +522,7 @@ function HunterService.Init()
 		end
 		local newUid = DataService.NewUid(d)
 		d.Hunters[newUid] = { Id = hunterId, Locked = false, T = os.time(), Tier = newTier }
+		d.Variants[hunterId .. ":" .. newTier] = true -- Shiny/Mega variant discovered (Index)
 		if slot then
 			table.insert(keep, math.min(slot, #keep + 1), newUid)
 		end

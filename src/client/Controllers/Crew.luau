@@ -4,13 +4,14 @@
 -- run to a ring around the ghost, aim and fire a wobbly energy beam, celebrate on the poof,
 -- then come back. All crews update in ONE RenderStepped loop: BulkMoveTo for roots, Motor6D
 -- transforms for poses, staggered ground raycasts, and far-away crews are hidden.
-local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Format = require(GH.Logic.Format)
 local HunterRig = require(GH.Rigs.HunterRig)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
@@ -38,11 +39,23 @@ type Member = {
 	CelebrateUntil: number,
 	Phase: number,
 	Color: Color3,
-	-- own crew only: HP bar and a short alert line ("!", "DODGED") over the tag
-	HpBar: Frame?,
-	HpFill: Frame?,
+	-- HP bar over the tag (own crew: big, plus a short alert line like "DODGED"; others: small)
+	HpGui: BillboardGui,
+	HpFill: Frame,
+	Hp: number,
 	Alert: TextLabel?,
-	AlertAt: number,
+	AlertUntil: number,
+	Chest: Attachment?, -- end point of incoming ghost bolts (own crew, made on first hit)
+	Mark: Highlight?, -- red outline while a ghost winds up on this hunter
+	MarkUntil: number,
+}
+
+-- An own equipped hunter that is knocked out: a faded rig behind the player with a countdown.
+type KO = {
+	Uid: string,
+	Rig: HunterRig.Rig,
+	Pos: Vector3,
+	Label: TextLabel,
 }
 
 type CrewData = {
@@ -52,6 +65,7 @@ type CrewData = {
 	LastTarget: number,
 	NextSpark: number,
 	NextSound: number,
+	Fighting: boolean,
 	Conns: { RBXScriptConnection },
 }
 
@@ -63,6 +77,7 @@ rayParams.FilterType = Enum.RaycastFilterType.Exclude
 rayParams.IgnoreWater = true
 local nextFilter = 0
 local gone: { [string]: Vector3 } = {} -- last spot of local rigs removed by the latest rebuild (knockout poof)
+local kos: { KO } = {}
 
 local VISIBLE_RANGE = 170
 local HUNTER_SCALE = 0.88 -- rigs are ~4-4.6 studs; this puts them at a player's chest height
@@ -119,15 +134,32 @@ local function addTag(m: Member, isLocal: boolean)
 	local tier = Config.Tiers[m.Tier]
 	local text = if backup then "BACKUP" else (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
 	WorldLabel.Text(gui, text, { Style = "Tiny", Color = if backup then Color3.fromRGB(190, 190, 200) else rar.Color })
+	-- HP bar: its own label at the tag's anchor point, drawn in the upper part so it always
+	-- sits just above the name. Own crew: readable at play distance; others: small and close only.
+	local hpGui = WorldLabel.New({
+		Name = "Hp",
+		Adornee = m.Rig.Root,
+		Parent = m.Rig.Model,
+		Size = if isLocal then Vector2.new(84, 64) else Vector2.new(44, 40),
+		Offset = Vector3.new(0, m.Rig.Height + 0.7, 0),
+		MaxDistance = if isLocal then 70 else 35,
+		AlwaysOnTop = true,
+	})
+	hpGui.Enabled = false
+	local bar: Frame = Kit.new("Frame", {
+		Size = UDim2.fromScale(1, if isLocal then 0.16 else 0.12),
+		Position = UDim2.fromScale(0, 0.3),
+		BackgroundColor3 = Color3.fromRGB(30, 15, 50),
+		Parent = hpGui,
+	})
+	Kit.Corner(bar, UDim.new(1, 0))
+	Kit.Stroke(bar, if isLocal then 1.5 else 1, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	local fill: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Ecto, Parent = bar })
+	Kit.Corner(fill, UDim.new(1, 0))
+	m.HpGui = hpGui
+	m.HpFill = fill
 	if isLocal then
-		-- HP bar under the name (hidden at full HP) + alert line above it
-		local bar: Frame = Kit.new("Frame", { Size = UDim2.fromScale(0.5, 0.3), Position = UDim2.fromScale(0.5, 1), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.fromRGB(30, 15, 50), Visible = false, Parent = gui })
-		Kit.Corner(bar, UDim.new(1, 0))
-		local fill: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Ecto, Parent = bar })
-		Kit.Corner(fill, UDim.new(1, 0))
-		m.HpBar = bar
-		m.HpFill = fill
-		m.Alert = WorldLabel.Text(gui, "", { Style = "Small", Color = Theme.Bad, Size = UDim2.fromScale(1, 1.2), Position = UDim2.fromScale(0, -1.2) })
+		m.Alert = WorldLabel.Text(hpGui, "", { Style = "Small", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.28) })
 	end
 	-- rare+ hunters stand on a soft rarity-coloured disc
 	if rar.Order >= 3 and not backup then
@@ -152,23 +184,9 @@ local function addTag(m: Member, isLocal: boolean)
 	end
 end
 
--- Cheap tier aura: a few slow sparkles rising off the hunter.
-local function addAura(rig: HunterRig.Rig, color: ColorSequence)
-	local e = Instance.new("ParticleEmitter")
-	e.Texture = Effects.Textures.Sparkle
-	e.Color = color
-	e.Size = NumberSequence.new(0.35, 0)
-	e.Lifetime = NumberRange.new(0.6, 1)
-	e.Rate = 5
-	e.Speed = NumberRange.new(1, 2)
-	e.SpreadAngle = Vector2.new(180, 180)
-	e.Acceleration = Vector3.new(0, 3, 0)
-	e.LightEmission = 1
-	e.Parent = rig.Root
-end
-
 local function newMember(id: string, tier: number, uid: string, at: Vector3, isLocal: boolean): Member
 	local rig = HunterRig.Build(id)
+	HunterRig.ApplyTier(rig.Model, tier) -- Shiny / Mega finish (same look as inventory + index)
 	local scale = if tier >= 2 then HUNTER_SCALE * 1.2 else HUNTER_SCALE
 	rig.Model:ScaleTo(scale)
 	rig.Height *= scale
@@ -182,15 +200,6 @@ local function newMember(id: string, tier: number, uid: string, at: Vector3, isL
 				p.Transparency = math.max(p.Transparency, 0.45)
 			end
 		end
-	end
-	if tier == 1 then
-		addAura(rig, ColorSequence.new(Config.Tiers[1].Color))
-	elseif tier >= 2 then
-		addAura(rig, ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Config.Tiers[2].Color),
-			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 120, 230)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 230, 110)),
-		}))
 	end
 	rig.Model:PivotTo(CFrame.new(at))
 	rig.Model.Parent = folder
@@ -209,7 +218,11 @@ local function newMember(id: string, tier: number, uid: string, at: Vector3, isL
 		CelebrateUntil = 0,
 		Phase = math.random() * 10,
 		Color = def.Look.Beam,
-		AlertAt = 0,
+		HpGui = nil :: any,
+		HpFill = nil :: any,
+		Hp = 100,
+		AlertUntil = 0,
+		MarkUntil = 0,
 	}
 	makeBeam(m)
 	addTag(m, isLocal)
@@ -222,7 +235,13 @@ local function rootOf(pl: Player): BasePart?
 	return if root and root:IsA("BasePart") then root else nil
 end
 
--- Shows each own rig's HP from "uid=pct,uid=pct" (bar hidden at 100%).
+-- green (full) -> gold (half) -> red (empty)
+local function hpColor(pct: number): Color3
+	local f = math.clamp(pct / 100, 0, 1)
+	return if f > 0.5 then Theme.Gold:Lerp(Theme.Ecto, (f - 0.5) * 2) else Theme.Bad:Lerp(Theme.Gold, f * 2)
+end
+
+-- Reads each rig's HP from "uid=pct,uid=pct" (the bar itself is shown/hidden in step).
 local function applyHP(c: CrewData)
 	local hp: { [string]: number } = {}
 	local raw = c.Player:GetAttribute("CrewHP")
@@ -232,13 +251,10 @@ local function applyHP(c: CrewData)
 		end
 	end
 	for _, m in c.Members do
-		local bar, fill = m.HpBar, m.HpFill
-		if bar and fill then
-			local pct = hp[m.Uid] or 100
-			bar.Visible = pct < 100
-			fill.Size = UDim2.fromScale(pct / 100, 1)
-			fill.BackgroundColor3 = if pct > 50 then Theme.Ecto elseif pct > 25 then Theme.Gold else Theme.Bad
-		end
+		local pct = math.clamp(hp[m.Uid] or 100, 0, 100)
+		m.Hp = pct
+		m.HpFill.Size = UDim2.fromScale(pct / 100, 1)
+		m.HpFill.BackgroundColor3 = hpColor(pct)
 	end
 end
 
@@ -291,9 +307,7 @@ local function rebuild(c: CrewData)
 			m.Rig.Model.Parent = nil
 		end
 	end
-	if isLocal then
-		applyHP(c)
-	end
+	applyHP(c)
 end
 
 local function addPlayer(pl: Player)
@@ -307,17 +321,16 @@ local function addPlayer(pl: Player)
 		LastTarget = 0,
 		NextSpark = 0,
 		NextSound = 0,
+		Fighting = false,
 		Conns = {},
 	}
 	crews[pl] = c
 	table.insert(c.Conns, pl:GetAttributeChangedSignal("Crew"):Connect(function()
 		rebuild(c)
 	end))
-	if pl == player then
-		table.insert(c.Conns, pl:GetAttributeChangedSignal("CrewHP"):Connect(function()
-			applyHP(c)
-		end))
-	end
+	table.insert(c.Conns, pl:GetAttributeChangedSignal("CrewHP"):Connect(function()
+		applyHP(c)
+	end))
 	rebuild(c)
 end
 
@@ -505,9 +518,21 @@ local function step(dt: number)
 				beam.Enabled = false
 			end
 
+			-- HP bar: while hurt, while the own crew fights, or while an alert line shows
+			local alertOn = m.AlertUntil > clock
+			local show = m.Hp < 100 or (isLocal and c.Fighting) or alertOn
+			if m.HpGui.Enabled ~= show then
+				m.HpGui.Enabled = show
+			end
+			local a = m.Alert
+			if a and not alertOn and a.Text ~= "" then
+				a.Text = ""
+			end
+
 			table.insert(roots, m.Rig.Root)
 			table.insert(cframes, CFrame.new(m.Pos) * CFrame.Angles(0, m.Yaw, 0))
 		end
+		c.Fighting = anyAttacking
 
 		-- impact sparks + soft zaps for your own crew only (keeps busy servers cheap)
 		if isLocal and anyAttacking and ghost then
@@ -523,9 +548,165 @@ local function step(dt: number)
 			end
 		end
 	end
+	-- knocked-out own hunters drift along in a row behind the crew
+	local lroot = rootOf(player)
+	if lroot and #kos > 0 then
+		local c = crews[player]
+		local rows = math.ceil((if c then #c.Members else 0) / 3)
+		local look = lroot.CFrame.LookVector
+		local yaw = math.atan2(-look.X, -look.Z)
+		local flat = CFrame.new(lroot.Position) * CFrame.Angles(0, yaw, 0)
+		local k = math.min(1, dt * 6)
+		for i, ko in kos do
+			local col = (i - 1) % 3
+			local row = (i - 1) // 3
+			local goal = (flat * CFrame.new((col - 1) * 3.2, -2.7, 4.6 + (rows + row) * 3.4)).Position
+			ko.Pos = if (goal - ko.Pos).Magnitude > 60 then goal else ko.Pos:Lerp(goal, k)
+			table.insert(roots, ko.Rig.Root)
+			table.insert(cframes, CFrame.new(ko.Pos) * CFrame.Angles(0, yaw, 0))
+		end
+	end
 	if #roots > 0 then
 		workspace:BulkMoveTo(roots, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 	end
+end
+
+local KO_TINT = Color3.fromRGB(170, 175, 200)
+
+local function newKO(uid: string, id: string, tier: number, at: Vector3): KO
+	local rig = HunterRig.Build(id)
+	local scale = if tier >= 2 then HUNTER_SCALE * 1.2 else HUNTER_SCALE
+	rig.Model:ScaleTo(scale)
+	rig.Height *= scale
+	for _, p in rig.Model:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.CastShadow = false
+			p.Material = Enum.Material.SmoothPlastic
+			p.Color = p.Color:Lerp(KO_TINT, 0.75)
+			p.Transparency = math.max(p.Transparency, 0.6)
+		elseif p:IsA("Light") or p:IsA("ParticleEmitter") then
+			p:Destroy()
+		end
+	end
+	rig.Model:PivotTo(CFrame.new(at))
+	rig.Model.Parent = folder
+	local gui = WorldLabel.New({
+		Name = "KO",
+		Adornee = rig.Root,
+		Parent = rig.Model,
+		Size = Vector2.new(80, 22),
+		Offset = Vector3.new(0, rig.Height + 0.7, 0),
+		MaxDistance = 70,
+		AlwaysOnTop = true,
+	})
+	return { Uid = uid, Rig = rig, Pos = at, Label = WorldLabel.Text(gui, "", { Style = "Small", Color = Color3.fromRGB(200, 205, 230) }) }
+end
+
+-- Keeps one faded rig per equipped hunter whose knockout hasn't ended; updates the countdowns.
+local function syncKnocked()
+	local d = State.Data
+	local now = State.Now()
+	local want: { [string]: number } = {}
+	if d and d.Equipped and d.Knocked then
+		for _, uid in d.Equipped do
+			local t = d.Knocked[uid]
+			local h = d.Hunters and d.Hunters[uid]
+			if type(t) == "number" and t > now and h and Config.Hunters[h.Id] then
+				want[uid] = t
+			end
+		end
+	end
+	for i = #kos, 1, -1 do
+		local ko = kos[i]
+		if not want[ko.Uid] then
+			ko.Rig.Model:Destroy()
+			table.remove(kos, i)
+		end
+	end
+	for uid, t in want do
+		local label: TextLabel? = nil
+		for _, k in kos do
+			if k.Uid == uid then
+				label = k.Label
+				break
+			end
+		end
+		if not label then
+			local root = rootOf(player)
+			local at = gone[uid] or (if root then root.Position - Vector3.new(0, 2.7, -6) else Vector3.zero)
+			local h = d.Hunters[uid]
+			local ko = newKO(uid, h.Id, tonumber(h.Tier) or 0, at)
+			table.insert(kos, ko)
+			label = ko.Label
+		end
+		(label :: TextLabel).Text = "💤 " .. Format.Time(t - now)
+	end
+end
+
+-- Ghost -> hunter bolt: a few reused beams from the ghost's core to the hit hunter's chest
+-- (or, if the rig is already gone after a knockout, to where it stood). Shrinks out in 0.35 s.
+type Bolt = { Beam: Beam, End: Attachment, Token: number }
+local bolts: { Bolt } = {}
+local boltNext = 0
+local BOLT_RED = Color3.fromRGB(255, 60, 110)
+
+local function bolt(e: Ghosts.Entry, target: Attachment?, at: Vector3)
+	boltNext = boltNext % 3 + 1
+	local b = bolts[boltNext]
+	if not b then
+		local endAtt = Instance.new("Attachment")
+		endAtt.Name = "GhostBoltEnd"
+		endAtt.Parent = workspace.Terrain
+		local beam = Instance.new("Beam")
+		beam.Name = "GhostBolt"
+		beam.LightEmission = 1
+		beam.LightInfluence = 0
+		beam.FaceCamera = true
+		beam.Segments = 10
+		beam.Transparency = NumberSequence.new(0.05, 0.25)
+		beam.Enabled = false
+		beam.Parent = folder
+		b = { Beam = beam, End = endAtt, Token = 0 }
+		bolts[boltNext] = b
+	end
+	local beam = b.Beam
+	if target then
+		beam.Attachment1 = target
+	else
+		b.End.WorldPosition = at
+		beam.Attachment1 = b.End
+	end
+	beam.Attachment0 = centerAttachment(e)
+	beam.Color = ColorSequence.new(e.Def.Glow, BOLT_RED)
+	beam.CurveSize0 = (math.random() - 0.5) * 4
+	beam.CurveSize1 = (math.random() - 0.5) * 3
+	beam.Width0 = 1
+	beam.Width1 = 0.55
+	beam.Enabled = true
+	TweenService:Create(beam, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Width0 = 0, Width1 = 0 }):Play()
+	b.Token += 1
+	local token = b.Token
+	task.delay(0.36, function()
+		if b.Token == token then
+			beam.Enabled = false
+		end
+	end)
+end
+
+local function chestOf(m: Member): Attachment
+	local a = m.Chest
+	if not a then
+		local made = Instance.new("Attachment")
+		made.Name = "Chest"
+		made.Position = Vector3.new(0, m.Rig.Height * 0.55, 0)
+		made.Parent = m.Rig.Root
+		m.Chest = made
+		return made
+	end
+	return a
 end
 
 local function localMember(uid: any): Member?
@@ -540,7 +721,7 @@ local function localMember(uid: any): Member?
 	return nil
 end
 
--- Short line over an own rig's tag ("!", "DODGED"); a newer flash wins.
+-- Short line over an own rig's HP bar ("DODGED"); step clears it when the time is up.
 local function flash(m: Member, text: string, color: Color3, t: number)
 	local a = m.Alert
 	if not a then
@@ -548,13 +729,31 @@ local function flash(m: Member, text: string, color: Color3, t: number)
 	end
 	a.Text = text
 	a.TextColor3 = color
-	local token = os.clock()
-	m.AlertAt = token
-	task.delay(t, function()
-		if m.AlertAt == token then
-			a.Text = ""
-		end
-	end)
+	m.AlertUntil = os.clock() + t
+end
+
+-- Calm red outline on the targeted hunter during a windup (one reused Highlight per rig).
+local function mark(m: Member, t: number)
+	local hl = m.Mark
+	if not hl then
+		local made = Instance.new("Highlight")
+		made.FillTransparency = 1
+		made.OutlineColor = Theme.Bad
+		made.OutlineTransparency = 0.1
+		made.Parent = m.Rig.Model
+		m.Mark = made
+		hl = made
+	end
+	local h = hl :: Highlight
+	h.Enabled = t > 0
+	m.MarkUntil = os.clock() + t
+	if t > 0 then
+		task.delay(t + 0.05, function()
+			if os.clock() >= m.MarkUntil then
+				h.Enabled = false
+			end
+		end)
+	end
 end
 
 function Crew.Init()
@@ -589,24 +788,35 @@ function Crew.Start()
 		if not m then
 			return
 		end
-		local t = tonumber(d.Time) or 0.9
-		local hl = Instance.new("Highlight")
-		hl.FillColor = Theme.Bad
-		hl.OutlineColor = Theme.Bad
-		hl.FillTransparency = 0.55
-		hl.Parent = m.Rig.Model
-		Debris:AddItem(hl, t)
-		flash(m, "❗", Theme.Bad, t)
+		-- the ❗ + ring sit on the ghost (Ghosts.luau); the hunter only gets a quiet outline
+		mark(m, tonumber(d.Time) or 0.9)
 	end)
 	State.OnFx("GhostHit", function(d: any)
 		local m = localMember(d.Hunter)
-		if not m then
-			return
+		if m then
+			mark(m, 0)
 		end
 		if d.Dodged then
-			flash(m, "DODGED", Theme.Ecto, 0.8)
-		elseif not d.Knocked then
+			if m then
+				flash(m, "DODGED", Theme.Ecto, 0.8)
+			end
+			return
+		end
+		local e = Ghosts.Get(d.Ghost)
+		local pos = if m then m.Pos else gone[d.Hunter]
+		if e and not e.Dying and pos then
+			bolt(e, if m then chestOf(m) else nil, pos + Vector3.new(0, 2, 0))
+		end
+		if m and not d.Knocked then
 			Effects.Burst(m.Pos + Vector3.new(0, 2, 0), { Color = Theme.Bad, Count = 8, Size = 0.5, Speed = 8, Life = 0.4 })
+		end
+	end)
+	-- knocked-out rigs + countdowns: resync on every snapshot and once a second
+	State.Changed:Connect(syncKnocked)
+	task.spawn(function()
+		while true do
+			syncKnocked()
+			task.wait(1)
 		end
 	end)
 	State.OnFx("Knocked", function(d: any)

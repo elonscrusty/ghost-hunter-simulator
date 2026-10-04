@@ -1,11 +1,14 @@
 --!strict
 -- ENDLESS BOSS TOWER HUD. Everything here only shows what the server says (Fx "Tower",
 -- Fx "TowerRoomCleared", player attributes InTower / TowerRoom); the buttons only send
--- "TowerStart", "TowerContinue" and "TowerLeave" requests, the server decides the rest.
---   * on the entrance pad: ENTER BOSS TOWER button, then a countdown pill with the party size;
---   * in a room: a top bar (ROOM n + boss name, timer, boss Spirit bar, earned this run) like
---     the Giant Poltergeist bar, and a LEAVE button (tap twice: leaving mid-fight ends your run,
---     rewards you already got are kept);
+-- "TowerStart"(startRoom), "TowerContinue" and "TowerLeave" requests, the server decides the rest.
+--   * on the entrance pad: checkpoint info + ENTER (Room 1) / START AT ROOM n (checkpoint + 1)
+--     buttons, then a countdown pill with the party size and start room;
+--   * in a room: a top bar (ROOM n + boss name, timer, boss Spirit bar, earned this run) and a
+--     LEAVE button (tap twice: leaving mid-fight ends your run, rewards you already got are kept);
+--   * boss beaten: "BOSS DEFEATED! Rewards collected" banner with your payout, shard orbs pop
+--     out of the chest and float to you, then shard icons fly to the top-bar shards counter
+--     (presentation only: the server already credited everything);
 --   * between rooms: CONTINUE (vote) and LEAVE with the time left and votes.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,6 +19,7 @@ local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
+local Effects = require(script.Parent.Effects)
 local State = require(Client.State)
 local Theme = require(Client.UI.Theme)
 local Hud = require(script.Parent.Hud)
@@ -36,6 +40,8 @@ local padBase = ""
 local leaveArmedUntil = 0
 local votes, party = 0, 1
 local voted = false
+local devRun = false -- DEV test run: no rewards
+local SHARD = Color3.fromRGB(200, 160, 255)
 
 local bar: Frame
 local titleLabel: TextLabel
@@ -46,6 +52,9 @@ local earnedLabel: TextLabel
 local padPill: Frame
 local padLabel: TextLabel
 local enterButton: TextButton
+local checkpointButton: TextButton
+local padInfo: TextLabel
+local padBox: Frame
 local actions: Frame
 local infoLabel: TextLabel
 local continueButton: TextButton
@@ -56,7 +65,9 @@ local function serverNow(): number
 end
 
 local function setEarned(e: any)
-	if type(e) == "table" then
+	if devRun then
+		earnedLabel.Text = "DEV RUN - no rewards"
+	elseif type(e) == "table" then
 		earnedLabel.Text = string.format("This run: +%s Ecto  ·  +%s Shards", Format.Short(tonumber(e.Ecto) or 0), Format.Commas(tonumber(e.Shards) or 0))
 	end
 end
@@ -93,7 +104,7 @@ local function onTower(data: any)
 	local s = data.State
 	if s == "Pad" then
 		padEndsAt = tonumber(data.EndsAt) or 0
-		padBase = string.format("👻 BOSS TOWER  ·  party %d/%d", tonumber(data.Count) or 1, tonumber(data.Max) or Config.Tower.MaxParty)
+		padBase = string.format("👻 BOSS TOWER  ·  party %d/%d  ·  Room %d", tonumber(data.Count) or 1, tonumber(data.Max) or Config.Tower.MaxParty, tonumber(data.StartRoom) or 1)
 		padPill.Visible = true
 	elseif s == "PadCancel" then
 		padEndsAt = 0
@@ -105,6 +116,7 @@ local function onTower(data: any)
 		bossUid = tonumber(data.Uid) or 0
 		endsAt = tonumber(data.EndsAt) or 0
 		party = tonumber(data.Party) or party
+		devRun = data.Dev == true
 		titleLabel.Text = string.format("🏰 ROOM %d  ·  %s", room, tostring(data.Boss or "BOSS"))
 		fill.Size = UDim2.fromScale(1, 1)
 		setEarned(data.Earned)
@@ -119,11 +131,123 @@ local function onTower(data: any)
 		bossUid = 0
 		local e = data.Earned
 		local sub = tostring(data.Reason or "")
-		if type(e) == "table" then
+		if devRun then
+			sub ..= "\nDEV RUN - no rewards"
+		elseif type(e) == "table" then
 			sub ..= string.format("\nBest room: %d  ·  +%s Ecto  ·  +%s Shards", tonumber(data.Best) or 0, Format.Short(tonumber(e.Ecto) or 0), Format.Commas(tonumber(e.Shards) or 0))
 		end
 		Hud.Banner("TOWER RUN OVER", sub, Theme.Gold)
+		devRun = false
 	end
+end
+
+-- UI: a few shard icons fly from the middle of the screen (your character) to the top-bar
+-- shards counter; a small "+N" under it ticks up as each one lands. Presentation only.
+local function flyToCounter(icons: number, total: number)
+	local pill = Hud.ShardsPill
+	local gui = pill and pill:FindFirstAncestorOfClass("ScreenGui")
+	if not pill or not gui or icons <= 0 then
+		return
+	end
+	local target: Frame = pill
+	local sc = gui:FindFirstChildOfClass("UIScale")
+	local k = if sc and sc.Scale > 0 then sc.Scale else 1
+	local tick = Kit.Label(target, "+0", { Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, 4), Color = SHARD, Style = "Body", ZIndex = 6 })
+	local shown = 0
+	for i = 1, icons do
+		task.delay((i - 1) * 0.12, function()
+			if not target.Parent then
+				return
+			end
+			local from = (gui.AbsoluteSize * Vector2.new(0.5, 0.55)) / k
+			local to = (target.AbsolutePosition + target.AbsoluteSize / 2 - gui.AbsolutePosition) / k
+			local icon = Kit.Icon(gui, "shards", "🔮", { Size = UDim2.fromOffset(34, 34), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 26, Stroke = 0, ZIndex = 40 })
+			icon.Position = UDim2.fromOffset(from.X + (math.random() - 0.5) * 60, from.Y + (math.random() - 0.5) * 30)
+			Kit.Tween(icon, 0.65, { Position = UDim2.fromOffset(to.X, to.Y), Size = UDim2.fromOffset(22, 22) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			task.delay(0.65, function()
+				icon:Destroy()
+				shown = if i == icons then total else math.min(total, shown + math.max(1, math.floor(total / icons)))
+				tick.Text = "+" .. Format.Commas(shown)
+				local ps = target:FindFirstChildOfClass("UIScale")
+				if ps then
+					ps.Scale = 1.06
+					Kit.Tween(ps, 0.2, { Scale = 1 })
+				end
+				if i == icons then
+					task.delay(1.2, function()
+						Kit.Tween(tick, 0.4, { TextTransparency = 1 })
+						task.delay(0.45, function()
+							tick:Destroy()
+						end)
+					end)
+				end
+			end)
+		end)
+	end
+end
+
+-- World: soft shard orbs pop out of the opened chest, hover, then float to your character.
+-- `done` runs once the last orb arrived.
+local function chestOrbs(chestPos: Vector3, count: number, done: () -> ())
+	local orbs = {}
+	for i = 1, count do
+		local o = Instance.new("Part")
+		o.Shape = Enum.PartType.Ball
+		o.Size = Vector3.new(0.9, 0.9, 0.9)
+		o.Material = Enum.Material.Neon
+		o.Color = SHARD
+		o.Anchored = true
+		o.CanCollide = false
+		o.CanQuery = false
+		o.CanTouch = false
+		o.CastShadow = false
+		o.Transparency = 1
+		o.CFrame = CFrame.new(chestPos)
+		o.Parent = Effects.Folder()
+		local a = (i / count) * math.pi * 2
+		table.insert(orbs, { Part = o, Apex = chestPos + Vector3.new(math.cos(a) * 2.5, 6 + math.random() * 2, math.sin(a) * 2.5), Delay = (i - 1) * 0.08 })
+	end
+	local t0 = os.clock()
+	local POP, HOVER, FLY = 0.5, 0.35, 0.8
+	local conn: RBXScriptConnection? = nil
+	conn = RunService.RenderStepped:Connect(function()
+		local now = os.clock() - t0
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local home = if root then root.Position else chestPos
+		local alive = 0
+		for _, o in orbs do
+			local p = o.Part
+			if not p.Parent then
+				continue
+			end
+			local t = now - o.Delay
+			if t < 0 then
+				alive += 1
+				continue
+			end
+			p.Transparency = 0.15
+			if t < POP then
+				local u = 1 - (1 - t / POP) ^ 2
+				p.CFrame = CFrame.new(chestPos:Lerp(o.Apex, u))
+			elseif t < POP + HOVER then
+				p.CFrame = CFrame.new(o.Apex + Vector3.new(0, math.sin((t - POP) * 8) * 0.25, 0))
+			elseif t < POP + HOVER + FLY then
+				local u = ((t - POP - HOVER) / FLY) ^ 2
+				p.CFrame = CFrame.new(o.Apex:Lerp(home, u))
+			else
+				Effects.Burst(home, { Color = SHARD, Count = 4, Size = 0.4, Speed = 4, Life = 0.4 })
+				p:Destroy()
+				continue
+			end
+			alive += 1
+		end
+		if alive == 0 and conn then
+			conn:Disconnect()
+			conn = nil
+			done()
+		end
+	end)
 end
 
 local function onCleared(data: any)
@@ -138,12 +262,34 @@ local function onCleared(data: any)
 	setEarned(data.Earned)
 	titleLabel.Text = string.format("🏆 ROOM %d CLEARED!", room)
 	fill.Size = UDim2.fromScale(0.01, 1)
-	spiritLabel.Text = "Chest opened!"
+	spiritLabel.Text = if devRun then "DEV RUN - no rewards" else "Rewards collected!"
 	setPhase("Between")
 	Sound.Play("ZoneUnlock")
 	local ecto, shards = tonumber(data.Ecto) or 0, tonumber(data.Shards) or 0
-	local sub = if ecto > 0 or shards > 0 then string.format("+%s Ecto  ·  +%s Spirit Shards", Format.Commas(ecto), Format.Commas(shards)) else "Deal damage to the boss to earn a share!"
-	Hud.Banner("ROOM " .. room .. " CLEARED!", sub, Theme.Gold)
+	local pct = math.floor((tonumber(data.Pct) or 0) * 100 + 0.5)
+	local sub
+	if devRun then
+		sub = "DEV RUN - no rewards"
+	elseif ecto > 0 or shards > 0 then
+		sub = string.format("+%s 🔮 Spirit Shards  +%s 💚 Ectoplasm  (you did %d%% of the damage)", Format.Commas(shards), Format.Commas(ecto), pct)
+	else
+		sub = "You didn't hit this boss, so no share this time. Attack it to earn rewards!"
+	end
+	Hud.Banner("BOSS DEFEATED! Rewards collected", sub, Theme.Gold)
+	local cp = tonumber(data.Checkpoint)
+	if cp and cp > 0 then
+		Kit.Toast(string.format("🚩 Checkpoint saved! Your next run can start at Room %d", cp + 1), "Good")
+	end
+	-- the chest lid opens ~0.8 s after the kill (server); orbs pop out right after
+	local pos = data.Pos
+	if shards > 0 and typeof(pos) == "Vector3" then
+		local icons = math.clamp(math.ceil(shards / 5), 3, 8)
+		task.delay(1, function()
+			chestOrbs(pos + Vector3.new(0, 2.5, 0), icons, function()
+				flyToCounter(icons, shards)
+			end)
+		end)
+	end
 end
 
 local function onLeave()
@@ -173,8 +319,13 @@ local function onContinue()
 	refreshButtons()
 end
 
-local function onEnter()
-	local res = State.Request("TowerStart")
+local function checkpointOf(): number
+	local d = State.Data
+	return if d then tonumber(d.TowerCheckpoint) or 0 else 0
+end
+
+local function onEnter(startRoom: number)
+	local res = State.Request("TowerStart", startRoom)
 	if not res.ok and res.err then
 		Kit.Toast(res.err, "Bad")
 	end
@@ -184,7 +335,7 @@ function TowerHud.Init()
 	local screen = Kit.Screen()
 	local stack = Hud.TopStack
 
-	-- top bar (same look as the Giant Poltergeist bar)
+	-- top bar (room, timer, boss Spirit, earned this run)
 	bar = Kit.new("Frame", {
 		Name = "TowerBar",
 		Size = UDim2.fromOffset(420, 84),
@@ -231,17 +382,41 @@ function TowerHud.Init()
 	Kit.Gradient(padPill, PURPLE_A, PURPLE_B, 90)
 	padLabel = Kit.Label(padPill, "", { Size = UDim2.new(1, -20, 1, 0), Position = UDim2.fromOffset(10, 0), Style = "Body", Fit = true, ZIndex = 31 })
 
-	-- bottom-centre: ENTER (on the pad) and the run actions
-	enterButton = Kit.Button(screen, {
+	-- bottom-centre: checkpoint info + ENTER / START AT CHECKPOINT (on the pad) and the run actions
+	padBox = Kit.new("Frame", {
+		Name = "TowerPadBox",
+		Size = UDim2.fromOffset(480, 78),
+		Position = UDim2.new(0.5, 0, 1, -96),
+		AnchorPoint = Vector2.new(0.5, 1),
+		BackgroundTransparency = 1,
+		Visible = false,
+		ZIndex = 25,
+		Parent = screen,
+	})
+	padInfo = Kit.Label(padBox, "", { Size = UDim2.new(1, 0, 0, 22), Style = "Small", Color = Theme.Gold, Fit = true, ZIndex = 26 })
+	enterButton = Kit.Button(padBox, {
 		Text = "🏰 ENTER BOSS TOWER",
 		Color = "Purple",
 		Size = UDim2.fromOffset(230, 48),
-		Position = UDim2.new(0.5, 0, 1, -96),
+		Position = UDim2.new(0.5, 0, 1, 0),
 		AnchorPoint = Vector2.new(0.5, 1),
-		ZIndex = 25,
-		OnClick = onEnter,
+		ZIndex = 26,
+		OnClick = function()
+			onEnter(1)
+		end,
 	})
-	enterButton.Visible = false
+	checkpointButton = Kit.Button(padBox, {
+		Text = "⏩ START AT ROOM 6",
+		Color = "Green",
+		Size = UDim2.fromOffset(230, 48),
+		Position = UDim2.new(0.5, 6, 1, 0),
+		AnchorPoint = Vector2.new(0, 1),
+		ZIndex = 26,
+		OnClick = function()
+			onEnter(checkpointOf() + 1)
+		end,
+	})
+	checkpointButton.Visible = false
 	actions = Kit.new("Frame", {
 		Name = "TowerActions",
 		Size = UDim2.fromOffset(340, 82),
@@ -316,7 +491,19 @@ function TowerHud.Start()
 			nextPadCheck = clock + 0.25
 			local inTower = player:GetAttribute("InTower") == true
 			local here = not inTower and onPad()
-			enterButton.Visible = here and padEndsAt == 0
+			padBox.Visible = here and padEndsAt == 0
+			if padBox.Visible then
+				local cp = checkpointOf()
+				local every = Config.Tower.CheckpointEvery
+				checkpointButton.Visible = cp > 0
+				enterButton.Position = if cp > 0 then UDim2.new(0.5, -6, 1, 0) else UDim2.new(0.5, 0, 1, 0)
+				enterButton.AnchorPoint = if cp > 0 then Vector2.new(1, 1) else Vector2.new(0.5, 1)
+				Kit.SetButtonText(enterButton, if cp > 0 then "▶ START AT ROOM 1" else "🏰 ENTER BOSS TOWER")
+				Kit.SetButtonText(checkpointButton, "⏩ START AT ROOM " .. (cp + 1))
+				padInfo.Text = if cp > 0
+					then string.format("🚩 Checkpoint: Room %d cleared  ·  skipped rooms give no rewards", cp)
+					else string.format("🚩 Clear Room %d to save a checkpoint", every)
+			end
 			if padEndsAt > 0 and (inTower or t > padEndsAt + 3) then
 				padEndsAt = 0
 				padPill.Visible = false

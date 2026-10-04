@@ -1,6 +1,7 @@
 --!strict
 -- GHOST PETS: buy pets with Spirit Shards (Boss Tower only) and equip up to 3. Each equipped
--- pet gives a crew-wide bonus; the server validates every buy/equip.
+-- pet gives a crew-wide bonus; the server validates every buy/equip/rename. Nicknames shown
+-- here come back from the server already text-filtered.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -23,8 +24,15 @@ local SHARD = Color3.fromRGB(200, 160, 255)
 local panel: Kit.Panel
 local shardLabel: TextLabel
 local bonusLabel: TextLabel
+local equippedHead: TextLabel
+local equippedNames: TextLabel
 local equippedLabel: TextLabel
 local ownedRow: Frame
+local renameRow: Frame
+local renameTitle: TextLabel
+local renameBox: TextBox
+local renameUid: string? = nil
+local NICK_MAX = 20
 local buyButtons: { [string]: TextButton } = {}
 local busy = false
 
@@ -40,8 +48,18 @@ local function bonusText(kind: string, value: number): string
 	return pct .. " FASTER RECOVERY"
 end
 
--- One pet card; the caller adds the button.
-local function card(parent: Instance, order: number, pet: Config.PetDef): Frame
+local function rarityName(pet: Config.PetDef): string
+	local r = Config.Rarities[pet.Rarity]
+	return string.upper(r and r.Name or pet.Rarity)
+end
+
+-- "Spooky (Boo Bat · RARE)" or just "Boo Bat"
+local function displayName(pet: Config.PetDef, nick: string?): string
+	return if nick and nick ~= "" then nick .. " (" .. pet.Name .. " · " .. rarityName(pet) .. ")" else pet.Name
+end
+
+-- One pet card (nick: owned pet's filtered nickname); the caller adds the button.
+local function card(parent: Instance, order: number, pet: Config.PetDef, nick: string?): Frame
 	local r = Config.Rarities[pet.Rarity]
 	local f: Frame = Kit.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ZIndex = 62, Parent = parent })
 	Kit.Corner(f, UDim.new(0, 14))
@@ -51,8 +69,9 @@ local function card(parent: Instance, order: number, pet: Config.PetDef): Frame
 	Kit.Corner(orb, UDim.new(1, 0))
 	Kit.Stroke(orb, 2.5, pet.Glow, Enum.ApplyStrokeMode.Border)
 	Kit.Icon(orb, "pet_" .. pet.Id, SHAPE_ICON[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 26, Stroke = 0, ZIndex = 64 })
-	Kit.Label(f, string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56), Style = "Body", Fit = true, ZIndex = 63 })
-	Kit.Label(f, r and r.Name or pet.Rarity, { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 78), Color = r and r.Color or Theme.Text, Style = "Tiny", Fit = true, ZIndex = 63 })
+	local named = nick ~= nil and nick ~= ""
+	Kit.Label(f, if named then nick :: string else string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56), Style = "Body", Fit = true, ZIndex = 63 })
+	Kit.Label(f, if named then pet.Name .. " · " .. rarityName(pet) else (r and r.Name or pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 78), Color = r and r.Color or Theme.Text, Style = "Tiny", Fit = true, ZIndex = 63 })
 	Kit.Label(f, bonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -10, 0, 32), Position = UDim2.fromOffset(5, 96), Color = Theme.Ecto, Font = Theme.Body, Style = "Tiny", Wrap = true, ZIndex = 63 })
 	return f
 end
@@ -96,7 +115,7 @@ local function refresh()
 			table.insert(parts, bonusText(kind, v))
 		end
 	end
-	bonusLabel.Text = if #parts > 0 then "ACTIVE: " .. table.concat(parts, "  •  ") else "No pet bonuses yet: equip a pet!"
+	bonusLabel.Text = if #parts > 0 then "TO ALL HUNTERS: " .. table.concat(parts, "  •  ") else "No pet bonuses yet: equip a pet!"
 	for id, b in buyButtons do
 		b:SetAttribute("Color", if shards >= (Config.Pets[id].Price or math.huge) then "Green" else "Gray")
 	end
@@ -110,6 +129,20 @@ local function refresh()
 		nEquipped += 1
 	end
 	equippedLabel.Text = "OWNED  •  EQUIPPED " .. nEquipped .. "/" .. Config.PetRules.MaxEquipped
+	equippedHead.Text = "EQUIPPED " .. nEquipped .. "/" .. Config.PetRules.MaxEquipped
+	local names = {}
+	for _, uid in d.EquippedPets or {} do
+		local rec = d.Pets and d.Pets[uid]
+		local pet = rec and Config.Pets[rec.Id]
+		if rec and pet then
+			table.insert(names, (SHAPE_ICON[pet.Shape] or "👻") .. " " .. displayName(pet, rec.Nick))
+		end
+	end
+	equippedNames.Text = if #names > 0 then table.concat(names, "   ") else "None: equip pets below"
+	if renameUid and not (d.Pets and d.Pets[renameUid]) then
+		renameUid = nil
+	end
+	renameRow.Visible = renameUid ~= nil
 	for _, c in ownedRow:GetChildren() do
 		if c:IsA("Frame") then
 			c:Destroy()
@@ -127,13 +160,29 @@ local function refresh()
 		return if ta ~= tb then ta < tb else a < b
 	end)
 	for i, uid in uids do
-		local pet = Config.Pets[d.Pets[uid].Id]
+		local rec = d.Pets[uid]
+		local pet = Config.Pets[rec.Id]
 		if pet then
 			local on = equipped[uid] == true
-			local f = card(ownedRow, i, pet)
+			local f = card(ownedRow, i, pet, rec.Nick)
 			cardButton(f, if on then "UNEQUIP" else "EQUIP", if on then "Orange" else "Green", function()
 				request("EquipPet", uid, not on)
 			end)
+			Kit.Button(f, {
+				Text = "✏️",
+				Color = "Purple",
+				Size = UDim2.fromOffset(36, 36),
+				Position = UDim2.new(1, -4, 0, 4),
+				AnchorPoint = Vector2.new(1, 0),
+				ZIndex = 64,
+				OnClick = function()
+					renameUid = uid
+					renameTitle.Text = "RENAME " .. displayName(pet, rec.Nick)
+					renameBox.Text = rec.Nick or ""
+					renameRow.Visible = true
+					renameBox:CaptureFocus()
+				end,
+			})
 		end
 	end
 	if #uids == 0 then
@@ -159,8 +208,12 @@ function PetsPanel.Init()
 	shardLabel = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 30), Color = SHARD, Style = "Currency", Fit = true, ZIndex = 62 })
 	shardLabel.LayoutOrder = 1
 	Kit.Label(scroll, "Earn shards in the Boss Tower", { Size = UDim2.new(1, -6, 0, 18), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Fit = true, Stroke = 0, ZIndex = 62 }).LayoutOrder = 2
+	equippedHead = Kit.Label(scroll, "", { Size = UDim2.new(1, 0, 0, 24), Style = "Heading", ZIndex = 62 })
+	equippedHead.LayoutOrder = 3
+	equippedNames = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
+	equippedNames.LayoutOrder = 4
 	bonusLabel = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Color = Theme.Ecto, Style = "Small", Fit = true, ZIndex = 62 })
-	bonusLabel.LayoutOrder = 3
+	bonusLabel.LayoutOrder = 5
 	local function section(order: number, title: string): (TextLabel, Frame)
 		local l = Kit.Label(scroll, title, { Size = UDim2.new(1, 0, 0, 24), Style = "Heading", ZIndex = 62 })
 		l.LayoutOrder = order
@@ -168,7 +221,7 @@ function PetsPanel.Init()
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(160, 176), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		return l, row
 	end
-	local _, shopRow = section(4, "SHOP")
+	local _, shopRow = section(10, "SHOP")
 	for i, id in Config.PetOrder do
 		local pet = Config.Pets[id]
 		if pet and pet.Price then
@@ -182,7 +235,61 @@ function PetsPanel.Init()
 			end)
 		end
 	end
-	equippedLabel, ownedRow = section(6, "OWNED")
+	equippedLabel, ownedRow = section(20, "OWNED")
+	ownedRow.LayoutOrder = 22
+	-- rename bar (opened by a card's pencil button): text box + SAVE / DEFAULT / X
+	renameRow = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 76), BackgroundColor3 = Theme.Bg, LayoutOrder = 21, Visible = false, ZIndex = 61, Parent = scroll })
+	Kit.Corner(renameRow, UDim.new(0, 12))
+	Kit.Stroke(renameRow, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	renameTitle = Kit.Label(renameRow, "", { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 4), Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true, ZIndex = 62 })
+	local boxBg: Frame = Kit.new("Frame", { Size = UDim2.new(1, -290, 0, 38), Position = UDim2.fromOffset(10, 30), BackgroundColor3 = Theme.Panel, ZIndex = 62, Parent = renameRow })
+	Kit.Corner(boxBg, UDim.new(0, 10))
+	renameBox = Kit.new("TextBox", {
+		Size = UDim2.new(1, -16, 1, 0),
+		Position = UDim2.fromOffset(8, 0),
+		BackgroundTransparency = 1,
+		ClearTextOnFocus = false,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Font = Theme.Body,
+		TextSize = Theme.Type.Body,
+		TextColor3 = Theme.Text,
+		PlaceholderColor3 = Theme.Muted,
+		PlaceholderText = "Pet name (up to " .. NICK_MAX .. " letters)",
+		Text = "",
+		ZIndex = 63,
+		Parent = boxBg,
+	})
+	renameBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local n = utf8.len(renameBox.Text)
+		if not n or n > NICK_MAX then
+			renameBox.Text = string.sub(renameBox.Text, 1, (utf8.offset(renameBox.Text, NICK_MAX + 1) or 1) - 1)
+		end
+	end)
+	local function rename(text: string)
+		local uid = renameUid
+		if not uid then
+			return
+		end
+		local res = request("RenamePet", uid, text)
+		if res and res.ok then
+			renameUid = nil
+			renameRow.Visible = false
+			Kit.Toast(if res.Nick then "Renamed to " .. res.Nick else "Name reset", "Good")
+		end
+	end
+	local function barButton(text: string, color: string, x: number, w: number, onClick: () -> ())
+		Kit.Button(renameRow, { Text = text, Color = color, Size = UDim2.fromOffset(w, 38), Position = UDim2.new(1, x, 0, 30), AnchorPoint = Vector2.new(1, 0), TextStyle = "Body", ZIndex = 63, OnClick = onClick })
+	end
+	barButton("SAVE", "Green", -184, 90, function()
+		rename(renameBox.Text)
+	end)
+	barButton("DEFAULT", "Gray", -58, 120, function()
+		rename("")
+	end)
+	barButton("X", "Red", -8, 44, function()
+		renameUid = nil
+		renameRow.Visible = false
+	end)
 	Hud.RegisterPanel("Pets", function()
 		panel:Toggle()
 	end)

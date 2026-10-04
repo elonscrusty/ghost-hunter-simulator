@@ -222,7 +222,7 @@ local function buildStage(rarity: Config.RarityDef)
 		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
 		PixelsPerStud = 14,
 		LightInfluence = 0,
-		Brightness = 1,
+		Brightness = 0.7,
 		Parent = back,
 	})
 	local bg: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = sg })
@@ -249,7 +249,7 @@ local function buildStage(rarity: Config.RarityDef)
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = rarity.Color,
-			BackgroundTransparency = 0.55,
+			BackgroundTransparency = 0.68,
 			BorderSizePixel = 0,
 			Rotation = i * 30,
 			Parent = holder,
@@ -269,9 +269,9 @@ local function buildStage(rarity: Config.RarityDef)
 	rays = holder
 	-- lights
 	local l1 = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(STAGE + Vector3.new(0, 7, -6)) })
-	Kit.new("PointLight", { Range = 22, Brightness = 2.2, Color = Color3.fromRGB(255, 240, 255), Parent = l1 })
+	Kit.new("PointLight", { Range = 18, Brightness = 1.4, Color = Color3.fromRGB(255, 240, 255), Parent = l1 })
 	local l2 = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(STAGE + Vector3.new(0, 3, 3)) })
-	Kit.new("PointLight", { Name = "RarityLight", Range = 16, Brightness = 0, Color = rarity.Color, Parent = l2 })
+	Kit.new("PointLight", { Name = "RarityLight", Range = 12, Brightness = 0, Color = rarity.Color, Parent = l2 })
 end
 
 local function buildGui(): (ScreenGui, TextButton)
@@ -625,7 +625,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 			charge.Rate = 15 + 110 * a
 		end
 		if rl then
-			rl.Brightness = 3 * a * math.min(1, rarity.Order / 3)
+			rl.Brightness = 1.8 * a * math.min(1, rarity.Order / 3)
 		end
 		if tt >= nextShakeSound and a < 0.95 then
 			nextShakeSound = tt + 0.45
@@ -656,11 +656,11 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	if not skipping then
 		Sound.Play(rarity.Sound)
 		flash(rarity.Color, 0.45)
-		Effects.Flash(burstPos, rarity.Color, 5 + rarity.Order, 0.5)
-		Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = rarity.Particles, Size = 0.9, Speed = 26, Life = 1.1, Gravity = 18 })
+		Effects.Flash(burstPos, rarity.Color, 3 + rarity.Order * 0.6, 0.4)
+		Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = math.floor(rarity.Particles * 0.6), Size = 0.65, Speed = 26, Life = 1.1, Gravity = 18 })
 		Effects.Ring(STAGE + Vector3.new(0, 0.2, 0), rarity.Color, 10, 0.6)
 		if cc then
-			tween(cc, TweenInfo.new(0.5), { Brightness = 0.12, Saturation = 0.15 })
+			tween(cc, TweenInfo.new(0.5), { Brightness = 0.04, Saturation = 0.1 })
 			task.delay(0.5, function()
 				if cc then
 					tween(cc, TweenInfo.new(0.6), { Brightness = 0, Saturation = 0 })
@@ -676,7 +676,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	crate.Glow.Color = rarity.Color
 	anim(0.3 * f, function(a)
 		crate.Motors.Lid.Transform = CFrame.Angles(math.rad(115) * easeOutBack(a), 0, 0)
-		crate.Glow.Transparency = 1 - 0.85 * a
+		crate.Glow.Transparency = 1 - 0.6 * a
 	end)
 	if stage ~= my then
 		return
@@ -689,7 +689,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	hunterState = "Celebrate"
 	hunterT0 = os.clock()
 	local from = STAGE + Vector3.new(0, levitate + 0.6, 0.2)
-	local to = STAGE + Vector3.new(0, 0, -3.4)
+	local to = STAGE + Vector3.new(0, 0, -4.6)
 	anim(0.55 * f, function(a)
 		local p = from:Lerp(to, a) + Vector3.new(0, 5.5 * 4 * a * (1 - a), 0)
 		local spin = (1 - a) * math.pi * 2
@@ -700,7 +700,21 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	placeCrate(base)
 	if not skipping then
 		Effects.Ring(to + Vector3.new(0, 0.15, 0), Color3.new(1, 1, 1), 5, 0.4)
-		Effects.Burst(to + Vector3.new(0, 3, 0), { Color = rarity.Color, Count = math.floor(rarity.Particles / 3), Size = 0.6, Speed = 14, Life = 0.7 })
+		Effects.Burst(to + Vector3.new(0, 3, 0), { Color = rarity.Color, Count = math.floor(rarity.Particles / 5), Size = 0.45, Speed = 14, Life = 0.7 })
+	end
+	-- spotlight the hunter: neutral key light in front, dim the chest glow, rarity light and rays behind it
+	local key = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(to + Vector3.new(0, 4.5, -4)) })
+	Kit.new("PointLight", { Range = 11, Brightness = 1.3, Color = Color3.new(1, 1, 1), Shadows = false, Parent = key })
+	tween(crate.Glow, TweenInfo.new(0.5), { Transparency = 0.75 })
+	if rl then
+		tween(rl, TweenInfo.new(0.5), { Brightness = 0.6 })
+	end
+	if rays then
+		for _, ray in rays:GetChildren() do
+			if ray:IsA("Frame") then
+				tween(ray, TweenInfo.new(0.5), { BackgroundTransparency = 0.8 })
+			end
+		end
 	end
 	if stage ~= my then
 		return

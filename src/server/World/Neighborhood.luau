@@ -172,10 +172,10 @@ local function plaza(f: Instance)
 		Kit.Box(f, V(sx + s * 7, 0.4, sz - 7) - V(0.4, 0, 0), V(sx + s * 7, 1.3, sz + 7) + V(0.4, 0, 0), border)
 	end
 
-	-- plaza lamps on the rim
-	for i, a in { 45, 135, 225, 315 } do
-		local r = math.rad(a)
-		Props.StreetLamp(f, V(sx + math.cos(r) * 23, 0.25, sz + math.sin(r) * 23), C(200, 140, 255), i <= 2)
+	-- plaza lamps flank the spawn at the sides, clear of the diagonal paths to the kiosks/crate/upgrade
+	-- stations and of the north (ghosts) and south (HQ door) sightlines
+	for i, p in { { -13, 6 }, { 13, 6 }, { -13, -4 }, { 13, -4 } } do
+		Props.StreetLamp(f, V(sx + p[1], 0.25, sz + p[2]), C(200, 140, 255), i <= 2)
 	end
 
 	-- guide chevrons to the Beginner crate and the upgrade booth

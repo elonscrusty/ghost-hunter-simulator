@@ -23,7 +23,7 @@ local inbox: Kit.Panel
 local inboxList: ScrollingFrame
 local devButton: TextButton
 local list: ScrollingFrame
-local actionButtons: { TextButton } = {}
+local actionButtons: { GuiObject } = {}
 local rareRow: Frame
 local rareStatus: TextLabel
 local rareButton: TextButton
@@ -72,7 +72,8 @@ local ACTIONS: { Action } = {
 	{ Text = "UNLOCK ALL AREAS", Cmd = "Zones", Color = "Blue" },
 	{ Text = "ALL 32 HUNTERS", Cmd = "Hunters", Color = "Orange" },
 	{ Text = "MAX UPGRADES", Cmd = "MaxUpgrades", Color = "Teal" },
-	{ Text = "START EVENT", Cmd = "Event", Color = "Pink" },
+	{ Text = "GIVE ALL PETS", Cmd = "AllPets", Color = "Pink" },
+	{ Text = "HEAL ALL HUNTERS", Cmd = "HealAll", Color = "Green" },
 	{ Text = "2X ECTOPLASM: 2 DAYS", Cmd = "Ecto2x", Arg = 48, Color = "Green" },
 	{ Text = "2X ECTOPLASM: ON", Cmd = "Ecto2x", Arg = true, Color = "Green" },
 	{ Text = "2X ECTOPLASM: OFF", Cmd = "Ecto2x", Arg = false, Color = "Red" },
@@ -109,6 +110,40 @@ local function run(a: Action)
 	else
 		Kit.Toast(res.err or "Failed", "Bad")
 	end
+end
+
+-- One grid cell: number box + button. Checked here for a quick message; the server re-checks.
+local function numberInput(order: number, placeholder: string, text: string, color: string, cmd: string, max: number, done: (number) -> string)
+	local cell: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.3, LayoutOrder = order, ZIndex = 62, Parent = list })
+	Kit.Corner(cell, UDim.new(0, 10))
+	local box: TextBox = Kit.new("TextBox", {
+		Size = UDim2.new(0, 70, 1, -8),
+		Position = UDim2.fromOffset(4, 4),
+		BackgroundTransparency = 1,
+		ClearTextOnFocus = false,
+		Font = Theme.Body,
+		TextSize = Theme.Type.Body,
+		TextColor3 = Theme.Text,
+		PlaceholderColor3 = Theme.Muted,
+		PlaceholderText = placeholder,
+		Text = "",
+		ZIndex = 63,
+		Parent = cell,
+	})
+	Kit.Button(cell, { Text = text, Color = color, TextStyle = "Small", Size = UDim2.new(1, -80, 1, -6), Position = UDim2.new(1, -3, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), ZIndex = 63, OnClick = function()
+		local n = tonumber(box.Text)
+		if not n or n % 1 ~= 0 or n < 1 or n > max then
+			Kit.Toast("Enter a whole number 1-" .. Format.Short(max), "Bad")
+			return
+		end
+		local res = State.Request("Dev", cmd, n)
+		if res.ok then
+			Kit.Toast(done(n), "Good")
+		else
+			Kit.Toast(res.err or "Failed", "Bad")
+		end
+	end })
+	table.insert(actionButtons, cell)
 end
 
 --------------------------------------------------------------------------------
@@ -259,6 +294,13 @@ function DevPanel.Init()
 			panel.Primary = b
 		end
 	end
+	numberInput(#ACTIONS + 1, "amount", "GIVE SHARDS", "Teal", "Shards", 1000000, function(n)
+		return "+" .. Format.Short(n) .. " Spirit Shards"
+	end)
+	numberInput(#ACTIONS + 2, "room", "TOWER ROOM", "Orange", "TowerRoom", 400, function(n)
+		panel:Close()
+		return "Tower room " .. n .. " ✅"
+	end)
 	buildRare()
 	Kit.Label(panel.Body, "Only you can see this. In a live server these change your real save.", { Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, -22), Color = Theme.Muted, Font = Theme.Body, Style = "Tiny", Stroke = 0, ZIndex = 62 })
 

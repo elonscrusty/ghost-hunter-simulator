@@ -13,9 +13,12 @@ local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
 local Remotes = require(script.Parent.Remotes)
 local Fx = require(script.Parent.Fx)
-local EventService = require(script.Parent.EventService)
 
 local ShopService = {}
+
+-- Products no longer sold: Buy refuses them; ProcessReceipt still honours old receipts.
+local RETIRED_KINDS: { [string]: boolean } = { SummonEvent = true }
+local LEGACY_SUMMON_LUCK_SECONDS = 900
 
 local function productById(id: number): Config.ProductDef?
 	for _, p in Config.Products do
@@ -65,8 +68,16 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 			DataService.Changed(other)
 		end
 	elseif p.Kind == "SummonEvent" then
-		Fx.All("Announce", { Text = player.DisplayName .. " summoned the GIANT POLTERGEIST! 👻", Color = "Legendary" })
-		EventService.TriggerNow()
+		-- RETIRED product (the Giant Poltergeist event is gone and it is no longer sold). An old
+		-- or delayed receipt still gets something fair: 15 minutes of SERVER LUCK for everyone.
+		PlayerInfo.AddServerLuck(LEGACY_SUMMON_LUCK_SECONDS)
+		Fx.All("Announce", { Text = player.DisplayName .. " turned on SERVER LUCK for everyone! 🍀", Color = "Rare" })
+		for _, other in Players:GetPlayers() do
+			DataService.Changed(other)
+		end
+		DataService.Changed(player)
+		Fx.Toast(player, "Thanks! The Giant Poltergeist event was retired, so you got 15 min SERVER LUCK instead!", "Good")
+		return
 	end
 	DataService.Changed(player)
 	Fx.Toast(player, "Thanks! " .. p.Name .. " added!", "Good")
@@ -199,6 +210,9 @@ function ShopService.Init()
 		end
 		for _, p in Config.Products do
 			if p.Key == key then
+				if RETIRED_KINDS[p.Kind] then
+					return Remotes.Fail("This isn't sold anymore")
+				end
 				if not p.ProductId then
 					return Remotes.Fail("Coming soon!")
 				end
@@ -223,9 +237,6 @@ function ShopService.Init()
 				end
 				if p.Kind == "ServerLuck" and PlayerInfo.ServerLuckUntil() - os.time() + (p.Seconds or 0) > Config.ServerLuck.MaxStackSeconds then
 					return Remotes.Fail("Server luck is already maxed!")
-				end
-				if p.Kind == "SummonEvent" and EventService.IsBusy() then
-					return Remotes.Fail("The Giant Poltergeist is already here!")
 				end
 				if p.Kind == "Boost" and p.Boost and p.Seconds then
 					-- boosts stack up to a cap; don't sell time that would be thrown away

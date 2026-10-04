@@ -25,7 +25,6 @@ local Orbs = require(script.Parent.Orbs)
 local Reveal = require(script.Parent.Reveal)
 local CratePanel = require(script.Parent.CratePanel)
 local HuntersPanel = require(script.Parent.HuntersPanel)
-local Boss = require(script.Parent.Boss)
 local Sound = require(script.Parent.Sound)
 
 local Tutorial = {}
@@ -292,8 +291,7 @@ local function tick()
 				break
 			end
 		end
-		local bossState = Boss.State()
-		local calm = not panel and bossState == "Idle" and not Reveal.IsPlaying()
+		local calm = not panel and not Reveal.IsPlaying()
 		if calm and wantsTowerGoal(d) and (not towerPointed or os.clock() % TOWER_CYCLE < TOWER_SHOW) then
 			goalChip.Visible = true
 			goalLabel.Text = "TRY THE BOSS TOWER (east of spawn)!"
@@ -303,11 +301,11 @@ local function tick()
 				towerPointed = true
 				setGuide(towerPos, TOWER_GUIDE_SECONDS)
 			end
-		elseif nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
+		elseif nextZone and calm then
 			goalChip.Visible = true
 			goalLabel.Text = "NEXT: UNLOCK " .. nextZone.Name .. "  " .. Format.Short(math.min(d.Ecto, nextZone.Cost)) .. " / " .. Format.Short(nextZone.Cost)
 			goalFill.Size = UDim2.fromScale(math.clamp(d.Ecto / nextZone.Cost, 0.02, 1), 1)
-		elseif not nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
+		elseif not nextZone and calm then
 			-- every area open: the goal becomes the full Hunter Index
 			local total, found = 0, 0
 			for id, h in Config.Hunters do
@@ -520,13 +518,6 @@ function Tutorial.Start()
 		collectedOnce = true
 	end)
 	RunService.RenderStepped:Connect(updateGuide)
-	-- "SHOW ME" on the boss bar reuses the trail for a few seconds
-	Boss.PointRequested:Connect(function()
-		local _, pos = Boss.State()
-		setGuide(function()
-			return pos + Vector3.new(0, 16, 0)
-		end, 10)
-	end)
 	task.spawn(function()
 		local d = State.WaitForData()
 		step = math.clamp(d.Tutorial or 1, 1, STEPS + 1)

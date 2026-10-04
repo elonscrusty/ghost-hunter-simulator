@@ -13,7 +13,8 @@ local Config = require(GH.Config)
 local DataService = require(script.Parent.DataService)
 local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
-local EventService = require(script.Parent.EventService)
+local PetService = require(script.Parent.PetService)
+local CrewService = require(script.Parent.CrewService)
 local GlobalEventService = require(script.Parent.GlobalEventService)
 local RarePetEventService = require(script.Parent.RarePetEventService)
 local Remotes = require(script.Parent.Remotes)
@@ -43,6 +44,16 @@ function DevService.IsDev(player: Player): boolean
 end
 
 local MAX_ECTO_GRANT = 1e12
+local MAX_SHARD_GRANT = 1e6
+local MAX_TOWER_ROOM = 400
+
+-- whole number in [lo, hi], else nil
+local function int(arg: any, lo: number, hi: number): number?
+	if type(arg) ~= "number" or arg ~= arg or arg % 1 ~= 0 or arg < lo or arg > hi then
+		return nil
+	end
+	return arg
+end
 
 -- Runs one dev command; returns an error text or nil (+ optional extra result fields).
 function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
@@ -114,8 +125,46 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		end
 		HunterService.Refresh(player)
 		player:LoadCharacter() -- back to spawn (the old area may be locked now)
-	elseif cmd == "Event" then
-		EventService.TriggerNow()
+	elseif cmd == "AllPets" then
+		-- one copy of each pet the dev doesn't own yet (repeat-safe)
+		local owned: { [string]: boolean } = {}
+		for _, pet in d.Pets do
+			owned[pet.Id] = true
+		end
+		for _, petId in Config.PetOrder do
+			if Config.Pets[petId] and not owned[petId] then
+				PetService.Add(d, petId)
+				owned[petId] = true
+			end
+		end
+		PetService.Refresh(player)
+		DataService.Save(player)
+	elseif cmd == "HealAll" then
+		table.clear(d.Knocked)
+		CrewService.HealAll(player)
+		HunterService.Refresh(player)
+	elseif cmd == "Shards" then
+		-- spendable shards only; TowerShards stays the earned-reward record
+		local n = int(arg, 1, MAX_SHARD_GRANT)
+		if not n then
+			return "Amount must be a whole number 1-1000000"
+		end
+		d.Shards += n
+		DataService.Changed(player)
+	elseif cmd == "TowerRoom" then
+		local room = int(arg, 1, MAX_TOWER_ROOM)
+		if not room then
+			return "Room must be a whole number 1-400"
+		end
+		-- lazy require: TowerService loads after DevService's dependencies
+		local ok, TS = pcall(require, (script.Parent :: any).TowerService)
+		if not ok or type(TS) ~= "table" or type(TS.DevStart) ~= "function" then
+			return "Tower dev jump not available"
+		end
+		local err = TS.DevStart(player, room)
+		if err then
+			return err
+		end
 	elseif cmd == "ResetDaily" then
 		d.Daily.Last = 0
 		DataService.Changed(player)
@@ -174,7 +223,6 @@ function DevService.Init()
 end
 
 local CHAT: { [string]: string } = {
-	["/event"] = "Event",
 	["/reset-daily"] = "ResetDaily",
 	["/autoattack"] = "AutoAttack",
 	["/zones"] = "Zones",

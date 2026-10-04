@@ -1,8 +1,8 @@
 --!strict
 -- TOWER PLAZA (workspace.Map.EventArena) on the old event-arena plot at the end of the cross
 -- street. Two parts:
---   * an open courtyard around Config.Layout.EventArena.Center where the Giant Poltergeist event
---     still spawns: flat rune paint only, nothing taller than 0.35 studs within CLEAR_R studs of
+--   * an open courtyard around Config.Layout.EventArena.Center (the retired Giant Poltergeist
+--     event used to spawn there; kept as open space): flat rune paint only, nothing taller than 0.35 studs within CLEAR_R studs of
 --     the centre (so nothing solid there up to Y = 30 or higher);
 --   * the ENDLESS BOSS TOWER on the east side of the plot (backed against the east hedge) with
 --     the party pad (part "TowerPad", radius Config.Tower.PadRadius) in front of its door.
@@ -162,7 +162,7 @@ function Arena.Build(map: Instance)
 	local cx, cz, r = ea.Center.X, ea.Center.Z, ea.Radius
 	local m = Kit.Model(map, "EventArena")
 
-	-- COURTYARD (flat, top 0.12): the Giant Poltergeist event spawns over its centre
+	-- COURTYARD (flat, top 0.12): open space in front of the tower (old event spot)
 	local field = Kit.Disc(m, cx, cz, 0.12, CLEAR_R * 2 + 6, 0.4, C(90, 60, 140), { Mat = Enum.Material.Slate, Solid = true, Name = "Field" })
 	Kit.Disc(m, cx, cz, 0.16, CLEAR_R * 2 - 2, 0.1, C(115, 80, 180), { Solid = true })
 	ring(m, cx, cz, CLEAR_R - 1, 30, 1.2, ECTO, 0.32)

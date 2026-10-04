@@ -58,7 +58,7 @@ local function fetchPrices()
 		end
 	end
 	for _, p in Config.Products do
-		if p.ProductId then
+		if p.ProductId and priceButtons[p.Key] then
 			task.spawn(fetch, p.Key, p.ProductId, Enum.InfoType.Product)
 		end
 	end
@@ -120,6 +120,9 @@ function ShopPanel.Init()
 	end
 	local prodRow = section(1, "BOOSTS & ECTOPLASM")
 	for i, p in Config.Products do
+		if p.Kind == "SummonEvent" then
+			continue -- retired with the Giant Poltergeist event (no longer sold)
+		end
 		local sub = if p.Blurb then p.Blurb elseif p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
 		local prodButton, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
 			buy(p.Key)

@@ -32,7 +32,6 @@ local ectoPill: Frame
 local powerLabel: TextLabel
 local powerPrefix = "⚡ "
 local boostHolder: Frame
-local shardChip: Frame
 local shardLabel: TextLabel
 local tradeButton: TextButton
 local dailyBadge: Frame
@@ -109,11 +108,12 @@ local function floatText(text: string, color: Color3)
 end
 
 local function buildTop(screen: ScreenGui)
-	-- Ectoplasm + power: two same-size pills side by side, centred in the top bar row
+	-- Ectoplasm + power + Spirit Shards: three same-size pills side by side, centred in the top bar row
+	local PILL_W = 160
 	local top = Kit.TopBar()
 	local row: Frame = Kit.new("Frame", {
 		Name = "Counters",
-		Size = UDim2.fromOffset(190 * 2 + 14, 40),
+		Size = UDim2.fromOffset(PILL_W * 3 + 14 * 2, 40),
 		Position = UDim2.new(0.5, 0, 0, 6),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
@@ -121,7 +121,7 @@ local function buildTop(screen: ScreenGui)
 	})
 	ectoPill = Kit.new("Frame", {
 		Name = "Ecto",
-		Size = UDim2.fromOffset(190, 40),
+		Size = UDim2.fromOffset(PILL_W, 40),
 		Position = UDim2.fromOffset(0, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Parent = row,
@@ -161,9 +161,9 @@ local function buildTop(screen: ScreenGui)
 	-- crew power
 	local power: Frame = Kit.new("Frame", {
 		Name = "Power",
-		Size = UDim2.fromOffset(190, 40),
-		Position = UDim2.new(1, 0, 0, 0),
-		AnchorPoint = Vector2.new(1, 0),
+		Size = UDim2.fromOffset(PILL_W, 40),
+		Position = UDim2.new(0.5, 0, 0, 0),
+		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Parent = row,
 	})
@@ -173,6 +173,22 @@ local function buildTop(screen: ScreenGui)
 	Kit.Icon(power, "power", "⚡", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 4 })
 	powerPrefix = ""
 	powerLabel = Kit.Label(power, "0 POWER", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(42, 0), Color = Theme.Gold, Style = "Heading", Fit = true })
+	-- Spirit Shards (Hud.ShardsPill: target for shard fly-in effects)
+	local shards: Frame = Kit.new("Frame", {
+		Name = "Shards",
+		Size = UDim2.fromOffset(PILL_W, 40),
+		Position = UDim2.new(1, 0, 0, 0),
+		AnchorPoint = Vector2.new(1, 0),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Parent = row,
+	})
+	Kit.Corner(shards, UDim.new(1, 0))
+	Kit.Stroke(shards, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(shards, Theme.Panel2, Theme.Bg, 90)
+	Kit.new("UIScale", { Parent = shards })
+	Kit.Icon(shards, "shards", "🔮", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 4 })
+	shardLabel = Kit.Label(shards, "0", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(42, 0), Color = Color3.fromRGB(200, 160, 255), Style = "Currency", Fit = true })
+	Hud.ShardsPill = shards
 	-- boosts (only while active)
 	-- directly under the counters: next-area progress bar (Tutorial), boss event bar (Boss) and
 	-- active boosts, stacked so they never overlap and never sit in the middle of the play area
@@ -195,10 +211,6 @@ local function buildTop(screen: ScreenGui)
 		Parent = stack,
 	})
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Parent = boostHolder })
-	-- Spirit Shards chip (only once the player has some)
-	shardChip = Kit.new("Frame", { Size = UDim2.fromOffset(110, 22), BackgroundColor3 = Theme.Panel2, BackgroundTransparency = 0.1, LayoutOrder = 4, Visible = false, Parent = stack })
-	Kit.Corner(shardChip, UDim.new(1, 0))
-	shardLabel = Kit.Label(shardChip, "", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Color = Color3.fromRGB(200, 160, 255), Style = "Tiny", Fit = true })
 end
 
 -- HUD layout
@@ -226,6 +238,7 @@ local AUTO_W, AUTO_H = 132, 40
 local menu: Frame -- left column
 local menuScale: UIScale
 Hud.TopStack = nil :: Frame?
+Hud.ShardsPill = nil :: Frame?
 local rightStack: Frame
 local rightScale: UIScale
 local lowerRow: Frame
@@ -256,16 +269,18 @@ local function readChatBottom()
 	end)
 end
 
--- Room to keep free above the bottom edge on the right (the touch jump button), logical px.
+-- Room to keep free above the bottom edge on the right (the touch jump button), logical px,
+-- plus MENU_LIFT so both menu columns sit a little higher (the fit scaling still shrinks them).
+local MENU_LIFT = 40
 local function bottomReserve(): number
 	if not touchOnly() then
-		return 10
+		return 10 + MENU_LIFT
 	end
 	local cam = workspace.CurrentCamera
 	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
 	local small = math.min(vp.X, vp.Y) < 500 -- Roblox uses the small jump button below 500 px
 	local physical = if small then 100 else 225
-	return physical / Kit.UIScale()
+	return physical / Kit.UIScale() + MENU_LIFT
 end
 
 local function columnHeight(n: number): number
@@ -667,8 +682,7 @@ local function onData(d: any)
 	local shards = d.Shards or 0
 	Hud.Buttons.Pets.Visible = shards > 0 or (d.Pets ~= nil and next(d.Pets) ~= nil) or (d.TowerRuns or 0) > 0
 	tradeButton.Visible = State.CountOwned() >= 5
-	shardChip.Visible = shards > 0
-	shardLabel.Text = "🔮 " .. Format.Short(shards)
+	shardLabel.Text = Format.Short(shards)
 end
 
 local lastZone = 0

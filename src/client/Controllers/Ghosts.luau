@@ -67,6 +67,7 @@ Ghosts.Added = addedSignal -- (entry)
 local selectedUid = 0
 local ring: Part
 local ringStroke: UIStroke
+local lastWarnRing = 0 -- one windup ring at a time (several ghosts winding up at once = one flash)
 
 function Ghosts.Get(uid: number): Entry?
 	return entries[uid]
@@ -416,7 +417,9 @@ local function step()
 		local alert = e.Alert
 		if alert then
 			local winding = clock < e.WindupEnd
-			alert.Visible = winding and math.sin(clock * 20) > -0.6
+			if alert.Visible ~= winding then
+				alert.Visible = winding -- steady, no blinking
+			end
 			if winding then
 				pos -= e.LungeDir * (0.8 * s * (1 - (e.WindupEnd - clock) / e.WindupLen))
 			elseif clock - e.LungeT < 0.25 then
@@ -499,6 +502,7 @@ function Ghosts.Start()
 		end
 		local t = tonumber(d.Time) or 0.9
 		local clock = os.clock()
+		local fresh = clock >= e.WindupEnd
 		e.WindupEnd = clock + t
 		e.WindupLen = math.max(t, 0.1)
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -507,7 +511,10 @@ function Ghosts.Start()
 		if not e.Alert then
 			e.Alert = WorldLabel.Text(e.Gui, "❗", { Style = "Body", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, -0.85) })
 		end
-		Effects.Ring(e.Base - Vector3.new(0, e.Def.Hover - 0.2, 0), Theme.Bad, math.max(3, 2.5 * e.Def.Scale + 1), t)
+		if fresh and clock - lastWarnRing > 0.6 then
+			lastWarnRing = clock
+			Effects.Ring(e.Base - Vector3.new(0, e.Def.Hover - 0.2, 0), Theme.Bad, math.max(3, 2.5 * e.Def.Scale + 1), t)
+		end
 	end)
 	State.OnFx("GhostHit", function(d: any)
 		local e = entries[d.Ghost]

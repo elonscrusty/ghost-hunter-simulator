@@ -1,20 +1,22 @@
 --!strict
 -- ENDLESS BOSS TOWER: parties of up to Config.Tower.MaxParty fight one boss per room in their
--- own room space far outside the main map. Every run starts at Room 1; each room's boss is
--- scaled to the party's power at room start; rewards (Ectoplasm + Spirit Shards) are credited
--- the moment a boss is beaten and are never taken back.
+-- own room space far outside the main map. A run starts at Room 1 or, if the starter picks it,
+-- just after the party's lowest common CHECKPOINT (clearing room 5, 10, ... saves one; skipped
+-- rooms pay nothing). Each room's boss is scaled to the party's power at room start; rewards
+-- (Ectoplasm + Spirit Shards) are credited the moment a boss is beaten and are never taken back.
+-- DEV runs (TowerService.DevStart) are solo, start at any room and give no rewards at all.
 --
 -- Flow (all decided here; clients only ask to start, vote CONTINUE or LEAVE):
---   pad (prompt or "TowerStart") -> countdown -> party = players on the pad -> room built ->
+--   pad (prompt or "TowerStart"(startRoom)) -> countdown -> party = players on the pad -> room built ->
 --   teleport -> FIGHT (RoomSeconds) -> boss killed: rewards + chest -> BETWEEN (vote window)
 --   -> next room ... until a timeout, a wipe, no votes, or everyone left.
 --
 -- Client messages:
---   Fx "Tower" { State = "Pad", EndsAt, Count, Max } / { State = "PadCancel" }
---              { State = "Fight", Room, Uid, Boss, EndsAt, Party, Earned = { Ecto, Shards } }
+--   Fx "Tower" { State = "Pad", EndsAt, Count, Max, StartRoom } / { State = "PadCancel" }
+--              { State = "Fight", Room, Uid, Boss, EndsAt, Party, Dev, Earned = { Ecto, Shards } }
 --              { State = "Votes", Votes, Party }
 --              { State = "Ended", Reason, Best, Earned }
---   Fx "TowerRoomCleared" { Room, EndsAt, Ecto, Shards, Pct, Earned, Party, Pos } (chest visual)
+--   Fx "TowerRoomCleared" { Room, EndsAt, Ecto, Shards, Pct, Earned, Party, Pos, Dev, Checkpoint? } (chest visual)
 --   Fx "Payout" (the usual share popup, plus Shards)
 -- Player attributes while in a run: InTower = true, TowerRoom = n.
 local Players = game:GetService("Players")
@@ -53,6 +55,7 @@ export type Run = {
 	Best: number, -- highest room cleared in this run
 	Model: Model?,
 	EndsAt: number,
+	Dev: boolean, -- developer test run: no rewards, no checkpoint, no stats
 }
 
 local runs: { [number]: Run } = {}
@@ -62,7 +65,7 @@ local nextId = 1
 local roomsFolder: Folder
 local padPart: BasePart? = nil
 
-type Lobby = { EndsAt: number, Seen: { [Player]: boolean }, Joined: { [Player]: boolean } }
+type Lobby = { EndsAt: number, Seen: { [Player]: boolean }, Joined: { [Player]: boolean }, StartRoom: number }
 local lobby: Lobby? = nil
 
 local function serverNow(): number
@@ -274,7 +277,7 @@ local function startRoom(run: Run, n: number)
 	run.Phase = "Fight"
 	local party = #memberList(run)
 	sendAll(run, "Tower", function(p)
-		return { State = "Fight", Room = n, Uid = g.Uid, Boss = def.Name, EndsAt = run.EndsAt, Party = party, Earned = earnedOf(run, p) }
+		return { State = "Fight", Room = n, Uid = g.Uid, Boss = def.Name, EndsAt = run.EndsAt, Party = party, Dev = run.Dev, Earned = earnedOf(run, p) }
 	end)
 end
 
@@ -300,7 +303,7 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 	local split = GhostService.SplitDamage(g)
 	local players, weights, total = {}, {}, 0
 	for i, p in split.Players do
-		if run.Members[p] then
+		if run.Members[p] and not run.Dev then -- dev runs pay nothing
 			table.insert(players, p)
 			table.insert(weights, split.Weights[i])
 			total += split.Weights[i]
@@ -333,10 +336,16 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 		paid[p] = { Ecto = ecto, Shards = shards, Pct = pct }
 		Fx.To(p, "Payout", { Name = g.Def.Name, Pct = pct, Ecto = ecto, Shards = shards })
 	end
+	local cp = Rules.TowerCheckpoint(room, TC.CheckpointEvery)
+	local saved: { [Player]: boolean } = {}
 	for _, p in members do
 		local d = DataService.Get(p)
-		if d then
+		if d and not run.Dev then
 			d.TowerBest = math.max(d.TowerBest, room)
+			if cp > d.TowerCheckpoint then
+				d.TowerCheckpoint = cp
+				saved[p] = true
+			end
 			DataService.Changed(p)
 			DataService.Save(p)
 		end
@@ -368,6 +377,8 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 			Earned = earnedOf(run, p),
 			Party = party,
 			Pos = chestPos,
+			Dev = run.Dev,
+			Checkpoint = if saved[p] then cp else nil,
 		}
 	end)
 end
@@ -424,13 +435,15 @@ local function blocked(player: Player): string?
 	return nil
 end
 
-local function startRun(party: { Player })
+-- Builds a room and moves the party in, starting at room `first`. Returns an error text when
+-- nobody could enter (each player was already told why).
+local function startRun(party: { Player }, first: number, dev: boolean): string?
 	local slot = freeSlot()
 	if not slot then
 		for _, p in party do
 			Fx.Toast(p, "The tower is full right now. Try again in a moment!", "Bad")
 		end
-		return
+		return "The tower is full right now"
 	end
 	local origin = slotOrigin(slot)
 	local run: Run = {
@@ -447,6 +460,7 @@ local function startRun(party: { Player })
 		Best = 0,
 		Model = nil,
 		EndsAt = 0,
+		Dev = dev,
 	}
 	nextId += 1
 	slots[slot] = run
@@ -459,7 +473,7 @@ local function startRun(party: { Player })
 		for _, p in party do
 			Fx.Toast(p, "The tower door is stuck. Try again!", "Bad")
 		end
-		return
+		return "The tower door is stuck"
 	end
 	run.Model = model
 	local entry = TowerRoom.Entry(origin)
@@ -468,7 +482,7 @@ local function startRun(party: { Player })
 			continue
 		end
 		p:SetAttribute("InTower", true)
-		p:SetAttribute("TowerRoom", 1)
+		p:SetAttribute("TowerRoom", first)
 		local pos = entry + Vector3.new((i - (#party + 1) / 2) * 5, 3, 0)
 		if teleport(p, pos, Vector3.new(0, 0, 1)) then
 			run.Members[p] = true
@@ -476,7 +490,7 @@ local function startRun(party: { Player })
 			earnedOf(run, p)
 			HunterService.Refresh(p)
 			local d = DataService.Get(p)
-			if d then
+			if d and not dev then
 				d.TowerRuns += 1
 				DataService.Changed(p)
 			end
@@ -488,9 +502,20 @@ local function startRun(party: { Player })
 	end
 	if next(run.Members) == nil then
 		cleanup(run)
-		return
+		return "Couldn't enter the tower"
 	end
-	startRoomSafe(run, 1)
+	startRoomSafe(run, first)
+	return nil
+end
+
+-- Lowest checkpoint every player in the list has reached (0 = someone has none).
+local function commonCheckpoint(list: { Player }): number
+	local cp = math.huge
+	for _, p in list do
+		local d = DataService.Get(p)
+		cp = math.min(cp, if d then d.TowerCheckpoint else 0)
+	end
+	return if cp == math.huge then 0 else cp
 end
 
 local function runLobby(l: Lobby)
@@ -502,7 +527,7 @@ local function runLobby(l: Lobby)
 			end
 		end
 		for _, p in here do
-			Fx.To(p, "Tower", { State = "Pad", EndsAt = l.EndsAt, Count = math.min(#here, TC.MaxParty), Max = TC.MaxParty })
+			Fx.To(p, "Tower", { State = "Pad", EndsAt = l.EndsAt, Count = math.min(#here, TC.MaxParty), Max = TC.MaxParty, StartRoom = l.StartRoom })
 			l.Seen[p] = true
 		end
 		for p in l.Seen do
@@ -544,12 +569,29 @@ local function runLobby(l: Lobby)
 		end
 	end
 	if #party > 0 then
-		startRun(party)
+		-- a checkpoint start uses the party's lowest common checkpoint (skipped rooms pay nothing)
+		local first = 1
+		if l.StartRoom > 1 then
+			first = commonCheckpoint(party) + 1
+			if first ~= l.StartRoom then
+				for _, p in party do
+					Fx.Toast(p, if first > 1
+						then string.format("Party starts at Room %d (the lowest checkpoint in the party)", first)
+						else "Someone in the party has no checkpoint yet: starting at Room 1", "Bad")
+				end
+			end
+		end
+		startRun(party, first, false)
 	end
 end
 
--- Pad prompt / "TowerStart": opens the countdown for everyone on the pad.
-local function requestStart(player: Player): any
+-- Pad prompt / "TowerStart"(startRoom): opens the countdown for everyone on the pad.
+-- startRoom is 1 or (the starter's checkpoint + 1); anything else is refused.
+local function requestStart(player: Player, startRoom: any): any
+	local first = if startRoom == nil then 1 else startRoom
+	if type(first) ~= "number" or first ~= math.floor(first) then
+		return Remotes.Fail("Bad room")
+	end
 	local why = blocked(player)
 	if why then
 		return Remotes.Fail(why)
@@ -558,13 +600,21 @@ local function requestStart(player: Player): any
 		return Remotes.Fail("Stand on the tower pad first!")
 	end
 	if lobby then
-		(lobby :: Lobby).Joined[player] = true -- joins the countdown that is already running
-		return { ok = true, EndsAt = (lobby :: Lobby).EndsAt }
+		-- joins the countdown that is already running (its starter already chose the room)
+		(lobby :: Lobby).Joined[player] = true
+		return { ok = true, EndsAt = (lobby :: Lobby).EndsAt, StartRoom = (lobby :: Lobby).StartRoom }
+	end
+	if first ~= 1 then
+		local d = DataService.Get(player)
+		local cp = if d then d.TowerCheckpoint else 0
+		if cp <= 0 or first ~= cp + 1 then
+			return Remotes.Fail("You can start at Room 1" .. (if cp > 0 then " or Room " .. (cp + 1) else ""))
+		end
 	end
 	if not freeSlot() then
 		return Remotes.Fail("The tower is full right now. Try again in a moment!")
 	end
-	local l: Lobby = { EndsAt = serverNow() + TC.Countdown, Seen = {}, Joined = { [player] = true } }
+	local l: Lobby = { EndsAt = serverNow() + TC.Countdown, Seen = {}, Joined = { [player] = true }, StartRoom = first }
 	lobby = l
 	task.spawn(function()
 		local ok, err = pcall(function()
@@ -605,7 +655,13 @@ local function setupPrompt()
 		if not Remotes.Allow(player, "Default") then
 			return
 		end
-		local res = requestStart(player)
+		local d = DataService.Get(player)
+		if not lobby and d and d.TowerCheckpoint > 0 then
+			-- they have a checkpoint: let them pick the start room with the pad buttons
+			Fx.Toast(player, "Pick Room 1 or your checkpoint with the buttons below!", "Good")
+			return
+		end
+		local res = requestStart(player, 1)
 		if not res.ok and res.err then
 			Fx.Toast(player, res.err, "Bad")
 		end
@@ -661,8 +717,8 @@ function TowerService.Init()
 	roomsFolder.Name = "TowerRooms"
 	roomsFolder.Parent = workspace
 
-	Remotes.Register("TowerStart", "Default", function(player)
-		return requestStart(player)
+	Remotes.Register("TowerStart", "Default", function(player, startRoom)
+		return requestStart(player, startRoom)
 	end)
 
 	Remotes.Register("TowerContinue", "Default", function(player)
@@ -756,6 +812,23 @@ function TowerService.Start()
 			end
 		end
 	end)
+end
+
+-- DEV: starts a SOLO test run at `room` (1..MaxScaledRoom) right away. The caller (DevService)
+-- already checked dev auth. Dev runs give no Ectoplasm/Shards, no checkpoint and no tower stats.
+-- Returns an error text, or nil when the run started.
+function TowerService.DevStart(player: Player, room: number): string?
+	if type(room) ~= "number" or room ~= room or room ~= math.floor(room) or room < 1 or room > TC.MaxScaledRoom then
+		return "Room must be 1-" .. TC.MaxScaledRoom
+	end
+	local why = blocked(player)
+	if why then
+		return why
+	end
+	if lobby then
+		(lobby :: Lobby).Joined[player] = nil -- don't also join a pad countdown
+	end
+	return startRun({ player }, room, true)
 end
 
 -- Players in a run (for other systems / debugging).

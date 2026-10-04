@@ -5,6 +5,7 @@
 -- equipped list every time (PlayerInfo.PetBonuses), so nothing can stack twice.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextService = game:GetService("TextService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
@@ -16,6 +17,17 @@ local Remotes = require(script.Parent.Remotes)
 local PetService = {}
 
 local lastBuy: { [Player]: number } = {}
+
+local NICK_MAX = 20 -- characters
+
+-- Roblox text filter for a nickname everyone can see. Returns nil when filtering fails.
+local function filterNick(player: Player, text: string): string?
+	local ok, res = pcall(function()
+		local r = TextService:FilterStringAsync(text, player.UserId, Enum.TextFilterContext.PublicChat)
+		return r:GetNonChatStringForBroadcastAsync()
+	end)
+	return if ok and type(res) == "string" then res else nil
+end
 
 local function count(t: { [string]: any }): number
 	local n = 0
@@ -104,6 +116,42 @@ function PetService.Init()
 		return { ok = true }
 	end)
 
+	-- Nickname a pet. Only the FILTERED text is ever stored or shown; empty text clears it.
+	Remotes.Register("RenamePet", "Default", function(player, uid, text)
+		local d = DataService.Get(player)
+		if not d or type(uid) ~= "string" or not d.Pets[uid] then
+			return Remotes.Fail("Unknown pet")
+		end
+		if type(text) ~= "string" or #text > 200 then
+			return Remotes.Fail("Bad name")
+		end
+		text = string.match(string.gsub(text, "%c", " "), "^%s*(.-)%s*$") or ""
+		local n = utf8.len(text)
+		if not n or n > NICK_MAX or #text > 40 then
+			return Remotes.Fail(string.format("Names can be up to %d letters", NICK_MAX))
+		end
+		local nick: string? = nil
+		if n > 0 then
+			nick = filterNick(player, text) -- yields
+			if not nick then
+				local pet = d.Pets[uid]
+				if pet then
+					pet.Nick = nil
+					refresh(player)
+				end
+				return Remotes.Fail("Couldn't check that name right now, try again later")
+			end
+		end
+		local pet = d.Pets[uid] -- re-read after the yield
+		if not pet then
+			return Remotes.Fail("Unknown pet")
+		end
+		pet.Nick = if nick and #nick <= 40 and string.find(nick, "%S") then nick else nil
+		refresh(player)
+		DataService.Save(player)
+		return { ok = true, Nick = pet.Nick }
+	end)
+
 	DataService.AddDecorator(function(player, s)
 		local d = DataService.Get(player)
 		if d then
@@ -118,19 +166,23 @@ function PetService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		lastBuy[player] = nil
 	end)
-	-- equipped pets replicate to everyone for the follower visuals ("PetId,PetId")
+	-- equipped pets replicate to everyone for the follower visuals: "Pets" = "PetId,PetId" and
+	-- "PetNames" = the matching filtered nicknames, one per line ("" = default name). Names are
+	-- set first so the follower rebuild on "Pets" already sees them.
 	local function publish(player: Player)
 		local d = DataService.Get(player)
 		if not d then
 			return
 		end
-		local ids = {}
+		local ids, names = {}, {}
 		for _, uid in d.EquippedPets do
 			local pet = d.Pets[uid]
 			if pet and Config.Pets[pet.Id] then
 				table.insert(ids, pet.Id)
+				table.insert(names, (string.gsub(pet.Nick or "", "%c", " ")))
 			end
 		end
+		player:SetAttribute("PetNames", table.concat(names, "\n"))
 		player:SetAttribute("Pets", table.concat(ids, ","))
 	end
 	DataService.AddDecorator(function(player, _s)

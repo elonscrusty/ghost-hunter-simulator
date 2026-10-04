@@ -390,7 +390,7 @@ if MAP then
 	end
 	print(string.format("  %d/%d ghost areas clear", #Config.Layout.GhostAreas - bad, #Config.Layout.GhostAreas))
 
-	-- Giant Poltergeist courtyard (Tower Plaza): the event boss spawns over the centre, so
+	-- Tower Plaza courtyard (open space where the retired Giant Poltergeist event spawned):
 	-- nothing taller than the flat paint may stand within 20 studs of it up to Y = 30.
 	do
 		local c = Config.Layout.EventArena.Center

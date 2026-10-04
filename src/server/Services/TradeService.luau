@@ -161,6 +161,9 @@ local function applySide(d: DataService.Data, rec: Record, userId: number): bool
 			local uid = DataService.NewUid(d)
 			d.Hunters[uid] = { Id = h.Id, Tier = h.Tier, Locked = false, T = os.time() }
 			d.Discovered[h.Id] = true
+			if type(h.Tier) == "number" and h.Tier > 0 then
+				d.Variants[h.Id .. ":" .. h.Tier] = true
+			end
 		end
 	end
 	table.insert(d.TradesApplied, rec.Id)

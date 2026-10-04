@@ -1579,8 +1579,10 @@ Config.PetOrder = { "GlowWisp", "BooBat", "JellyGhost", "PhantomKitty", "MoonOwl
 --==================================================================
 -- ENDLESS BOSS TOWER (v1.6). Party of up to 4 (pad at the entrance); every run starts at
 -- Room 1; rewards are paid the moment a boss is beaten and are never taken back.
--- Boss Spirit = party power at room start * KillSeconds(room); boss hit = average hunter max HP
--- * HitFraction(room). Both grow per room and are capped so very high rooms stay finite.
+-- v1.7 scaling (starting values for testing): boss health is an ABSOLUTE curve, so stronger
+-- teams climb further: HP = BaseHP * HPGrowth^(room-1) * FiveRoomBump^floor((room-1)/5),
+-- but never less than party power * MinKillSeconds (strong teams can't one-shot rooms).
+-- Boss hit = target hunter max HP * HitFraction(room), which grows more gently than health.
 --==================================================================
 Config.Tower = {
 	MaxParty = 4,
@@ -1588,17 +1590,20 @@ Config.Tower = {
 	Countdown = 6, -- seconds after START before the party enters
 	RoomSeconds = 180, -- a boss not beaten in time ends the run (rewards kept)
 	BetweenRoomsSeconds = 30, -- time to choose CONTINUE / LEAVE before the run ends
-	KillSecondsBase = 9,
-	KillSecondsGrowth = 1.11,
+	BaseHP = 180, -- room 1: ~9 s for a beginner crew (~20 power)
+	HPGrowth = 1.15, -- +15% health per room
+	FiveRoomBump = 1.25, -- extra x1.25 after every 5 rooms
+	MinKillSeconds = 4,
+	CheckpointEvery = 5, -- clearing room 5, 10, ... saves a checkpoint (next run may start at 6, 11, ...)
 	HitFractionBase = 0.1,
-	HitFractionGrowth = 1.075,
+	HitFractionGrowth = 1.05,
 	HitFractionCap = 0.95,
 	Interval = 2.3,
 	MaxScaledRoom = 400, -- scaling stops growing past this room (numbers stay finite)
 	-- rewards per player for beating room r:
 	ShardsBase = 4, -- shards = ShardsBase + r * ShardsPerRoom (x milestone)
-	ShardsPerRoom = 1,
-	EctoBase = 150, -- ecto = EctoBase * r^0.75 * zone multiplier (x milestone)
+	ShardsPerRoom = 1.5,
+	EctoBase = 150, -- ecto = EctoBase * r^0.9 * zone multiplier (x milestone)
 	MilestoneEvery = { [10] = 3, [5] = 2 } :: { [number]: number }, -- room % key == 0 -> multiplier (largest wins)
 	Bosses = { "TowerWarden", "TowerJester", "TowerBaron", "TowerTitan" }, -- cycles by room
 	Slots = 12, -- simultaneous runs per server (each gets its own room space)
@@ -2552,8 +2557,10 @@ function Rules.PetBonuses(bonuses: { { Kind: string, Value: number } }, caps: { 
 end
 
 export type TowerCfg = {
-	KillSecondsBase: number,
-	KillSecondsGrowth: number,
+	BaseHP: number,
+	HPGrowth: number,
+	FiveRoomBump: number,
+	MinKillSeconds: number,
 	HitFractionBase: number,
 	HitFractionGrowth: number,
 	HitFractionCap: number,
@@ -2564,13 +2571,21 @@ export type TowerCfg = {
 	MilestoneEvery: { [number]: number },
 }
 
--- Seconds a party needs to beat room `room` at its power, and the boss hit as a fraction of
--- the average hunter max HP. Room is clamped so numbers stay finite at any height.
-function Rules.TowerScale(room: number, cfg: TowerCfg): (number, number)
+-- Boss health for room `room` (absolute curve, floored at partyPower * MinKillSeconds) and the
+-- boss hit as a fraction of the target hunter's max HP. Room is clamped and health capped so
+-- numbers stay finite at any height.
+function Rules.TowerScale(room: number, cfg: TowerCfg, partyPower: number): (number, number)
 	local r = math.clamp(math.floor(room), 1, cfg.MaxScaledRoom)
-	local kill = cfg.KillSecondsBase * cfg.KillSecondsGrowth ^ (r - 1)
+	local hp = cfg.BaseHP * cfg.HPGrowth ^ (r - 1) * cfg.FiveRoomBump ^ ((r - 1) // 5)
+	local power = if partyPower == partyPower then math.max(0, partyPower) else 0
+	hp = math.min(1e300, math.max(hp, power * cfg.MinKillSeconds))
 	local hit = math.min(cfg.HitFractionCap, cfg.HitFractionBase * cfg.HitFractionGrowth ^ (r - 1))
-	return kill, hit
+	return math.max(1, math.floor(hp)), hit
+end
+
+-- Highest checkpoint reached after clearing `room` (0 = none): rooms 5, 10, ... with every=5.
+function Rules.TowerCheckpoint(room: number, every: number): number
+	return math.max(0, math.floor(room / every) * every)
 end
 
 function Rules.TowerMilestone(room: number, cfg: TowerCfg): number
@@ -2589,7 +2604,7 @@ function Rules.TowerReward(room: number, cfg: TowerCfg): (number, number)
 	local r = math.max(1, math.floor(room))
 	local m = Rules.TowerMilestone(r, cfg)
 	local shards = math.floor((cfg.ShardsBase + math.min(r, cfg.MaxScaledRoom) * cfg.ShardsPerRoom) * m)
-	local ecto = math.floor(cfg.EctoBase * math.min(r, cfg.MaxScaledRoom) ^ 0.75 * m)
+	local ecto = math.floor(cfg.EctoBase * math.min(r, cfg.MaxScaledRoom) ^ 0.9 * m)
 	return shards, ecto
 end
 
@@ -4769,6 +4784,7 @@ return GhostRig
 --   HunterRig.Build(hunterId) -> Rig        animated rig: anchored Root at the feet, Motor6D limbs
 --   HunterRig.Pose(rig, state, t, blend?)   procedural pose ("Idle" | "Run" | "Attack" | "Celebrate")
 --   HunterRig.BuildStatic(hunterId) -> Model fully anchored, posed copy for ViewportFrame portraits
+--   HunterRig.ApplyTier(model, tier)        Shiny/Mega finish, halo and particles (no scaling)
 --
 -- Layout (studs, model space, facing -Z): feet at Y=0, hips at Y=0.92, torso 0.9..1.95,
 -- head (1.9 ball) centred at Y=2.77. Total height ~3.8-4.4 depending on hair/hat.
@@ -5482,6 +5498,97 @@ function HunterRig.Pose(rig: Rig, state: string, t: number, blend: number?)
 	end
 end
 
+------------------------------------------------------------------ tier look
+-- Shiny (1): gold-tinted glossy finish on everything solid + gold sparkles.
+-- Mega (2): pearly finish, a cyan/magenta crown-halo over the head and a rising cyan/magenta
+-- ring of motes at the feet. Size (x1.2 for Mega) is left to the caller's ScaleTo.
+-- Works on both Build() rigs (parts get welded) and BuildStatic() copies (parts get anchored).
+local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
+local MEGA_A = Color3.fromRGB(120, 230, 255)
+local MEGA_B = Color3.fromRGB(255, 110, 230)
+
+local function emitter(parent: BasePart, color: ColorSequence, rate: number, size: number): ParticleEmitter
+	local e = Instance.new("ParticleEmitter")
+	e.Name = "TierFx"
+	e.Texture = SPARKLE
+	e.Color = color
+	e.LightEmission = 1
+	e.Rate = rate
+	e.Lifetime = NumberRange.new(0.7, 1.2)
+	e.Speed = NumberRange.new(0.5, 1.2)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Acceleration = Vector3.new(0, 2, 0)
+	e.Size = NumberSequence.new(size, 0)
+	e.Parent = parent
+	return e
+end
+
+function HunterRig.ApplyTier(model: Model, tier: number)
+	if tier <= 0 then
+		return
+	end
+	local head = model:FindFirstChild("Head") :: BasePart?
+	local torso = model:FindFirstChild("Torso") :: BasePart?
+	local root = model.PrimaryPart
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") and p ~= root and p.Transparency < 0.3 and p.Material ~= Enum.Material.Neon then
+			if tier == 1 then
+				p.Color = U.Mix(p.Color, GOLD, 0.22)
+				p.Reflectance = math.max(p.Reflectance, 0.3)
+			else
+				p.Color = U.Mix(p.Color, WHITE, 0.08)
+				p.Reflectance = math.max(p.Reflectance, 0.18)
+			end
+		end
+	end
+	if tier == 1 then
+		if torso then
+			emitter(torso, ColorSequence.new(GOLD), 4, 0.4)
+		end
+		return
+	end
+	-- static copies are fully anchored (head too); live rigs only anchor Root, so weld instead
+	local static = head ~= nil and head.Anchored
+	local function attach(base: BasePart, p: BasePart)
+		p.Name = "TierFx"
+		if static then
+			p.Anchored = true
+		else
+			U.FixedWeld(base, p)
+		end
+	end
+	if head then
+		-- crown-halo floating just above whatever the head wears
+		local top = U.TopY(head)
+		for _, w in model:GetDescendants() do
+			if w:IsA("Weld") and w.Part0 == head and w.Part1 then
+				top = math.max(top, U.TopY(w.Part1 :: BasePart))
+			end
+		end
+		local hcf = head.CFrame * CFrame.new(0, top - head.Position.Y + 0.35, 0.1)
+		local glow = { Material = Enum.Material.Neon, Shadow = false }
+		for i, p in U.Hoop(0.72, 0.12, 0.12, 10, hcf * CFrame.Angles(math.pi / 2, 0, 0), MEGA_A, model, glow) do
+			if i % 2 == 0 then
+				p.Color = MEGA_B
+			end
+			attach(head, p)
+		end
+		for i = 0, 4 do
+			local gem = U.Block(Vector3.new(0.2, 0.2, 0.2), hcf * CFrame.Angles(0, i * 2 * math.pi / 5, 0) * CFrame.new(0, 0.18, -0.78) * U.VertexUp, MEGA_B, model, glow)
+			attach(head, gem)
+		end
+	end
+	if root then
+		local ring = U.Block(Vector3.new(3.4, 0.1, 3.4), root.CFrame * CFrame.new(0, 0.1, 0), WHITE, model, { Transparency = 1, Shadow = false })
+		attach(root, ring)
+		local e = emitter(ring, ColorSequence.new(MEGA_A, MEGA_B), 10, 0.35)
+		e.Shape = Enum.ParticleEmitterShape.Disc
+		e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
+		e.SpreadAngle = Vector2.new(0, 0)
+		e.EmissionDirection = Enum.NormalId.Top
+	end
+end
+
 ------------------------------------------------------------------ portrait copy
 -- Anchored, posed model for ViewportFrames (no physics runs there, so joints are solved here).
 function HunterRig.BuildStatic(hunterId: string): Model
@@ -6148,7 +6255,7 @@ local Signal = require(GH.Signal)
 local DataService = {}
 
 export type HunterRecord = { Id: string, Locked: boolean?, T: number?, Tier: number? } -- Tier nil = Normal
-export type PetRecord = { Id: string, T: number }
+export type PetRecord = { Id: string, T: number, Nick: string? } -- Nick: server-filtered nickname
 export type EventPlay = { S: number, G: boolean } -- active seconds counted, reward granted
 export type Data = {
 	Version: number,
@@ -6181,6 +6288,9 @@ export type Data = {
 	TowerShards: number, -- shards earned from the tower in total (reward record)
 	EventPlay: { [string]: EventPlay }, -- event id -> progress
 	TradesApplied: { string }, -- recent trade ids applied to this profile (exactly-once)
+	-- v1.7
+	TowerCheckpoint: number, -- highest checkpoint room cleared (5, 10, ...); next run may start after it
+	Variants: { [string]: boolean }, -- "HunterId:1" / "HunterId:2" = Shiny / Mega discovered (Normal stays in Discovered)
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
 }
@@ -6218,6 +6328,8 @@ local function defaults(): Data
 		TowerShards = 0,
 		EventPlay = {},
 		TradesApplied = {},
+		TowerCheckpoint = 0,
+		Variants = {},
 		Orphans = {},
 		Extra = {},
 	}
@@ -6318,6 +6430,12 @@ local function migrate(raw: any): Data
 	d.TowerRuns = num(d.TowerRuns, 0)
 	d.TowerRooms = num(d.TowerRooms, 0)
 	d.TowerShards = num(d.TowerShards, 0)
+	d.TowerCheckpoint = num(d.TowerCheckpoint, 0)
+	for k, v in d.Variants do
+		if type(k) ~= "string" or v ~= true then
+			d.Variants[k] = nil
+		end
+	end
 	if type(d.TotalEcto) ~= "number" or d.TotalEcto ~= d.TotalEcto then
 		d.TotalEcto = 0
 	end
@@ -6328,6 +6446,9 @@ local function migrate(raw: any): Data
 			d.Pets[uid] = nil
 		else
 			pet.T = num(pet.T, 0)
+			if pet.Nick ~= nil and (type(pet.Nick) ~= "string" or #pet.Nick > 40) then
+				pet.Nick = nil
+			end
 			local n = tonumber(string.match(uid, "^p(%d+)$"))
 			if n and n > maxPet then
 				maxPet = n
@@ -6384,6 +6505,11 @@ local function migrate(raw: any): Data
 		end
 		if h.Locked ~= nil and type(h.Locked) ~= "boolean" then
 			h.Locked = false
+		end
+	end
+	for _, h in d.Hunters do
+		if h.Tier and h.Tier > 0 then
+			d.Variants[h.Id .. ":" .. h.Tier] = true -- owned Shiny/Mega count as discovered
 		end
 	end
 	for uid, t in d.Knocked do
@@ -6681,6 +6807,8 @@ local function snapshot(player: Player, d: Data): any
 		SkipTokens = d.SkipTokens,
 		TowerRuns = d.TowerRuns,
 		TowerBest = d.TowerBest,
+		TowerCheckpoint = d.TowerCheckpoint,
+		Variants = d.Variants,
 		Settings = d.Settings,
 		Tutorial = d.Tutorial,
 		Stats = d.Stats,
@@ -6938,7 +7066,8 @@ local Config = require(GH.Config)
 local DataService = require(script.Parent.DataService)
 local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
-local EventService = require(script.Parent.EventService)
+local PetService = require(script.Parent.PetService)
+local CrewService = require(script.Parent.CrewService)
 local GlobalEventService = require(script.Parent.GlobalEventService)
 local RarePetEventService = require(script.Parent.RarePetEventService)
 local Remotes = require(script.Parent.Remotes)
@@ -6968,6 +7097,16 @@ function DevService.IsDev(player: Player): boolean
 end
 
 local MAX_ECTO_GRANT = 1e12
+local MAX_SHARD_GRANT = 1e6
+local MAX_TOWER_ROOM = 400
+
+-- whole number in [lo, hi], else nil
+local function int(arg: any, lo: number, hi: number): number?
+	if type(arg) ~= "number" or arg ~= arg or arg % 1 ~= 0 or arg < lo or arg > hi then
+		return nil
+	end
+	return arg
+end
 
 -- Runs one dev command; returns an error text or nil (+ optional extra result fields).
 function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
@@ -7039,8 +7178,46 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		end
 		HunterService.Refresh(player)
 		player:LoadCharacter() -- back to spawn (the old area may be locked now)
-	elseif cmd == "Event" then
-		EventService.TriggerNow()
+	elseif cmd == "AllPets" then
+		-- one copy of each pet the dev doesn't own yet (repeat-safe)
+		local owned: { [string]: boolean } = {}
+		for _, pet in d.Pets do
+			owned[pet.Id] = true
+		end
+		for _, petId in Config.PetOrder do
+			if Config.Pets[petId] and not owned[petId] then
+				PetService.Add(d, petId)
+				owned[petId] = true
+			end
+		end
+		PetService.Refresh(player)
+		DataService.Save(player)
+	elseif cmd == "HealAll" then
+		table.clear(d.Knocked)
+		CrewService.HealAll(player)
+		HunterService.Refresh(player)
+	elseif cmd == "Shards" then
+		-- spendable shards only; TowerShards stays the earned-reward record
+		local n = int(arg, 1, MAX_SHARD_GRANT)
+		if not n then
+			return "Amount must be a whole number 1-1000000"
+		end
+		d.Shards += n
+		DataService.Changed(player)
+	elseif cmd == "TowerRoom" then
+		local room = int(arg, 1, MAX_TOWER_ROOM)
+		if not room then
+			return "Room must be a whole number 1-400"
+		end
+		-- lazy require: TowerService loads after DevService's dependencies
+		local ok, TS = pcall(require, (script.Parent :: any).TowerService)
+		if not ok or type(TS) ~= "table" or type(TS.DevStart) ~= "function" then
+			return "Tower dev jump not available"
+		end
+		local err = TS.DevStart(player, room)
+		if err then
+			return err
+		end
 	elseif cmd == "ResetDaily" then
 		d.Daily.Last = 0
 		DataService.Changed(player)
@@ -7099,7 +7276,6 @@ function DevService.Init()
 end
 
 local CHAT: { [string]: string } = {
-	["/event"] = "Event",
 	["/reset-daily"] = "ResetDaily",
 	["/autoattack"] = "AutoAttack",
 	["/zones"] = "Zones",
@@ -7349,179 +7525,24 @@ return DropService
           <Properties>
             <string name="Name">EventService</string>
             <string name="Source"><![CDATA[--!strict
--- GIANT POLTERGEIST: a periodic server-wide boss everyone can attack. Spirit scales with the
--- crews in the server; rewards scale with each participant's share of the damage.
--- Client messages (Fx "Boss"): { State = "Warning"|"Active"|"Defeated"|"Escaped", At = serverTime, Uid?, EndsAt? }
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local GH = ReplicatedStorage:WaitForChild("GH")
-local Config = require(GH.Config)
-local Rules = require(GH.Logic.Rules)
-local Format = require(GH.Logic.Format)
-local DataService = require(script.Parent.DataService)
-local PlayerInfo = require(script.Parent.PlayerInfo)
-local HunterService = require(script.Parent.HunterService)
-local GhostService = require(script.Parent.GhostService)
-local DropService = require(script.Parent.DropService)
-local Fx = require(script.Parent.Fx)
-
+-- RETIRED: the GIANT POLTERGEIST lobby event (a server-wide boss in front of the Boss Tower) was
+-- removed; the Endless Boss Tower replaces it. This module stays so older callers keep working:
+-- nothing is scheduled or spawned, and TriggerNow is a harmless no-op.
+-- (The "SummonEvent" Robux product is no longer sold; ShopService grants a substitute for
+-- any old receipt.)
 local EventService = {}
 
-local current: GhostService.Ghost? = nil
-local state = "Idle"
-local endsAt = 0
-local rng = Random.new()
+function EventService.Init() end
 
-local function serverNow(): number
-	return workspace:GetServerTimeNow()
-end
+function EventService.Start() end
 
-local function spiritFor(): number
-	-- only crews near the arena count (late-game players elsewhere on the map must not make
-	-- the boss unbeatable for the players who are actually there)
-	local sum = 0
-	local arena = Config.Layout.EventArena.Center
-	for _, pl in Players:GetPlayers() do
-		local char = pl.Character
-		local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if root and (root.Position - arena).Magnitude <= Config.Event.JoinRadius then
-			sum += math.min(HunterService.CrewPower(pl), Config.Event.PowerCap)
-		end
-	end
-	return Config.Event.SpiritBase + Config.Event.SpiritPerPower * sum
-end
-
-local function reward(g: GhostService.Ghost)
-	local total = 0
-	local participants = {}
-	for player, dmg in g.Damage do
-		-- counts if they dealt 1% of the boss, or ~MinSeconds of their own crew's damage (so a
-		-- small crew fighting next to a huge one still participates)
-		local ownShare = HunterService.CrewPower(player) * Config.Event.MinSeconds
-		if player.Parent and dmg > 0 and (dmg >= g.Max * Config.Event.MinContribution or dmg >= ownShare) then
-			table.insert(participants, player)
-			total += dmg
-		end
-	end
-	local arena = Config.Layout.EventArena
-	-- SHARED POOL: RewardBase per participant, split by each participant's share of the damage
-	-- (whole units, largest remainder), then scaled by that player's zone and Ectoplasm
-	-- multipliers. Participants are everyone who dealt damage (no damage = no reward).
-	local _ = total
-	local shares = GhostService.SplitDamage(g)
-	local pool = Rules.SplitPool(Config.Event.RewardBase * Rules.PoolMembers(shares.Weights, 0.05), shares.Weights)
-	for i, player in shares.Players do
-		local d = DataService.Get(player)
-		if d and pool[i] > 0 then
-			local amount = math.floor(pool[i] * PlayerInfo.ZoneMultiplier(player) * PlayerInfo.EctoMultiplier(player) + 0.5)
-			-- Ectoplasm shower over the arena
-			DropService.Spawn(player, arena.Center + Vector3.new(0, 12, 0), amount, Config.Event.RewardDrops, { 4, arena.Radius - 4 })
-			d.Stats.Events += 1
-			Fx.To(player, "Payout", { Name = g.Def.Name, Pct = shares.Weights[i] / shares.Total, Ecto = amount })
-			Fx.Toast(player, string.format("GIANT POLTERGEIST DEFEATED! %d%% of the damage: +%s Ectoplasm!", math.floor(shares.Weights[i] / shares.Total * 100 + 0.5), Format.Commas(amount)), "Good")
-		end
-	end
-end
-
-local function runEvent()
-	if state ~= "Idle" then
-		return
-	end
-	local arena = Config.Layout.EventArena
-	state = "Warning"
-	Fx.All("Boss", { State = "Warning", At = serverNow() + Config.Event.WarningSeconds, Pos = arena.Center })
-	task.wait(Config.Event.WarningSeconds)
-	if #Players:GetPlayers() == 0 then
-		state = "Idle"
-		return
-	end
-	local def = Config.Ghosts[Config.Event.Ghost]
-	local g = GhostService.Spawn(def, arena.Center, arena.Radius * 0.35, { Spirit = spiritFor(), Event = true })
-	current = g
-	state = "Active"
-	endsAt = serverNow() + Config.Event.Duration
-	g.Model:SetAttribute("EndsAt", endsAt)
-	Fx.All("Boss", { State = "Active", Uid = g.Uid, EndsAt = endsAt, Pos = arena.Center })
-	while g.Alive and serverNow() < endsAt do
-		task.wait(0.2)
-	end
-	-- `g` is our own reference, so this works no matter how the ghost was removed
-	if g.Alive then
-		GhostService.Remove(g, nil, false)
-		Fx.All("Boss", { State = "Escaped" })
-	else
-		Fx.All("Boss", { State = "Defeated", Pos = GhostService.Position(g) })
-		reward(g)
-	end
-	current = nil
-	state = "Idle"
-end
-
--- Runs one event safely: an error can never leave the event system stuck.
-local function runSafely()
-	local ok, err = pcall(function()
-		runEvent()
-	end)
-	if not ok then
-		warn("[Event] " .. tostring(err))
-		if current and current.Alive then
-			pcall(GhostService.Remove, current, nil, false)
-		end
-		Fx.All("Boss", { State = "Escaped" })
-		state = "Idle"
-		current = nil
-	end
-end
-
--- Start an event now (DEV button / Summon product). While one is running the request is
--- queued and starts shortly after the current one ends.
-local queued = 0
-local running = false
-
-local function runGuarded()
-	if running then
-		queued += 1
-		return
-	end
-	running = true
-	runSafely()
-	while queued > 0 do
-		queued -= 1
-		task.wait(8)
-		runSafely()
-	end
-	running = false
-end
-
-function EventService.Init()
-	-- late joiners see the current boss
-	DataService.Loaded:Connect(function(player)
-		if state == "Active" and current then
-			Fx.To(player, "Boss", { State = "Active", Uid = current.Uid, EndsAt = endsAt, Pos = Config.Layout.EventArena.Center })
-		end
-	end)
-end
-
-function EventService.Start()
-	task.spawn(function()
-		task.wait(Config.Event.FirstDelay)
-		while true do
-			-- a summoned event may already be running: skip this slot instead of queueing a second one
-			if not running then
-				runGuarded()
-			end
-			task.wait(Config.Event.Interval + rng:NextNumber(-30, 30))
-		end
-	end)
-end
-
-function EventService.TriggerNow()
-	task.spawn(runGuarded)
+-- Old entry point (DEV button / Summon product): does nothing now. Returns false = not started.
+function EventService.TriggerNow(): boolean
+	return false
 end
 
 function EventService.IsBusy(): boolean
-	return running
+	return false
 end
 
 return EventService
@@ -9029,6 +9050,7 @@ function HunterService.Init()
 		end
 		local newUid = DataService.NewUid(d)
 		d.Hunters[newUid] = { Id = hunterId, Locked = false, T = os.time(), Tier = newTier }
+		d.Variants[hunterId .. ":" .. newTier] = true -- Shiny/Mega variant discovered (Index)
 		if slot then
 			table.insert(keep, math.min(slot, #keep + 1), newUid)
 		end
@@ -9238,6 +9260,7 @@ return LeaderboardService
 -- equipped list every time (PlayerInfo.PetBonuses), so nothing can stack twice.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextService = game:GetService("TextService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
@@ -9249,6 +9272,17 @@ local Remotes = require(script.Parent.Remotes)
 local PetService = {}
 
 local lastBuy: { [Player]: number } = {}
+
+local NICK_MAX = 20 -- characters
+
+-- Roblox text filter for a nickname everyone can see. Returns nil when filtering fails.
+local function filterNick(player: Player, text: string): string?
+	local ok, res = pcall(function()
+		local r = TextService:FilterStringAsync(text, player.UserId, Enum.TextFilterContext.PublicChat)
+		return r:GetNonChatStringForBroadcastAsync()
+	end)
+	return if ok and type(res) == "string" then res else nil
+end
 
 local function count(t: { [string]: any }): number
 	local n = 0
@@ -9337,6 +9371,42 @@ function PetService.Init()
 		return { ok = true }
 	end)
 
+	-- Nickname a pet. Only the FILTERED text is ever stored or shown; empty text clears it.
+	Remotes.Register("RenamePet", "Default", function(player, uid, text)
+		local d = DataService.Get(player)
+		if not d or type(uid) ~= "string" or not d.Pets[uid] then
+			return Remotes.Fail("Unknown pet")
+		end
+		if type(text) ~= "string" or #text > 200 then
+			return Remotes.Fail("Bad name")
+		end
+		text = string.match(string.gsub(text, "%c", " "), "^%s*(.-)%s*$") or ""
+		local n = utf8.len(text)
+		if not n or n > NICK_MAX or #text > 40 then
+			return Remotes.Fail(string.format("Names can be up to %d letters", NICK_MAX))
+		end
+		local nick: string? = nil
+		if n > 0 then
+			nick = filterNick(player, text) -- yields
+			if not nick then
+				local pet = d.Pets[uid]
+				if pet then
+					pet.Nick = nil
+					refresh(player)
+				end
+				return Remotes.Fail("Couldn't check that name right now, try again later")
+			end
+		end
+		local pet = d.Pets[uid] -- re-read after the yield
+		if not pet then
+			return Remotes.Fail("Unknown pet")
+		end
+		pet.Nick = if nick and #nick <= 40 and string.find(nick, "%S") then nick else nil
+		refresh(player)
+		DataService.Save(player)
+		return { ok = true, Nick = pet.Nick }
+	end)
+
 	DataService.AddDecorator(function(player, s)
 		local d = DataService.Get(player)
 		if d then
@@ -9351,19 +9421,23 @@ function PetService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		lastBuy[player] = nil
 	end)
-	-- equipped pets replicate to everyone for the follower visuals ("PetId,PetId")
+	-- equipped pets replicate to everyone for the follower visuals: "Pets" = "PetId,PetId" and
+	-- "PetNames" = the matching filtered nicknames, one per line ("" = default name). Names are
+	-- set first so the follower rebuild on "Pets" already sees them.
 	local function publish(player: Player)
 		local d = DataService.Get(player)
 		if not d then
 			return
 		end
-		local ids = {}
+		local ids, names = {}, {}
 		for _, uid in d.EquippedPets do
 			local pet = d.Pets[uid]
 			if pet and Config.Pets[pet.Id] then
 				table.insert(ids, pet.Id)
+				table.insert(names, (string.gsub(pet.Nick or "", "%c", " ")))
 			end
 		end
+		player:SetAttribute("PetNames", table.concat(names, "\n"))
 		player:SetAttribute("Pets", table.concat(ids, ","))
 	end
 	DataService.AddDecorator(function(player, _s)
@@ -10550,9 +10624,12 @@ local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
 local Remotes = require(script.Parent.Remotes)
 local Fx = require(script.Parent.Fx)
-local EventService = require(script.Parent.EventService)
 
 local ShopService = {}
+
+-- Products no longer sold: Buy refuses them; ProcessReceipt still honours old receipts.
+local RETIRED_KINDS: { [string]: boolean } = { SummonEvent = true }
+local LEGACY_SUMMON_LUCK_SECONDS = 900
 
 local function productById(id: number): Config.ProductDef?
 	for _, p in Config.Products do
@@ -10602,8 +10679,16 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 			DataService.Changed(other)
 		end
 	elseif p.Kind == "SummonEvent" then
-		Fx.All("Announce", { Text = player.DisplayName .. " summoned the GIANT POLTERGEIST! 👻", Color = "Legendary" })
-		EventService.TriggerNow()
+		-- RETIRED product (the Giant Poltergeist event is gone and it is no longer sold). An old
+		-- or delayed receipt still gets something fair: 15 minutes of SERVER LUCK for everyone.
+		PlayerInfo.AddServerLuck(LEGACY_SUMMON_LUCK_SECONDS)
+		Fx.All("Announce", { Text = player.DisplayName .. " turned on SERVER LUCK for everyone! 🍀", Color = "Rare" })
+		for _, other in Players:GetPlayers() do
+			DataService.Changed(other)
+		end
+		DataService.Changed(player)
+		Fx.Toast(player, "Thanks! The Giant Poltergeist event was retired, so you got 15 min SERVER LUCK instead!", "Good")
+		return
 	end
 	DataService.Changed(player)
 	Fx.Toast(player, "Thanks! " .. p.Name .. " added!", "Good")
@@ -10736,6 +10821,9 @@ function ShopService.Init()
 		end
 		for _, p in Config.Products do
 			if p.Key == key then
+				if RETIRED_KINDS[p.Kind] then
+					return Remotes.Fail("This isn't sold anymore")
+				end
 				if not p.ProductId then
 					return Remotes.Fail("Coming soon!")
 				end
@@ -10760,9 +10848,6 @@ function ShopService.Init()
 				end
 				if p.Kind == "ServerLuck" and PlayerInfo.ServerLuckUntil() - os.time() + (p.Seconds or 0) > Config.ServerLuck.MaxStackSeconds then
 					return Remotes.Fail("Server luck is already maxed!")
-				end
-				if p.Kind == "SummonEvent" and EventService.IsBusy() then
-					return Remotes.Fail("The Giant Poltergeist is already here!")
 				end
 				if p.Kind == "Boost" and p.Boost and p.Seconds then
 					-- boosts stack up to a cap; don't sell time that would be thrown away
@@ -10977,21 +11062,23 @@ return StationService
             <string name="Name">TowerService</string>
             <string name="Source"><![CDATA[--!strict
 -- ENDLESS BOSS TOWER: parties of up to Config.Tower.MaxParty fight one boss per room in their
--- own room space far outside the main map. Every run starts at Room 1; each room's boss is
--- scaled to the party's power at room start; rewards (Ectoplasm + Spirit Shards) are credited
--- the moment a boss is beaten and are never taken back.
+-- own room space far outside the main map. A run starts at Room 1 or, if the starter picks it,
+-- just after the party's lowest common CHECKPOINT (clearing room 5, 10, ... saves one; skipped
+-- rooms pay nothing). Each room's boss is scaled to the party's power at room start; rewards
+-- (Ectoplasm + Spirit Shards) are credited the moment a boss is beaten and are never taken back.
+-- DEV runs (TowerService.DevStart) are solo, start at any room and give no rewards at all.
 --
 -- Flow (all decided here; clients only ask to start, vote CONTINUE or LEAVE):
---   pad (prompt or "TowerStart") -> countdown -> party = players on the pad -> room built ->
+--   pad (prompt or "TowerStart"(startRoom)) -> countdown -> party = players on the pad -> room built ->
 --   teleport -> FIGHT (RoomSeconds) -> boss killed: rewards + chest -> BETWEEN (vote window)
 --   -> next room ... until a timeout, a wipe, no votes, or everyone left.
 --
 -- Client messages:
---   Fx "Tower" { State = "Pad", EndsAt, Count, Max } / { State = "PadCancel" }
---              { State = "Fight", Room, Uid, Boss, EndsAt, Party, Earned = { Ecto, Shards } }
+--   Fx "Tower" { State = "Pad", EndsAt, Count, Max, StartRoom } / { State = "PadCancel" }
+--              { State = "Fight", Room, Uid, Boss, EndsAt, Party, Dev, Earned = { Ecto, Shards } }
 --              { State = "Votes", Votes, Party }
 --              { State = "Ended", Reason, Best, Earned }
---   Fx "TowerRoomCleared" { Room, EndsAt, Ecto, Shards, Pct, Earned, Party, Pos } (chest visual)
+--   Fx "TowerRoomCleared" { Room, EndsAt, Ecto, Shards, Pct, Earned, Party, Pos, Dev, Checkpoint? } (chest visual)
 --   Fx "Payout" (the usual share popup, plus Shards)
 -- Player attributes while in a run: InTower = true, TowerRoom = n.
 local Players = game:GetService("Players")
@@ -11030,6 +11117,7 @@ export type Run = {
 	Best: number, -- highest room cleared in this run
 	Model: Model?,
 	EndsAt: number,
+	Dev: boolean, -- developer test run: no rewards, no checkpoint, no stats
 }
 
 local runs: { [number]: Run } = {}
@@ -11039,7 +11127,7 @@ local nextId = 1
 local roomsFolder: Folder
 local padPart: BasePart? = nil
 
-type Lobby = { EndsAt: number, Seen: { [Player]: boolean }, Joined: { [Player]: boolean } }
+type Lobby = { EndsAt: number, Seen: { [Player]: boolean }, Joined: { [Player]: boolean }, StartRoom: number }
 local lobby: Lobby? = nil
 
 local function serverNow(): number
@@ -11238,10 +11326,10 @@ local function startRoom(run: Run, n: number)
 		power += HunterService.CrewPower(p)
 	end
 	power = math.max(1, power)
-	local killSeconds, hitFrac = Rules.TowerScale(n, TC)
+	local bossHP, hitFrac = Rules.TowerScale(n, TC, power)
 	local def = Config.Ghosts[TC.Bosses[(n - 1) % #TC.Bosses + 1]]
 	local g = GhostService.Spawn(def, TowerRoom.BossCenter(run.Origin), TowerRoom.BossRadius, {
-		Spirit = math.max(1, power * killSeconds),
+		Spirit = bossHP,
 		Tower = run,
 		HitFrac = hitFrac,
 	})
@@ -11251,7 +11339,7 @@ local function startRoom(run: Run, n: number)
 	run.Phase = "Fight"
 	local party = #memberList(run)
 	sendAll(run, "Tower", function(p)
-		return { State = "Fight", Room = n, Uid = g.Uid, Boss = def.Name, EndsAt = run.EndsAt, Party = party, Earned = earnedOf(run, p) }
+		return { State = "Fight", Room = n, Uid = g.Uid, Boss = def.Name, EndsAt = run.EndsAt, Party = party, Dev = run.Dev, Earned = earnedOf(run, p) }
 	end)
 end
 
@@ -11277,7 +11365,7 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 	local split = GhostService.SplitDamage(g)
 	local players, weights, total = {}, {}, 0
 	for i, p in split.Players do
-		if run.Members[p] then
+		if run.Members[p] and not run.Dev then -- dev runs pay nothing
 			table.insert(players, p)
 			table.insert(weights, split.Weights[i])
 			total += split.Weights[i]
@@ -11310,10 +11398,16 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 		paid[p] = { Ecto = ecto, Shards = shards, Pct = pct }
 		Fx.To(p, "Payout", { Name = g.Def.Name, Pct = pct, Ecto = ecto, Shards = shards })
 	end
+	local cp = Rules.TowerCheckpoint(room, TC.CheckpointEvery)
+	local saved: { [Player]: boolean } = {}
 	for _, p in members do
 		local d = DataService.Get(p)
-		if d then
+		if d and not run.Dev then
 			d.TowerBest = math.max(d.TowerBest, room)
+			if cp > d.TowerCheckpoint then
+				d.TowerCheckpoint = cp
+				saved[p] = true
+			end
 			DataService.Changed(p)
 			DataService.Save(p)
 		end
@@ -11345,6 +11439,8 @@ local function onCleared(run: Run, g: GhostService.Ghost)
 			Earned = earnedOf(run, p),
 			Party = party,
 			Pos = chestPos,
+			Dev = run.Dev,
+			Checkpoint = if saved[p] then cp else nil,
 		}
 	end)
 end
@@ -11401,13 +11497,15 @@ local function blocked(player: Player): string?
 	return nil
 end
 
-local function startRun(party: { Player })
+-- Builds a room and moves the party in, starting at room `first`. Returns an error text when
+-- nobody could enter (each player was already told why).
+local function startRun(party: { Player }, first: number, dev: boolean): string?
 	local slot = freeSlot()
 	if not slot then
 		for _, p in party do
 			Fx.Toast(p, "The tower is full right now. Try again in a moment!", "Bad")
 		end
-		return
+		return "The tower is full right now"
 	end
 	local origin = slotOrigin(slot)
 	local run: Run = {
@@ -11424,6 +11522,7 @@ local function startRun(party: { Player })
 		Best = 0,
 		Model = nil,
 		EndsAt = 0,
+		Dev = dev,
 	}
 	nextId += 1
 	slots[slot] = run
@@ -11436,7 +11535,7 @@ local function startRun(party: { Player })
 		for _, p in party do
 			Fx.Toast(p, "The tower door is stuck. Try again!", "Bad")
 		end
-		return
+		return "The tower door is stuck"
 	end
 	run.Model = model
 	local entry = TowerRoom.Entry(origin)
@@ -11445,7 +11544,7 @@ local function startRun(party: { Player })
 			continue
 		end
 		p:SetAttribute("InTower", true)
-		p:SetAttribute("TowerRoom", 1)
+		p:SetAttribute("TowerRoom", first)
 		local pos = entry + Vector3.new((i - (#party + 1) / 2) * 5, 3, 0)
 		if teleport(p, pos, Vector3.new(0, 0, 1)) then
 			run.Members[p] = true
@@ -11453,7 +11552,7 @@ local function startRun(party: { Player })
 			earnedOf(run, p)
 			HunterService.Refresh(p)
 			local d = DataService.Get(p)
-			if d then
+			if d and not dev then
 				d.TowerRuns += 1
 				DataService.Changed(p)
 			end
@@ -11465,9 +11564,20 @@ local function startRun(party: { Player })
 	end
 	if next(run.Members) == nil then
 		cleanup(run)
-		return
+		return "Couldn't enter the tower"
 	end
-	startRoomSafe(run, 1)
+	startRoomSafe(run, first)
+	return nil
+end
+
+-- Lowest checkpoint every player in the list has reached (0 = someone has none).
+local function commonCheckpoint(list: { Player }): number
+	local cp = math.huge
+	for _, p in list do
+		local d = DataService.Get(p)
+		cp = math.min(cp, if d then d.TowerCheckpoint else 0)
+	end
+	return if cp == math.huge then 0 else cp
 end
 
 local function runLobby(l: Lobby)
@@ -11479,7 +11589,7 @@ local function runLobby(l: Lobby)
 			end
 		end
 		for _, p in here do
-			Fx.To(p, "Tower", { State = "Pad", EndsAt = l.EndsAt, Count = math.min(#here, TC.MaxParty), Max = TC.MaxParty })
+			Fx.To(p, "Tower", { State = "Pad", EndsAt = l.EndsAt, Count = math.min(#here, TC.MaxParty), Max = TC.MaxParty, StartRoom = l.StartRoom })
 			l.Seen[p] = true
 		end
 		for p in l.Seen do
@@ -11521,12 +11631,29 @@ local function runLobby(l: Lobby)
 		end
 	end
 	if #party > 0 then
-		startRun(party)
+		-- a checkpoint start uses the party's lowest common checkpoint (skipped rooms pay nothing)
+		local first = 1
+		if l.StartRoom > 1 then
+			first = commonCheckpoint(party) + 1
+			if first ~= l.StartRoom then
+				for _, p in party do
+					Fx.Toast(p, if first > 1
+						then string.format("Party starts at Room %d (the lowest checkpoint in the party)", first)
+						else "Someone in the party has no checkpoint yet: starting at Room 1", "Bad")
+				end
+			end
+		end
+		startRun(party, first, false)
 	end
 end
 
--- Pad prompt / "TowerStart": opens the countdown for everyone on the pad.
-local function requestStart(player: Player): any
+-- Pad prompt / "TowerStart"(startRoom): opens the countdown for everyone on the pad.
+-- startRoom is 1 or (the starter's checkpoint + 1); anything else is refused.
+local function requestStart(player: Player, startRoom: any): any
+	local first = if startRoom == nil then 1 else startRoom
+	if type(first) ~= "number" or first ~= math.floor(first) then
+		return Remotes.Fail("Bad room")
+	end
 	local why = blocked(player)
 	if why then
 		return Remotes.Fail(why)
@@ -11535,13 +11662,21 @@ local function requestStart(player: Player): any
 		return Remotes.Fail("Stand on the tower pad first!")
 	end
 	if lobby then
-		(lobby :: Lobby).Joined[player] = true -- joins the countdown that is already running
-		return { ok = true, EndsAt = (lobby :: Lobby).EndsAt }
+		-- joins the countdown that is already running (its starter already chose the room)
+		(lobby :: Lobby).Joined[player] = true
+		return { ok = true, EndsAt = (lobby :: Lobby).EndsAt, StartRoom = (lobby :: Lobby).StartRoom }
+	end
+	if first ~= 1 then
+		local d = DataService.Get(player)
+		local cp = if d then d.TowerCheckpoint else 0
+		if cp <= 0 or first ~= cp + 1 then
+			return Remotes.Fail("You can start at Room 1" .. (if cp > 0 then " or Room " .. (cp + 1) else ""))
+		end
 	end
 	if not freeSlot() then
 		return Remotes.Fail("The tower is full right now. Try again in a moment!")
 	end
-	local l: Lobby = { EndsAt = serverNow() + TC.Countdown, Seen = {}, Joined = { [player] = true } }
+	local l: Lobby = { EndsAt = serverNow() + TC.Countdown, Seen = {}, Joined = { [player] = true }, StartRoom = first }
 	lobby = l
 	task.spawn(function()
 		local ok, err = pcall(function()
@@ -11582,7 +11717,13 @@ local function setupPrompt()
 		if not Remotes.Allow(player, "Default") then
 			return
 		end
-		local res = requestStart(player)
+		local d = DataService.Get(player)
+		if not lobby and d and d.TowerCheckpoint > 0 then
+			-- they have a checkpoint: let them pick the start room with the pad buttons
+			Fx.Toast(player, "Pick Room 1 or your checkpoint with the buttons below!", "Good")
+			return
+		end
+		local res = requestStart(player, 1)
 		if not res.ok and res.err then
 			Fx.Toast(player, res.err, "Bad")
 		end
@@ -11638,8 +11779,8 @@ function TowerService.Init()
 	roomsFolder.Name = "TowerRooms"
 	roomsFolder.Parent = workspace
 
-	Remotes.Register("TowerStart", "Default", function(player)
-		return requestStart(player)
+	Remotes.Register("TowerStart", "Default", function(player, startRoom)
+		return requestStart(player, startRoom)
 	end)
 
 	Remotes.Register("TowerContinue", "Default", function(player)
@@ -11733,6 +11874,23 @@ function TowerService.Start()
 			end
 		end
 	end)
+end
+
+-- DEV: starts a SOLO test run at `room` (1..MaxScaledRoom) right away. The caller (DevService)
+-- already checked dev auth. Dev runs give no Ectoplasm/Shards, no checkpoint and no tower stats.
+-- Returns an error text, or nil when the run started.
+function TowerService.DevStart(player: Player, room: number): string?
+	if type(room) ~= "number" or room ~= room or room ~= math.floor(room) or room < 1 or room > TC.MaxScaledRoom then
+		return "Room must be 1-" .. TC.MaxScaledRoom
+	end
+	local why = blocked(player)
+	if why then
+		return why
+	end
+	if lobby then
+		(lobby :: Lobby).Joined[player] = nil -- don't also join a pad countdown
+	end
+	return startRun({ player }, room, true)
 end
 
 -- Players in a run (for other systems / debugging).
@@ -11910,6 +12068,9 @@ local function applySide(d: DataService.Data, rec: Record, userId: number): bool
 			local uid = DataService.NewUid(d)
 			d.Hunters[uid] = { Id = h.Id, Tier = h.Tier, Locked = false, T = os.time() }
 			d.Discovered[h.Id] = true
+			if type(h.Tier) == "number" and h.Tier > 0 then
+				d.Variants[h.Id .. ":" .. h.Tier] = true
+			end
 		end
 	end
 	table.insert(d.TradesApplied, rec.Id)
@@ -12270,8 +12431,8 @@ return TradeService
             <string name="Source"><![CDATA[--!strict
 -- TOWER PLAZA (workspace.Map.EventArena) on the old event-arena plot at the end of the cross
 -- street. Two parts:
---   * an open courtyard around Config.Layout.EventArena.Center where the Giant Poltergeist event
---     still spawns: flat rune paint only, nothing taller than 0.35 studs within CLEAR_R studs of
+--   * an open courtyard around Config.Layout.EventArena.Center (the retired Giant Poltergeist
+--     event used to spawn there; kept as open space): flat rune paint only, nothing taller than 0.35 studs within CLEAR_R studs of
 --     the centre (so nothing solid there up to Y = 30 or higher);
 --   * the ENDLESS BOSS TOWER on the east side of the plot (backed against the east hedge) with
 --     the party pad (part "TowerPad", radius Config.Tower.PadRadius) in front of its door.
@@ -12431,7 +12592,7 @@ function Arena.Build(map: Instance)
 	local cx, cz, r = ea.Center.X, ea.Center.Z, ea.Radius
 	local m = Kit.Model(map, "EventArena")
 
-	-- COURTYARD (flat, top 0.12): the Giant Poltergeist event spawns over its centre
+	-- COURTYARD (flat, top 0.12): open space in front of the tower (old event spot)
 	local field = Kit.Disc(m, cx, cz, 0.12, CLEAR_R * 2 + 6, 0.4, C(90, 60, 140), { Mat = Enum.Material.Slate, Solid = true, Name = "Field" })
 	Kit.Disc(m, cx, cz, 0.16, CLEAR_R * 2 - 2, 0.1, C(115, 80, 180), { Solid = true })
 	ring(m, cx, cz, CLEAR_R - 1, 30, 1.2, ECTO, 0.32)
@@ -17794,10 +17955,10 @@ local function plaza(f: Instance)
 		Kit.Box(f, V(sx + s * 7, 0.4, sz - 7) - V(0.4, 0, 0), V(sx + s * 7, 1.3, sz + 7) + V(0.4, 0, 0), border)
 	end
 
-	-- plaza lamps on the rim
-	for i, a in { 45, 135, 225, 315 } do
-		local r = math.rad(a)
-		Props.StreetLamp(f, V(sx + math.cos(r) * 23, 0.25, sz + math.sin(r) * 23), C(200, 140, 255), i <= 2)
+	-- plaza lamps flank the spawn at the sides, clear of the diagonal paths to the kiosks/crate/upgrade
+	-- stations and of the north (ghosts) and south (HQ door) sightlines
+	for i, p in { { -13, 6 }, { 13, 6 }, { -13, -4 }, { 13, -4 } } do
+		Props.StreetLamp(f, V(sx + p[1], 0.25, sz + p[2]), C(200, 140, 255), i <= 2)
 	end
 
 	-- guide chevrons to the Beginner crate and the upgrade booth
@@ -22716,250 +22877,14 @@ return Ambience
             <Properties>
               <string name="Name">Boss</string>
               <string name="Source"><![CDATA[--!strict
--- GIANT POLTERGEIST event presentation: warning announcement + countdown, a beacon over the
--- arena, dramatic spawn (flash, rings, camera shake), a big boss Spirit bar with timer, and
--- defeat / escape banners. Rewards arrive as normal Ectoplasm drops (the shower).
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-
-local GH = ReplicatedStorage:WaitForChild("GH")
-local Config = require(GH.Config)
-local Format = require(GH.Logic.Format)
-local Signal = require(GH.Signal)
-local Client = script.Parent.Parent
-local Kit = require(Client.UI.Kit)
-local State = require(Client.State)
-local Theme = require(Client.UI.Theme)
-local Hud = require(script.Parent.Hud)
-local Ghosts = require(script.Parent.Ghosts)
-local Effects = require(script.Parent.Effects)
-local Sound = require(script.Parent.Sound)
-
+-- RETIRED: the GIANT POLTERGEIST lobby event (boss bar, beacon, SHOW ME) was removed with the
+-- event itself (see EventService). The module stays in the controller list as an empty stub;
+-- Boss Tower presentation lives in TowerHud.
 local Boss = {}
 
-local player = Players.LocalPlayer
-local frame: Frame
-local fill: Frame
-local spiritLabel: TextLabel
-local timerLabel: TextLabel
-local titleLabel: TextLabel
-local goButton: TextButton
-local beacon: Part? = nil
-local state = "Idle"
-local warnAt = 0
-local endsAt = 0
-local bossUid = 0
-local arenaPos = Config.Layout.EventArena.Center
-local dismissed = false -- the player closed the event bar for this event (a small pill reopens it)
-local reopen: TextButton
+function Boss.Init() end
 
-local function setBeacon(on: boolean)
-	if on and not beacon then
-		local b = Instance.new("Part")
-		b.Name = "BossBeacon"
-		b.Shape = Enum.PartType.Cylinder
-		b.Anchored = true
-		b.CanCollide = false
-		b.CanQuery = false
-		b.CanTouch = false
-		b.CastShadow = false
-		b.Material = Enum.Material.Neon
-		b.Color = Color3.fromRGB(255, 120, 230)
-		b.Transparency = 0.55
-		b.Size = Vector3.new(220, 5, 5)
-		b.CFrame = CFrame.new(arenaPos + Vector3.new(0, 110, 0)) * CFrame.Angles(0, 0, math.rad(90))
-		b.Parent = workspace
-		beacon = b
-		task.spawn(function()
-			while beacon == b do
-				TweenService:Create(b, TweenInfo.new(0.6), { Transparency = 0.8 }):Play()
-				task.wait(0.6)
-				TweenService:Create(b, TweenInfo.new(0.6), { Transparency = 0.45 }):Play()
-				task.wait(0.6)
-			end
-		end)
-	elseif not on and beacon then
-		beacon:Destroy()
-		beacon = nil
-	end
-end
-
-local function show(on: boolean)
-	reopen.Visible = on and dismissed
-	if on and dismissed then
-		on = false
-	end
-	if on == frame.Visible then
-		return
-	end
-	frame.Visible = true
-	local sc = frame:FindFirstChildOfClass("UIScale") :: UIScale
-	if on then
-		sc.Scale = 0.4
-		Kit.Tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-	else
-		Kit.Tween(sc, 0.2, { Scale = 0.4 })
-		task.delay(0.2, function()
-			frame.Visible = false
-		end)
-	end
-end
-
-local function nearArena(): boolean
-	local char = player.Character
-	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	return root ~= nil and (root.Position - arenaPos).Magnitude < 150
-end
-
-local function onBoss(data: any)
-	if data.Pos then
-		arenaPos = data.Pos
-	end
-	if data.State == "Warning" then
-		state = "Warning"
-		dismissed = false -- every new event shows its bar again
-		warnAt = data.At or 0
-		Hud.Announce("⚠️ GIANT POLTERGEIST INCOMING!", Color3.fromRGB(255, 120, 230), Color3.fromRGB(255, 200, 60))
-		Sound.Play("BossAppear")
-		setBeacon(true)
-		titleLabel.Text = "⚠️ GIANT POLTERGEIST"
-		fill.Size = UDim2.fromScale(1, 1)
-		spiritLabel.Text = "APPEARS SOON!"
-		goButton.Visible = not nearArena()
-		show(true)
-	elseif data.State == "Active" then
-		state = "Active"
-		bossUid = data.Uid or 0
-		endsAt = data.EndsAt or 0
-		titleLabel.Text = "👑 GIANT POLTERGEIST"
-		setBeacon(true)
-		Sound.Boss(true)
-		show(true)
-		if nearArena() then
-			Sound.Play("BossAppear")
-			Effects.Flash(arenaPos + Vector3.new(0, 14, 0), Color3.fromRGB(255, 120, 230), 30, 0.7)
-			Effects.Ring(arenaPos + Vector3.new(0, 0.4, 0), Color3.fromRGB(255, 230, 90), 40, 0.9)
-			Effects.Burst(arenaPos + Vector3.new(0, 14, 0), { Color = Color3.fromRGB(255, 120, 230), Color2 = Color3.fromRGB(255, 230, 90), Count = 120, Size = 2.5, Speed = 40, Life = 1.2 })
-			-- camera shake
-			task.spawn(function()
-				local cam = workspace.CurrentCamera
-				local t0 = os.clock()
-				while os.clock() - t0 < 0.6 and cam.CameraType ~= Enum.CameraType.Scriptable do
-					local k = 0.6 * (1 - (os.clock() - t0) / 0.6)
-					cam.CFrame *= CFrame.new((math.random() - 0.5) * k, (math.random() - 0.5) * k, 0)
-					RunService.RenderStepped:Wait()
-				end
-			end)
-		end
-	elseif data.State == "Defeated" then
-		state = "Idle"
-		dismissed = false
-		Sound.Boss(false)
-		setBeacon(false)
-		show(false)
-		Hud.Banner("GIANT POLTERGEIST DEFEATED!", "Grab the Ectoplasm shower!", Theme.Gold)
-		if data.Pos and nearArena() then
-			Effects.Poof(data.Pos, Color3.fromRGB(255, 120, 230), 4, true)
-			Effects.Ring(arenaPos + Vector3.new(0, 0.4, 0), Theme.Ecto, 45, 1)
-		end
-	elseif data.State == "Escaped" then
-		state = "Idle"
-		dismissed = false
-		Sound.Boss(false)
-		setBeacon(false)
-		show(false)
-		Hud.Banner("IT ESCAPED...", "It'll be back. Bring more hunters!", Theme.Muted)
-	end
-end
-
-function Boss.Init()
-	local screen = Kit.Screen()
-	frame = Kit.new("Frame", {
-		Name = "BossBar",
-		Size = UDim2.fromOffset(420, 62),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		Visible = false,
-		ZIndex = 30,
-		LayoutOrder = 2,
-		Parent = Hud.TopStack or screen,
-	})
-	Kit.Corner(frame, UDim.new(0, 14))
-	Kit.Stroke(frame, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	Kit.Gradient(frame, Color3.fromRGB(110, 40, 120), Color3.fromRGB(50, 20, 70), 90)
-	Kit.new("UIScale", { Parent = frame })
-	titleLabel = Kit.Label(frame, "👑 GIANT POLTERGEIST", { Size = UDim2.new(0.68, 0, 0, 22), Position = UDim2.fromOffset(10, 4), Align = Enum.TextXAlignment.Left, Color = Theme.Gold, Style = "Heading", Fit = true, ZIndex = 31 })
-	timerLabel = Kit.Label(frame, "", { Size = UDim2.new(0.3, 0, 0, 22), Position = UDim2.new(1, -10, 0, 4), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Style = "Body", Fit = true, ZIndex = 31 })
-	local bar: Frame = Kit.new("Frame", { Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 31), BackgroundColor3 = Color3.fromRGB(30, 12, 45), ZIndex = 31, Parent = frame })
-	Kit.Corner(bar, UDim.new(1, 0))
-	Kit.Stroke(bar, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
-	fill = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 32, Parent = bar })
-	Kit.Corner(fill, UDim.new(1, 0))
-	Kit.Gradient(fill, Color3.fromRGB(255, 120, 230), Color3.fromRGB(255, 220, 80), 0)
-	spiritLabel = Kit.Label(bar, "", { Style = "Small", ZIndex = 33 })
-	-- "take me there" helper: walks you nowhere, just points the way (see Tutorial arrow)
-	goButton = Kit.Button(frame, {
-		Text = "📍 SHOW ME",
-		Color = "Pink",
-		Size = UDim2.fromOffset(140, 40),
-		TextStyle = "Small",
-		Position = UDim2.new(0.5, 0, 1, 6),
-		AnchorPoint = Vector2.new(0.5, 0),
-		ZIndex = 31,
-		OnClick = function()
-			Boss.PointRequested:Fire()
-		end,
-	})
-	goButton.Visible = false
-	-- ✕ closes the event bar (the event keeps running; the boss's own label still shows)
-	Kit.CloseButton(frame, function()
-		dismissed = true
-		show(false)
-	end, 34)
-	-- small pill to bring it back while the event is still on
-	reopen = Kit.Button(Hud.TopStack or screen, {
-		Text = "👑 EVENT",
-		Color = "Pink",
-		Size = UDim2.fromOffset(96, 30),
-		TextStyle = "Small",
-		ZIndex = 30,
-		OnClick = function()
-			dismissed = false
-			show(true)
-		end,
-	})
-	reopen.Visible = false
-	reopen.LayoutOrder = 2
-end
-
-Boss.PointRequested = Signal.new()
-
-function Boss.State(): (string, Vector3)
-	return state, arenaPos
-end
-
-function Boss.Start()
-	State.OnFx("Boss", onBoss)
-	RunService.Heartbeat:Connect(function()
-		if state == "Warning" then
-			local left = math.max(0, warnAt - workspace:GetServerTimeNow())
-			timerLabel.Text = Format.Time(left)
-			goButton.Visible = not nearArena()
-		elseif state == "Active" then
-			local left = math.max(0, endsAt - workspace:GetServerTimeNow())
-			timerLabel.Text = "⏱ " .. Format.Time(left)
-			timerLabel.TextColor3 = if left < 20 then Theme.Bad else Theme.Text
-			goButton.Visible = not nearArena()
-			local e = Ghosts.Get(bossUid)
-			if e then
-				local frac = math.clamp(e.Spirit / math.max(e.Max, 1), 0, 1)
-				fill.Size = UDim2.fromScale(math.max(frac, 0.01), 1)
-				spiritLabel.Text = Format.Short(e.Spirit) .. " / " .. Format.Short(e.Max) .. " SPIRIT"
-			end
-		end
-	end)
-end
+function Boss.Start() end
 
 return Boss
 ]]></string>
@@ -23470,13 +23395,14 @@ return CratePanel
 -- run to a ring around the ghost, aim and fire a wobbly energy beam, celebrate on the poof,
 -- then come back. All crews update in ONE RenderStepped loop: BulkMoveTo for roots, Motor6D
 -- transforms for poses, staggered ground raycasts, and far-away crews are hidden.
-local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Format = require(GH.Logic.Format)
 local HunterRig = require(GH.Rigs.HunterRig)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
@@ -23504,11 +23430,23 @@ type Member = {
 	CelebrateUntil: number,
 	Phase: number,
 	Color: Color3,
-	-- own crew only: HP bar and a short alert line ("!", "DODGED") over the tag
-	HpBar: Frame?,
-	HpFill: Frame?,
+	-- HP bar over the tag (own crew: big, plus a short alert line like "DODGED"; others: small)
+	HpGui: BillboardGui,
+	HpFill: Frame,
+	Hp: number,
 	Alert: TextLabel?,
-	AlertAt: number,
+	AlertUntil: number,
+	Chest: Attachment?, -- end point of incoming ghost bolts (own crew, made on first hit)
+	Mark: Highlight?, -- red outline while a ghost winds up on this hunter
+	MarkUntil: number,
+}
+
+-- An own equipped hunter that is knocked out: a faded rig behind the player with a countdown.
+type KO = {
+	Uid: string,
+	Rig: HunterRig.Rig,
+	Pos: Vector3,
+	Label: TextLabel,
 }
 
 type CrewData = {
@@ -23518,6 +23456,7 @@ type CrewData = {
 	LastTarget: number,
 	NextSpark: number,
 	NextSound: number,
+	Fighting: boolean,
 	Conns: { RBXScriptConnection },
 }
 
@@ -23529,6 +23468,7 @@ rayParams.FilterType = Enum.RaycastFilterType.Exclude
 rayParams.IgnoreWater = true
 local nextFilter = 0
 local gone: { [string]: Vector3 } = {} -- last spot of local rigs removed by the latest rebuild (knockout poof)
+local kos: { KO } = {}
 
 local VISIBLE_RANGE = 170
 local HUNTER_SCALE = 0.88 -- rigs are ~4-4.6 studs; this puts them at a player's chest height
@@ -23585,15 +23525,32 @@ local function addTag(m: Member, isLocal: boolean)
 	local tier = Config.Tiers[m.Tier]
 	local text = if backup then "BACKUP" else (if tier and tier.Icon ~= "" then tier.Icon .. " " else "") .. string.rep("⭐", math.min(rar.Order, 5)) .. " " .. def.Name
 	WorldLabel.Text(gui, text, { Style = "Tiny", Color = if backup then Color3.fromRGB(190, 190, 200) else rar.Color })
+	-- HP bar: its own label at the tag's anchor point, drawn in the upper part so it always
+	-- sits just above the name. Own crew: readable at play distance; others: small and close only.
+	local hpGui = WorldLabel.New({
+		Name = "Hp",
+		Adornee = m.Rig.Root,
+		Parent = m.Rig.Model,
+		Size = if isLocal then Vector2.new(84, 64) else Vector2.new(44, 40),
+		Offset = Vector3.new(0, m.Rig.Height + 0.7, 0),
+		MaxDistance = if isLocal then 70 else 35,
+		AlwaysOnTop = true,
+	})
+	hpGui.Enabled = false
+	local bar: Frame = Kit.new("Frame", {
+		Size = UDim2.fromScale(1, if isLocal then 0.16 else 0.12),
+		Position = UDim2.fromScale(0, 0.3),
+		BackgroundColor3 = Color3.fromRGB(30, 15, 50),
+		Parent = hpGui,
+	})
+	Kit.Corner(bar, UDim.new(1, 0))
+	Kit.Stroke(bar, if isLocal then 1.5 else 1, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	local fill: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Ecto, Parent = bar })
+	Kit.Corner(fill, UDim.new(1, 0))
+	m.HpGui = hpGui
+	m.HpFill = fill
 	if isLocal then
-		-- HP bar under the name (hidden at full HP) + alert line above it
-		local bar: Frame = Kit.new("Frame", { Size = UDim2.fromScale(0.5, 0.3), Position = UDim2.fromScale(0.5, 1), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.fromRGB(30, 15, 50), Visible = false, Parent = gui })
-		Kit.Corner(bar, UDim.new(1, 0))
-		local fill: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Ecto, Parent = bar })
-		Kit.Corner(fill, UDim.new(1, 0))
-		m.HpBar = bar
-		m.HpFill = fill
-		m.Alert = WorldLabel.Text(gui, "", { Style = "Small", Color = Theme.Bad, Size = UDim2.fromScale(1, 1.2), Position = UDim2.fromScale(0, -1.2) })
+		m.Alert = WorldLabel.Text(hpGui, "", { Style = "Small", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.28) })
 	end
 	-- rare+ hunters stand on a soft rarity-coloured disc
 	if rar.Order >= 3 and not backup then
@@ -23618,23 +23575,9 @@ local function addTag(m: Member, isLocal: boolean)
 	end
 end
 
--- Cheap tier aura: a few slow sparkles rising off the hunter.
-local function addAura(rig: HunterRig.Rig, color: ColorSequence)
-	local e = Instance.new("ParticleEmitter")
-	e.Texture = Effects.Textures.Sparkle
-	e.Color = color
-	e.Size = NumberSequence.new(0.35, 0)
-	e.Lifetime = NumberRange.new(0.6, 1)
-	e.Rate = 5
-	e.Speed = NumberRange.new(1, 2)
-	e.SpreadAngle = Vector2.new(180, 180)
-	e.Acceleration = Vector3.new(0, 3, 0)
-	e.LightEmission = 1
-	e.Parent = rig.Root
-end
-
 local function newMember(id: string, tier: number, uid: string, at: Vector3, isLocal: boolean): Member
 	local rig = HunterRig.Build(id)
+	HunterRig.ApplyTier(rig.Model, tier) -- Shiny / Mega finish (same look as inventory + index)
 	local scale = if tier >= 2 then HUNTER_SCALE * 1.2 else HUNTER_SCALE
 	rig.Model:ScaleTo(scale)
 	rig.Height *= scale
@@ -23648,15 +23591,6 @@ local function newMember(id: string, tier: number, uid: string, at: Vector3, isL
 				p.Transparency = math.max(p.Transparency, 0.45)
 			end
 		end
-	end
-	if tier == 1 then
-		addAura(rig, ColorSequence.new(Config.Tiers[1].Color))
-	elseif tier >= 2 then
-		addAura(rig, ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Config.Tiers[2].Color),
-			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 120, 230)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 230, 110)),
-		}))
 	end
 	rig.Model:PivotTo(CFrame.new(at))
 	rig.Model.Parent = folder
@@ -23675,7 +23609,11 @@ local function newMember(id: string, tier: number, uid: string, at: Vector3, isL
 		CelebrateUntil = 0,
 		Phase = math.random() * 10,
 		Color = def.Look.Beam,
-		AlertAt = 0,
+		HpGui = nil :: any,
+		HpFill = nil :: any,
+		Hp = 100,
+		AlertUntil = 0,
+		MarkUntil = 0,
 	}
 	makeBeam(m)
 	addTag(m, isLocal)
@@ -23688,7 +23626,13 @@ local function rootOf(pl: Player): BasePart?
 	return if root and root:IsA("BasePart") then root else nil
 end
 
--- Shows each own rig's HP from "uid=pct,uid=pct" (bar hidden at 100%).
+-- green (full) -> gold (half) -> red (empty)
+local function hpColor(pct: number): Color3
+	local f = math.clamp(pct / 100, 0, 1)
+	return if f > 0.5 then Theme.Gold:Lerp(Theme.Ecto, (f - 0.5) * 2) else Theme.Bad:Lerp(Theme.Gold, f * 2)
+end
+
+-- Reads each rig's HP from "uid=pct,uid=pct" (the bar itself is shown/hidden in step).
 local function applyHP(c: CrewData)
 	local hp: { [string]: number } = {}
 	local raw = c.Player:GetAttribute("CrewHP")
@@ -23698,13 +23642,10 @@ local function applyHP(c: CrewData)
 		end
 	end
 	for _, m in c.Members do
-		local bar, fill = m.HpBar, m.HpFill
-		if bar and fill then
-			local pct = hp[m.Uid] or 100
-			bar.Visible = pct < 100
-			fill.Size = UDim2.fromScale(pct / 100, 1)
-			fill.BackgroundColor3 = if pct > 50 then Theme.Ecto elseif pct > 25 then Theme.Gold else Theme.Bad
-		end
+		local pct = math.clamp(hp[m.Uid] or 100, 0, 100)
+		m.Hp = pct
+		m.HpFill.Size = UDim2.fromScale(pct / 100, 1)
+		m.HpFill.BackgroundColor3 = hpColor(pct)
 	end
 end
 
@@ -23757,9 +23698,7 @@ local function rebuild(c: CrewData)
 			m.Rig.Model.Parent = nil
 		end
 	end
-	if isLocal then
-		applyHP(c)
-	end
+	applyHP(c)
 end
 
 local function addPlayer(pl: Player)
@@ -23773,17 +23712,16 @@ local function addPlayer(pl: Player)
 		LastTarget = 0,
 		NextSpark = 0,
 		NextSound = 0,
+		Fighting = false,
 		Conns = {},
 	}
 	crews[pl] = c
 	table.insert(c.Conns, pl:GetAttributeChangedSignal("Crew"):Connect(function()
 		rebuild(c)
 	end))
-	if pl == player then
-		table.insert(c.Conns, pl:GetAttributeChangedSignal("CrewHP"):Connect(function()
-			applyHP(c)
-		end))
-	end
+	table.insert(c.Conns, pl:GetAttributeChangedSignal("CrewHP"):Connect(function()
+		applyHP(c)
+	end))
 	rebuild(c)
 end
 
@@ -23971,9 +23909,21 @@ local function step(dt: number)
 				beam.Enabled = false
 			end
 
+			-- HP bar: while hurt, while the own crew fights, or while an alert line shows
+			local alertOn = m.AlertUntil > clock
+			local show = m.Hp < 100 or (isLocal and c.Fighting) or alertOn
+			if m.HpGui.Enabled ~= show then
+				m.HpGui.Enabled = show
+			end
+			local a = m.Alert
+			if a and not alertOn and a.Text ~= "" then
+				a.Text = ""
+			end
+
 			table.insert(roots, m.Rig.Root)
 			table.insert(cframes, CFrame.new(m.Pos) * CFrame.Angles(0, m.Yaw, 0))
 		end
+		c.Fighting = anyAttacking
 
 		-- impact sparks + soft zaps for your own crew only (keeps busy servers cheap)
 		if isLocal and anyAttacking and ghost then
@@ -23989,9 +23939,165 @@ local function step(dt: number)
 			end
 		end
 	end
+	-- knocked-out own hunters drift along in a row behind the crew
+	local lroot = rootOf(player)
+	if lroot and #kos > 0 then
+		local c = crews[player]
+		local rows = math.ceil((if c then #c.Members else 0) / 3)
+		local look = lroot.CFrame.LookVector
+		local yaw = math.atan2(-look.X, -look.Z)
+		local flat = CFrame.new(lroot.Position) * CFrame.Angles(0, yaw, 0)
+		local k = math.min(1, dt * 6)
+		for i, ko in kos do
+			local col = (i - 1) % 3
+			local row = (i - 1) // 3
+			local goal = (flat * CFrame.new((col - 1) * 3.2, -2.7, 4.6 + (rows + row) * 3.4)).Position
+			ko.Pos = if (goal - ko.Pos).Magnitude > 60 then goal else ko.Pos:Lerp(goal, k)
+			table.insert(roots, ko.Rig.Root)
+			table.insert(cframes, CFrame.new(ko.Pos) * CFrame.Angles(0, yaw, 0))
+		end
+	end
 	if #roots > 0 then
 		workspace:BulkMoveTo(roots, cframes, Enum.BulkMoveMode.FireCFrameChanged)
 	end
+end
+
+local KO_TINT = Color3.fromRGB(170, 175, 200)
+
+local function newKO(uid: string, id: string, tier: number, at: Vector3): KO
+	local rig = HunterRig.Build(id)
+	local scale = if tier >= 2 then HUNTER_SCALE * 1.2 else HUNTER_SCALE
+	rig.Model:ScaleTo(scale)
+	rig.Height *= scale
+	for _, p in rig.Model:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.CastShadow = false
+			p.Material = Enum.Material.SmoothPlastic
+			p.Color = p.Color:Lerp(KO_TINT, 0.75)
+			p.Transparency = math.max(p.Transparency, 0.6)
+		elseif p:IsA("Light") or p:IsA("ParticleEmitter") then
+			p:Destroy()
+		end
+	end
+	rig.Model:PivotTo(CFrame.new(at))
+	rig.Model.Parent = folder
+	local gui = WorldLabel.New({
+		Name = "KO",
+		Adornee = rig.Root,
+		Parent = rig.Model,
+		Size = Vector2.new(80, 22),
+		Offset = Vector3.new(0, rig.Height + 0.7, 0),
+		MaxDistance = 70,
+		AlwaysOnTop = true,
+	})
+	return { Uid = uid, Rig = rig, Pos = at, Label = WorldLabel.Text(gui, "", { Style = "Small", Color = Color3.fromRGB(200, 205, 230) }) }
+end
+
+-- Keeps one faded rig per equipped hunter whose knockout hasn't ended; updates the countdowns.
+local function syncKnocked()
+	local d = State.Data
+	local now = State.Now()
+	local want: { [string]: number } = {}
+	if d and d.Equipped and d.Knocked then
+		for _, uid in d.Equipped do
+			local t = d.Knocked[uid]
+			local h = d.Hunters and d.Hunters[uid]
+			if type(t) == "number" and t > now and h and Config.Hunters[h.Id] then
+				want[uid] = t
+			end
+		end
+	end
+	for i = #kos, 1, -1 do
+		local ko = kos[i]
+		if not want[ko.Uid] then
+			ko.Rig.Model:Destroy()
+			table.remove(kos, i)
+		end
+	end
+	for uid, t in want do
+		local label: TextLabel? = nil
+		for _, k in kos do
+			if k.Uid == uid then
+				label = k.Label
+				break
+			end
+		end
+		if not label then
+			local root = rootOf(player)
+			local at = gone[uid] or (if root then root.Position - Vector3.new(0, 2.7, -6) else Vector3.zero)
+			local h = d.Hunters[uid]
+			local ko = newKO(uid, h.Id, tonumber(h.Tier) or 0, at)
+			table.insert(kos, ko)
+			label = ko.Label
+		end
+		(label :: TextLabel).Text = "💤 " .. Format.Time(t - now)
+	end
+end
+
+-- Ghost -> hunter bolt: a few reused beams from the ghost's core to the hit hunter's chest
+-- (or, if the rig is already gone after a knockout, to where it stood). Shrinks out in 0.35 s.
+type Bolt = { Beam: Beam, End: Attachment, Token: number }
+local bolts: { Bolt } = {}
+local boltNext = 0
+local BOLT_RED = Color3.fromRGB(255, 60, 110)
+
+local function bolt(e: Ghosts.Entry, target: Attachment?, at: Vector3)
+	boltNext = boltNext % 3 + 1
+	local b = bolts[boltNext]
+	if not b then
+		local endAtt = Instance.new("Attachment")
+		endAtt.Name = "GhostBoltEnd"
+		endAtt.Parent = workspace.Terrain
+		local beam = Instance.new("Beam")
+		beam.Name = "GhostBolt"
+		beam.LightEmission = 1
+		beam.LightInfluence = 0
+		beam.FaceCamera = true
+		beam.Segments = 10
+		beam.Transparency = NumberSequence.new(0.05, 0.25)
+		beam.Enabled = false
+		beam.Parent = folder
+		b = { Beam = beam, End = endAtt, Token = 0 }
+		bolts[boltNext] = b
+	end
+	local beam = b.Beam
+	if target then
+		beam.Attachment1 = target
+	else
+		b.End.WorldPosition = at
+		beam.Attachment1 = b.End
+	end
+	beam.Attachment0 = centerAttachment(e)
+	beam.Color = ColorSequence.new(e.Def.Glow, BOLT_RED)
+	beam.CurveSize0 = (math.random() - 0.5) * 4
+	beam.CurveSize1 = (math.random() - 0.5) * 3
+	beam.Width0 = 1
+	beam.Width1 = 0.55
+	beam.Enabled = true
+	TweenService:Create(beam, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Width0 = 0, Width1 = 0 }):Play()
+	b.Token += 1
+	local token = b.Token
+	task.delay(0.36, function()
+		if b.Token == token then
+			beam.Enabled = false
+		end
+	end)
+end
+
+local function chestOf(m: Member): Attachment
+	local a = m.Chest
+	if not a then
+		local made = Instance.new("Attachment")
+		made.Name = "Chest"
+		made.Position = Vector3.new(0, m.Rig.Height * 0.55, 0)
+		made.Parent = m.Rig.Root
+		m.Chest = made
+		return made
+	end
+	return a
 end
 
 local function localMember(uid: any): Member?
@@ -24006,7 +24112,7 @@ local function localMember(uid: any): Member?
 	return nil
 end
 
--- Short line over an own rig's tag ("!", "DODGED"); a newer flash wins.
+-- Short line over an own rig's HP bar ("DODGED"); step clears it when the time is up.
 local function flash(m: Member, text: string, color: Color3, t: number)
 	local a = m.Alert
 	if not a then
@@ -24014,13 +24120,31 @@ local function flash(m: Member, text: string, color: Color3, t: number)
 	end
 	a.Text = text
 	a.TextColor3 = color
-	local token = os.clock()
-	m.AlertAt = token
-	task.delay(t, function()
-		if m.AlertAt == token then
-			a.Text = ""
-		end
-	end)
+	m.AlertUntil = os.clock() + t
+end
+
+-- Calm red outline on the targeted hunter during a windup (one reused Highlight per rig).
+local function mark(m: Member, t: number)
+	local hl = m.Mark
+	if not hl then
+		local made = Instance.new("Highlight")
+		made.FillTransparency = 1
+		made.OutlineColor = Theme.Bad
+		made.OutlineTransparency = 0.1
+		made.Parent = m.Rig.Model
+		m.Mark = made
+		hl = made
+	end
+	local h = hl :: Highlight
+	h.Enabled = t > 0
+	m.MarkUntil = os.clock() + t
+	if t > 0 then
+		task.delay(t + 0.05, function()
+			if os.clock() >= m.MarkUntil then
+				h.Enabled = false
+			end
+		end)
+	end
 end
 
 function Crew.Init()
@@ -24055,24 +24179,35 @@ function Crew.Start()
 		if not m then
 			return
 		end
-		local t = tonumber(d.Time) or 0.9
-		local hl = Instance.new("Highlight")
-		hl.FillColor = Theme.Bad
-		hl.OutlineColor = Theme.Bad
-		hl.FillTransparency = 0.55
-		hl.Parent = m.Rig.Model
-		Debris:AddItem(hl, t)
-		flash(m, "❗", Theme.Bad, t)
+		-- the ❗ + ring sit on the ghost (Ghosts.luau); the hunter only gets a quiet outline
+		mark(m, tonumber(d.Time) or 0.9)
 	end)
 	State.OnFx("GhostHit", function(d: any)
 		local m = localMember(d.Hunter)
-		if not m then
-			return
+		if m then
+			mark(m, 0)
 		end
 		if d.Dodged then
-			flash(m, "DODGED", Theme.Ecto, 0.8)
-		elseif not d.Knocked then
+			if m then
+				flash(m, "DODGED", Theme.Ecto, 0.8)
+			end
+			return
+		end
+		local e = Ghosts.Get(d.Ghost)
+		local pos = if m then m.Pos else gone[d.Hunter]
+		if e and not e.Dying and pos then
+			bolt(e, if m then chestOf(m) else nil, pos + Vector3.new(0, 2, 0))
+		end
+		if m and not d.Knocked then
 			Effects.Burst(m.Pos + Vector3.new(0, 2, 0), { Color = Theme.Bad, Count = 8, Size = 0.5, Speed = 8, Life = 0.4 })
+		end
+	end)
+	-- knocked-out rigs + countdowns: resync on every snapshot and once a second
+	State.Changed:Connect(syncKnocked)
+	task.spawn(function()
+		while true do
+			syncKnocked()
+			task.wait(1)
 		end
 	end)
 	State.OnFx("Knocked", function(d: any)
@@ -24311,7 +24446,7 @@ local inbox: Kit.Panel
 local inboxList: ScrollingFrame
 local devButton: TextButton
 local list: ScrollingFrame
-local actionButtons: { TextButton } = {}
+local actionButtons: { GuiObject } = {}
 local rareRow: Frame
 local rareStatus: TextLabel
 local rareButton: TextButton
@@ -24360,7 +24495,8 @@ local ACTIONS: { Action } = {
 	{ Text = "UNLOCK ALL AREAS", Cmd = "Zones", Color = "Blue" },
 	{ Text = "ALL 32 HUNTERS", Cmd = "Hunters", Color = "Orange" },
 	{ Text = "MAX UPGRADES", Cmd = "MaxUpgrades", Color = "Teal" },
-	{ Text = "START EVENT", Cmd = "Event", Color = "Pink" },
+	{ Text = "GIVE ALL PETS", Cmd = "AllPets", Color = "Pink" },
+	{ Text = "HEAL ALL HUNTERS", Cmd = "HealAll", Color = "Green" },
 	{ Text = "2X ECTOPLASM: 2 DAYS", Cmd = "Ecto2x", Arg = 48, Color = "Green" },
 	{ Text = "2X ECTOPLASM: ON", Cmd = "Ecto2x", Arg = true, Color = "Green" },
 	{ Text = "2X ECTOPLASM: OFF", Cmd = "Ecto2x", Arg = false, Color = "Red" },
@@ -24397,6 +24533,40 @@ local function run(a: Action)
 	else
 		Kit.Toast(res.err or "Failed", "Bad")
 	end
+end
+
+-- One grid cell: number box + button. Checked here for a quick message; the server re-checks.
+local function numberInput(order: number, placeholder: string, text: string, color: string, cmd: string, max: number, done: (number) -> string)
+	local cell: Frame = Kit.new("Frame", { BackgroundColor3 = Theme.Bg, BackgroundTransparency = 0.3, LayoutOrder = order, ZIndex = 62, Parent = list })
+	Kit.Corner(cell, UDim.new(0, 10))
+	local box: TextBox = Kit.new("TextBox", {
+		Size = UDim2.new(0, 70, 1, -8),
+		Position = UDim2.fromOffset(4, 4),
+		BackgroundTransparency = 1,
+		ClearTextOnFocus = false,
+		Font = Theme.Body,
+		TextSize = Theme.Type.Body,
+		TextColor3 = Theme.Text,
+		PlaceholderColor3 = Theme.Muted,
+		PlaceholderText = placeholder,
+		Text = "",
+		ZIndex = 63,
+		Parent = cell,
+	})
+	Kit.Button(cell, { Text = text, Color = color, TextStyle = "Small", Size = UDim2.new(1, -80, 1, -6), Position = UDim2.new(1, -3, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), ZIndex = 63, OnClick = function()
+		local n = tonumber(box.Text)
+		if not n or n % 1 ~= 0 or n < 1 or n > max then
+			Kit.Toast("Enter a whole number 1-" .. Format.Short(max), "Bad")
+			return
+		end
+		local res = State.Request("Dev", cmd, n)
+		if res.ok then
+			Kit.Toast(done(n), "Good")
+		else
+			Kit.Toast(res.err or "Failed", "Bad")
+		end
+	end })
+	table.insert(actionButtons, cell)
 end
 
 --------------------------------------------------------------------------------
@@ -24547,6 +24717,13 @@ function DevPanel.Init()
 			panel.Primary = b
 		end
 	end
+	numberInput(#ACTIONS + 1, "amount", "GIVE SHARDS", "Teal", "Shards", 1000000, function(n)
+		return "+" .. Format.Short(n) .. " Spirit Shards"
+	end)
+	numberInput(#ACTIONS + 2, "room", "TOWER ROOM", "Orange", "TowerRoom", 400, function(n)
+		panel:Close()
+		return "Tower room " .. n .. " ✅"
+	end)
 	buildRare()
 	Kit.Label(panel.Body, "Only you can see this. In a live server these change your real save.", { Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, -22), Color = Theme.Muted, Font = Theme.Body, Style = "Tiny", Stroke = 0, ZIndex = 62 })
 
@@ -25150,6 +25327,7 @@ Ghosts.Added = addedSignal -- (entry)
 local selectedUid = 0
 local ring: Part
 local ringStroke: UIStroke
+local lastWarnRing = 0 -- one windup ring at a time (several ghosts winding up at once = one flash)
 
 function Ghosts.Get(uid: number): Entry?
 	return entries[uid]
@@ -25499,7 +25677,9 @@ local function step()
 		local alert = e.Alert
 		if alert then
 			local winding = clock < e.WindupEnd
-			alert.Visible = winding and math.sin(clock * 20) > -0.6
+			if alert.Visible ~= winding then
+				alert.Visible = winding -- steady, no blinking
+			end
 			if winding then
 				pos -= e.LungeDir * (0.8 * s * (1 - (e.WindupEnd - clock) / e.WindupLen))
 			elseif clock - e.LungeT < 0.25 then
@@ -25582,6 +25762,7 @@ function Ghosts.Start()
 		end
 		local t = tonumber(d.Time) or 0.9
 		local clock = os.clock()
+		local fresh = clock >= e.WindupEnd
 		e.WindupEnd = clock + t
 		e.WindupLen = math.max(t, 0.1)
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -25590,7 +25771,10 @@ function Ghosts.Start()
 		if not e.Alert then
 			e.Alert = WorldLabel.Text(e.Gui, "❗", { Style = "Body", Color = Theme.Bad, Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, -0.85) })
 		end
-		Effects.Ring(e.Base - Vector3.new(0, e.Def.Hover - 0.2, 0), Theme.Bad, math.max(3, 2.5 * e.Def.Scale + 1), t)
+		if fresh and clock - lastWarnRing > 0.6 then
+			lastWarnRing = clock
+			Effects.Ring(e.Base - Vector3.new(0, e.Def.Hover - 0.2, 0), Theme.Bad, math.max(3, 2.5 * e.Def.Scale + 1), t)
+		end
 	end)
 	State.OnFx("GhostHit", function(d: any)
 		local e = entries[d.Ghost]
@@ -25643,7 +25827,6 @@ local ectoPill: Frame
 local powerLabel: TextLabel
 local powerPrefix = "⚡ "
 local boostHolder: Frame
-local shardChip: Frame
 local shardLabel: TextLabel
 local tradeButton: TextButton
 local dailyBadge: Frame
@@ -25720,11 +25903,12 @@ local function floatText(text: string, color: Color3)
 end
 
 local function buildTop(screen: ScreenGui)
-	-- Ectoplasm + power: two same-size pills side by side, centred in the top bar row
+	-- Ectoplasm + power + Spirit Shards: three same-size pills side by side, centred in the top bar row
+	local PILL_W = 160
 	local top = Kit.TopBar()
 	local row: Frame = Kit.new("Frame", {
 		Name = "Counters",
-		Size = UDim2.fromOffset(190 * 2 + 14, 40),
+		Size = UDim2.fromOffset(PILL_W * 3 + 14 * 2, 40),
 		Position = UDim2.new(0.5, 0, 0, 6),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
@@ -25732,7 +25916,7 @@ local function buildTop(screen: ScreenGui)
 	})
 	ectoPill = Kit.new("Frame", {
 		Name = "Ecto",
-		Size = UDim2.fromOffset(190, 40),
+		Size = UDim2.fromOffset(PILL_W, 40),
 		Position = UDim2.fromOffset(0, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Parent = row,
@@ -25772,9 +25956,9 @@ local function buildTop(screen: ScreenGui)
 	-- crew power
 	local power: Frame = Kit.new("Frame", {
 		Name = "Power",
-		Size = UDim2.fromOffset(190, 40),
-		Position = UDim2.new(1, 0, 0, 0),
-		AnchorPoint = Vector2.new(1, 0),
+		Size = UDim2.fromOffset(PILL_W, 40),
+		Position = UDim2.new(0.5, 0, 0, 0),
+		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Parent = row,
 	})
@@ -25784,6 +25968,22 @@ local function buildTop(screen: ScreenGui)
 	Kit.Icon(power, "power", "⚡", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 4 })
 	powerPrefix = ""
 	powerLabel = Kit.Label(power, "0 POWER", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(42, 0), Color = Theme.Gold, Style = "Heading", Fit = true })
+	-- Spirit Shards (Hud.ShardsPill: target for shard fly-in effects)
+	local shards: Frame = Kit.new("Frame", {
+		Name = "Shards",
+		Size = UDim2.fromOffset(PILL_W, 40),
+		Position = UDim2.new(1, 0, 0, 0),
+		AnchorPoint = Vector2.new(1, 0),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Parent = row,
+	})
+	Kit.Corner(shards, UDim.new(1, 0))
+	Kit.Stroke(shards, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	Kit.Gradient(shards, Theme.Panel2, Theme.Bg, 90)
+	Kit.new("UIScale", { Parent = shards })
+	Kit.Icon(shards, "shards", "🔮", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0, -12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Style = "Icon", TextSize = 30, Stroke = 0, ZIndex = 4 })
+	shardLabel = Kit.Label(shards, "0", { Size = UDim2.new(1, -50, 1, 0), Position = UDim2.fromOffset(42, 0), Color = Color3.fromRGB(200, 160, 255), Style = "Currency", Fit = true })
+	Hud.ShardsPill = shards
 	-- boosts (only while active)
 	-- directly under the counters: next-area progress bar (Tutorial), boss event bar (Boss) and
 	-- active boosts, stacked so they never overlap and never sit in the middle of the play area
@@ -25806,10 +26006,6 @@ local function buildTop(screen: ScreenGui)
 		Parent = stack,
 	})
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Parent = boostHolder })
-	-- Spirit Shards chip (only once the player has some)
-	shardChip = Kit.new("Frame", { Size = UDim2.fromOffset(110, 22), BackgroundColor3 = Theme.Panel2, BackgroundTransparency = 0.1, LayoutOrder = 4, Visible = false, Parent = stack })
-	Kit.Corner(shardChip, UDim.new(1, 0))
-	shardLabel = Kit.Label(shardChip, "", { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(5, 0), Color = Color3.fromRGB(200, 160, 255), Style = "Tiny", Fit = true })
 end
 
 -- HUD layout
@@ -25837,6 +26033,7 @@ local AUTO_W, AUTO_H = 132, 40
 local menu: Frame -- left column
 local menuScale: UIScale
 Hud.TopStack = nil :: Frame?
+Hud.ShardsPill = nil :: Frame?
 local rightStack: Frame
 local rightScale: UIScale
 local lowerRow: Frame
@@ -25867,16 +26064,18 @@ local function readChatBottom()
 	end)
 end
 
--- Room to keep free above the bottom edge on the right (the touch jump button), logical px.
+-- Room to keep free above the bottom edge on the right (the touch jump button), logical px,
+-- plus MENU_LIFT so both menu columns sit a little higher (the fit scaling still shrinks them).
+local MENU_LIFT = 40
 local function bottomReserve(): number
 	if not touchOnly() then
-		return 10
+		return 10 + MENU_LIFT
 	end
 	local cam = workspace.CurrentCamera
 	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
 	local small = math.min(vp.X, vp.Y) < 500 -- Roblox uses the small jump button below 500 px
 	local physical = if small then 100 else 225
-	return physical / Kit.UIScale()
+	return physical / Kit.UIScale() + MENU_LIFT
 end
 
 local function columnHeight(n: number): number
@@ -26278,8 +26477,7 @@ local function onData(d: any)
 	local shards = d.Shards or 0
 	Hud.Buttons.Pets.Visible = shards > 0 or (d.Pets ~= nil and next(d.Pets) ~= nil) or (d.TowerRuns or 0) > 0
 	tradeButton.Visible = State.CountOwned() >= 5
-	shardChip.Visible = shards > 0
-	shardLabel.Text = "🔮 " .. Format.Short(shards)
+	shardLabel.Text = Format.Short(shards)
 end
 
 local lastZone = 0
@@ -26562,7 +26760,7 @@ local function setInspect(uid: string?)
 	if previewUid ~= uid then
 		clearPreview()
 		previewUid = uid
-		local _, model = Portrait.Viewport(viewHolder, h.Id, false)
+		local _, model = Portrait.Viewport(viewHolder, h.Id, false, h.Tier or 0)
 		spinModel = model
 		if model then
 			local t0 = os.clock()
@@ -26721,7 +26919,7 @@ local function makeCard(uid: string, hunter: any): Card
 		Parent = f,
 	})
 	Kit.Corner(pic, UDim.new(1, 0))
-	Portrait.Face(pic, hunterId, false)
+	Portrait.Face(pic, hunterId, false, hunter.Tier or 0)
 	Kit.Label(f, string.upper(def.Name), { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), ZIndex = 66, Style = "Small", Fit = true })
 	if (hunter.Tier or 0) > 0 then
 		Kit.Label(f, tier.Icon .. " " .. tier.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 64), ZIndex = 67, Color = tier.Color, Style = "Small", Fit = true })
@@ -27218,6 +27416,9 @@ return HuntersPanel
 -- HUNTER INDEX: discovery tracking per zone ("HAUNTED NEIGHBORHOOD 3/4 DISCOVERED"),
 -- overall completion %, silhouettes for unknown hunters, a 3D preview for known ones and a
 -- NEW! indicator (menu badge + card sticker) for discoveries you haven't looked at yet.
+-- Each hunter has three variants (NORMAL / ✨ SHINY / 💎 MEGA), discovered separately:
+-- Normal = Data.Discovered[id], Shiny/Mega = Data.Variants["id:1"/"id:2"]. Cards show a chip per
+-- variant; the detail pane has a tier toggle. Completion % still counts Normal discoveries only.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -27247,6 +27448,9 @@ local detailName: TextLabel
 local detailInfo: TextLabel
 local detailBlurb: TextLabel
 local menuBadge: Frame
+local tierButtons: { [number]: TextButton } = {}
+local detailHunter: Config.HunterDef? = nil
+local detailTier = 0
 local newIds: { [string]: boolean } = {}
 local spinConn: RBXScriptConnection? = nil
 local lastKey = ""
@@ -27281,6 +27485,19 @@ local function sections(d: any): { Section }
 	return out
 end
 
+-- Has this player discovered `id` in `tier` (0 Normal, 1 Shiny, 2 Mega)?
+local function has(d: any, id: string, tier: number): boolean
+	if tier == 0 then
+		return d.Discovered[id] == true
+	end
+	return d.Variants ~= nil and d.Variants[id .. ":" .. tier] == true
+end
+
+local function tierLabel(tier: number): string
+	local t = Config.Tiers[tier]
+	return if tier > 0 then t.Icon .. " " .. t.Name else t.Name
+end
+
 local function oddsOf(h: Config.HunterDef): number
 	local zone = Config.ZoneById[h.Zone]
 	local crate = Config.Crates[zone.Crate]
@@ -27290,7 +27507,19 @@ local function oddsOf(h: Config.HunterDef): number
 	return odds[h.Id] or 0
 end
 
-local function showDetail(h: Config.HunterDef, found: boolean)
+local function showDetail(h: Config.HunterDef)
+	local d = State.Data
+	if not d then
+		return
+	end
+	detailHunter = h
+	local tier = detailTier
+	local found = has(d, h.Id, tier)
+	for t, b in tierButtons do
+		local on = t == tier
+		b.BackgroundColor3 = if on then Config.Tiers[t].Color else Theme.Bg
+		b.TextColor3 = if on then Theme.Bg else (if has(d, h.Id, t) then Config.Tiers[t].Color else Theme.Muted)
+	end
 	if spinConn then
 		spinConn:Disconnect()
 		spinConn = nil
@@ -27302,22 +27531,24 @@ local function showDetail(h: Config.HunterDef, found: boolean)
 	local rar = Config.Rarities[h.Rarity]
 	local crate = if h.Rarity == "Exclusive" then Config.Crates.Exclusive else Config.Crates[(Config.ZoneById[h.Zone] :: Config.ZoneDef).Crate]
 	if found then
-		local _, model = Portrait.Viewport(detailView, h.Id, false)
+		local _, model = Portrait.Viewport(detailView, h.Id, false, tier)
 		if model then
 			local t0 = os.clock()
 			spinConn = RunService.RenderStepped:Connect(function()
 				model:PivotTo(CFrame.Angles(0, (os.clock() - t0) * 0.9, 0))
 			end)
 		end
-		detailName.Text = string.upper(h.Name)
+		detailName.Text = (if tier > 0 then Config.Tiers[tier].Icon .. " " .. Config.Tiers[tier].Name .. " " else "") .. string.upper(h.Name)
 		detailBlurb.Text = h.Blurb
 	else
-		Portrait.Viewport(detailView, h.Id, true)
-		detailName.Text = "???"
-		detailBlurb.Text = "Not discovered yet. Keep opening crates!"
+		Portrait.Viewport(detailView, h.Id, true, tier)
+		detailName.Text = if tier > 0 then Config.Tiers[tier].Icon .. " ???" else "???"
+		detailBlurb.Text = if tier == 0
+			then "Not discovered yet. Keep opening crates!"
+			else tierLabel(tier) .. " not discovered yet. Merge " .. Config.Merge.Count .. " " .. (if tier == 1 then "NORMAL" else "✨ SHINY") .. " copies to make one!"
 	end
-	detailName.TextColor3 = rar.Color
-	detailInfo.Text = rar.Name .. "  ·  ⚡ " .. (if found then Format.Commas(h.Power) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
+	detailName.TextColor3 = if tier > 0 then Config.Tiers[tier].Color else rar.Color
+	detailInfo.Text = tierLabel(tier) .. "  ·  " .. rar.Name .. "  ·  ⚡ " .. (if found then Format.Commas(h.Power * Config.Tiers[tier].Mult) else "?") .. "\n" .. (if h.Rarity == "Exclusive" then "EXCLUSIVE CRATE (ROBUX) · best unlocked area" else crate.Name .. "  ·  " .. Format.Percent(oddsOf(h)))
 end
 
 local function rebuild()
@@ -27330,7 +27561,10 @@ local function rebuild()
 	for _, z in secs do
 		key ..= if z.Unlocked then "u" else "l"
 		for _, h in z.List do
-			key ..= (if d.Discovered[h.Id] then "1" else "0") .. (if newIds[h.Id] then "n" else "")
+			for t = 0, 2 do
+				key ..= if has(d, h.Id, t) then "1" else "0"
+			end
+			key ..= if newIds[h.Id] then "n" else ""
 		end
 	end
 	if key == lastKey then
@@ -27342,15 +27576,19 @@ local function rebuild()
 			c:Destroy()
 		end
 	end
-	local total, found = 0, 0
+	local total, found, shiny, mega = 0, 0, 0, 0
 	for zi, z in secs do
 		local list = z.List
-		local zf = 0
+		local zf, zs, zm = 0, 0, 0
 		for _, h in list do
 			if d.Discovered[h.Id] then
 				zf += 1
 			end
+			zs += if has(d, h.Id, 1) then 1 else 0
+			zm += if has(d, h.Id, 2) then 1 else 0
 		end
+		shiny += zs
+		mega += zm
 		if z.Id ~= "Exclusive" then -- paid hunters don't count toward completion
 			total += #list
 			found += zf
@@ -27371,12 +27609,12 @@ local function rebuild()
 		local complete = zf == #list
 		local header: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 62, Parent = section })
 		Kit.Label(header, (if unlocked then "" else "🔒 ") .. z.Name, { Size = UDim2.new(0.6, 0, 1, 0), Align = Enum.TextXAlignment.Left, Color = z.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
-		Kit.Label(header, (if complete then "⭐ " else "") .. zf .. "/" .. #list .. " DISCOVERED", { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
+		Kit.Label(header, (if complete then "⭐ " else "") .. zf .. "/" .. #list .. " DISCOVERED  ✨" .. zs .. " 💎" .. zm, { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromScale(1, 0), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Color = if complete then Theme.Gold else Theme.Text, Style = "Small", Fit = true, ZIndex = 63 })
 		local row: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 62, Parent = section })
-		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(100, 124), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
+		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(100, 142), CellPadding = UDim2.fromOffset(8, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for _, h in list do
 			local rar = Config.Rarities[h.Rarity]
-			local known = d.Discovered[h.Id] == true
+			local known = has(d, h.Id, 0) or has(d, h.Id, 1) or has(d, h.Id, 2)
 			local card: TextButton = Kit.new("TextButton", {
 				Text = "",
 				AutoButtonColor = false,
@@ -27393,9 +27631,18 @@ local function rebuild()
 			end
 			local pic: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(70, 70), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.fromRGB(30, 18, 55), BackgroundTransparency = 0.35, ZIndex = 64, Parent = card })
 			Kit.Corner(pic, UDim.new(1, 0))
-			Portrait.Face(pic, h.Id, not known)
+			Portrait.Face(pic, h.Id, not has(d, h.Id, 0))
 			Kit.Label(card, if known then string.upper(h.Name) else "???", { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), ZIndex = 66, Style = "Small", Fit = true })
 			Kit.Label(card, rar.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 100), ZIndex = 66, Color = if known then Color3.new(1, 1, 1) else rar.Color, Style = "Tiny", Fit = true })
+			-- one chip per variant: lit in the tier colour when discovered, "?" when not
+			for t = 0, 2 do
+				local on = has(d, h.Id, t)
+				local tc = Config.Tiers[t].Color
+				local chip: Frame = Kit.new("Frame", { Size = UDim2.fromOffset(28, 18), Position = UDim2.fromOffset(6 + t * 30, 118), BackgroundColor3 = if on then Theme.Bg else Color3.fromRGB(40, 32, 66), BackgroundTransparency = if on then 0.1 else 0.4, ZIndex = 66, Parent = card })
+				Kit.Corner(chip, UDim.new(1, 0))
+				Kit.Stroke(chip, 1.5, if on then tc else Theme.Outline, Enum.ApplyStrokeMode.Border)
+				Kit.Label(chip, if not on then "?" elseif t == 0 then "N" else Config.Tiers[t].Icon, { Color = if on then tc else Theme.Muted, Style = "Tiny", Fit = true, ZIndex = 67, Stroke = 0 })
+			end
 			if newIds[h.Id] then
 				local stamp = Kit.Label(card, "NEW!", { Size = UDim2.fromOffset(46, 18), Position = UDim2.new(1, 6, 0, -6), AnchorPoint = Vector2.new(1, 0), Color = Theme.Ecto, Style = "Body", ZIndex = 70, Stroke = 2 })
 				stamp.Rotation = 12
@@ -27406,12 +27653,13 @@ local function rebuild()
 					newIds[h.Id] = nil
 					menuBadge.Visible = next(newIds) ~= nil
 				end
-				showDetail(h, known)
+				detailTier = 0
+				showDetail(h)
 			end)
 		end
 	end
 	local pct = if total > 0 then found / total else 0
-	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  ·  " .. math.floor(pct * 100 + 0.5) .. "%"
+	totalLabel.Text = found .. " / " .. total .. " DISCOVERED  ·  " .. math.floor(pct * 100 + 0.5) .. "%  ·  ✨" .. shiny .. "  💎" .. mega
 	Kit.Tween(totalFill, 0.4, { Size = UDim2.fromScale(math.max(pct, 0.02), 1) })
 end
 
@@ -27456,14 +27704,42 @@ function IndexPanel.Init()
 	Kit.new("UIListLayout", { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = detail })
 	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = detail })
 	detailView = Kit.new("Frame", { Size = UDim2.fromOffset(160, 160), BackgroundTransparency = 1, LayoutOrder = 1, ZIndex = 65, Parent = detail })
+	-- NORMAL / ✨ SHINY / 💎 MEGA toggle
+	local tierRow: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 65, Parent = detail })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tierRow })
+	for t = 0, 2 do
+		local b: TextButton = Kit.new("TextButton", {
+			Text = tierLabel(t),
+			Size = UDim2.new(1 / 3, -3, 1, 0),
+			AutoButtonColor = false,
+			BackgroundColor3 = Theme.Bg,
+			Font = Theme.Body,
+			TextScaled = true,
+			TextColor3 = Theme.Text,
+			LayoutOrder = t,
+			ZIndex = 66,
+			Parent = tierRow,
+		})
+		Kit.Corner(b, UDim.new(1, 0))
+		Kit.Stroke(b, 1.5, Config.Tiers[t].Color, Enum.ApplyStrokeMode.Border)
+		Kit.new("UIPadding", { PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 3), Parent = b })
+		b.Activated:Connect(function()
+			Kit.Play("Click")
+			detailTier = t
+			if detailHunter then
+				showDetail(detailHunter)
+			end
+		end)
+		tierButtons[t] = b
+	end
 	detailName = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 22), Style = "Heading", Fit = true, ZIndex = 66 })
-	detailName.LayoutOrder = 2
+	detailName.LayoutOrder = 3
 	detailInfo = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 0), ZIndex = 66, Color = Theme.Text, Font = Theme.Body, Style = "Small", Stroke = 0 })
 	detailInfo.AutomaticSize = Enum.AutomaticSize.Y
-	detailInfo.LayoutOrder = 3
+	detailInfo.LayoutOrder = 4
 	detailBlurb = Kit.Label(detail, "", { Size = UDim2.new(1, 0, 0, 0), ZIndex = 66, Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0 })
 	detailBlurb.AutomaticSize = Enum.AutomaticSize.Y
-	detailBlurb.LayoutOrder = 4
+	detailBlurb.LayoutOrder = 5
 	-- NEW badge on the INDEX menu button
 	menuBadge = Kit.new("Frame", {
 		Size = UDim2.fromOffset(36, 18),
@@ -27955,15 +28231,20 @@ return Payouts
               <string name="Name">PetFollowers</string>
               <string name="Source"><![CDATA[--!strict
 -- Ghost pets floating beside every player (read from the player's "Pets" attribute, e.g.
--- "GlowWisp,BooBat"). Small procedural ghosts: ball body, 2 eyes, a wispy tail and a few
--- accents per Shape, lit in their glow colour. Client-only, anchored, no collisions/queries/
--- shadows; one RenderStepped loop moves every pet with a single BulkMoveTo.
+-- "GlowWisp,BooBat", plus "PetNames": the server-filtered nicknames, one per line).
+-- Each pet is a miniature of the world ghosts (GhostRig's body, tapering tail, big eyes with a
+-- shine, "O" mouth, blush, nub arms) tinted with the pet's Color, plus a few Shape accents
+-- (bat wings, kitty ears + tail, ...) and a small name label. GhostRig.Build itself is not
+-- reused: it needs a Config.Ghosts id and builds a welded ~40-part model with an aura; here
+-- every pet is ~15-20 anchored parts with no collisions/queries/touch/shadows, all moved by
+-- one RenderStepped loop with a single BulkMoveTo.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local WorldLabel = require(script.Parent.Parent.UI.WorldLabel)
 
 local PetFollowers = {}
 
@@ -27973,7 +28254,7 @@ type Entry = { Pets: { Pet }, Conns: { RBXScriptConnection } }
 
 -- beside/behind the shoulders (root space: +X right, +Z behind)
 local SLOTS = { Vector3.new(-2.6, 1.4, 1.6), Vector3.new(2.6, 1.4, 1.6), Vector3.new(0, 2.6, 2.8) }
-local FAR = 250 -- don't bother moving pets this far from the camera
+local FAR = 200 -- don't bother moving pets this far from the camera
 
 local folder: Folder
 local entries: { [Player]: Entry } = {}
@@ -27997,15 +28278,69 @@ local function part(pieces: { Piece }, shape: Enum.PartType, size: Vector3, colo
 	return p
 end
 
-local BALL, BLOCK, WEDGE = Enum.PartType.Ball, Enum.PartType.Block, Enum.PartType.Wedge
-local function v(x: number, y: number, z: number): CFrame
-	return CFrame.new(x, y, z)
+local BALL, BLOCK, WEDGE, CYL = Enum.PartType.Ball, Enum.PartType.Block, Enum.PartType.Wedge, Enum.PartType.Cylinder
+
+-- GhostRig's palette and proportions (ghost units: body diameter 3.5), shrunk by S
+local S = 0.4
+local R = 1.75
+local EYE = Color3.fromRGB(25, 15, 40)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local MOUTH = Color3.fromRGB(70, 20, 50)
+local BLUSH = Color3.fromRGB(255, 150, 190)
+local GOLD = Color3.fromRGB(255, 205, 60)
+local CREAM = Color3.fromRGB(255, 244, 220)
+local PINK = Color3.fromRGB(255, 170, 200)
+local DARK = Color3.fromRGB(60, 50, 40)
+local LABEL_Y = 2.9 * S + 0.3 -- above the tallest accent (studs from the body centre)
+
+local function at(x: number, y: number, z: number): CFrame
+	return CFrame.new(x * S, y * S, z * S)
 end
 
-local function buildPet(def: Config.PetDef, slot: number): Pet
+local function buildPet(def: Config.PetDef, slot: number, label: string): Pet
 	local pieces: { Piece } = {}
 	local c, g = def.Color, def.Glow
-	local body = part(pieces, BALL, if def.Shape == "Blob" then Vector3.new(1.7, 1.3, 1.7) else Vector3.new(1.4, 1.4, 1.4), c, CFrame.identity, false, 0.1)
+	local sh = def.Shape
+	local function ball(d: number, cf: CFrame, col: Color3, neon: boolean?, tr: number?): Part
+		return part(pieces, BALL, Vector3.one * (d * S), col, cf, neon, tr)
+	end
+	local function block(x: number, y: number, z: number, cf: CFrame, col: Color3, neon: boolean?): Part
+		return part(pieces, BLOCK, Vector3.new(x, y, z) * S, col, cf, neon)
+	end
+	-- triangle seen from the front (ears, horns, crest); side = -1 slopes left, 1 right
+	local function spike(x: number, y: number, w: number, h: number, side: number, col: Color3, neon: boolean?): Part
+		return part(pieces, WEDGE, Vector3.new(0.3, h, w) * S, col, at(x, y, 0.1) * CFrame.Angles(0, -side * math.pi / 2, 0), neon)
+	end
+	local function wings(col: Color3, neon: boolean?)
+		for _, s in { -1, 1 } do
+			block(2.2, 0.22, 1.3, at(2.4 * s, 0.6, 0.4) * CFrame.Angles(0, 0, math.rad(-28 * s)), col, neon)
+		end
+	end
+
+	------------------------------------------------------------ the ghost (GhostRig at scale S)
+	local body = ball(2 * R, CFrame.identity, c)
+	if sh == "Blob" then
+		-- jelly: drips instead of a tail, plus a shiny highlight
+		ball(1.0, at(-0.9, -1.45, 0.1), c)
+		ball(0.8, at(0.2, -1.65, -0.2), c)
+		ball(0.65, at(1.0, -1.4, 0.3), c)
+		ball(0.7, at(-0.7, 1.1, -0.95), WHITE, false, 0.35)
+	else
+		local tip = sh == "Phoenix" or sh == "Wisp" -- flame / wisp tail tip
+		ball(2.4, at(0, -1.0, 0.5), c)
+		ball(1.6, at(0.15, -1.8, 1.05), if tip then g else c, tip)
+		ball(0.9, at(-0.05, -2.35, 1.55), if tip then g else c, tip)
+	end
+	for _, s in { -1, 1 } do
+		local eye = Vector3.new(0.6 * s, 0.35, -1.38)
+		ball(0.9, CFrame.new(eye * S), EYE)
+		ball(0.32, CFrame.new((eye + Vector3.new(0.16, 0.18, -0.3)) * S), WHITE)
+		ball(0.95, at(1.7 * s, -0.35, -0.2), c) -- nub arm
+		ball(0.4, at(1.0 * s, -0.12, -1.45), BLUSH)
+	end
+	local mouth = Vector3.new(0, -0.45, -1.65).Unit * (R - 0.02)
+	part(pieces, CYL, Vector3.new(0.25, 0.6, 0.6) * S, MOUTH, CFrame.new(mouth * S) * CFrame.Angles(0, math.pi / 2, 0))
+
 	-- rarity glow: brighter and wider for rarer pets
 	local r = Config.Rarities[def.Rarity]
 	local order = if r then r.Order else 1
@@ -28015,41 +28350,66 @@ local function buildPet(def: Config.PetDef, slot: number): Pet
 	light.Brightness = 0.6 + order * 0.3
 	light.Shadows = false
 	light.Parent = body
-	-- ghost tail + eyes (every pet)
-	part(pieces, BALL, Vector3.new(0.8, 0.8, 0.8), g, v(0, -0.55, 0.35), true, 0.45)
-	local eye = Color3.fromRGB(25, 20, 40)
-	part(pieces, BALL, Vector3.new(0.28, 0.36, 0.2), eye, v(-0.25, 0.15, -0.62))
-	part(pieces, BALL, Vector3.new(0.28, 0.36, 0.2), eye, v(0.25, 0.15, -0.62))
-	local s = def.Shape
-	if s == "Wisp" then
-		part(pieces, BALL, Vector3.new(0.4, 0.4, 0.4), g, v(0, -0.9, 0.8), true, 0.3)
-	elseif s == "Bat" or s == "Drake" or s == "Phoenix" then
-		local wc = if s == "Phoenix" then g else c
-		part(pieces, BLOCK, Vector3.new(1.1, 0.12, 0.6), wc, v(-1.1, 0.25, 0.1) * CFrame.Angles(0, 0, math.rad(25)), s == "Phoenix")
-		part(pieces, BLOCK, Vector3.new(1.1, 0.12, 0.6), wc, v(1.1, 0.25, 0.1) * CFrame.Angles(0, 0, math.rad(-25)), s == "Phoenix")
-		if s == "Drake" then
-			part(pieces, WEDGE, Vector3.new(0.12, 0.4, 0.25), g, v(-0.3, 0.8, 0), true)
-			part(pieces, WEDGE, Vector3.new(0.12, 0.4, 0.25), g, v(0.3, 0.8, 0), true)
-		elseif s == "Phoenix" then
-			part(pieces, WEDGE, Vector3.new(0.12, 0.5, 0.5), g, v(0, 0.85, 0.05), true)
-		else
-			part(pieces, WEDGE, Vector3.new(0.12, 0.35, 0.3), c, v(-0.35, 0.75, 0))
-			part(pieces, WEDGE, Vector3.new(0.12, 0.35, 0.3), c, v(0.35, 0.75, 0))
+
+	------------------------------------------------------------ identity accents
+	if sh == "Wisp" then
+		ball(0.9, at(0, 1.95, 0), g, true)
+		ball(0.5, at(0.15, 2.55, 0.1), g, true, 0.2)
+	elseif sh == "Bat" then
+		for _, s in { -1, 1 } do
+			spike(0.85 * s, 1.75, 0.8, 1.0, s, c)
 		end
-	elseif s == "Cat" or s == "Fox" then
-		part(pieces, WEDGE, Vector3.new(0.15, 0.45, 0.35), c, v(-0.38, 0.75, 0))
-		part(pieces, WEDGE, Vector3.new(0.15, 0.45, 0.35), c, v(0.38, 0.75, 0))
-		if s == "Fox" then
-			part(pieces, BALL, Vector3.new(0.6, 0.6, 1.1), g, v(0, -0.2, 0.95), true, 0.2)
+		wings(Color3.new(c.R * 0.7, c.G * 0.7, c.B * 0.7))
+	elseif sh == "Cat" or sh == "Fox" then
+		local fox = sh == "Fox"
+		for _, s in { -1, 1 } do
+			spike(0.85 * s, 1.7, 0.85, if fox then 1.3 else 1.0, s, c)
+			spike(0.85 * s, 1.6, 0.45, 0.55, s, if fox then CREAM else PINK)
 		end
-	elseif s == "Owl" then
-		part(pieces, BLOCK, Vector3.new(0.2, 0.35, 0.2), c, v(-0.4, 0.75, 0) * CFrame.Angles(0, 0, math.rad(20)))
-		part(pieces, BLOCK, Vector3.new(0.2, 0.35, 0.2), c, v(0.4, 0.75, 0) * CFrame.Angles(0, 0, math.rad(-20)))
-		part(pieces, BALL, Vector3.new(0.2, 0.2, 0.25), Color3.fromRGB(255, 190, 70), v(0, -0.08, -0.68))
-	elseif s == "Lantern" then
-		part(pieces, BLOCK, Vector3.new(0.5, 0.6, 0.5), g, v(0, -1.1, -0.2), true, 0.15)
-		part(pieces, BLOCK, Vector3.new(0.08, 0.4, 0.08), Color3.fromRGB(60, 50, 40), v(0, -0.65, -0.2))
+		if fox then -- big fluffy tail with a white tip
+			ball(1.5, at(0.4, -0.6, 2.1), c)
+			ball(1.0, at(0.7, -0.1, 2.9), CREAM)
+		else -- curled kitty tail
+			ball(0.6, at(1.0, -0.4, 1.8), c)
+			ball(0.55, at(1.25, 0.25, 2.0), c)
+			ball(0.5, at(1.15, 0.85, 1.95), c)
+		end
+	elseif sh == "Owl" then
+		for _, s in { -1, 1 } do
+			block(0.4, 0.8, 0.4, at(0.95 * s, 1.65, 0) * CFrame.Angles(0, 0, math.rad(-22 * s)), c) -- ear tuft
+			ball(1.25, at(0.6 * s, 0.35, -1.15), CREAM) -- big owl eye ring
+		end
+		part(pieces, WEDGE, Vector3.new(0.35, 0.45, 0.35) * S, GOLD, at(0, -0.15, -1.75) * CFrame.Angles(math.pi, 0, 0))
+		ball(0.55, at(0, 1.15, -1.3), GOLD, true) -- moon mark
+		ball(0.4, at(0.12, 1.25, -1.45), c) -- carves the crescent
+	elseif sh == "Drake" then
+		for _, s in { -1, 1 } do
+			spike(0.75 * s, 1.75, 0.5, 1.1, s, GOLD)
+		end
+		wings(g)
+		part(pieces, WEDGE, Vector3.new(0.3, 0.6, 0.7) * S, g, at(0, 0.6, 1.8))
+	elseif sh == "Phoenix" then
+		spike(0, 2.05, 0.7, 1.2, 1, g, true)
+		spike(-0.4, 1.85, 0.5, 0.9, -1, GOLD)
+		spike(0.4, 1.85, 0.5, 0.9, 1, GOLD)
+		wings(g, true)
+	elseif sh == "Lantern" then
+		local hand = Vector3.new(2.0, -0.6, -0.5)
+		block(0.12, 0.6, 0.12, CFrame.new((hand + Vector3.new(0, -0.3, 0)) * S), DARK)
+		block(0.9, 0.2, 0.9, CFrame.new((hand + Vector3.new(0, -0.65, 0)) * S), DARK)
+		block(0.75, 0.9, 0.75, CFrame.new((hand + Vector3.new(0, -1.2, 0)) * S), g, true)
 	end
+
+	-- name tag (the nickname is filtered by the server before it is published)
+	local gui = WorldLabel.New({
+		Name = "PetTag",
+		Adornee = body,
+		Parent = body,
+		Size = Vector2.new(140, 20),
+		Offset = Vector3.new(0, LABEL_Y, 0),
+		MaxDistance = 60,
+	})
+	WorldLabel.Text(gui, label, { Style = "Small", Color = if r then r.Color else nil })
 	return { Pieces = pieces, Slot = slot }
 end
 
@@ -28072,13 +28432,16 @@ local function rebuild(plr: Player)
 		return
 	end
 	local list = plr:GetAttribute("Pets")
-	if type(list) ~= "string" then
+	if type(list) ~= "string" or list == "" then
 		return
 	end
-	for id in string.gmatch(list, "[^,]+") do
+	local rawNames = plr:GetAttribute("PetNames")
+	local names = if type(rawNames) == "string" then string.split(rawNames, "\n") else {}
+	for i, id in string.split(list, ",") do
 		local def = Config.Pets[id]
 		if def and #e.Pets < #SLOTS then
-			table.insert(e.Pets, buildPet(def, #e.Pets + 1))
+			local nick = names[i]
+			table.insert(e.Pets, buildPet(def, #e.Pets + 1, if nick and nick ~= "" then nick else def.Name))
 		end
 	end
 end
@@ -28090,6 +28453,7 @@ local function track(plr: Player)
 		rebuild(plr)
 	end
 	table.insert(e.Conns, plr:GetAttributeChangedSignal("Pets"):Connect(re))
+	table.insert(e.Conns, plr:GetAttributeChangedSignal("PetNames"):Connect(re))
 	table.insert(e.Conns, plr.CharacterAdded:Connect(re))
 	table.insert(e.Conns, plr.CharacterRemoving:Connect(function()
 		clear(e)
@@ -28159,7 +28523,8 @@ return PetFollowers
               <string name="Name">PetsPanel</string>
               <string name="Source"><![CDATA[--!strict
 -- GHOST PETS: buy pets with Spirit Shards (Boss Tower only) and equip up to 3. Each equipped
--- pet gives a crew-wide bonus; the server validates every buy/equip.
+-- pet gives a crew-wide bonus; the server validates every buy/equip/rename. Nicknames shown
+-- here come back from the server already text-filtered.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
@@ -28182,8 +28547,15 @@ local SHARD = Color3.fromRGB(200, 160, 255)
 local panel: Kit.Panel
 local shardLabel: TextLabel
 local bonusLabel: TextLabel
+local equippedHead: TextLabel
+local equippedNames: TextLabel
 local equippedLabel: TextLabel
 local ownedRow: Frame
+local renameRow: Frame
+local renameTitle: TextLabel
+local renameBox: TextBox
+local renameUid: string? = nil
+local NICK_MAX = 20
 local buyButtons: { [string]: TextButton } = {}
 local busy = false
 
@@ -28199,8 +28571,18 @@ local function bonusText(kind: string, value: number): string
 	return pct .. " FASTER RECOVERY"
 end
 
--- One pet card; the caller adds the button.
-local function card(parent: Instance, order: number, pet: Config.PetDef): Frame
+local function rarityName(pet: Config.PetDef): string
+	local r = Config.Rarities[pet.Rarity]
+	return string.upper(r and r.Name or pet.Rarity)
+end
+
+-- "Spooky (Boo Bat · RARE)" or just "Boo Bat"
+local function displayName(pet: Config.PetDef, nick: string?): string
+	return if nick and nick ~= "" then nick .. " (" .. pet.Name .. " · " .. rarityName(pet) .. ")" else pet.Name
+end
+
+-- One pet card (nick: owned pet's filtered nickname); the caller adds the button.
+local function card(parent: Instance, order: number, pet: Config.PetDef, nick: string?): Frame
 	local r = Config.Rarities[pet.Rarity]
 	local f: Frame = Kit.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ZIndex = 62, Parent = parent })
 	Kit.Corner(f, UDim.new(0, 14))
@@ -28210,8 +28592,9 @@ local function card(parent: Instance, order: number, pet: Config.PetDef): Frame
 	Kit.Corner(orb, UDim.new(1, 0))
 	Kit.Stroke(orb, 2.5, pet.Glow, Enum.ApplyStrokeMode.Border)
 	Kit.Icon(orb, "pet_" .. pet.Id, SHAPE_ICON[pet.Shape] or "👻", { Size = UDim2.fromScale(0.9, 0.9), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 26, Stroke = 0, ZIndex = 64 })
-	Kit.Label(f, string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56), Style = "Body", Fit = true, ZIndex = 63 })
-	Kit.Label(f, r and r.Name or pet.Rarity, { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 78), Color = r and r.Color or Theme.Text, Style = "Tiny", Fit = true, ZIndex = 63 })
+	local named = nick ~= nil and nick ~= ""
+	Kit.Label(f, if named then nick :: string else string.upper(pet.Name), { Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56), Style = "Body", Fit = true, ZIndex = 63 })
+	Kit.Label(f, if named then pet.Name .. " · " .. rarityName(pet) else (r and r.Name or pet.Rarity), { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 78), Color = r and r.Color or Theme.Text, Style = "Tiny", Fit = true, ZIndex = 63 })
 	Kit.Label(f, bonusText(pet.Bonus.Kind, pet.Bonus.Value), { Size = UDim2.new(1, -10, 0, 32), Position = UDim2.fromOffset(5, 96), Color = Theme.Ecto, Font = Theme.Body, Style = "Tiny", Wrap = true, ZIndex = 63 })
 	return f
 end
@@ -28255,7 +28638,7 @@ local function refresh()
 			table.insert(parts, bonusText(kind, v))
 		end
 	end
-	bonusLabel.Text = if #parts > 0 then "ACTIVE: " .. table.concat(parts, "  •  ") else "No pet bonuses yet: equip a pet!"
+	bonusLabel.Text = if #parts > 0 then "TO ALL HUNTERS: " .. table.concat(parts, "  •  ") else "No pet bonuses yet: equip a pet!"
 	for id, b in buyButtons do
 		b:SetAttribute("Color", if shards >= (Config.Pets[id].Price or math.huge) then "Green" else "Gray")
 	end
@@ -28269,6 +28652,20 @@ local function refresh()
 		nEquipped += 1
 	end
 	equippedLabel.Text = "OWNED  •  EQUIPPED " .. nEquipped .. "/" .. Config.PetRules.MaxEquipped
+	equippedHead.Text = "EQUIPPED " .. nEquipped .. "/" .. Config.PetRules.MaxEquipped
+	local names = {}
+	for _, uid in d.EquippedPets or {} do
+		local rec = d.Pets and d.Pets[uid]
+		local pet = rec and Config.Pets[rec.Id]
+		if rec and pet then
+			table.insert(names, (SHAPE_ICON[pet.Shape] or "👻") .. " " .. displayName(pet, rec.Nick))
+		end
+	end
+	equippedNames.Text = if #names > 0 then table.concat(names, "   ") else "None: equip pets below"
+	if renameUid and not (d.Pets and d.Pets[renameUid]) then
+		renameUid = nil
+	end
+	renameRow.Visible = renameUid ~= nil
 	for _, c in ownedRow:GetChildren() do
 		if c:IsA("Frame") then
 			c:Destroy()
@@ -28286,13 +28683,29 @@ local function refresh()
 		return if ta ~= tb then ta < tb else a < b
 	end)
 	for i, uid in uids do
-		local pet = Config.Pets[d.Pets[uid].Id]
+		local rec = d.Pets[uid]
+		local pet = Config.Pets[rec.Id]
 		if pet then
 			local on = equipped[uid] == true
-			local f = card(ownedRow, i, pet)
+			local f = card(ownedRow, i, pet, rec.Nick)
 			cardButton(f, if on then "UNEQUIP" else "EQUIP", if on then "Orange" else "Green", function()
 				request("EquipPet", uid, not on)
 			end)
+			Kit.Button(f, {
+				Text = "✏️",
+				Color = "Purple",
+				Size = UDim2.fromOffset(36, 36),
+				Position = UDim2.new(1, -4, 0, 4),
+				AnchorPoint = Vector2.new(1, 0),
+				ZIndex = 64,
+				OnClick = function()
+					renameUid = uid
+					renameTitle.Text = "RENAME " .. displayName(pet, rec.Nick)
+					renameBox.Text = rec.Nick or ""
+					renameRow.Visible = true
+					renameBox:CaptureFocus()
+				end,
+			})
 		end
 	end
 	if #uids == 0 then
@@ -28318,8 +28731,12 @@ function PetsPanel.Init()
 	shardLabel = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 30), Color = SHARD, Style = "Currency", Fit = true, ZIndex = 62 })
 	shardLabel.LayoutOrder = 1
 	Kit.Label(scroll, "Earn shards in the Boss Tower", { Size = UDim2.new(1, -6, 0, 18), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Fit = true, Stroke = 0, ZIndex = 62 }).LayoutOrder = 2
+	equippedHead = Kit.Label(scroll, "", { Size = UDim2.new(1, 0, 0, 24), Style = "Heading", ZIndex = 62 })
+	equippedHead.LayoutOrder = 3
+	equippedNames = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
+	equippedNames.LayoutOrder = 4
 	bonusLabel = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Color = Theme.Ecto, Style = "Small", Fit = true, ZIndex = 62 })
-	bonusLabel.LayoutOrder = 3
+	bonusLabel.LayoutOrder = 5
 	local function section(order: number, title: string): (TextLabel, Frame)
 		local l = Kit.Label(scroll, title, { Size = UDim2.new(1, 0, 0, 24), Style = "Heading", ZIndex = 62 })
 		l.LayoutOrder = order
@@ -28327,7 +28744,7 @@ function PetsPanel.Init()
 		Kit.new("UIGridLayout", { CellSize = UDim2.fromOffset(160, 176), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		return l, row
 	end
-	local _, shopRow = section(4, "SHOP")
+	local _, shopRow = section(10, "SHOP")
 	for i, id in Config.PetOrder do
 		local pet = Config.Pets[id]
 		if pet and pet.Price then
@@ -28341,7 +28758,61 @@ function PetsPanel.Init()
 			end)
 		end
 	end
-	equippedLabel, ownedRow = section(6, "OWNED")
+	equippedLabel, ownedRow = section(20, "OWNED")
+	ownedRow.LayoutOrder = 22
+	-- rename bar (opened by a card's pencil button): text box + SAVE / DEFAULT / X
+	renameRow = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 76), BackgroundColor3 = Theme.Bg, LayoutOrder = 21, Visible = false, ZIndex = 61, Parent = scroll })
+	Kit.Corner(renameRow, UDim.new(0, 12))
+	Kit.Stroke(renameRow, 2, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	renameTitle = Kit.Label(renameRow, "", { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 4), Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true, ZIndex = 62 })
+	local boxBg: Frame = Kit.new("Frame", { Size = UDim2.new(1, -290, 0, 38), Position = UDim2.fromOffset(10, 30), BackgroundColor3 = Theme.Panel, ZIndex = 62, Parent = renameRow })
+	Kit.Corner(boxBg, UDim.new(0, 10))
+	renameBox = Kit.new("TextBox", {
+		Size = UDim2.new(1, -16, 1, 0),
+		Position = UDim2.fromOffset(8, 0),
+		BackgroundTransparency = 1,
+		ClearTextOnFocus = false,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Font = Theme.Body,
+		TextSize = Theme.Type.Body,
+		TextColor3 = Theme.Text,
+		PlaceholderColor3 = Theme.Muted,
+		PlaceholderText = "Pet name (up to " .. NICK_MAX .. " letters)",
+		Text = "",
+		ZIndex = 63,
+		Parent = boxBg,
+	})
+	renameBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local n = utf8.len(renameBox.Text)
+		if not n or n > NICK_MAX then
+			renameBox.Text = string.sub(renameBox.Text, 1, (utf8.offset(renameBox.Text, NICK_MAX + 1) or 1) - 1)
+		end
+	end)
+	local function rename(text: string)
+		local uid = renameUid
+		if not uid then
+			return
+		end
+		local res = request("RenamePet", uid, text)
+		if res and res.ok then
+			renameUid = nil
+			renameRow.Visible = false
+			Kit.Toast(if res.Nick then "Renamed to " .. res.Nick else "Name reset", "Good")
+		end
+	end
+	local function barButton(text: string, color: string, x: number, w: number, onClick: () -> ())
+		Kit.Button(renameRow, { Text = text, Color = color, Size = UDim2.fromOffset(w, 38), Position = UDim2.new(1, x, 0, 30), AnchorPoint = Vector2.new(1, 0), TextStyle = "Body", ZIndex = 63, OnClick = onClick })
+	end
+	barButton("SAVE", "Green", -184, 90, function()
+		rename(renameBox.Text)
+	end)
+	barButton("DEFAULT", "Gray", -58, 120, function()
+		rename("")
+	end)
+	barButton("X", "Red", -8, 44, function()
+		renameUid = nil
+		renameRow.Visible = false
+	end)
 	Hud.RegisterPanel("Pets", function()
 		panel:Toggle()
 	end)
@@ -28770,7 +29241,7 @@ local function buildStage(rarity: Config.RarityDef)
 		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
 		PixelsPerStud = 14,
 		LightInfluence = 0,
-		Brightness = 1,
+		Brightness = 0.7,
 		Parent = back,
 	})
 	local bg: Frame = Kit.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = sg })
@@ -28797,7 +29268,7 @@ local function buildStage(rarity: Config.RarityDef)
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = rarity.Color,
-			BackgroundTransparency = 0.55,
+			BackgroundTransparency = 0.68,
 			BorderSizePixel = 0,
 			Rotation = i * 30,
 			Parent = holder,
@@ -28817,9 +29288,9 @@ local function buildStage(rarity: Config.RarityDef)
 	rays = holder
 	-- lights
 	local l1 = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(STAGE + Vector3.new(0, 7, -6)) })
-	Kit.new("PointLight", { Range = 22, Brightness = 2.2, Color = Color3.fromRGB(255, 240, 255), Parent = l1 })
+	Kit.new("PointLight", { Range = 18, Brightness = 1.4, Color = Color3.fromRGB(255, 240, 255), Parent = l1 })
 	local l2 = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(STAGE + Vector3.new(0, 3, 3)) })
-	Kit.new("PointLight", { Name = "RarityLight", Range = 16, Brightness = 0, Color = rarity.Color, Parent = l2 })
+	Kit.new("PointLight", { Name = "RarityLight", Range = 12, Brightness = 0, Color = rarity.Color, Parent = l2 })
 end
 
 local function buildGui(): (ScreenGui, TextButton)
@@ -29173,7 +29644,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 			charge.Rate = 15 + 110 * a
 		end
 		if rl then
-			rl.Brightness = 3 * a * math.min(1, rarity.Order / 3)
+			rl.Brightness = 1.8 * a * math.min(1, rarity.Order / 3)
 		end
 		if tt >= nextShakeSound and a < 0.95 then
 			nextShakeSound = tt + 0.45
@@ -29204,11 +29675,11 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	if not skipping then
 		Sound.Play(rarity.Sound)
 		flash(rarity.Color, 0.45)
-		Effects.Flash(burstPos, rarity.Color, 5 + rarity.Order, 0.5)
-		Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = rarity.Particles, Size = 0.9, Speed = 26, Life = 1.1, Gravity = 18 })
+		Effects.Flash(burstPos, rarity.Color, 3 + rarity.Order * 0.6, 0.4)
+		Effects.Burst(burstPos, { Color = rarity.Color, Color2 = Color3.new(1, 1, 1), Count = math.floor(rarity.Particles * 0.6), Size = 0.65, Speed = 26, Life = 1.1, Gravity = 18 })
 		Effects.Ring(STAGE + Vector3.new(0, 0.2, 0), rarity.Color, 10, 0.6)
 		if cc then
-			tween(cc, TweenInfo.new(0.5), { Brightness = 0.12, Saturation = 0.15 })
+			tween(cc, TweenInfo.new(0.5), { Brightness = 0.04, Saturation = 0.1 })
 			task.delay(0.5, function()
 				if cc then
 					tween(cc, TweenInfo.new(0.6), { Brightness = 0, Saturation = 0 })
@@ -29224,7 +29695,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	crate.Glow.Color = rarity.Color
 	anim(0.3 * f, function(a)
 		crate.Motors.Lid.Transform = CFrame.Angles(math.rad(115) * easeOutBack(a), 0, 0)
-		crate.Glow.Transparency = 1 - 0.85 * a
+		crate.Glow.Transparency = 1 - 0.6 * a
 	end)
 	if stage ~= my then
 		return
@@ -29237,7 +29708,7 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	hunterState = "Celebrate"
 	hunterT0 = os.clock()
 	local from = STAGE + Vector3.new(0, levitate + 0.6, 0.2)
-	local to = STAGE + Vector3.new(0, 0, -3.4)
+	local to = STAGE + Vector3.new(0, 0, -4.6)
 	anim(0.55 * f, function(a)
 		local p = from:Lerp(to, a) + Vector3.new(0, 5.5 * 4 * a * (1 - a), 0)
 		local spin = (1 - a) * math.pi * 2
@@ -29248,7 +29719,21 @@ function Reveal.Play(res: Result, again: (() -> ())?, opts: PlayOpts?)
 	placeCrate(base)
 	if not skipping then
 		Effects.Ring(to + Vector3.new(0, 0.15, 0), Color3.new(1, 1, 1), 5, 0.4)
-		Effects.Burst(to + Vector3.new(0, 3, 0), { Color = rarity.Color, Count = math.floor(rarity.Particles / 3), Size = 0.6, Speed = 14, Life = 0.7 })
+		Effects.Burst(to + Vector3.new(0, 3, 0), { Color = rarity.Color, Count = math.floor(rarity.Particles / 5), Size = 0.45, Speed = 14, Life = 0.7 })
+	end
+	-- spotlight the hunter: neutral key light in front, dim the chest glow, rarity light and rays behind it
+	local key = part({ Size = Vector3.new(1, 1, 1), Transparency = 1, CFrame = CFrame.new(to + Vector3.new(0, 4.5, -4)) })
+	Kit.new("PointLight", { Range = 11, Brightness = 1.3, Color = Color3.new(1, 1, 1), Shadows = false, Parent = key })
+	tween(crate.Glow, TweenInfo.new(0.5), { Transparency = 0.75 })
+	if rl then
+		tween(rl, TweenInfo.new(0.5), { Brightness = 0.6 })
+	end
+	if rays then
+		for _, ray in rays:GetChildren() do
+			if ray:IsA("Frame") then
+				tween(ray, TweenInfo.new(0.5), { BackgroundTransparency = 0.8 })
+			end
+		end
 	end
 	if stage ~= my then
 		return
@@ -29385,7 +29870,7 @@ local function fetchPrices()
 		end
 	end
 	for _, p in Config.Products do
-		if p.ProductId then
+		if p.ProductId and priceButtons[p.Key] then
 			task.spawn(fetch, p.Key, p.ProductId, Enum.InfoType.Product)
 		end
 	end
@@ -29447,6 +29932,9 @@ function ShopPanel.Init()
 	end
 	local prodRow = section(1, "BOOSTS & ECTOPLASM")
 	for i, p in Config.Products do
+		if p.Kind == "SummonEvent" then
+			continue -- retired with the Giant Poltergeist event (no longer sold)
+		end
 		local sub = if p.Blurb then p.Blurb elseif p.Kind == "Ecto" then "+" .. Format.Short(p.Amount or 0) .. " ECTOPLASM" else Format.Time(p.Seconds or 0) .. " BOOST"
 		local prodButton, subLabel = card(prodRow, i, Icons.ForProduct[p.Key], p.Icon, p.Name, sub, p.PriceLabel, p.ProductId ~= nil, if p.Kind == "Ecto" then "Green" else "Purple", function()
 			buy(p.Key)
@@ -29896,11 +30384,14 @@ return Targeting
               <string name="Source"><![CDATA[--!strict
 -- ENDLESS BOSS TOWER HUD. Everything here only shows what the server says (Fx "Tower",
 -- Fx "TowerRoomCleared", player attributes InTower / TowerRoom); the buttons only send
--- "TowerStart", "TowerContinue" and "TowerLeave" requests, the server decides the rest.
---   * on the entrance pad: ENTER BOSS TOWER button, then a countdown pill with the party size;
---   * in a room: a top bar (ROOM n + boss name, timer, boss Spirit bar, earned this run) like
---     the Giant Poltergeist bar, and a LEAVE button (tap twice: leaving mid-fight ends your run,
---     rewards you already got are kept);
+-- "TowerStart"(startRoom), "TowerContinue" and "TowerLeave" requests, the server decides the rest.
+--   * on the entrance pad: checkpoint info + ENTER (Room 1) / START AT ROOM n (checkpoint + 1)
+--     buttons, then a countdown pill with the party size and start room;
+--   * in a room: a top bar (ROOM n + boss name, timer, boss Spirit bar, earned this run) and a
+--     LEAVE button (tap twice: leaving mid-fight ends your run, rewards you already got are kept);
+--   * boss beaten: "BOSS DEFEATED! Rewards collected" banner with your payout, shard orbs pop
+--     out of the chest and float to you, then shard icons fly to the top-bar shards counter
+--     (presentation only: the server already credited everything);
 --   * between rooms: CONTINUE (vote) and LEAVE with the time left and votes.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -29911,6 +30402,7 @@ local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
+local Effects = require(script.Parent.Effects)
 local State = require(Client.State)
 local Theme = require(Client.UI.Theme)
 local Hud = require(script.Parent.Hud)
@@ -29931,6 +30423,8 @@ local padBase = ""
 local leaveArmedUntil = 0
 local votes, party = 0, 1
 local voted = false
+local devRun = false -- DEV test run: no rewards
+local SHARD = Color3.fromRGB(200, 160, 255)
 
 local bar: Frame
 local titleLabel: TextLabel
@@ -29941,6 +30435,9 @@ local earnedLabel: TextLabel
 local padPill: Frame
 local padLabel: TextLabel
 local enterButton: TextButton
+local checkpointButton: TextButton
+local padInfo: TextLabel
+local padBox: Frame
 local actions: Frame
 local infoLabel: TextLabel
 local continueButton: TextButton
@@ -29951,7 +30448,9 @@ local function serverNow(): number
 end
 
 local function setEarned(e: any)
-	if type(e) == "table" then
+	if devRun then
+		earnedLabel.Text = "DEV RUN - no rewards"
+	elseif type(e) == "table" then
 		earnedLabel.Text = string.format("This run: +%s Ecto  ·  +%s Shards", Format.Short(tonumber(e.Ecto) or 0), Format.Commas(tonumber(e.Shards) or 0))
 	end
 end
@@ -29988,7 +30487,7 @@ local function onTower(data: any)
 	local s = data.State
 	if s == "Pad" then
 		padEndsAt = tonumber(data.EndsAt) or 0
-		padBase = string.format("👻 BOSS TOWER  ·  party %d/%d", tonumber(data.Count) or 1, tonumber(data.Max) or Config.Tower.MaxParty)
+		padBase = string.format("👻 BOSS TOWER  ·  party %d/%d  ·  Room %d", tonumber(data.Count) or 1, tonumber(data.Max) or Config.Tower.MaxParty, tonumber(data.StartRoom) or 1)
 		padPill.Visible = true
 	elseif s == "PadCancel" then
 		padEndsAt = 0
@@ -30000,6 +30499,7 @@ local function onTower(data: any)
 		bossUid = tonumber(data.Uid) or 0
 		endsAt = tonumber(data.EndsAt) or 0
 		party = tonumber(data.Party) or party
+		devRun = data.Dev == true
 		titleLabel.Text = string.format("🏰 ROOM %d  ·  %s", room, tostring(data.Boss or "BOSS"))
 		fill.Size = UDim2.fromScale(1, 1)
 		setEarned(data.Earned)
@@ -30014,11 +30514,123 @@ local function onTower(data: any)
 		bossUid = 0
 		local e = data.Earned
 		local sub = tostring(data.Reason or "")
-		if type(e) == "table" then
+		if devRun then
+			sub ..= "\nDEV RUN - no rewards"
+		elseif type(e) == "table" then
 			sub ..= string.format("\nBest room: %d  ·  +%s Ecto  ·  +%s Shards", tonumber(data.Best) or 0, Format.Short(tonumber(e.Ecto) or 0), Format.Commas(tonumber(e.Shards) or 0))
 		end
 		Hud.Banner("TOWER RUN OVER", sub, Theme.Gold)
+		devRun = false
 	end
+end
+
+-- UI: a few shard icons fly from the middle of the screen (your character) to the top-bar
+-- shards counter; a small "+N" under it ticks up as each one lands. Presentation only.
+local function flyToCounter(icons: number, total: number)
+	local pill = Hud.ShardsPill
+	local gui = pill and pill:FindFirstAncestorOfClass("ScreenGui")
+	if not pill or not gui or icons <= 0 then
+		return
+	end
+	local target: Frame = pill
+	local sc = gui:FindFirstChildOfClass("UIScale")
+	local k = if sc and sc.Scale > 0 then sc.Scale else 1
+	local tick = Kit.Label(target, "+0", { Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, 4), Color = SHARD, Style = "Body", ZIndex = 6 })
+	local shown = 0
+	for i = 1, icons do
+		task.delay((i - 1) * 0.12, function()
+			if not target.Parent then
+				return
+			end
+			local from = (gui.AbsoluteSize * Vector2.new(0.5, 0.55)) / k
+			local to = (target.AbsolutePosition + target.AbsoluteSize / 2 - gui.AbsolutePosition) / k
+			local icon = Kit.Icon(gui, "shards", "🔮", { Size = UDim2.fromOffset(34, 34), AnchorPoint = Vector2.new(0.5, 0.5), Style = "Icon", TextSize = 26, Stroke = 0, ZIndex = 40 })
+			icon.Position = UDim2.fromOffset(from.X + (math.random() - 0.5) * 60, from.Y + (math.random() - 0.5) * 30)
+			Kit.Tween(icon, 0.65, { Position = UDim2.fromOffset(to.X, to.Y), Size = UDim2.fromOffset(22, 22) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			task.delay(0.65, function()
+				icon:Destroy()
+				shown = if i == icons then total else math.min(total, shown + math.max(1, math.floor(total / icons)))
+				tick.Text = "+" .. Format.Commas(shown)
+				local ps = target:FindFirstChildOfClass("UIScale")
+				if ps then
+					ps.Scale = 1.06
+					Kit.Tween(ps, 0.2, { Scale = 1 })
+				end
+				if i == icons then
+					task.delay(1.2, function()
+						Kit.Tween(tick, 0.4, { TextTransparency = 1 })
+						task.delay(0.45, function()
+							tick:Destroy()
+						end)
+					end)
+				end
+			end)
+		end)
+	end
+end
+
+-- World: soft shard orbs pop out of the opened chest, hover, then float to your character.
+-- `done` runs once the last orb arrived.
+local function chestOrbs(chestPos: Vector3, count: number, done: () -> ())
+	local orbs = {}
+	for i = 1, count do
+		local o = Instance.new("Part")
+		o.Shape = Enum.PartType.Ball
+		o.Size = Vector3.new(0.9, 0.9, 0.9)
+		o.Material = Enum.Material.Neon
+		o.Color = SHARD
+		o.Anchored = true
+		o.CanCollide = false
+		o.CanQuery = false
+		o.CanTouch = false
+		o.CastShadow = false
+		o.Transparency = 1
+		o.CFrame = CFrame.new(chestPos)
+		o.Parent = Effects.Folder()
+		local a = (i / count) * math.pi * 2
+		table.insert(orbs, { Part = o, Apex = chestPos + Vector3.new(math.cos(a) * 2.5, 6 + math.random() * 2, math.sin(a) * 2.5), Delay = (i - 1) * 0.08 })
+	end
+	local t0 = os.clock()
+	local POP, HOVER, FLY = 0.5, 0.35, 0.8
+	local conn: RBXScriptConnection? = nil
+	conn = RunService.RenderStepped:Connect(function()
+		local now = os.clock() - t0
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local home = if root then root.Position else chestPos
+		local alive = 0
+		for _, o in orbs do
+			local p = o.Part
+			if not p.Parent then
+				continue
+			end
+			local t = now - o.Delay
+			if t < 0 then
+				alive += 1
+				continue
+			end
+			p.Transparency = 0.15
+			if t < POP then
+				local u = 1 - (1 - t / POP) ^ 2
+				p.CFrame = CFrame.new(chestPos:Lerp(o.Apex, u))
+			elseif t < POP + HOVER then
+				p.CFrame = CFrame.new(o.Apex + Vector3.new(0, math.sin((t - POP) * 8) * 0.25, 0))
+			elseif t < POP + HOVER + FLY then
+				local u = ((t - POP - HOVER) / FLY) ^ 2
+				p.CFrame = CFrame.new(o.Apex:Lerp(home, u))
+			else
+				Effects.Burst(home, { Color = SHARD, Count = 4, Size = 0.4, Speed = 4, Life = 0.4 })
+				p:Destroy()
+				continue
+			end
+			alive += 1
+		end
+		if alive == 0 and conn then
+			conn:Disconnect()
+			conn = nil
+			done()
+		end
+	end)
 end
 
 local function onCleared(data: any)
@@ -30033,12 +30645,34 @@ local function onCleared(data: any)
 	setEarned(data.Earned)
 	titleLabel.Text = string.format("🏆 ROOM %d CLEARED!", room)
 	fill.Size = UDim2.fromScale(0.01, 1)
-	spiritLabel.Text = "Chest opened!"
+	spiritLabel.Text = if devRun then "DEV RUN - no rewards" else "Rewards collected!"
 	setPhase("Between")
 	Sound.Play("ZoneUnlock")
 	local ecto, shards = tonumber(data.Ecto) or 0, tonumber(data.Shards) or 0
-	local sub = if ecto > 0 or shards > 0 then string.format("+%s Ecto  ·  +%s Spirit Shards", Format.Commas(ecto), Format.Commas(shards)) else "Deal damage to the boss to earn a share!"
-	Hud.Banner("ROOM " .. room .. " CLEARED!", sub, Theme.Gold)
+	local pct = math.floor((tonumber(data.Pct) or 0) * 100 + 0.5)
+	local sub
+	if devRun then
+		sub = "DEV RUN - no rewards"
+	elseif ecto > 0 or shards > 0 then
+		sub = string.format("+%s 🔮 Spirit Shards  +%s 💚 Ectoplasm  (you did %d%% of the damage)", Format.Commas(shards), Format.Commas(ecto), pct)
+	else
+		sub = "You didn't hit this boss, so no share this time. Attack it to earn rewards!"
+	end
+	Hud.Banner("BOSS DEFEATED! Rewards collected", sub, Theme.Gold)
+	local cp = tonumber(data.Checkpoint)
+	if cp and cp > 0 then
+		Kit.Toast(string.format("🚩 Checkpoint saved! Your next run can start at Room %d", cp + 1), "Good")
+	end
+	-- the chest lid opens ~0.8 s after the kill (server); orbs pop out right after
+	local pos = data.Pos
+	if shards > 0 and typeof(pos) == "Vector3" then
+		local icons = math.clamp(math.ceil(shards / 5), 3, 8)
+		task.delay(1, function()
+			chestOrbs(pos + Vector3.new(0, 2.5, 0), icons, function()
+				flyToCounter(icons, shards)
+			end)
+		end)
+	end
 end
 
 local function onLeave()
@@ -30068,8 +30702,13 @@ local function onContinue()
 	refreshButtons()
 end
 
-local function onEnter()
-	local res = State.Request("TowerStart")
+local function checkpointOf(): number
+	local d = State.Data
+	return if d then tonumber(d.TowerCheckpoint) or 0 else 0
+end
+
+local function onEnter(startRoom: number)
+	local res = State.Request("TowerStart", startRoom)
 	if not res.ok and res.err then
 		Kit.Toast(res.err, "Bad")
 	end
@@ -30079,7 +30718,7 @@ function TowerHud.Init()
 	local screen = Kit.Screen()
 	local stack = Hud.TopStack
 
-	-- top bar (same look as the Giant Poltergeist bar)
+	-- top bar (room, timer, boss Spirit, earned this run)
 	bar = Kit.new("Frame", {
 		Name = "TowerBar",
 		Size = UDim2.fromOffset(420, 84),
@@ -30126,17 +30765,41 @@ function TowerHud.Init()
 	Kit.Gradient(padPill, PURPLE_A, PURPLE_B, 90)
 	padLabel = Kit.Label(padPill, "", { Size = UDim2.new(1, -20, 1, 0), Position = UDim2.fromOffset(10, 0), Style = "Body", Fit = true, ZIndex = 31 })
 
-	-- bottom-centre: ENTER (on the pad) and the run actions
-	enterButton = Kit.Button(screen, {
+	-- bottom-centre: checkpoint info + ENTER / START AT CHECKPOINT (on the pad) and the run actions
+	padBox = Kit.new("Frame", {
+		Name = "TowerPadBox",
+		Size = UDim2.fromOffset(480, 78),
+		Position = UDim2.new(0.5, 0, 1, -96),
+		AnchorPoint = Vector2.new(0.5, 1),
+		BackgroundTransparency = 1,
+		Visible = false,
+		ZIndex = 25,
+		Parent = screen,
+	})
+	padInfo = Kit.Label(padBox, "", { Size = UDim2.new(1, 0, 0, 22), Style = "Small", Color = Theme.Gold, Fit = true, ZIndex = 26 })
+	enterButton = Kit.Button(padBox, {
 		Text = "🏰 ENTER BOSS TOWER",
 		Color = "Purple",
 		Size = UDim2.fromOffset(230, 48),
-		Position = UDim2.new(0.5, 0, 1, -96),
+		Position = UDim2.new(0.5, 0, 1, 0),
 		AnchorPoint = Vector2.new(0.5, 1),
-		ZIndex = 25,
-		OnClick = onEnter,
+		ZIndex = 26,
+		OnClick = function()
+			onEnter(1)
+		end,
 	})
-	enterButton.Visible = false
+	checkpointButton = Kit.Button(padBox, {
+		Text = "⏩ START AT ROOM 6",
+		Color = "Green",
+		Size = UDim2.fromOffset(230, 48),
+		Position = UDim2.new(0.5, 6, 1, 0),
+		AnchorPoint = Vector2.new(0, 1),
+		ZIndex = 26,
+		OnClick = function()
+			onEnter(checkpointOf() + 1)
+		end,
+	})
+	checkpointButton.Visible = false
 	actions = Kit.new("Frame", {
 		Name = "TowerActions",
 		Size = UDim2.fromOffset(340, 82),
@@ -30211,7 +30874,19 @@ function TowerHud.Start()
 			nextPadCheck = clock + 0.25
 			local inTower = player:GetAttribute("InTower") == true
 			local here = not inTower and onPad()
-			enterButton.Visible = here and padEndsAt == 0
+			padBox.Visible = here and padEndsAt == 0
+			if padBox.Visible then
+				local cp = checkpointOf()
+				local every = Config.Tower.CheckpointEvery
+				checkpointButton.Visible = cp > 0
+				enterButton.Position = if cp > 0 then UDim2.new(0.5, -6, 1, 0) else UDim2.new(0.5, 0, 1, 0)
+				enterButton.AnchorPoint = if cp > 0 then Vector2.new(1, 1) else Vector2.new(0.5, 1)
+				Kit.SetButtonText(enterButton, if cp > 0 then "▶ START AT ROOM 1" else "🏰 ENTER BOSS TOWER")
+				Kit.SetButtonText(checkpointButton, "⏩ START AT ROOM " .. (cp + 1))
+				padInfo.Text = if cp > 0
+					then string.format("🚩 Checkpoint: Room %d cleared  ·  skipped rooms give no rewards", cp)
+					else string.format("🚩 Clear Room %d to save a checkpoint", every)
+			end
 			if padEndsAt > 0 and (inTower or t > padEndsAt + 3) then
 				padEndsAt = 0
 				padPill.Visible = false
@@ -30696,7 +31371,6 @@ local Orbs = require(script.Parent.Orbs)
 local Reveal = require(script.Parent.Reveal)
 local CratePanel = require(script.Parent.CratePanel)
 local HuntersPanel = require(script.Parent.HuntersPanel)
-local Boss = require(script.Parent.Boss)
 local Sound = require(script.Parent.Sound)
 
 local Tutorial = {}
@@ -30963,8 +31637,7 @@ local function tick()
 				break
 			end
 		end
-		local bossState = Boss.State()
-		local calm = not panel and bossState == "Idle" and not Reveal.IsPlaying()
+		local calm = not panel and not Reveal.IsPlaying()
 		if calm and wantsTowerGoal(d) and (not towerPointed or os.clock() % TOWER_CYCLE < TOWER_SHOW) then
 			goalChip.Visible = true
 			goalLabel.Text = "TRY THE BOSS TOWER (east of spawn)!"
@@ -30974,11 +31647,11 @@ local function tick()
 				towerPointed = true
 				setGuide(towerPos, TOWER_GUIDE_SECONDS)
 			end
-		elseif nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
+		elseif nextZone and calm then
 			goalChip.Visible = true
 			goalLabel.Text = "NEXT: UNLOCK " .. nextZone.Name .. "  " .. Format.Short(math.min(d.Ecto, nextZone.Cost)) .. " / " .. Format.Short(nextZone.Cost)
 			goalFill.Size = UDim2.fromScale(math.clamp(d.Ecto / nextZone.Cost, 0.02, 1), 1)
-		elseif not nextZone and not panel and bossState == "Idle" and not Reveal.IsPlaying() then
+		elseif not nextZone and calm then
 			-- every area open: the goal becomes the full Hunter Index
 			local total, found = 0, 0
 			for id, h in Config.Hunters do
@@ -31191,13 +31864,6 @@ function Tutorial.Start()
 		collectedOnce = true
 	end)
 	RunService.RenderStepped:Connect(updateGuide)
-	-- "SHOW ME" on the boss bar reuses the trail for a few seconds
-	Boss.PointRequested:Connect(function()
-		local _, pos = Boss.State()
-		setGuide(function()
-			return pos + Vector3.new(0, 16, 0)
-		end, 10)
-	end)
 	task.spawn(function()
 		local d = State.WaitForData()
 		step = math.clamp(d.Tutorial or 1, 1, STEPS + 1)
@@ -32561,6 +33227,7 @@ local NAVY = Color3.fromRGB(35, 50, 120)
 local WHITE = Color3.new(1, 1, 1)
 local BLUE = Color3.fromRGB(40, 80, 170)
 local STEEL = Color3.fromRGB(120, 125, 140)
+local MAGENTA = Color3.fromRGB(255, 110, 230)
 
 local function shade(c: Color3, f: number): Color3
 	return Color3.new(c.R * f, c.G * f, c.B * f)
@@ -32598,7 +33265,8 @@ local function circle(parent: Instance, size: UDim2, pos: UDim2, color: Color3, 
 end
 
 -- Fills `parent` (a square frame) with a cartoon face. silhouette = undiscovered.
-function Portrait.Face(parent: GuiObject, hunterId: string, silhouette: boolean?)
+-- tier (optional): 1 = Shiny (gold ring + ✨), 2 = Mega (cyan/magenta ring, halo + 💎).
+function Portrait.Face(parent: GuiObject, hunterId: string, silhouette: boolean?, tier: number?)
 	local def = Config.Hunters[hunterId]
 	if not def then
 		return
@@ -32860,13 +33528,30 @@ function Portrait.Face(parent: GuiObject, hunterId: string, silhouette: boolean?
 		end
 		-- tool badge
 		Kit.Label(holder, Portrait.ToolIcon[L.Tool] or "👻", { Size = UDim2.fromScale(0.34, 0.34), Position = UDim2.fromScale(0.97, 0.97), AnchorPoint = Vector2.new(1, 1), ZIndex = z + 8, Stroke = 0 })
+		local t = tier or 0
+		if t > 0 then
+			local td = Config.Tiers[t] or Config.Tiers[0]
+			local ring = circle(holder, UDim2.fromScale(1, 1), UDim2.fromScale(0.5, 0.5), td.Color, z + 7)
+			ring.BackgroundTransparency = 1
+			Kit.Stroke(ring, 3, td.Color)
+			if t >= 2 then
+				local inner = circle(holder, UDim2.fromScale(0.9, 0.9), UDim2.fromScale(0.5, 0.5), MAGENTA, z + 7)
+				inner.BackgroundTransparency = 1
+				Kit.Stroke(inner, 2, MAGENTA)
+				local halo = circle(head, UDim2.fromScale(0.7, 0.16), UDim2.fromScale(0.5, -0.3), td.Color, z + 7)
+				halo.BackgroundTransparency = 1
+				Kit.Stroke(halo, 2.5, td.Color)
+			end
+			Kit.Label(holder, td.Icon, { Size = UDim2.fromScale(0.32, 0.32), Position = UDim2.fromScale(0.03, 0.03), ZIndex = z + 8, Stroke = 0 })
+		end
 	else
 		Kit.Label(holder, "?", { Size = UDim2.fromScale(0.4, 0.4), Position = UDim2.fromScale(0.5, 0.46), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = z + 6, Color = Color3.fromRGB(160, 140, 210) })
 	end
 end
 
 -- 3D portrait. Returns the ViewportFrame so callers can spin `model` if they want.
-function Portrait.Viewport(parent: GuiObject, hunterId: string, silhouette: boolean?): (ViewportFrame, Model?)
+-- tier (optional) adds the Shiny/Mega look (an undiscovered variant keeps the halo shape, darkened).
+function Portrait.Viewport(parent: GuiObject, hunterId: string, silhouette: boolean?, tier: number?): (ViewportFrame, Model?)
 	local vf: ViewportFrame = Kit.new("ViewportFrame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -32880,6 +33565,7 @@ function Portrait.Viewport(parent: GuiObject, hunterId: string, silhouette: bool
 		return vf, nil
 	end
 	local model = HunterRig.BuildStatic(hunterId)
+	HunterRig.ApplyTier(model, tier or 0)
 	if silhouette then
 		for _, p in model:GetDescendants() do
 			if p:IsA("BasePart") then

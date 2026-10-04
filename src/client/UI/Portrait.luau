@@ -33,6 +33,7 @@ local NAVY = Color3.fromRGB(35, 50, 120)
 local WHITE = Color3.new(1, 1, 1)
 local BLUE = Color3.fromRGB(40, 80, 170)
 local STEEL = Color3.fromRGB(120, 125, 140)
+local MAGENTA = Color3.fromRGB(255, 110, 230)
 
 local function shade(c: Color3, f: number): Color3
 	return Color3.new(c.R * f, c.G * f, c.B * f)
@@ -70,7 +71,8 @@ local function circle(parent: Instance, size: UDim2, pos: UDim2, color: Color3, 
 end
 
 -- Fills `parent` (a square frame) with a cartoon face. silhouette = undiscovered.
-function Portrait.Face(parent: GuiObject, hunterId: string, silhouette: boolean?)
+-- tier (optional): 1 = Shiny (gold ring + ✨), 2 = Mega (cyan/magenta ring, halo + 💎).
+function Portrait.Face(parent: GuiObject, hunterId: string, silhouette: boolean?, tier: number?)
 	local def = Config.Hunters[hunterId]
 	if not def then
 		return
@@ -332,13 +334,30 @@ function Portrait.Face(parent: GuiObject, hunterId: string, silhouette: boolean?
 		end
 		-- tool badge
 		Kit.Label(holder, Portrait.ToolIcon[L.Tool] or "👻", { Size = UDim2.fromScale(0.34, 0.34), Position = UDim2.fromScale(0.97, 0.97), AnchorPoint = Vector2.new(1, 1), ZIndex = z + 8, Stroke = 0 })
+		local t = tier or 0
+		if t > 0 then
+			local td = Config.Tiers[t] or Config.Tiers[0]
+			local ring = circle(holder, UDim2.fromScale(1, 1), UDim2.fromScale(0.5, 0.5), td.Color, z + 7)
+			ring.BackgroundTransparency = 1
+			Kit.Stroke(ring, 3, td.Color)
+			if t >= 2 then
+				local inner = circle(holder, UDim2.fromScale(0.9, 0.9), UDim2.fromScale(0.5, 0.5), MAGENTA, z + 7)
+				inner.BackgroundTransparency = 1
+				Kit.Stroke(inner, 2, MAGENTA)
+				local halo = circle(head, UDim2.fromScale(0.7, 0.16), UDim2.fromScale(0.5, -0.3), td.Color, z + 7)
+				halo.BackgroundTransparency = 1
+				Kit.Stroke(halo, 2.5, td.Color)
+			end
+			Kit.Label(holder, td.Icon, { Size = UDim2.fromScale(0.32, 0.32), Position = UDim2.fromScale(0.03, 0.03), ZIndex = z + 8, Stroke = 0 })
+		end
 	else
 		Kit.Label(holder, "?", { Size = UDim2.fromScale(0.4, 0.4), Position = UDim2.fromScale(0.5, 0.46), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = z + 6, Color = Color3.fromRGB(160, 140, 210) })
 	end
 end
 
 -- 3D portrait. Returns the ViewportFrame so callers can spin `model` if they want.
-function Portrait.Viewport(parent: GuiObject, hunterId: string, silhouette: boolean?): (ViewportFrame, Model?)
+-- tier (optional) adds the Shiny/Mega look (an undiscovered variant keeps the halo shape, darkened).
+function Portrait.Viewport(parent: GuiObject, hunterId: string, silhouette: boolean?, tier: number?): (ViewportFrame, Model?)
 	local vf: ViewportFrame = Kit.new("ViewportFrame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -352,6 +371,7 @@ function Portrait.Viewport(parent: GuiObject, hunterId: string, silhouette: bool
 		return vf, nil
 	end
 	local model = HunterRig.BuildStatic(hunterId)
+	HunterRig.ApplyTier(model, tier or 0)
 	if silhouette then
 		for _, p in model:GetDescendants() do
 			if p:IsA("BasePart") then

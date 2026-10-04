@@ -163,7 +163,7 @@ local function setInspect(uid: string?)
 	if previewUid ~= uid then
 		clearPreview()
 		previewUid = uid
-		local _, model = Portrait.Viewport(viewHolder, h.Id, false)
+		local _, model = Portrait.Viewport(viewHolder, h.Id, false, h.Tier or 0)
 		spinModel = model
 		if model then
 			local t0 = os.clock()
@@ -322,7 +322,7 @@ local function makeCard(uid: string, hunter: any): Card
 		Parent = f,
 	})
 	Kit.Corner(pic, UDim.new(1, 0))
-	Portrait.Face(pic, hunterId, false)
+	Portrait.Face(pic, hunterId, false, hunter.Tier or 0)
 	Kit.Label(f, string.upper(def.Name), { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), ZIndex = 66, Style = "Small", Fit = true })
 	if (hunter.Tier or 0) > 0 then
 		Kit.Label(f, tier.Icon .. " " .. tier.Name, { Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 64), ZIndex = 67, Color = tier.Color, Style = "Small", Fit = true })
