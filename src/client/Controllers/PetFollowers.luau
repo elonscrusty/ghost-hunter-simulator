@@ -292,7 +292,7 @@ LOOKS.GhostPhoenix = function(K)
 	return Color3.fromRGB(255, 200, 90), 3.3
 end
 
--- RARE (event): a haunted lantern with a little flame spirit inside
+-- LEGENDARY (event): a haunted lantern with a little flame spirit inside
 LOOKS.LanternSpirit = function(K)
 	local FLAME = Color3.fromRGB(255, 210, 90)
 	local BOW = Color3.fromRGB(170, 90, 255)

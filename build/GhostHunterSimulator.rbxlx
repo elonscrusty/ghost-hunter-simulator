@@ -1744,8 +1744,8 @@ Config.Pets = {
 	GhostTrain = { Id = "GhostTrain", Name = "Ghost Express", Rarity = "Epic", Price = nil, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(130, 60, 190), Glow = Color3.fromRGB(120, 255, 150), Icon = "🚂" },
 	GhostPhoenix = { Id = "GhostPhoenix", Name = "Tiny Reaper", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(92, 70, 150), Glow = Color3.fromRGB(255, 200, 90), Icon = "💀" },
 	CrystalSkull = { Id = "CrystalSkull", Name = "Crystal Skull", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Ecto", Value = 0.35 }, Color = Color3.fromRGB(150, 230, 255), Glow = Color3.fromRGB(130, 230, 255), Icon = "💎" },
-	-- launch event reward (never in eggs): a Rare with a useful mixed bonus
-	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Icon = "🏮" },
+	-- launch event reward (never in eggs): Legendary, same bonus size as the other Legendaries
+	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Icon = "🏮" },
 } :: { [string]: PetDef }
 Config.PetOrder = {
 	"GlowWisp", "BooBat", "EctoSlime", "BooBalloon", "JellyGhost", "PhantomKitty", "CursedTeddy", "MiniMummy", "MoonOwl",
@@ -31338,7 +31338,7 @@ LOOKS.GhostPhoenix = function(K)
 	return Color3.fromRGB(255, 200, 90), 3.3
 end
 
--- RARE (event): a haunted lantern with a little flame spirit inside
+-- LEGENDARY (event): a haunted lantern with a little flame spirit inside
 LOOKS.LanternSpirit = function(K)
 	local FLAME = Color3.fromRGB(255, 210, 90)
 	local BOW = Color3.fromRGB(170, 90, 255)
@@ -32218,7 +32218,7 @@ function RarePetEvent.Init()
 	panel = Kit.Panel("RarePetEvent", "🏮 FREE RARE PET!", Vector2.new(480, 320), "Orange")
 	local body = panel.Body
 	Kit.Label(body, if def then def.Name else E.Pet, { Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 14), Color = if rarity then rarity.Color else Theme.Gold, Style = "Heading", TextSize = 26, ZIndex = 62 })
-	local sub = (if rarity then rarity.Name else (if def then def.Rarity else "Rare")) .. " ghost pet  ·  " .. (if def then bonusText(def.Bonus.Kind, def.Bonus.Value) else "")
+	local sub = (if rarity then rarity.Name else (if def then def.Rarity else "Legendary")) .. " ghost pet  ·  " .. (if def then bonusText(def.Bonus.Kind, def.Bonus.Value) else "")
 	Kit.Label(body, sub, { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 50), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, Fit = true, ZIndex = 62 })
 	local bar: Frame = Kit.new("Frame", { Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 88), BackgroundColor3 = Theme.Bg, ZIndex = 62, Parent = body })
 	Kit.Corner(bar, UDim.new(1, 0))
@@ -32244,7 +32244,7 @@ end
 
 function RarePetEvent.Start()
 	State.OnFx("RarePetGranted", function(data: any)
-		local name = if type(data) == "table" and type(data.Name) == "string" then data.Name else "a Rare pet"
+		local name = if type(data) == "table" and type(data.Name) == "string" then data.Name else "a Legendary pet"
 		Sound.Play("ZoneUnlock")
 		Kit.Toast("🏮 You earned " .. name .. "! It's in your pets.", "Gold")
 		update()

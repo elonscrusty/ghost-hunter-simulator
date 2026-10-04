@@ -120,7 +120,7 @@ function RarePetEvent.Init()
 	panel = Kit.Panel("RarePetEvent", "🏮 FREE RARE PET!", Vector2.new(480, 320), "Orange")
 	local body = panel.Body
 	Kit.Label(body, if def then def.Name else E.Pet, { Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 14), Color = if rarity then rarity.Color else Theme.Gold, Style = "Heading", TextSize = 26, ZIndex = 62 })
-	local sub = (if rarity then rarity.Name else (if def then def.Rarity else "Rare")) .. " ghost pet  ·  " .. (if def then bonusText(def.Bonus.Kind, def.Bonus.Value) else "")
+	local sub = (if rarity then rarity.Name else (if def then def.Rarity else "Legendary")) .. " ghost pet  ·  " .. (if def then bonusText(def.Bonus.Kind, def.Bonus.Value) else "")
 	Kit.Label(body, sub, { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 50), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Stroke = 0, Fit = true, ZIndex = 62 })
 	local bar: Frame = Kit.new("Frame", { Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 88), BackgroundColor3 = Theme.Bg, ZIndex = 62, Parent = body })
 	Kit.Corner(bar, UDim.new(1, 0))
@@ -146,7 +146,7 @@ end
 
 function RarePetEvent.Start()
 	State.OnFx("RarePetGranted", function(data: any)
-		local name = if type(data) == "table" and type(data.Name) == "string" then data.Name else "a Rare pet"
+		local name = if type(data) == "table" and type(data.Name) == "string" then data.Name else "a Legendary pet"
 		Sound.Play("ZoneUnlock")
 		Kit.Toast("🏮 You earned " .. name .. "! It's in your pets.", "Gold")
 		update()

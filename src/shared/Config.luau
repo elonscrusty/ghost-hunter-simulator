@@ -1727,8 +1727,8 @@ Config.Pets = {
 	GhostTrain = { Id = "GhostTrain", Name = "Ghost Express", Rarity = "Epic", Price = nil, Bonus = { Kind = "Power", Value = 0.22 }, Color = Color3.fromRGB(130, 60, 190), Glow = Color3.fromRGB(120, 255, 150), Icon = "🚂" },
 	GhostPhoenix = { Id = "GhostPhoenix", Name = "Tiny Reaper", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(92, 70, 150), Glow = Color3.fromRGB(255, 200, 90), Icon = "💀" },
 	CrystalSkull = { Id = "CrystalSkull", Name = "Crystal Skull", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Ecto", Value = 0.35 }, Color = Color3.fromRGB(150, 230, 255), Glow = Color3.fromRGB(130, 230, 255), Icon = "💎" },
-	-- launch event reward (never in eggs): a Rare with a useful mixed bonus
-	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Rare", Price = nil, Bonus = { Kind = "Power", Value = 0.12 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Icon = "🏮" },
+	-- launch event reward (never in eggs): Legendary, same bonus size as the other Legendaries
+	LanternSpirit = { Id = "LanternSpirit", Name = "Lantern Spirit", Rarity = "Legendary", Price = nil, Bonus = { Kind = "Power", Value = 0.35 }, Color = Color3.fromRGB(255, 230, 150), Glow = Color3.fromRGB(255, 200, 80), Icon = "🏮" },
 } :: { [string]: PetDef }
 Config.PetOrder = {
 	"GlowWisp", "BooBat", "EctoSlime", "BooBalloon", "JellyGhost", "PhantomKitty", "CursedTeddy", "MiniMummy", "MoonOwl",
