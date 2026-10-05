@@ -826,6 +826,8 @@ export type HunterLook = {
 	ToolColor: Color3,
 	Beam: Color3, -- attack beam colour
 	Aura: boolean?, -- extra sparkle for high rarities
+	Chrome: boolean?, -- shiny metal body (World 2)
+	Signature: boolean?, -- one-of-a-kind effects (World 2 final Ultra)
 }
 
 export type HunterDef = {
