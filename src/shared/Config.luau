@@ -3392,4 +3392,73 @@ Config.UpdateNotes = {
 	},
 }
 
+--==================================================================
+-- THE VOID EMPEROR: World 2's final boss (VoidEmperorService, Logic/VoidEmperor). A team fight
+-- in the Void Throne arena. No Robux path: nothing sold changes the fight, and its rewards
+-- (Ectoplasm with the player's own multiplier, a free Void Crate open) are earned only by
+-- taking part. No Spirit Shards here (those only come from the Boss Tower).
+--==================================================================
+Config.VoidEmperor = {
+	Ghost = "VoidEmperor",
+	Pylon = "VoidPylon", -- the phase-1 pylons (ghost entry added below)
+	Zone = "VoidThrone",
+	Center = Vector3.new(0, 0, 10600), -- arena centre (ground top Y = 0)
+	Radius = 60, -- players inside this ring take part / set the boss Spirit
+	PylonRadius = 45, -- fallback pylon spots (map parts VoidPylonSpot1..4 win when present)
+	LightRadius = 30, -- fallback light circle spots (map parts VoidLightSpot1..4)
+	-- when the portal opens: every IntervalSeconds, after HeraldKills Void Herald kills on the
+	-- server, or when GatherPlayers wait in the ring (at most once per GatherCooldown)
+	FirstDelay = 300,
+	IntervalSeconds = 1200,
+	HeraldKills = 50,
+	GatherPlayers = 4,
+	GatherCooldown = 300,
+	JoinSeconds = 60, -- join window: players in the ring when it ends start the fight
+	TimeLimit = 480,
+	-- Spirit = SpiritSeconds * max(sum(min(crew power, PowerCap)), MinCrews * PowerRef)
+	SpiritSeconds = 150,
+	MinCrews = 4,
+	PowerRef = 1e20, -- about one full crew of 8 area-26 Legendaries
+	PowerCap = 2e20, -- one huge crew can't make the boss unbeatable for everyone else
+	Walls = { 0.66, 0.33 }, -- phase walls (share of Spirit left)
+	-- phase 1: THE CROWN
+	PylonShare = 0.04, -- each pylon's Spirit (share of the boss Spirit)
+	ShieldTaken = 0.1, -- damage taken while any pylon stands
+	KneelSeconds = 15,
+	KneelTaken = 2,
+	PylonReturnSeconds = 90, -- pylons come back if the wall isn't reached this long after they fell
+	-- phase 2: THE SPLIT
+	Copies = 3,
+	CopyOrbit = 36, -- studs from the centre
+	CrownHopSeconds = 12,
+	CrownTellSeconds = 2,
+	MirrorSeconds = 10, -- tapping a copy without the crown: your hunters do nothing this long
+	MirrorGrace = 2.5, -- a copy that lost the crown this recently doesn't mirror yet
+	-- phase 3: THE LAST LIGHT
+	Circles = 4,
+	CircleRadius = 8,
+	CircleMoveSeconds = 30,
+	FinalShare = 0.05, -- last 5%: one big circle in the centre
+	FinalRadius = 16,
+	-- rewards per participant: RewardBase * ZoneMultiplier[26] * clamp(share * participants,
+	-- MinShare, MaxShare) * the player's Ectoplasm multiplier; a timeout pays FailShare of it
+	RewardBase = 900,
+	RewardZone = 26,
+	MinShare = 0.35,
+	MaxShare = 2.5,
+	FailShare = 0.25,
+	Crate = "Void", -- one free open on a win
+	MinContribution = 0.01, -- share of the Spirit dealt to count as a participant...
+	MinSeconds = 8, -- ...or this many seconds of your own crew's power
+	Record = "VoidEmperor", -- EventPlay key: S = wins, G = beaten at least once
+}
+
+-- Phase-1 pylon: a ghost entry so the normal tap / crew / retaliation paths work on it. Its
+-- Spirit is set at spawn; it pays nothing itself (the fight pays at the end).
+Config.Ghosts.VoidPylon = {
+	Id = "VoidPylon", Name = "VOID PYLON", Zone = "VoidThrone",
+	Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 2.6, Hover = 9, Speed = 1, Wander = 8,
+	Kind = "WorldBoss", Color = Color3.fromRGB(20, 15, 35), Glow = Color3.fromRGB(255, 255, 255), Style = "Rift",
+}
+
 return Config

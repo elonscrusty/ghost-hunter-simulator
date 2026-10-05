@@ -263,6 +263,13 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 		if err then
 			return err
 		end
+	elseif cmd == "VoidEmperor" then
+		-- test fight right now (teleports the dev into the arena; dev fights pay nothing)
+		local ok, VE = pcall(require, (script.Parent :: any).VoidEmperorService)
+		local err = if ok and type(VE) == "table" and type(VE.DevStart) == "function" then VE.DevStart(player) else "Void Emperor not available"
+		if err then
+			return err
+		end
 	elseif cmd == "ResetDaily" then
 		d.Daily.Last = 0
 		DataService.Changed(player)

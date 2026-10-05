@@ -1,6 +1,6 @@
 -- Tiny test harness for the Luau CLI. Run via tools/check.sh (it generates tests/_Config.luau,
 -- a copy of Config with Roblox type stubs, for the economy spec).
-local specs = { "./Rules.spec", "./Format.spec", "./Economy.spec", "./Eggs.spec", "./Layout.spec" }
+local specs = { "./Rules.spec", "./Format.spec", "./Economy.spec", "./Eggs.spec", "./Layout.spec", "./VoidEmperor.spec" }
 local passed, failed = 0, 0
 for _, path in specs do
 	local spec = require(path) :: any
