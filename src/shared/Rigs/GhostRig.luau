@@ -17,6 +17,7 @@
 
 local Config = require(script.Parent.Parent.Config)
 local U = require(script.Parent.RigUtil)
+local World2 = require(script.Parent.GhostStyles.World2)
 
 local GhostRig = {}
 
@@ -42,16 +43,26 @@ local NEON = { Material = Enum.Material.Neon }
 local METAL_MAT = { Material = Enum.Material.Metal }
 
 -- styles whose eyes glow (Neon in the glow colour) instead of the usual dark cartoon eyes
-local GLOW_EYES = { HauntedArmor = true, GraveColossus = true, VoidLeviathan = true, CrystalTitan = true, Student = true, Ancient = true, Void = true, Overlord = true, Shadow = true, Titan = true, GhostKing = true }
+local GLOW_EYES = { HauntedArmor = true, GraveColossus = true, VoidLeviathan = true, CrystalTitan = true, Student = true, Ancient = true, Void = true, Overlord = true, Shadow = true, Titan = true, GhostKing = true,
+	Rift = true, Herald = true, VoidEmperor = true, Locomotive = true,
+}
 -- styles with the open "▽" grin instead of the round "O" mouth
 local GRIN = { CrystalTitan = true, Jester = true, PumpkinKnight = true, SwampHag = true, CandleLich = true, BoneCaptain = true, MummyPharaoh = true, PuppetMaster = true, VampireCount = true, PhantomEmperor = true, GraveColossus = true, VoidLeviathan = true, EclipseOverlord = true,
 	Mischief = true, Hallway = true, Headmaster = true, Carnival = true, Ringmaster = true,
 	Pirate = true, Captain = true, King = true, Overlord = true,
 	SwampLord = true, Blizzard = true, Pharaoh = true, JackBox = true, Puppet = true,
 	Leviathan = true, TimeKeeper = true, Titan = true, GhostKing = true,
+	DragonDance = true, Grimoire = true, Topsy = true, Mycelium = true, MirrorQueen = true, Locomotive = true,
+	Saucer = true, Herald = true, Copycat = true, Graffiti = true, Rift = true,
 }
 -- spooky styles that don't blush
-local NO_BLUSH = { CrystalTitan = true, Banshee = true, FrostWraith = true, CandleLich = true, HauntedArmor = true, GraveColossus = true, VoidLeviathan = true, EclipseOverlord = true, Giant = true, Void = true, Overlord = true, Shadow = true, Titan = true }
+local NO_BLUSH = { CrystalTitan = true, Banshee = true, FrostWraith = true, CandleLich = true, HauntedArmor = true, GraveColossus = true, VoidLeviathan = true, EclipseOverlord = true, Giant = true, Void = true, Overlord = true, Shadow = true, Titan = true,
+	Mote = true, Rift = true, Herald = true, VoidEmperor = true, Billboard = true, Locomotive = true, Glint = true, Commuter = true, StormRoc = true,
+}
+-- World 2: the Billboard's screen is its face; the Storm Roc's beak replaces the mouth; the Void
+-- Emperor draws his own wide grin
+local NO_FACE = { Billboard = true }
+local NO_MOUTH = { StormRoc = true, VoidEmperor = true }
 
 local BRASS = Color3.fromRGB(205, 160, 75)
 local ICE = Color3.fromRGB(195, 235, 255)
@@ -71,6 +82,10 @@ function GhostRig.Build(ghostId: string): Model
 	local glow = def.Glow
 	local accent = U.Vivid(glow) -- solid accessories in the glow colour
 
+	local w2Style = World2.Styles[style]
+	-- upside-down styles: every part is turned 180 degrees about Z (round the body centre) before welding
+	local flip: CFrame? = if World2.Flipped[style] then CFrame.Angles(0, 0, math.pi) else nil
+
 	local model = Instance.new("Model")
 	model.Name = ghostId
 
@@ -81,6 +96,9 @@ function GhostRig.Build(ghostId: string): Model
 	model.PrimaryPart = core
 
 	local function add(p: BasePart): BasePart
+		if flip then
+			p.CFrame = flip * p.CFrame
+		end
 		U.Weld(core, p)
 		return p
 	end
@@ -208,7 +226,7 @@ function GhostRig.Build(ghostId: string): Model
 	local bodyOpts = { Shadow = false }
 
 	------------------------------------------------------------------ body + tail
-	ball(BODY_D, CFrame.identity, color, { Shadow = true })
+	ball(BODY_D, CFrame.identity, color, { Shadow = true, Reflectance = if style == "Glint" then 0.3 else nil })
 	ball(2.7, at(0, -0.95, 0.45), color, bodyOpts)
 	ball(2.0, at(0.15, -1.75, 0.95), color, bodyOpts)
 	ball(1.35, at(-0.05, -2.35, 1.45), color, bodyOpts)
@@ -216,9 +234,19 @@ function GhostRig.Build(ghostId: string): Model
 
 	------------------------------------------------------------------ face
 	local glowEyes = GLOW_EYES[style] == true
-	local eyeColor = if glowEyes then glow else EYE
+	local eyeColor = if glowEyes then glow elseif style == "Mote" then WHITE else EYE
 	local eyeOpts: U.Opts? = if glowEyes then NEON else nil
-	if style == "Crypt" then
+	if NO_FACE[style] then
+		-- face drawn by the style
+	elseif style == "Dizzy" then
+		-- spiral eyes: dark disc, white ring, dark centre
+		for _, s in { -1, 1 } do
+			local p = Vector3.new(0.6 * s, 0.35, -1.38)
+			cyl(0.1, 0.95, U.DiscFacing(surf(p, 0.04), p), EYE)
+			cyl(0.1, 0.62, U.DiscFacing(surf(p, 0.07), p), WHITE)
+			cyl(0.1, 0.36, U.DiscFacing(surf(p, 0.1), p), EYE)
+		end
+	elseif style == "Crypt" then
 		-- one big eye peeking out between the bandages
 		local p = Vector3.new(0, 0.38, -1.45)
 		ball(1.15, CFrame.new(p), EYE)
@@ -230,12 +258,18 @@ function GhostRig.Build(ghostId: string): Model
 			end
 			local p = Vector3.new(0.6 * s, 0.35, -1.38)
 			ball(0.9, CFrame.new(p), eyeColor, eyeOpts)
-			ball(0.32, CFrame.new(p + Vector3.new(0.16, 0.18, -0.3)), WHITE)
+			ball(0.32, CFrame.new(p + Vector3.new(0.16, 0.18, -0.3)), if style == "Mote" then EYE else WHITE)
 		end
 	end
 	local mouthPos = surf(Vector3.new(0, -0.45, -1.65), -0.02)
-	if style == "Doctor" then
-		-- the surgical mask covers the mouth
+	if style == "Doctor" or NO_FACE[style] or NO_MOUTH[style] then
+		-- the surgical mask / screen / beak covers the mouth, or the style draws its own
+	elseif style == "Mote" then
+		cyl(0.25, 0.5, U.DiscFacing(mouthPos, mouthPos), WHITE)
+	elseif style == "Herald" then
+		grin(mouthPos, 0.6, WHITE)
+	elseif style == "Rift" or style == "Locomotive" then
+		grin(mouthPos, if def.Kind == "Boss" then 0.6 else 0.5, accent)
 	elseif style == "Void" or style == "Shadow" then
 		grin(mouthPos, 0.55, glow, NEON)
 	elseif style == "Clown" then
@@ -243,7 +277,7 @@ function GhostRig.Build(ghostId: string): Model
 	elseif style == "Giant" then
 		grin(mouthPos, 0.85, MOUTH)
 	elseif GRIN[style] then
-		grin(mouthPos, if def.Kind == "Boss" then 0.6 else 0.5, MOUTH)
+		grin(mouthPos, if def.Kind == "Boss" or def.Kind == "WorldBoss" then 0.6 else 0.5, MOUTH)
 	else
 		oMouth(mouthPos, if style == "Poltergeist" then 0.75 else 0.6)
 	end
@@ -252,14 +286,32 @@ function GhostRig.Build(ghostId: string): Model
 		ball(0.95, at(1.7 * s, -0.35, -0.2), color, bodyOpts)
 	end
 	-- blush (the Giant and the void spirits are too spooky to blush)
-	if not NO_BLUSH[style] then
+	if not NO_BLUSH[style] and not NO_FACE[style] then
 		for _, s in { -1, 1 } do
 			ball(0.4, at(1.0 * s, -0.12, -1.45), BLUSH)
 		end
 	end
 
 	------------------------------------------------------------------ styles
-	if style == "Mischief" then
+	if w2Style then
+		w2Style({
+			color = color,
+			glow = glow,
+			accent = accent,
+			R = R,
+			ball = ball,
+			block = block,
+			cyl = cyl,
+			wedge = wedge,
+			rod = rod,
+			ring = ring,
+			ruff = ruff,
+			cone = cone,
+			brow = brow,
+			surf = surf,
+			point = point,
+		})
+	elseif style == "Mischief" then
 		for _, s in { -1, 1 } do
 			wedge(Vector3.new(0.3, 0.85, 0.5), at(0.8 * s, 1.6, -0.1) * CFrame.Angles(0, 0, -0.35 * s), accent) -- devil horns
 			brow(s, 0.98, false, U.Shade(color, 0.45), 0.6)
@@ -1963,6 +2015,9 @@ function GhostRig.Build(ghostId: string): Model
 			wedge(Vector3.new(0.1, 0.55, 0.3), CFrame.new(top + Vector3.new(0.48 * s, 0.1, 0)) * CFrame.Angles(0, -math.pi / 2 * s, 0), GOLD, METAL_MAT)
 		end
 	else -- Plain: a little wisp curl on top
+		-- every other style must be handled above: worldsim (tools/check.sh) builds every Config
+		-- ghost, so a misspelt or unbuilt style fails the checks instead of silently going Plain
+		assert(style == "Plain", "GhostRig: no look for ghost style " .. style .. " (" .. ghostId .. ")")
 		ball(0.6, at(0.1, 1.85, 0.1), color, bodyOpts)
 		ball(0.35, at(0.35, 2.15, 0.22), color, bodyOpts)
 	end
@@ -1980,7 +2035,7 @@ function GhostRig.Build(ghostId: string): Model
 	U.AttachAt(core, "Bottom", CFrame.new(0, bottom, 0))
 
 	-- aura: subtle on normal ghosts, stronger on mini-bosses, strongest on bosses/event ghosts
-	local isBoss = def.Kind == "Boss" or def.Kind == "Event"
+	local isBoss = def.Kind == "Boss" or def.Kind == "Event" or def.Kind == "WorldBoss"
 	local isMini = def.Kind == "MiniBoss"
 	local pe = Instance.new("ParticleEmitter")
 	pe.Name = "Aura"
