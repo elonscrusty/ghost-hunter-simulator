@@ -42,6 +42,37 @@ local METAL = Color3.fromRGB(150, 155, 170)
 
 local NEON = { Material = Enum.Material.Neon }
 
+-- Every Style that Build decorates ("Basic" is the plain chest). Keep in sync with the branches in
+-- Build; the check below warns on load if a Config crate uses a Style that isn't listed here.
+local STYLES: { [string]: boolean } = {
+	Basic = true, Haunted = true, Elite = true, Carnival = true, Medical = true, Sailor = true,
+	Royal = true, Spirit = true, Swamp = true, Frost = true, Tomb = true, Toy = true, Sunken = true,
+	Clock = true, Inferno = true, Throne = true,
+	-- World 2
+	Lantern = true, Library = true, Topsy = true, Shroom = true, Mirror = true, Subway = true,
+	Neon = true, Storm = true, Moon = true, Void = true,
+}
+CrateRig.Styles = STYLES
+
+-- Config crates whose Style has no decorations (empty when everything is handled).
+function CrateRig.MissingStyles(): { string }
+	local out = {}
+	for id, def in Config.Crates do
+		if not STYLES[def.Style] then
+			table.insert(out, id .. " (" .. tostring(def.Style) .. ")")
+		end
+	end
+	table.sort(out)
+	return out
+end
+
+do
+	local missing = CrateRig.MissingStyles()
+	if #missing > 0 then
+		warn("CrateRig: no decorations for crate styles: " .. table.concat(missing, ", "))
+	end
+end
+
 function CrateRig.Build(crateId: string): CrateRig
 	local def = Config.Crates[crateId]
 	assert(def, "CrateRig: unknown crate " .. tostring(crateId))
@@ -72,12 +103,14 @@ function CrateRig.Build(crateId: string): CrateRig
 	end
 
 	-- cute ghost emblem on the front
+	-- (the Topsy crate is "built upside-down", so its ghost's face is flipped too)
+	local flip = if def.Style == "Topsy" then -1 else 1
 	local emblem = Vector3.new(0, 1.3, -D / 2)
 	onBase(U.Ball(1.25, CFrame.new(emblem), WHITE, model))
 	for _, s in { -1, 1 } do
-		onBase(U.Ball(0.3, CFrame.new(emblem + Vector3.new(0.22 * s, 0.1, -0.52)), EYE, model))
+		onBase(U.Ball(0.3, CFrame.new(emblem + Vector3.new(0.22 * s, 0.1 * flip, -0.52)), EYE, model))
 	end
-	onBase(U.Cyl(0.08, 0.22, CFrame.new(emblem + Vector3.new(0, -0.17, -0.62)) * U.AxisZ, EYE, model))
+	onBase(U.Cyl(0.08, 0.22, CFrame.new(emblem + Vector3.new(0, -0.17 * flip, -0.62)) * U.AxisZ, EYE, model))
 
 	-- interior glow (hidden until the reveal fades it in)
 	local glow = onBase(U.Block(Vector3.new(W - 0.6, 0.3, D - 0.6), CFrame.new(0, BODY_H - 0.15, 0), trim, model, { Material = Enum.Material.Neon, Transparency = 1, Name = "Glow" }))
@@ -599,6 +632,370 @@ function CrateRig.Build(crateId: string): CrateRig
 		lBlock(Vector3.new(0.6, 0.55, 0.08), cr, LOCK, metal)
 		lBlock(Vector3.new(0.44, 0.4, 0.06), cr * CFrame.new(0, 0, -0.05), velvet)
 		lBall(0.16, cr * CFrame.new(0, 0, -0.09), LOCK, metal)
+	elseif style == "Lantern" then
+		local paper = Color3.fromRGB(235, 55, 50)
+		local rib = U.Shade(paper, 0.55)
+		local wood = Color3.fromRGB(95, 55, 35)
+		-- paper lantern hanging from a wooden stand on the lid (a warm light inside the paper)
+		local lp = Vector3.new(0.15, lidTop + 0.95, 0.15)
+		local postX = -1.2
+		lBlock(Vector3.new(0.6, 0.12, 0.6), CFrame.new(postX, lidTop + 0.06, lp.Z), wood)
+		lCyl(1.75, 0.16, CFrame.new(postX, lidTop + 0.9, lp.Z) * U.AxisY, wood)
+		lCyl(1.55, 0.13, CFrame.new((postX + lp.X + 0.2) / 2, lidTop + 1.75, lp.Z), wood)
+		lCyl(0.2, 0.06, CFrame.new(lp + Vector3.new(0, 0.7, 0)) * U.AxisY, LOCK)
+		lBall(1.2, CFrame.new(lp), paper, { Transparency = 0.2 })
+		lBall(0.5, CFrame.new(lp), trim, NEON)
+		for _, o in { -0.3, 0, 0.3 } do
+			local r = math.sqrt(0.6 * 0.6 - o * o)
+			lCyl(0.05, 2 * r + 0.04, CFrame.new(lp + Vector3.new(0, o, 0)) * U.AxisY, rib)
+		end
+		for _, s in { -1, 1 } do
+			lCyl(0.14, 0.55, CFrame.new(lp + Vector3.new(0, 0.55 * s, 0)) * U.AxisY, LOCK, metal)
+		end
+		lBlock(Vector3.new(0.14, 0.38, 0.14), CFrame.new(lp + Vector3.new(0, -0.8, 0)), LOCK)
+		lBall(0.18, CFrame.new(lp + Vector3.new(0, -0.62, 0)), LOCK, metal)
+		-- a string of little lanterns across the lid front
+		lCyl(2.5, 0.05, CFrame.new(0, BODY_H + 0.62, lidFrontZ - 0.06), rib)
+		for i, x in { -0.95, -0.32, 0.32, 0.95 } do
+			lBall(0.34, CFrame.new(x, BODY_H + 0.42, lidFrontZ - 0.16), if i % 2 == 1 then paper else LOCK)
+			lCyl(0.06, 0.18, CFrame.new(x, BODY_H + 0.6, lidFrontZ - 0.16) * U.AxisY, LOCK)
+		end
+		-- gold trim over the plinth and gold corner caps
+		bBlock(Vector3.new(W + 0.3, 0.1, D + 0.3), CFrame.new(0, 0.38, 0), LOCK, metal)
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				bBlock(Vector3.new(0.5, 0.5, 0.5), CFrame.new(sx * W / 2, 0.65, sz * D / 2), LOCK, metal)
+			end
+		end
+	elseif style == "Library" then
+		local bookCols = { Color3.fromRGB(70, 150, 140), Color3.fromRGB(150, 45, 55), Color3.fromRGB(50, 70, 140), Color3.fromRGB(80, 130, 60), Color3.fromRGB(110, 60, 130) }
+		local cream = Color3.fromRGB(250, 240, 215)
+		-- rows of book spines on both sides, each with a gold band
+		for _, s in { -1, 1 } do
+			for i, z in { -1.35, -0.8, -0.25, 0.3, 0.85, 1.4 } do
+				local h = ({ 1.8, 1.55, 1.85, 1.65, 1.9, 1.5 })[i]
+				local x = s * (W / 2 + 0.05)
+				bBlock(Vector3.new(0.1, h, 0.5), CFrame.new(x, 0.35 + h / 2, z), bookCols[(i + (if s > 0 then 2 else 0)) % #bookCols + 1])
+				bBlock(Vector3.new(0.12, 0.1, 0.5), CFrame.new(x, 0.35 + h - 0.3, z), LOCK)
+			end
+		end
+		-- book clasp: a gold strap down the lid front with a gem
+		lBlock(Vector3.new(0.42, 0.85, 0.06), CFrame.new(0, BODY_H + 0.25, lidFrontZ - 0.12), LOCK, metal)
+		lBlock(Vector3.new(0.6, 0.38, 0.14), CFrame.new(0, BODY_H - 0.12, lidFrontZ - 0.15), LOCK, metal)
+		lBlock(Vector3.new(0.2, 0.2, 0.06), CFrame.new(0, BODY_H - 0.12, lidFrontZ - 0.24) * CFrame.Angles(0, 0, math.pi / 4), trim, NEON)
+		-- open spellbook lying on the lid with a floating rune above it
+		local bk = Vector3.new(0, lidTop, -0.05)
+		lBlock(Vector3.new(2.3, 0.1, 1.55), CFrame.new(bk + Vector3.new(0, 0.05, 0)), Color3.fromRGB(80, 40, 100))
+		for _, s in { -1, 1 } do
+			local page = CFrame.new(bk + Vector3.new(0.55 * s, 0.17, 0)) * CFrame.Angles(0, 0, 0.12 * s)
+			lBlock(Vector3.new(1.05, 0.14, 1.4), page, cream)
+			for _, z in { -0.35, 0, 0.35 } do
+				lBlock(Vector3.new(0.7, 0.02, 0.07), page * CFrame.new(0.02 * s, 0.08, z), Color3.fromRGB(120, 100, 90))
+			end
+		end
+		lBlock(Vector3.new(0.12, 0.03, 0.75), CFrame.new(bk + Vector3.new(0, 0.12, -0.95)), trim)
+		lBlock(Vector3.new(0.26, 0.26, 0.26), CFrame.new(bk + Vector3.new(0, 0.8, 0)) * U.VertexUp, trim, NEON)
+		-- gold corner protectors on the lid front
+		for _, s in { -1, 1 } do
+			lWedge(Vector3.new(0.08, 0.45, 0.45), CFrame.new(s * (W / 2 + 0.02), BODY_H + LID_H - 0.2, lidFrontZ + 0.2), LOCK, metal)
+		end
+	elseif style == "Topsy" then
+		local wood = U.Shade(color, 0.6)
+		-- little feet sticking up off the lid (the chest is "upside down")
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				local fp = Vector3.new(sx * 1.95, lidTop, sz * 0.8)
+				lCyl(0.4, 0.38, CFrame.new(fp + Vector3.new(0, 0.2, 0)) * U.AxisY, wood)
+				lBall(0.55, CFrame.new(fp + Vector3.new(0, 0.48, 0)), band)
+			end
+		end
+		-- a fake lid seam and hinges down at the bottom
+		bBlock(Vector3.new(W + 0.04, 0.08, D + 0.04), CFrame.new(0, 0.8, 0), trim)
+		bBlock(Vector3.new(W + 0.04, 0.2, D + 0.04), CFrame.new(0, 0.62, 0), U.Shade(color, 0.8))
+		for _, s in { -1, 1 } do
+			bCyl(0.5, 0.24, CFrame.new(s * 1.3, 0.8, D / 2 + 0.08), METAL, metal)
+			bCyl(0.25, 0.24, CFrame.new(s * (W / 2 + 0.05), 0.8, 1.45) * U.AxisZ, METAL, metal)
+		end
+		-- "this way up" arrows on the sides, pointing down
+		for _, s in { -1, 1 } do
+			local x = s * (W / 2 + 0.03)
+			bBlock(Vector3.new(0.06, 0.7, 0.16), CFrame.new(x, 1.55, 0), trim)
+			for _, k in { -1, 1 } do
+				bBlock(Vector3.new(0.06, 0.42, 0.14), CFrame.new(x, 1.27, 0.12 * k) * CFrame.Angles(0.75 * k, 0, 0), trim)
+			end
+		end
+		-- a spiral swirl on the lid between the feet
+		local sw = CFrame.new(0, lidTop + 0.04, -0.05)
+		for k = 0, 5 do
+			local a = k * 1.1
+			local r = 0.15 + k * 0.1
+			lBall(0.18 + k * 0.02, sw * CFrame.new(r * math.cos(a), 0, r * math.sin(a)), if k % 2 == 0 then trim else WHITE)
+		end
+	elseif style == "Shroom" then
+		local cap = U.Mix(trim, color, 0.35)
+		local spot = Color3.fromRGB(245, 250, 235)
+		local gill = Color3.fromRGB(215, 235, 215)
+		-- stepped mushroom cap over the lid, spotted, with pale gills underneath
+		lCyl(0.06, 4.15, CFrame.new(0, lidTop - 0.02, 0) * U.AxisY, gill)
+		local tiers = { { 4.4, 0.3 }, { 3.6, 0.28 }, { 2.6, 0.25 }, { 1.4, 0.2 } }
+		local y = lidTop
+		local tierY: { number } = {}
+		for _, t in tiers do
+			lCyl(t[2], t[1], CFrame.new(0, y + t[2] / 2, 0) * U.AxisY, cap)
+			table.insert(tierY, y + t[2] / 2)
+			y += t[2]
+		end
+		local spots = { { 1, 200 }, { 1, 245 }, { 1, 290 }, { 1, 335 }, { 1, 20 }, { 2, 225 }, { 2, 280 }, { 2, 330 }, { 2, 60 }, { 3, 250 }, { 3, 310 } }
+		for _, sp in spots do
+			local a = math.rad(sp[2])
+			local r = tiers[sp[1]][1] / 2 - 0.08
+			lBall(0.42 - sp[1] * 0.04, CFrame.new(r * math.cos(a), tierY[sp[1]] + 0.04, r * math.sin(a)), spot)
+		end
+		lCyl(0.05, 0.6, CFrame.new(0, y, 0) * U.AxisY, spot)
+		-- little glowshrooms by the front corners (outside the lid's swing); one glows
+		for i, c in { Vector3.new(-2.85, 0.3, -1.3), Vector3.new(2.85, 0.3, -1.1), Vector3.new(-2.95, 0.3, -0.55) } do
+			local h = if i == 3 then 0.35 else 0.6
+			bCyl(h, 0.2, CFrame.new(c + Vector3.new(0, h / 2, 0)) * U.AxisY, spot)
+			bCyl(0.16, if i == 3 then 0.45 else 0.7, CFrame.new(c + Vector3.new(0, h + 0.05, 0)) * U.AxisY, if i == 1 then trim else cap, if i == 1 then NEON else nil)
+			bBall(0.12, CFrame.new(c + Vector3.new(0.12, h + 0.14, -0.1)), spot)
+		end
+	elseif style == "Mirror" then
+		local glass: U.Opts = { Reflectance = 0.45 }
+		local pane = Color3.fromRGB(165, 210, 245)
+		local frame = Color3.fromRGB(230, 235, 245)
+		-- framed mirror panels on the sides and front
+		for _, s in { -1, 1 } do
+			local x = s * (W / 2 + 0.03)
+			bBlock(Vector3.new(0.06, 1.5, 2.7), CFrame.new(x, 1.3, 0), frame, metal)
+			bBlock(Vector3.new(0.06, 1.25, 2.45), CFrame.new(x + 0.03 * s, 1.3, 0), pane, glass)
+			bBlock(Vector3.new(0.06, 0.95, 0.12), CFrame.new(x + 0.07 * s, 1.35, -0.6) * CFrame.Angles(0.7, 0, 0), WHITE) -- shine streak
+			bBlock(Vector3.new(0.06, 0.55, 0.08), CFrame.new(x + 0.07 * s, 1.45, -0.25) * CFrame.Angles(0.7, 0, 0), WHITE)
+			local fx = s * 1.08
+			bBlock(Vector3.new(0.7, 1.35, 0.06), CFrame.new(fx, 1.25, frontZ - 0.03), frame, metal)
+			bBlock(Vector3.new(0.5, 1.15, 0.06), CFrame.new(fx, 1.25, frontZ - 0.06), pane, glass)
+		end
+		-- diamond mirror tiles along the lid front
+		for _, x in { -1.0, -0.33, 0.33, 1.0 } do
+			lBlock(Vector3.new(0.3, 0.3, 0.06), CFrame.new(x, BODY_H + 0.42, lidFrontZ - 0.03) * CFrame.Angles(0, 0, math.pi / 4), pane, glass)
+		end
+		-- round mirror on a stand on the lid, with a glint
+		local mp = Vector3.new(0, lidTop + 1.0, 0.15)
+		lCyl(0.12, 0.7, CFrame.new(0, lidTop + 0.06, 0.15) * U.AxisY, frame, metal)
+		lCyl(0.3, 0.16, CFrame.new(0, lidTop + 0.25, 0.15) * U.AxisY, frame, metal)
+		lCyl(0.16, 1.55, CFrame.new(mp) * U.AxisZ, frame, metal)
+		lCyl(0.06, 1.3, CFrame.new(mp + Vector3.new(0, 0, -0.08)) * U.AxisZ, pane, glass)
+		for _, s in { -1, 0, 1 } do
+			lBall(0.2, CFrame.new(mp + Vector3.new(0.45 * s, 0.75 - math.abs(s) * 0.2, 0)), band)
+		end
+		local gl = CFrame.new(mp + Vector3.new(-0.3, 0.3, -0.13))
+		lBlock(Vector3.new(0.06, 0.4, 0.04), gl, WHITE, NEON)
+		lBlock(Vector3.new(0.4, 0.06, 0.04), gl, WHITE, NEON)
+	elseif style == "Subway" then
+		local wheelC = Color3.fromRGB(45, 45, 55)
+		local dark: U.Opts = { Material = Enum.Material.Metal }
+		-- train wheels and coupling rods on the sides
+		for _, s in { -1, 1 } do
+			for _, z in { -1.0, 1.0 } do
+				bCyl(0.2, 0.85, CFrame.new(s * (W / 2 + 0.2), 0.5, z), wheelC, dark)
+				bCyl(0.26, 0.32, CFrame.new(s * (W / 2 + 0.26), 0.5, z), trim, metal)
+			end
+			bBlock(Vector3.new(0.06, 0.12, 2.1), CFrame.new(s * (W / 2 + 0.42), 0.5, 0), METAL, metal)
+		end
+		-- rivets on the band fronts and lid bands
+		for _, s in { -1, 1 } do
+			for _, dx in { -0.15, 0.15 } do
+				for _, y in { 0.75, 1.25, 1.75 } do
+					bBall(0.14, CFrame.new(BAND_X * s + dx, y, frontZ - 0.07), METAL, metal)
+				end
+				lBall(0.14, CFrame.new(BAND_X * s + dx, BODY_H + 0.55, lidFrontZ - 0.07), METAL, metal)
+			end
+		end
+		-- yellow-and-black "mind the gap" stripe along the bottom of the front
+		bBlock(Vector3.new(W, 0.25, 0.06), CFrame.new(0, 0.53, frontZ - 0.09), trim)
+		for x = -2.2, 2.25, 0.55 do
+			bBlock(Vector3.new(0.12, 0.25, 0.04), CFrame.new(x, 0.53, frontZ - 0.13) * CFrame.Angles(0, 0, 0.6), wheelC)
+		end
+		-- headlight on the lid front
+		local hl = CFrame.new(0, BODY_H + 0.42, lidFrontZ - 0.12)
+		lCyl(0.24, 0.7, hl * U.AxisZ, wheelC, dark)
+		lCyl(0.06, 0.5, hl * CFrame.new(0, 0, -0.13) * U.AxisZ, Color3.fromRGB(255, 245, 200), NEON)
+		lBlock(Vector3.new(0.8, 0.08, 0.3), hl * CFrame.new(0, 0.37, -0.05), wheelC, dark)
+		-- destination sign on the lid
+		local sg = CFrame.new(0, lidTop + 0.42, 0.2)
+		lBlock(Vector3.new(0.12, 0.3, 0.12), CFrame.new(-0.7, lidTop + 0.12, 0.2), wheelC, dark)
+		lBlock(Vector3.new(0.12, 0.3, 0.12), CFrame.new(0.7, lidTop + 0.12, 0.2), wheelC, dark)
+		lBlock(Vector3.new(2.0, 0.5, 0.18), sg, wheelC, dark)
+		lBlock(Vector3.new(1.8, 0.34, 0.04), sg * CFrame.new(0, 0, -0.1), trim)
+		for i, x in { -0.6, -0.2, 0.25, 0.6 } do
+			lBlock(Vector3.new(if i == 3 then 0.12 else 0.26, 0.16, 0.03), sg * CFrame.new(x, 0, -0.12), wheelC)
+		end
+	elseif style == "Neon" then
+		local cyan = Color3.fromRGB(100, 230, 255)
+		local tube = 0.1
+		-- thin neon tubes along the front corners, the bottom edge and the lid edge
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				bCyl(BODY_H - 0.45, tube, CFrame.new(sx * (W / 2 + 0.03), 0.35 + (BODY_H - 0.45) / 2, sz * (D / 2 + 0.03)) * U.AxisY, trim, NEON)
+			end
+		end
+		bCyl(W - 0.2, tube, CFrame.new(0, 0.45, frontZ - 0.04), cyan, NEON)
+		lCyl(W + 0.05, tube, CFrame.new(0, BODY_H + LID_H, lidFrontZ - 0.03), cyan, NEON)
+		-- dark tube clips
+		for _, x in { -1.2, 1.2 } do
+			bBlock(Vector3.new(0.12, 0.18, 0.1), CFrame.new(x, 0.45, frontZ - 0.05), EYE)
+		end
+		-- neon star sign standing on the lid
+		local board = CFrame.new(0, lidTop + 0.85, 0.45)
+		lBlock(Vector3.new(0.12, 0.4, 0.12), CFrame.new(-0.5, lidTop + 0.2, 0.45), METAL, metal)
+		lBlock(Vector3.new(0.12, 0.4, 0.12), CFrame.new(0.5, lidTop + 0.2, 0.45), METAL, metal)
+		lBlock(Vector3.new(1.6, 1.4, 0.12), board, U.Shade(color, 0.7))
+		local pts: { Vector3 } = {}
+		for k = 0, 9 do
+			local a = math.pi / 2 + k * math.pi / 5
+			local r = if k % 2 == 0 then 0.55 else 0.24
+			table.insert(pts, (board * CFrame.new(r * math.cos(a), r * math.sin(a), -0.1)).Position)
+		end
+		for k = 1, 10 do
+			local a, b = pts[k], pts[k % 10 + 1]
+			lCyl((b - a).Magnitude + 0.06, 0.08, U.Between(a, b), trim, NEON)
+		end
+		-- little speaker/sign dots along the board's base
+		for _, x in { -0.55, 0, 0.55 } do
+			lBall(0.12, board * CFrame.new(x, -0.55, -0.08), cyan)
+		end
+	elseif style == "Storm" then
+		local cloud = Color3.fromRGB(235, 240, 250)
+		local under = Color3.fromRGB(165, 175, 205)
+		local rain = Color3.fromRGB(110, 170, 255)
+		-- puffy cloud floating over the lid, zapping it with a lightning bolt
+		-- zig-zag bolt through `pts` (all at the same Z), `w` wide
+		local function bolt(pts: { Vector3 }, w: number, onTheLid: boolean, opts: U.Opts?)
+			for k = 1, #pts - 1 do
+				local a, b = pts[k], pts[k + 1]
+				local size = Vector3.new(0.1, w, (b - a).Magnitude + w * 0.5)
+				if onTheLid then
+					lBlock(size, CFrame.lookAt((a + b) / 2, b), trim, opts)
+				else
+					bBlock(size, CFrame.lookAt((a + b) / 2, b), trim, opts)
+				end
+			end
+		end
+		local cc = Vector3.new(0.15, lidTop + 1.6, 0.25)
+		for _, b in { { 0, -0.3, 0, 0.95, 1 }, { 0, 0, 0, 1.2, 0 }, { -0.65, -0.15, 0, 0.9, 0 }, { 0.65, -0.12, 0.05, 0.95, 0 }, { -0.3, 0.32, 0.1, 0.85, 0 }, { 0.32, 0.35, -0.05, 0.9, 0 }, { -1.05, -0.25, 0, 0.6, 0 }, { 1.05, -0.25, 0, 0.6, 0 } } do
+			lBall(b[4], CFrame.new(cc + Vector3.new(b[1], b[2], b[3])), if b[5] == 1 then under else cloud)
+		end
+		local bz = -0.45
+		bolt({ Vector3.new(0.45, cc.Y - 0.35, bz), Vector3.new(-0.1, lidTop + 0.6, bz), Vector3.new(0.35, lidTop + 0.55, bz), Vector3.new(-0.05, lidTop + 0.02, bz) }, 0.26, true, NEON)
+		-- raindrops on the sides
+		for _, s in { -1, 1 } do
+			for _, p in { Vector2.new(1.7, -0.9), Vector2.new(1.2, 0.1), Vector2.new(1.8, 0.9), Vector2.new(0.8, -0.35), Vector2.new(0.7, 1.15) } do
+				local dp = Vector3.new(s * (W / 2 + 0.04), p.X, p.Y)
+				bBall(0.24, CFrame.new(dp), rain)
+				bBlock(Vector3.new(0.13, 0.13, 0.13), CFrame.new(dp + Vector3.new(0, 0.12, 0)) * U.VertexUp, rain)
+			end
+		end
+		-- solid bolts on the front either side of the emblem
+		for _, s in { -1, 1 } do
+			local x, z = 1.08 * s, frontZ - 0.05
+			bolt({ Vector3.new(x + 0.18, 1.8, z), Vector3.new(x - 0.12, 1.3, z), Vector3.new(x + 0.12, 1.3, z), Vector3.new(x - 0.18, 0.8, z) }, 0.17, false)
+		end
+		-- cloud puffs round the base, like the chest is floating on a sky island
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				bBall(0.9, CFrame.new(sx * W / 2, 0.25, sz * D / 2), cloud)
+				bBall(0.6, CFrame.new(sx * (W / 2 - 0.55), 0.2, sz * (D / 2 + 0.05)), cloud)
+			end
+		end
+	elseif style == "Moon" then
+		local panel = Color3.fromRGB(250, 251, 253)
+		local seamC = Color3.fromRGB(95, 100, 115)
+		-- white hull panels on the sides with seams and bolts
+		for _, s in { -1, 1 } do
+			local x = s * (W / 2 + 0.03)
+			bBlock(Vector3.new(0.06, 1.3, 2.9), CFrame.new(x, 1.35, 0), panel)
+			bBlock(Vector3.new(0.08, 1.3, 0.05), CFrame.new(x, 1.35, 0), seamC)
+			for _, z in { -1.3, -0.15, 0.15, 1.3 } do
+				for _, y in { 0.82, 1.88 } do
+					bBall(0.1, CFrame.new(x + 0.03 * s, y, z), seamC)
+				end
+			end
+			-- front panels either side of the emblem
+			bBlock(Vector3.new(0.6, 1.25, 0.06), CFrame.new(1.08 * s, 1.3, frontZ - 0.03), panel)
+		end
+		-- orange stripe round the body
+		bBlock(Vector3.new(W + 0.04, 0.18, D + 0.04), CFrame.new(0, 0.5, 0), band, bandOpts)
+		-- vent slots on the lid front
+		for _, y in { 0.3, 0.45, 0.6 } do
+			lBlock(Vector3.new(0.7, 0.06, 0.04), CFrame.new(0, BODY_H + y, lidFrontZ - 0.02), seamC)
+		end
+		-- radar dish and a whip antenna with a blinking light on the lid
+		local dp = Vector3.new(-0.85, lidTop, 0.25)
+		lCyl(0.45, 0.16, CFrame.new(dp + Vector3.new(0, 0.22, 0)) * U.AxisY, METAL, metal)
+		local dish = CFrame.new(dp + Vector3.new(0, 0.6, 0)) * CFrame.Angles(-0.65, 0, 0)
+		lCyl(0.12, 1.2, dish * U.AxisY, panel)
+		lCyl(0.45, 0.06, dish * CFrame.new(0, 0.25, 0) * U.AxisY, METAL, metal)
+		lBall(0.16, dish * CFrame.new(0, 0.48, 0), band)
+		local ap = Vector3.new(1.3, lidTop, 0.5)
+		lCyl(0.15, 0.4, CFrame.new(ap + Vector3.new(0, 0.07, 0)) * U.AxisY, seamC)
+		lCyl(1.3, 0.08, CFrame.new(ap + Vector3.new(0, 0.7, 0)) * U.AxisY, METAL, metal)
+		lBall(0.22, CFrame.new(ap + Vector3.new(0, 1.38, 0)), trim, NEON)
+		-- lander legs with foot pads at the corners (below the lid, so they never block it)
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				local a = Vector3.new(sx * 2.4, 1.15, sz * 1.5)
+				local b = Vector3.new(sx * 3.0, 0.12, sz * 1.95)
+				bCyl((b - a).Magnitude, 0.16, U.Between(a, b), METAL, metal)
+				bCyl(0.1, 0.55, CFrame.new(b) * U.AxisY, METAL, metal)
+				bBall(0.24, CFrame.new(a), band)
+			end
+		end
+	elseif style == "Void" then
+		local violet = Color3.fromRGB(200, 150, 255)
+		local orbC = Color3.fromRGB(45, 20, 80)
+		-- white four-point star studs all over the chest (a frame's -Z faces outward)
+		local function star(cf: CFrame, sz: number, onTheLid: boolean)
+			-- an eight-point star: two squares, one turned 45 degrees
+			local q = sz * 0.6
+			local function put(size: Vector3, at: CFrame)
+				if onTheLid then
+					lBlock(size, at, WHITE)
+				else
+					bBlock(size, at, WHITE)
+				end
+			end
+			put(Vector3.new(q, q, 0.05), cf)
+			put(Vector3.new(q, q, 0.05), cf * CFrame.Angles(0, 0, math.pi / 4))
+		end
+		for _, p in { Vector3.new(-1.1, 1.7, 0.4), Vector3.new(1.15, 1.0, 0.45), Vector3.new(-1.0, 0.7, 0.3), Vector3.new(1.0, 1.85, 0.3), Vector3.new(0, 0.5, 0.25) } do
+			star(CFrame.new(p.X, p.Y, frontZ - 0.03), p.Z, false)
+		end
+		for _, s in { -1, 1 } do
+			for _, p in { Vector3.new(1.65, -0.8, 0.45), Vector3.new(0.85, 0.5, 0.35), Vector3.new(1.5, 1.2, 0.3), Vector3.new(0.75, -1.3, 0.25) } do
+				star(CFrame.new(s * (W / 2 + 0.03), p.X, p.Y) * CFrame.Angles(0, -s * math.pi / 2, 0), p.Z, false)
+			end
+		end
+		for _, p in { Vector3.new(-0.95, 2.72, 0.3), Vector3.new(0.95, 2.62, 0.25) } do
+			star(CFrame.new(p.X, p.Y, lidFrontZ - 0.03), p.Z, true)
+		end
+		-- tiny white dots between the stars
+		for _, p in { Vector3.new(-0.55, 0.45, frontZ), Vector3.new(0.6, 2.0, frontZ), Vector3.new(-1.35, 1.25, frontZ) } do
+			bBall(0.1, CFrame.new(p), WHITE)
+		end
+		-- violet trim over the plinth
+		bBlock(Vector3.new(W + 0.3, 0.1, D + 0.3), CFrame.new(0, 0.38, 0), violet)
+		-- void orb with a ringed orbit on a pedestal, a small star glinting above it
+		local op = Vector3.new(0, lidTop + 0.95, 0.05)
+		lCyl(0.18, 1.0, CFrame.new(0, lidTop + 0.09, 0.05) * U.AxisY, U.Shade(color, 1.6))
+		lCyl(0.3, 0.3, CFrame.new(0, lidTop + 0.3, 0.05) * U.AxisY, violet)
+		lBall(1.05, CFrame.new(op), orbC)
+		for _, p in U.Hoop(0.78, 0.08, 0.06, 14, CFrame.new(op) * CFrame.Angles(math.rad(70), 0, math.rad(18)), WHITE, model) do
+			onLid(p)
+		end
+		local gl = CFrame.new(op + Vector3.new(0.45, 0.7, -0.1))
+		lBlock(Vector3.new(0.2, 0.2, 0.04), gl, violet, NEON)
+		lBlock(Vector3.new(0.2, 0.2, 0.04), gl * CFrame.Angles(0, 0, math.pi / 4), violet, NEON)
+	elseif style ~= "Basic" then
+		warn("CrateRig: no decorations for style " .. tostring(style))
 	end
 
 	return {
