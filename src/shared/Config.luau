@@ -2218,7 +2218,8 @@ Config.Exclusives = {
 	Sunken = "ExclusiveSunken",
 	Clockwork = "ExclusiveClockwork",
 	Inferno = "ExclusiveInferno",
-	Throne = "ExclusiveThrone",	-- WORLD 2: THE OTHER SIDE (areas 17-26)
+	Throne = "ExclusiveThrone",
+	-- WORLD 2: THE OTHER SIDE (areas 17-26)
 	LanternMarket = "ExclusiveLanternMarket",
 	PhantomLibrary = "ExclusivePhantomLibrary",
 	UpsideManor = "ExclusiveUpsideManor",
@@ -3121,6 +3122,16 @@ Config.Layout = {
 		Clockwork = { Z = 4480, Width = 34 },
 		Inferno = { Z = 4840, Width = 34 },
 		Throne = { Z = 5200, Width = 34 },
+		-- World 2 (Lantern Market has no gate wall: its entry is the portal at the end of the Throne)
+		PhantomLibrary = { Z = 7360, Width = 34 },
+		UpsideManor = { Z = 7720, Width = 34 },
+		Glowshroom = { Z = 8080, Width = 34 },
+		MirrorMaze = { Z = 8440, Width = 34 },
+		GhostSubway = { Z = 8800, Width = 34 },
+		NeonCity = { Z = 9160, Width = 34 },
+		StormIslands = { Z = 9520, Width = 34 },
+		MoonBase = { Z = 9880, Width = 34 },
+		VoidThrone = { Z = 10240, Width = 34 },
 	},
 	CrateStations = {
 		Beginner = Vector3.new(-28, 0, -6), -- just inside the lobby entrance
@@ -3139,6 +3150,17 @@ Config.Layout = {
 		Clockwork = Vector3.new(-28, 0, 4512),
 		Inferno = Vector3.new(-28, 0, 4872),
 		Throne = Vector3.new(-28, 0, 5232),
+		-- World 2 (Lantern Market has no gate wall: its entry is the portal at the end of the Throne)
+		Lantern = Vector3.new(-28, 0, 7032),
+		Library = Vector3.new(-28, 0, 7392),
+		Topsy = Vector3.new(-28, 0, 7752),
+		Shroom = Vector3.new(-28, 0, 8112),
+		Mirror = Vector3.new(-28, 0, 8472),
+		Subway = Vector3.new(-28, 0, 8832),
+		Neon = Vector3.new(-28, 0, 9192),
+		Storm = Vector3.new(-28, 0, 9552),
+		Moon = Vector3.new(-28, 0, 9912),
+		Void = Vector3.new(-28, 0, 10272),
 	},
 	-- Fast Travel (WORLDS menu) arrival points: open ground beside each zone's path, clear of
 	-- ghost areas, stations and props (the builders keep a circle around each one free).
@@ -3159,6 +3181,17 @@ Config.Layout = {
 		Clockwork = Vector3.new(26, 3, 4512),
 		Inferno = Vector3.new(26, 3, 4872),
 		Throne = Vector3.new(26, 3, 5232),
+		-- World 2 (Lantern Market has no gate wall: its entry is the portal at the end of the Throne)
+		LanternMarket = Vector3.new(26, 3, 7032),
+		PhantomLibrary = Vector3.new(26, 3, 7392),
+		UpsideManor = Vector3.new(26, 3, 7752),
+		Glowshroom = Vector3.new(26, 3, 8112),
+		MirrorMaze = Vector3.new(26, 3, 8472),
+		GhostSubway = Vector3.new(26, 3, 8832),
+		NeonCity = Vector3.new(26, 3, 9192),
+		StormIslands = Vector3.new(26, 3, 9552),
+		MoonBase = Vector3.new(26, 3, 9912),
+		VoidThrone = Vector3.new(26, 3, 10272),
 	},
 	UpgradeStation = Vector3.new(28, 0, -6),
 	-- lobby boards on the right of the spawn plaza, side by side, turned toward the plaza:
@@ -3264,6 +3297,66 @@ Config.Layout = {
 		{ Ghost = "ShadowPhantom", Center = Vector3.new(75, 0, 5380), Radius = 26, Count = 4 },
 		{ Ghost = "ShadowPhantom", Center = Vector3.new(-62, 0, 5440), Radius = 24, Count = 4 },
 		{ Ghost = "GhostKing", Center = Vector3.new(0, 0, 5505), Radius = 28, Count = 1 },
+		-- ZONE 17 (World 2) LanternMarket (Z 7000..)
+		{ Ghost = "LanternWisp", Center = Vector3.new(0, 0, 7085), Radius = 30, Count = 6 },
+		{ Ghost = "LanternWisp", Center = Vector3.new(-82, 0, 7120), Radius = 24, Count = 4 },
+		{ Ghost = "DumplingDrifter", Center = Vector3.new(75, 0, 7180), Radius = 26, Count = 4 },
+		{ Ghost = "DumplingDrifter", Center = Vector3.new(-62, 0, 7240), Radius = 24, Count = 4 },
+		{ Ghost = "LanternDragon", Center = Vector3.new(0, 0, 7305), Radius = 26, Count = 1 },
+		-- ZONE 18 (World 2) PhantomLibrary (Z 7360..)
+		{ Ghost = "PageSprite", Center = Vector3.new(0, 0, 7445), Radius = 30, Count = 6 },
+		{ Ghost = "PageSprite", Center = Vector3.new(-82, 0, 7480), Radius = 24, Count = 4 },
+		{ Ghost = "InkblotPhantom", Center = Vector3.new(75, 0, 7540), Radius = 26, Count = 4 },
+		{ Ghost = "InkblotPhantom", Center = Vector3.new(-62, 0, 7600), Radius = 24, Count = 4 },
+		{ Ghost = "GrandGrimoire", Center = Vector3.new(0, 0, 7665), Radius = 26, Count = 1 },
+		-- ZONE 19 (World 2) UpsideManor (Z 7720..)
+		{ Ghost = "DizzySpirit", Center = Vector3.new(0, 0, 7805), Radius = 30, Count = 6 },
+		{ Ghost = "DizzySpirit", Center = Vector3.new(-82, 0, 7840), Radius = 24, Count = 4 },
+		{ Ghost = "ChandelierPhantom", Center = Vector3.new(75, 0, 7900), Radius = 26, Count = 4 },
+		{ Ghost = "ChandelierPhantom", Center = Vector3.new(-62, 0, 7960), Radius = 24, Count = 4 },
+		{ Ghost = "CountessTopsyTurvy", Center = Vector3.new(0, 0, 8025), Radius = 26, Count = 1 },
+		-- ZONE 20 (World 2) Glowshroom (Z 8080..)
+		{ Ghost = "SporeWisp", Center = Vector3.new(0, 0, 8165), Radius = 30, Count = 6 },
+		{ Ghost = "SporeWisp", Center = Vector3.new(-82, 0, 8200), Radius = 24, Count = 4 },
+		{ Ghost = "MossyPhantom", Center = Vector3.new(75, 0, 8260), Radius = 26, Count = 4 },
+		{ Ghost = "MossyPhantom", Center = Vector3.new(-62, 0, 8320), Radius = 24, Count = 4 },
+		{ Ghost = "MyceliumMonarch", Center = Vector3.new(0, 0, 8385), Radius = 26, Count = 1 },
+		-- ZONE 21 (World 2) MirrorMaze (Z 8440..)
+		{ Ghost = "GlintSpirit", Center = Vector3.new(0, 0, 8525), Radius = 30, Count = 6 },
+		{ Ghost = "GlintSpirit", Center = Vector3.new(-82, 0, 8560), Radius = 24, Count = 4 },
+		{ Ghost = "CopycatPhantom", Center = Vector3.new(75, 0, 8620), Radius = 26, Count = 4 },
+		{ Ghost = "CopycatPhantom", Center = Vector3.new(-62, 0, 8680), Radius = 24, Count = 4 },
+		{ Ghost = "QueenOfReflections", Center = Vector3.new(0, 0, 8745), Radius = 26, Count = 1 },
+		-- ZONE 22 (World 2) GhostSubway (Z 8800..)
+		{ Ghost = "CommuterSpecter", Center = Vector3.new(0, 0, 8885), Radius = 30, Count = 6 },
+		{ Ghost = "CommuterSpecter", Center = Vector3.new(-82, 0, 8920), Radius = 24, Count = 4 },
+		{ Ghost = "TicketPhantom", Center = Vector3.new(75, 0, 8980), Radius = 26, Count = 4 },
+		{ Ghost = "TicketPhantom", Center = Vector3.new(-62, 0, 9040), Radius = 24, Count = 4 },
+		{ Ghost = "PhantomExpress", Center = Vector3.new(0, 0, 9105), Radius = 26, Count = 1 },
+		-- ZONE 23 (World 2) NeonCity (Z 9160..)
+		{ Ghost = "NeonSprite", Center = Vector3.new(0, 0, 9245), Radius = 30, Count = 6 },
+		{ Ghost = "NeonSprite", Center = Vector3.new(-82, 0, 9280), Radius = 24, Count = 4 },
+		{ Ghost = "GraffitiPhantom", Center = Vector3.new(75, 0, 9340), Radius = 26, Count = 4 },
+		{ Ghost = "GraffitiPhantom", Center = Vector3.new(-62, 0, 9400), Radius = 24, Count = 4 },
+		{ Ghost = "BillboardBoss", Center = Vector3.new(0, 0, 9465), Radius = 26, Count = 1 },
+		-- ZONE 24 (World 2) StormIslands (Z 9520..)
+		{ Ghost = "BreezeSpirit", Center = Vector3.new(0, 0, 9605), Radius = 30, Count = 6 },
+		{ Ghost = "BreezeSpirit", Center = Vector3.new(-82, 0, 9640), Radius = 24, Count = 4 },
+		{ Ghost = "ThundercloudPhantom", Center = Vector3.new(75, 0, 9700), Radius = 26, Count = 4 },
+		{ Ghost = "ThundercloudPhantom", Center = Vector3.new(-62, 0, 9760), Radius = 24, Count = 4 },
+		{ Ghost = "TempestRoc", Center = Vector3.new(0, 0, 9825), Radius = 26, Count = 1 },
+		-- ZONE 25 (World 2) MoonBase (Z 9880..)
+		{ Ghost = "MoondustSpirit", Center = Vector3.new(0, 0, 9965), Radius = 30, Count = 6 },
+		{ Ghost = "MoondustSpirit", Center = Vector3.new(-82, 0, 10000), Radius = 24, Count = 4 },
+		{ Ghost = "AstroPhantom", Center = Vector3.new(75, 0, 10060), Radius = 26, Count = 4 },
+		{ Ghost = "AstroPhantom", Center = Vector3.new(-62, 0, 10120), Radius = 24, Count = 4 },
+		{ Ghost = "SaucerOverseer", Center = Vector3.new(0, 0, 10185), Radius = 26, Count = 1 },
+		-- ZONE 26 (World 2) VoidThrone (Z 10240..)
+		{ Ghost = "VoidMote", Center = Vector3.new(0, 0, 10325), Radius = 30, Count = 6 },
+		{ Ghost = "VoidMote", Center = Vector3.new(-82, 0, 10360), Radius = 24, Count = 4 },
+		{ Ghost = "RiftPhantom", Center = Vector3.new(75, 0, 10420), Radius = 26, Count = 4 },
+		{ Ghost = "RiftPhantom", Center = Vector3.new(-62, 0, 10480), Radius = 24, Count = 4 },
+		{ Ghost = "VoidHerald", Center = Vector3.new(0, 0, 10545), Radius = 26, Count = 1 },
 	} :: { GhostArea },
 }
 
