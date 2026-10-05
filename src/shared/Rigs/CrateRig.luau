@@ -51,7 +51,6 @@ local STYLES: { [string]: boolean } = {
 	-- World 2
 	Lantern = true, Library = true, Topsy = true, Shroom = true, Mirror = true, Subway = true,
 	Neon = true, Storm = true, Moon = true, Void = true,
-	-- PLACEHOLDER (world2b): listed but not decorated yet (plain chest) until the real styles land
 	Harvest = true, Splash = true, Shopping = true, Fossil = true, Trophy = true, CookieJar = true, Arcade = true,
 }
 CrateRig.Styles = STYLES
@@ -996,8 +995,431 @@ function CrateRig.Build(crateId: string): CrateRig
 		local gl = CFrame.new(op + Vector3.new(0.45, 0.7, -0.1))
 		lBlock(Vector3.new(0.2, 0.2, 0.04), gl, violet, NEON)
 		lBlock(Vector3.new(0.2, 0.2, 0.04), gl * CFrame.Angles(0, 0, math.pi / 4), violet, NEON)
-	elseif style == "Harvest" or style == "Splash" or style == "Shopping" or style == "Fossil" or style == "Trophy" or style == "CookieJar" or style == "Arcade" then
-		-- PLACEHOLDER (world2b): plain chest, no decorations until the real styles are built (see NEW_PARTS_16.md)
+	elseif style == "Harvest" then
+		local plank = U.Shade(color, 0.7)
+		local brace = U.Mix(color, WHITE, 0.2)
+		local pumpkin = Color3.fromRGB(255, 140, 30)
+		local leafC = Color3.fromRGB(100, 170, 55)
+		local stemC = Color3.fromRGB(110, 85, 45)
+		local straw = Color3.fromRGB(240, 205, 110)
+		local corn = Color3.fromRGB(255, 215, 70)
+		-- plank grooves round the body and lid, and a diagonal brace on each side (a wooden farm crate)
+		for _, y in { 1.0, 1.65 } do
+			bBlock(Vector3.new(W + 0.02, 0.07, D + 0.02), CFrame.new(0, y, 0), plank)
+		end
+		lBlock(Vector3.new(W + 0.12, 0.06, D + 0.12), CFrame.new(0, BODY_H + 0.62, 0), plank)
+		for _, s in { -1, 1 } do
+			local a = Vector3.new(s * (W / 2 + 0.04), 0.55, -1.45)
+			local b = Vector3.new(s * (W / 2 + 0.04), 2.1, 1.45)
+			bBlock(Vector3.new(0.08, 0.3, (b - a).Magnitude), CFrame.lookAt((a + b) / 2, b), brace)
+		end
+		-- a lobed pumpkin with a friendly face sitting on the lid
+		local pc = Vector3.new(0.6, lidTop + 0.42, 0.1)
+		lBall(0.95, CFrame.new(pc), pumpkin)
+		for k = 0, 5 do
+			local a = k * math.pi / 3 - math.pi / 2
+			lBall(0.8, CFrame.new(pc + Vector3.new(0.3 * math.cos(a), -0.02, 0.3 * math.sin(a))), if k % 2 == 0 then pumpkin else U.Shade(pumpkin, 0.9))
+		end
+		for _, s in { -1, 1 } do
+			lBlock(Vector3.new(0.15, 0.15, 0.06), CFrame.new(pc + Vector3.new(0.17 * s, 0.1, -0.62)) * CFrame.Angles(0, 0, math.pi / 4), EYE)
+		end
+		lBlock(Vector3.new(0.32, 0.07, 0.06), CFrame.new(pc + Vector3.new(0, -0.12, -0.66)), EYE)
+		lCyl(0.35, 0.16, CFrame.new(pc + Vector3.new(0.03, 0.55, 0)) * CFrame.Angles(0, 0, 0.25) * U.AxisY, stemC)
+		lBlock(Vector3.new(0.42, 0.04, 0.26), CFrame.new(pc + Vector3.new(-0.24, 0.48, -0.05)) * CFrame.Angles(0, 0.3, 0.35), leafC)
+		for k = 0, 2 do
+			lBall(0.1, CFrame.new(pc + Vector3.new(0.22 + k * 0.07, 0.5 + (k % 2) * 0.06, 0.1 + k * 0.05)), leafC)
+		end
+		-- a corn cob leaning on the right side, husk leaves at its foot
+		local ca, cb = Vector3.new(2.92, 0.15, -1.15), Vector3.new(2.74, 1.6, -1.15)
+		bCyl((cb - ca).Magnitude, 0.38, U.Between(ca, cb), corn)
+		bBall(0.38, CFrame.new(cb), corn)
+		for k = 1, 4 do
+			bCyl(0.05, 0.4, U.Between(ca, cb) * CFrame.new(0, 0, (k - 2.5) * 0.28) * U.AxisZ, U.Shade(corn, 0.85))
+		end
+		for k = 0, 2 do
+			bBlock(Vector3.new(0.24, 0.85, 0.05), CFrame.new(ca + Vector3.new(0, 0.38, 0)) * CFrame.Angles(0, k * 2.1 + 0.4, 0) * CFrame.new(0, 0, -0.17) * CFrame.Angles(-0.3, 0, 0), leafC)
+		end
+		-- straw tufts round the base
+		for _, t in { Vector3.new(2.85, 0, 0.75), Vector3.new(-2.45, 0, -2.15), Vector3.new(-2.85, 0, 1.0) } do
+			bCyl(0.14, 0.55, CFrame.new(t + Vector3.new(0, 0.07, 0)) * U.AxisY, U.Shade(straw, 0.9))
+			for k = 0, 6 do
+				bBlock(Vector3.new(0.07, 0.6, 0.07), CFrame.new(t) * CFrame.Angles(0, k * 0.9, 0) * CFrame.Angles(0.3 + (k % 3) * 0.12, 0, 0) * CFrame.new(0, 0.3, 0), straw)
+			end
+		end
+	elseif style == "Splash" then
+		local grout = Color3.fromRGB(225, 245, 255)
+		local red = Color3.fromRGB(240, 75, 75)
+		local water = Color3.fromRGB(120, 210, 255)
+		local duckC = Color3.fromRGB(255, 220, 60)
+		local beakC = Color3.fromRGB(255, 140, 40)
+		local slideC = Color3.fromRGB(255, 120, 60)
+		-- pool-tile grout lines on the sides
+		for _, s in { -1, 1 } do
+			local x = s * (W / 2 + 0.02)
+			for _, z in { -1.2, -0.6, 0, 0.6, 1.2 } do
+				bBlock(Vector3.new(0.04, BODY_H - 0.35, 0.05), CFrame.new(x, 0.35 + (BODY_H - 0.35) / 2, z), grout)
+			end
+			for _, y in { 0.95, 1.6 } do
+				bBlock(Vector3.new(0.04, 0.05, D), CFrame.new(x, y, 0), grout)
+			end
+		end
+		-- striped swim ring hung round the ghost emblem
+		do
+			local rc = CFrame.new(0, 1.3, frontZ - 0.18)
+			local n, r = 16, 0.82
+			local seg = 2 * r * math.tan(math.pi / n) + 0.04
+			for i = 0, n - 1 do
+				bCyl(seg, 0.32, rc * CFrame.Angles(0, 0, i * 2 * math.pi / n) * CFrame.new(0, r, 0), if (i // 2) % 2 == 0 then red else WHITE)
+			end
+		end
+		-- a little water slide down the right side: ladder at the back, splash pool at the front
+		local pts = { Vector3.new(2.98, 2.15, 1.45), Vector3.new(3.02, 1.7, 0.75), Vector3.new(3.1, 1.1, -0.05), Vector3.new(3.22, 0.55, -0.8), Vector3.new(3.4, 0.28, -1.35), Vector3.new(3.65, 0.22, -1.75) }
+		for k = 1, #pts - 1 do
+			local a, b = pts[k], pts[k + 1]
+			local f = CFrame.lookAt((a + b) / 2, b)
+			local len = (b - a).Magnitude + 0.06
+			bBlock(Vector3.new(0.7, 0.08, len), f, slideC)
+			bBlock(Vector3.new(0.5, 0.02, len), f * CFrame.new(0, 0.05, 0), water, { Transparency = 0.3 })
+			for _, s in { -1, 1 } do
+				bBlock(Vector3.new(0.08, 0.22, len), f * CFrame.new(0.35 * s, 0.1, 0), duckC)
+			end
+		end
+		bCyl(1.0, 0.16, CFrame.new(3.1, 0.5, -0.05) * U.AxisY, WHITE)
+		for _, x in { 2.78, 3.2 } do
+			bBlock(Vector3.new(0.08, 2.15, 0.08), CFrame.new(x, 1.075, 1.95), WHITE)
+		end
+		for _, y in { 0.5, 1.0, 1.5 } do
+			bBlock(Vector3.new(0.42, 0.07, 0.07), CFrame.new(2.99, y, 1.95), WHITE)
+		end
+		bBlock(Vector3.new(0.6, 0.08, 0.5), CFrame.new(2.98, 2.15, 1.75), WHITE)
+		bCyl(0.04, 1.1, CFrame.new(3.7, 0.03, -1.9) * U.AxisY, water, { Transparency = 0.3 })
+		for _, p in { Vector3.new(3.4, 0.35, -2.2), Vector3.new(4.0, 0.3, -1.7), Vector3.new(3.95, 0.45, -2.1) } do
+			bBall(0.16, CFrame.new(p), water)
+		end
+		-- rubber duck floating in a puddle on the lid
+		local dc = Vector3.new(-0.7, lidTop, 0.1)
+		lCyl(0.04, 1.7, CFrame.new(dc + Vector3.new(0, 0.02, 0)) * U.AxisY, water, { Transparency = 0.3 })
+		lBall(1.0, CFrame.new(dc + Vector3.new(0, 0.45, 0.05)), duckC)
+		lBall(0.4, CFrame.new(dc + Vector3.new(0, 0.62, 0.5)), duckC)
+		lBall(0.62, CFrame.new(dc + Vector3.new(0, 1.05, -0.2)), duckC)
+		lBlock(Vector3.new(0.3, 0.1, 0.22), CFrame.new(dc + Vector3.new(0, 1.0, -0.56)), beakC)
+		for _, s in { -1, 1 } do
+			lBall(0.12, CFrame.new(dc + Vector3.new(0.13 * s, 1.13, -0.47)), EYE)
+			lBall(0.36, CFrame.new(dc + Vector3.new(0.42 * s, 0.5, 0.1)), U.Shade(duckC, 0.92))
+		end
+		for _, p in { Vector3.new(0.85, 0.1, -0.5), Vector3.new(-0.8, 0.12, 0.6), Vector3.new(0.7, 0.14, 0.75) } do
+			lBall(0.16, CFrame.new(dc + p), water)
+		end
+	elseif style == "Shopping" then
+		local paper = Color3.fromRGB(250, 248, 240)
+		local tagC = Color3.fromRGB(255, 245, 205)
+		local saleC = Color3.fromRGB(240, 60, 80)
+		local starC = Color3.fromRGB(255, 220, 70)
+		local string_ = Color3.fromRGB(90, 80, 100)
+		-- gift ribbon crossing over the lid and running down the sides and back
+		lBlock(Vector3.new(0.5, 0.04, topDepth + 0.02), CFrame.new(0, lidTop + 0.02, 0), band)
+		lWedge(Vector3.new(0.5, LID_TOP_H + 0.04, bevel.Z + 0.03), CFrame.new(0, topY, -(topDepth + bevel.Z) / 2), band)
+		lWedge(Vector3.new(0.5, LID_TOP_H + 0.04, bevel.Z + 0.03), CFrame.new(0, topY, (topDepth + bevel.Z) / 2) * CFrame.Angles(0, math.pi, 0), band)
+		lBlock(Vector3.new(0.5, LID_H, 0.04), CFrame.new(0, lidY, lidFrontZ - 0.02), band)
+		lBlock(Vector3.new(0.5, LID_H, 0.04), CFrame.new(0, lidY, -lidFrontZ + 0.02), band)
+		bBlock(Vector3.new(0.5, BODY_H - 0.35, 0.04), CFrame.new(0, 0.35 + (BODY_H - 0.35) / 2, D / 2 + 0.02), band)
+		lBlock(Vector3.new(W + 0.14, 0.04, 0.5), CFrame.new(0, lidTop + 0.025, 0), band)
+		for _, s in { -1, 1 } do
+			lBlock(Vector3.new(0.04, LID_H + LID_TOP_H, 0.5), CFrame.new(s * (W / 2 + 0.07), BODY_H + (LID_H + LID_TOP_H) / 2, 0), band)
+			bBlock(Vector3.new(0.04, BODY_H - 0.35, 0.5), CFrame.new(s * (W / 2 + 0.02), 0.35 + (BODY_H - 0.35) / 2, 0), band)
+		end
+		-- big bow on top: two oval loops, a knot and two tails
+		local bc = Vector3.new(0, lidTop + 0.05, 0)
+		for _, s in { -1, 1 } do
+			local f = CFrame.new(bc + Vector3.new(0.45 * s, 0.32, 0)) * CFrame.Angles(0, 0, 0.35 * s)
+			local n = 12
+			local prev: Vector3? = nil
+			for k = 0, n do
+				local a = k * 2 * math.pi / n
+				local p = (f * CFrame.new(0.42 * math.cos(a), 0.24 * math.sin(a), 0)).Position
+				if prev then
+					lCyl((p - prev).Magnitude + 0.08, 0.16, U.Between(prev, p), band)
+				end
+				prev = p
+			end
+			lBlock(Vector3.new(0.22, 0.04, 0.7), CFrame.new(bc + Vector3.new(0.25 * s, 0.0, -0.45)) * CFrame.Angles(0, 0.45 * s, 0), band)
+		end
+		lBlock(Vector3.new(0.34, 0.32, 0.36), CFrame.new(bc + Vector3.new(0, 0.2, 0)), U.Shade(band, 0.9))
+		-- a price tag on a string hanging off the right front corner
+		bBlock(Vector3.new(0.1, 0.1, 0.1), CFrame.new(2.52, 2.18, -1.7), METAL, metal)
+		local tag = CFrame.new(2.72, 1.5, -1.98) * CFrame.Angles(0, 0, -0.2)
+		local hole = (tag * CFrame.new(0, 0.33, 0)).Position
+		bCyl((hole - Vector3.new(2.52, 2.18, -1.75)).Magnitude, 0.04, U.Between(Vector3.new(2.52, 2.18, -1.75), hole), string_)
+		bBlock(Vector3.new(0.6, 0.85, 0.05), tag, tagC)
+		bBall(0.1, tag * CFrame.new(0, 0.33, -0.03), string_)
+		bBlock(Vector3.new(0.5, 0.18, 0.03), tag * CFrame.new(0, 0.1, -0.035), saleC)
+		for i, x in { -0.16, -0.08, 0.02, 0.08, 0.16 } do
+			bBlock(Vector3.new(if i % 2 == 0 then 0.03 else 0.05, 0.2, 0.03), tag * CFrame.new(x, -0.2, -0.035), EYE)
+		end
+		-- a "SALE" starburst on the front left
+		local st = CFrame.new(-1.08, 1.4, frontZ - 0.03)
+		bBlock(Vector3.new(0.6, 0.6, 0.05), st, starC)
+		bBlock(Vector3.new(0.6, 0.6, 0.05), st * CFrame.Angles(0, 0, math.pi / 4), starC)
+		bBlock(Vector3.new(0.34, 0.1, 0.03), st * CFrame.new(0, 0, -0.04), saleC)
+		-- a shopping bag full of tissue paper on the ground at the right
+		local bag = CFrame.new(3.25, 0.6, 0.75) * CFrame.Angles(0, 0.4, 0)
+		bBlock(Vector3.new(0.95, 1.2, 0.55), bag, paper)
+		bBlock(Vector3.new(0.97, 0.24, 0.57), bag * CFrame.new(0, 0.22, 0), band)
+		bBlock(Vector3.new(0.97, 0.06, 0.57), bag * CFrame.new(0, -0.45, 0), color)
+		for _, z in { -0.2, 0.2 } do
+			for _, x in { -0.25, 0.25 } do
+				bCyl(0.32, 0.06, bag * CFrame.new(x, 0.73, z) * U.AxisY, color)
+			end
+			bCyl(0.56, 0.06, bag * CFrame.new(0, 0.89, z), color)
+		end
+		bWedge(Vector3.new(0.3, 0.45, 0.3), bag * CFrame.new(-0.15, 0.75, 0.02) * CFrame.Angles(0, 0, 0.3), saleC)
+		bWedge(Vector3.new(0.3, 0.4, 0.3), bag * CFrame.new(0.2, 0.72, -0.02) * CFrame.Angles(0, math.pi, -0.3), starC)
+	elseif style == "Fossil" then
+		local bone = Color3.fromRGB(245, 235, 210)
+		local boneDark = Color3.fromRGB(200, 185, 150)
+		local amber = Color3.fromRGB(255, 160, 40)
+		local glassC = Color3.fromRGB(200, 235, 255)
+		local brass = Color3.fromRGB(205, 170, 85)
+		local woodC = Color3.fromRGB(110, 70, 40)
+		local imprint = U.Shade(color, 0.72)
+		local imprint2 = U.Mix(color, WHITE, 0.3)
+		-- museum display case on the lid: wood base, brass frame, glass, a little dino skull inside
+		local cz = 0.05
+		local cw, cd, ch = 2.5, 1.5, 1.05
+		lBlock(Vector3.new(cw + 0.2, 0.15, cd + 0.2), CFrame.new(0, lidTop + 0.075, cz), woodC)
+		lBlock(Vector3.new(0.6, 0.1, 0.03), CFrame.new(0, lidTop + 0.075, cz - (cd + 0.2) / 2 - 0.015), brass, metal)
+		local fy = lidTop + 0.15
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				lBlock(Vector3.new(0.1, ch, 0.1), CFrame.new(sx * cw / 2, fy + ch / 2, cz + sz * cd / 2), brass, metal)
+			end
+			lBlock(Vector3.new(cw + 0.1, 0.1, 0.1), CFrame.new(0, fy + ch, cz + sx * cd / 2), brass, metal)
+			lBlock(Vector3.new(0.1, 0.1, cd + 0.1), CFrame.new(sx * cw / 2, fy + ch, cz), brass, metal)
+		end
+		lBlock(Vector3.new(cw, ch, cd), CFrame.new(0, fy + ch / 2, cz), glassC, { Transparency = 0.72 })
+		lBlock(Vector3.new(0.45, 0.18, 0.35), CFrame.new(-0.15, fy + 0.09, cz), woodC)
+		local sc = CFrame.new(0.05, fy + 0.55, cz)
+		lBlock(Vector3.new(0.6, 0.55, 0.5), sc * CFrame.new(-0.4, 0.05, 0), bone)
+		lWedge(Vector3.new(0.5, 0.18, 0.4), sc * CFrame.new(-0.42, 0.41, 0) * CFrame.Angles(0, math.pi / 2, 0), bone) -- brow crest
+		lBlock(Vector3.new(0.75, 0.3, 0.4), sc * CFrame.new(0.2, 0.0, 0) * CFrame.Angles(0, 0, -0.08), bone)
+		lBall(0.36, sc * CFrame.new(0.56, -0.02, 0), bone)
+		lBall(0.18, sc * CFrame.new(0.5, 0.17, 0), bone) -- nose bump
+		lBlock(Vector3.new(0.9, 0.12, 0.34), sc * CFrame.new(0.05, -0.33, 0) * CFrame.Angles(0, 0, -0.22), boneDark) -- open jaw
+		for _, s in { -1, 1 } do
+			lBall(0.26, sc * CFrame.new(-0.36, 0.12, 0.2 * s), EYE)
+			lBall(0.08, sc * CFrame.new(0.66, 0.06, 0.12 * s), EYE)
+			for _, x in { 0.05, 0.25, 0.45 } do
+				lWedge(Vector3.new(0.07, 0.12, 0.07), sc * CFrame.new(x, -0.2, 0.16 * s) * CFrame.Angles(math.pi, 0, 0), WHITE)
+			end
+		end
+		-- bone-shaped handles on the sides
+		for _, s in { -1, 1 } do
+			local x = s * (W / 2 + 0.24)
+			bCyl(1.1, 0.16, CFrame.new(x, 1.75, 0) * U.AxisZ, bone)
+			for _, zs in { -1, 1 } do
+				for _, ys in { -1, 1 } do
+					bBall(0.26, CFrame.new(x, 1.75 + 0.09 * ys, zs * 0.6), bone)
+				end
+				bBlock(Vector3.new(0.22, 0.12, 0.12), CFrame.new(s * (W / 2 + 0.11), 1.75, zs * 0.35), boneDark)
+			end
+		end
+		-- amber gem lock on the lid front, a tiny bug caught inside
+		lBlock(Vector3.new(0.6, 0.6, 0.06), CFrame.new(0, BODY_H + 0.42, lidFrontZ - 0.03), brass, metal)
+		lBall(0.44, CFrame.new(0, BODY_H + 0.42, lidFrontZ - 0.12), amber, { Transparency = 0.15 })
+		lBall(0.1, CFrame.new(0.03, BODY_H + 0.4, lidFrontZ - 0.15), EYE)
+		lBall(0.08, CFrame.new(-0.09, BODY_H + 0.52, lidFrontZ - 0.32), WHITE)
+		-- fossil imprints on the front: an ammonite on the left, a fish skeleton on the right
+		for k = 0, 7 do
+			local a = k * 0.85
+			local r = 0.32 * (1 - k / 9)
+			bCyl(0.06, 0.28 - k * 0.022, CFrame.new(-1.08 + r * math.cos(a), 1.3 + r * math.sin(a), frontZ - 0.03 - k * 0.003) * U.AxisZ, if k % 2 == 0 then imprint else imprint2)
+		end
+		local fz = frontZ - 0.03
+		bBlock(Vector3.new(0.75, 0.05, 0.05), CFrame.new(1.08, 1.3, fz), imprint)
+		bBall(0.24, CFrame.new(0.68, 1.3, fz), imprint)
+		for i, x in { 0.88, 1.03, 1.18, 1.33 } do
+			bBlock(Vector3.new(0.04, 0.42 - i * 0.06, 0.05), CFrame.new(x, 1.3, fz), imprint)
+		end
+		for _, s in { -1, 1 } do
+			bBlock(Vector3.new(0.05, 0.22, 0.05), CFrame.new(1.5, 1.3 + 0.07 * s, fz) * CFrame.Angles(0, 0, 0.7 * s), imprint)
+		end
+	elseif style == "Trophy" then
+		local cupGold = Color3.fromRGB(255, 200, 60)
+		local dark = Color3.fromRGB(25, 35, 60)
+		local woodC = Color3.fromRGB(70, 45, 30)
+		local foam = Color3.fromRGB(255, 90, 70)
+		local patch = Color3.fromRGB(35, 35, 45)
+		-- gold team stripes round the body
+		for _, y in { 0.6, 2.08 } do
+			bBlock(Vector3.new(W + 0.04, 0.12, D + 0.04), CFrame.new(0, y, 0), band, bandOpts)
+		end
+		-- locker vents and a big number 1 on each side
+		for _, s in { -1, 1 } do
+			local x = s * (W / 2 + 0.02)
+			for _, y in { 1.35, 1.55, 1.75 } do
+				bBlock(Vector3.new(0.04, 0.08, 1.2), CFrame.new(x, y, -0.65), dark)
+			end
+			bBlock(Vector3.new(0.05, 0.85, 0.2), CFrame.new(x, 1.35, 0.85), WHITE)
+			bBlock(Vector3.new(0.05, 0.12, 0.3), CFrame.new(x, 1.66, 0.85 + 0.14 * s) * CFrame.Angles(0.6 * s, 0, 0), WHITE)
+			bBlock(Vector3.new(0.05, 0.1, 0.5), CFrame.new(x, 0.95, 0.85), WHITE)
+		end
+		-- gold stars on the lid front
+		for _, s in { -1, 1 } do
+			local st = CFrame.new(1.0 * s, BODY_H + 0.45, lidFrontZ - 0.03)
+			lBlock(Vector3.new(0.3, 0.3, 0.05), st, cupGold, metal)
+			lBlock(Vector3.new(0.3, 0.3, 0.05), st * CFrame.Angles(0, 0, math.pi / 4), cupGold, metal)
+		end
+		-- a gold cup on a wooden plinth on the lid
+		local cp = Vector3.new(0, lidTop, 0.1)
+		lBlock(Vector3.new(0.9, 0.22, 0.9), CFrame.new(cp + Vector3.new(0, 0.11, 0)), woodC)
+		lBlock(Vector3.new(0.45, 0.1, 0.03), CFrame.new(cp + Vector3.new(0, 0.11, -0.46)), cupGold, metal)
+		lCyl(0.12, 0.6, CFrame.new(cp + Vector3.new(0, 0.28, 0)) * U.AxisY, cupGold, metal)
+		lCyl(0.3, 0.16, CFrame.new(cp + Vector3.new(0, 0.48, 0)) * U.AxisY, cupGold, metal)
+		lBall(0.26, CFrame.new(cp + Vector3.new(0, 0.62, 0)), cupGold, metal)
+		lCyl(0.18, 0.5, CFrame.new(cp + Vector3.new(0, 0.78, 0)) * U.AxisY, cupGold, metal)
+		lCyl(0.2, 0.72, CFrame.new(cp + Vector3.new(0, 0.96, 0)) * U.AxisY, cupGold, metal)
+		lCyl(0.24, 0.88, CFrame.new(cp + Vector3.new(0, 1.17, 0)) * U.AxisY, cupGold, metal)
+		lCyl(0.02, 0.74, CFrame.new(cp + Vector3.new(0, 1.3, 0)) * U.AxisY, U.Shade(cupGold, 0.7))
+		for _, s in { -1, 1 } do
+			for _, p in U.Hoop(0.2, 0.07, 0.07, 10, CFrame.new(cp + Vector3.new(0.48 * s, 1.0, 0)), cupGold, model, metal) do
+				onLid(p)
+			end
+		end
+		-- a football on the ground by the front left corner
+		local bp = Vector3.new(-2.3, 0.45, -2.45)
+		bBall(0.9, CFrame.new(bp), WHITE)
+		for _, n in { Vector3.new(0, 0, -1), Vector3.new(-1, 0, 0), Vector3.new(0, 1, 0), Vector3.new(-0.6, 0.55, -0.6), Vector3.new(0.6, 0.5, -0.6), Vector3.new(-0.6, -0.3, -0.75), Vector3.new(0.65, -0.2, -0.7) } do
+			bCyl(0.05, 0.28, U.DiscFacing(bp + n.Unit * 0.43, n), patch)
+		end
+		-- a foam finger leaning on the right side
+		local ff = CFrame.new(3.18, 0, -0.75) * CFrame.Angles(0, 0, 0.12)
+		bCyl(0.6, 0.42, ff * CFrame.new(0, 0.3, 0) * U.AxisY, U.Shade(foam, 0.85))
+		bBlock(Vector3.new(0.75, 0.7, 0.34), ff * CFrame.new(0, 0.92, 0), foam)
+		for _, x in { 0.02, 0.24 } do
+			bBall(0.24, ff * CFrame.new(x, 1.25, -0.06), foam)
+		end
+		bBlock(Vector3.new(0.22, 0.72, 0.26), ff * CFrame.new(-0.22, 1.55, 0), foam)
+		bBall(0.22, ff * CFrame.new(-0.22, 1.91, 0), foam)
+		bBlock(Vector3.new(0.2, 0.4, 0.24), ff * CFrame.new(0.42, 1.0, -0.02) * CFrame.Angles(0, 0, -0.5), foam)
+		bCyl(0.1, 0.44, ff * CFrame.new(0, 0.45, 0) * U.AxisY, WHITE)
+	elseif style == "CookieJar" then
+		local cookieC = Color3.fromRGB(205, 140, 65)
+		local chip = Color3.fromRGB(80, 45, 30)
+		local cream = Color3.fromRGB(255, 245, 225)
+		local spr = { Color3.fromRGB(255, 120, 170), Color3.fromRGB(110, 200, 255), Color3.fromRGB(255, 225, 80), Color3.fromRGB(120, 220, 120) }
+		-- rounded jar corners on the body and lid, and a coral rim round the lid
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				bCyl(BODY_H - 0.35, 0.7, CFrame.new(sx * (W / 2 - 0.25), 0.35 + (BODY_H - 0.35) / 2, sz * (D / 2 - 0.25)) * U.AxisY, color)
+				lCyl(LID_H, 0.72, CFrame.new(sx * (W / 2 - 0.24), lidY, sz * (D / 2 - 0.24)) * U.AxisY, color)
+			end
+		end
+		lBlock(Vector3.new(W + 0.26, 0.14, D + 0.26), CFrame.new(0, BODY_H + LID_H - 0.08, 0), band)
+		-- a jar label behind the ghost
+		bBlock(Vector3.new(2.05, 1.55, 0.06), CFrame.new(0, 1.3, frontZ - 0.03), cream)
+		bBlock(Vector3.new(1.85, 1.35, 0.06), CFrame.new(0, 1.3, frontZ - 0.05), band)
+		for _, sx in { -1, 1 } do
+			for _, sy in { -1, 1 } do
+				bBall(0.16, CFrame.new(0.72 * sx, 1.3 + 0.48 * sy, frontZ - 0.08), cream)
+			end
+		end
+		-- a big cookie standing in a holder on the lid as the knob
+		lCyl(0.2, 0.6, CFrame.new(0, lidTop + 0.1, 0.1) * U.AxisY, band)
+		local cc = CFrame.new(0, lidTop + 0.8, 0.1)
+		lCyl(0.24, 1.3, cc * U.AxisZ, cookieC)
+		lCyl(0.26, 1.0, cc * U.AxisZ, U.Shade(cookieC, 1.08))
+		for _, p in { Vector2.new(-0.3, 0.25), Vector2.new(0.2, 0.35), Vector2.new(0.38, -0.08), Vector2.new(-0.08, -0.02), Vector2.new(-0.36, -0.28), Vector2.new(0.12, -0.38) } do
+			lBall(0.16, cc * CFrame.new(p.X, p.Y, -0.12), chip)
+			lBall(0.16, cc * CFrame.new(-p.X, p.Y, 0.12), chip)
+		end
+		-- a smaller cookie lying on the lid, crumbs and sprinkles round it
+		local sc = Vector3.new(-1.45, lidTop, -0.35)
+		lCyl(0.16, 0.8, CFrame.new(sc + Vector3.new(0, 0.08, 0)) * U.AxisY, cookieC)
+		for _, p in { Vector3.new(-0.15, 0.17, -0.12), Vector3.new(0.18, 0.17, 0.05), Vector3.new(-0.05, 0.17, 0.22) } do
+			lBall(0.13, CFrame.new(sc + p), chip)
+		end
+		for i, p in { Vector3.new(1.3, 0, -0.6), Vector3.new(1.65, 0, 0.3), Vector3.new(-0.9, 0, 0.6), Vector3.new(0.9, 0, 0.75), Vector3.new(-1.9, 0, 0.45), Vector3.new(1.1, 0, -0.1), Vector3.new(-0.7, 0, -0.65), Vector3.new(1.9, 0, -0.35) } do
+			lCyl(0.16, 0.05, CFrame.new(p.X, lidTop + 0.03, p.Z) * CFrame.Angles(0, i * 0.9, 0), spr[i % #spr + 1])
+		end
+		for i, p in { Vector3.new(0.75, 0, 0.2), Vector3.new(-1.0, 0, -0.95), Vector3.new(1.55, 0, 0.7) } do
+			lBlock(Vector3.new(0.12, 0.08, 0.1), CFrame.new(p.X, lidTop + 0.04, p.Z) * CFrame.Angles(0, i, 0), cookieC)
+		end
+		for i, p in { Vector3.new(-2.85, 0, -1.4), Vector3.new(-2.75, 0, -1.7), Vector3.new(2.8, 0, -1.5), Vector3.new(1.0, 0, -2.15), Vector3.new(-1.3, 0, -2.1) } do
+			bBlock(Vector3.new(0.14, 0.08, 0.12), CFrame.new(p.X, 0.04, p.Z) * CFrame.Angles(0, i * 0.7, 0), cookieC)
+		end
+	elseif style == "Arcade" then
+		local screenBg = Color3.fromRGB(20, 35, 60)
+		local pink = Color3.fromRGB(255, 90, 200)
+		local yellow = Color3.fromRGB(255, 225, 70)
+		local red = Color3.fromRGB(240, 60, 70)
+		local panelC = Color3.fromRGB(30, 20, 50)
+		local housing = U.Mix(color, WHITE, 0.12)
+		-- draws a 5x5 pixel ghost ("X" = pixel) as runs of blocks; `at(col, row, len)` places one run
+		local ghostRows = { ".XXX.", "XXXXX", "X.X.X", "XXXXX", "X.X.X" }
+		local function pixelGhost(at: (number, number, number) -> ())
+			for r, row in ghostRows do
+				local c = 1
+				while c <= 5 do
+					if string.sub(row, c, c) == "X" then
+						local e = c
+						while e < 5 and string.sub(row, e + 1, e + 1) == "X" do
+							e += 1
+						end
+						at((c + e) / 2 - 3, r - 3, e - c + 1)
+						c = e + 1
+					else
+						c += 1
+					end
+				end
+			end
+		end
+		-- stepped pixel corners on the front
+		local px = 0.22
+		for _, sx in { -1, 1 } do
+			for _, sy in { -1, 1 } do
+				local x = sx * (W / 2 - px / 2)
+				local y = if sy > 0 then BODY_H - px / 2 else 0.35 + px / 2
+				for i, o in { Vector2.new(0, 0), Vector2.new(-sx * px, 0), Vector2.new(0, -sy * px) } do
+					bBlock(Vector3.new(px, px, 0.06), CFrame.new(x + o.X, y + o.Y, frontZ - 0.03), if i == 1 then pink else trim)
+				end
+			end
+		end
+		-- pixel ghosts on the sides
+		for _, s in { -1, 1 } do
+			pixelGhost(function(c, r, len)
+				bBlock(Vector3.new(0.05, 0.24, 0.24 * len), CFrame.new(s * (W / 2 + 0.02), 1.4 - r * 0.24, c * 0.24), trim)
+			end)
+		end
+		-- coin slots either side of the emblem
+		for _, s in { -1, 1 } do
+			local x = 1.08 * s
+			bBlock(Vector3.new(0.5, 0.8, 0.06), CFrame.new(x, 1.3, frontZ - 0.03), METAL, metal)
+			bBlock(Vector3.new(0.08, 0.28, 0.04), CFrame.new(x, 1.45, frontZ - 0.07), Color3.fromRGB(255, 150, 40), NEON)
+			bBlock(Vector3.new(0.26, 0.18, 0.04), CFrame.new(x, 1.05, frontZ - 0.07), EYE)
+		end
+		-- control panel sticking out of the lid front: joystick and three buttons
+		local cp = CFrame.new(0, BODY_H + LID_H - 0.08, lidFrontZ - 0.3)
+		lBlock(Vector3.new(3.0, 0.14, 0.6), cp, panelC)
+		lBlock(Vector3.new(3.02, 0.06, 0.04), cp * CFrame.new(0, 0, -0.3), trim)
+		lCyl(0.04, 0.32, cp * CFrame.new(-0.85, 0.09, 0) * U.AxisY, EYE)
+		lCyl(0.36, 0.08, cp * CFrame.new(-0.85, 0.25, 0) * U.AxisY, METAL, metal)
+		lBall(0.28, cp * CFrame.new(-0.85, 0.45, 0), red)
+		for i, c in { pink, yellow, trim } do
+			lCyl(0.1, 0.26, cp * CFrame.new(0.05 + i * 0.38, 0.1, 0.02) * U.AxisY, c)
+		end
+		-- screen on the lid with a pixel ghost chasing dots, a marquee on top
+		local mc = CFrame.new(0, lidTop + 0.85, 0.35) * CFrame.Angles(0.15, 0, 0)
+		lBlock(Vector3.new(0.9, 0.2, 0.6), CFrame.new(0, lidTop + 0.1, 0.35), housing)
+		lBlock(Vector3.new(2.3, 1.5, 0.5), mc, housing)
+		lBlock(Vector3.new(1.95, 1.2, 0.04), mc * CFrame.new(0, 0, -0.26), screenBg)
+		pixelGhost(function(c, r, len)
+			lBlock(Vector3.new(0.13 * len, 0.13, 0.02), mc * CFrame.new(0.3 + c * 0.13, -r * 0.13, -0.285), trim, NEON)
+		end)
+		for _, x in { -0.75, -0.5, -0.25 } do
+			lBlock(Vector3.new(0.08, 0.08, 0.02), mc * CFrame.new(x, 0, -0.285), yellow)
+		end
+		lBlock(Vector3.new(2.3, 0.32, 0.55), mc * CFrame.new(0, 0.91, 0), panelC)
+		lBlock(Vector3.new(2.0, 0.16, 0.04), mc * CFrame.new(0, 0.91, -0.28), pink)
 	elseif style ~= "Basic" then
 		warn("CrateRig: no decorations for style " .. tostring(style))
 	end
