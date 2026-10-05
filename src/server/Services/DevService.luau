@@ -36,7 +36,7 @@ function DevService.IsDev(player: Player): boolean
 	return devs[player] == true
 end
 
-local MAX_ECTO_GRANT = 1e24 -- World 2 prices reach 5e22
+local MAX_ECTO_GRANT = 1e30 -- World 2 prices reach 2.4e27 (area 32)
 local MAX_SHARD_GRANT = 1e6
 local MAX_TOWER_ROOM = 400
 local ECTO2X_DEFAULT_HOURS = 48 -- "ON" without hours: never an endless global event

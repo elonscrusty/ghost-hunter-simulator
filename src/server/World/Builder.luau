@@ -34,10 +34,11 @@
 	  X 84, Z 5546   WORLD 2 PORTAL at the end of the Throne (Portals.luau; Config.Layout.Portals):
 	                 the "gate" of Lantern Market, bought like a gate, then touched to travel.
 	  Z 5560..7000   empty gap: nothing walkable between the two worlds.
-	  Z 7000..10720  WORLD 2: THE OTHER SIDE, zones 17-26 (360 each, the Void Throne 480):
-	                 LanternMarket, PhantomLibrary, UpsideManor, Glowshroom, MirrorMaze, GhostSubway,
-	                 NeonCity, StormIslands, MoonBase, VoidThrone (one file each, loaded only if the
-	                 file exists). Gate walls at MinZ of zones 18-26, invisible walls at both ends
+	  Z 7000..12880  WORLD 2: THE OTHER SIDE, zones 17-32 (360 each, the Void Throne 480):
+	                 LanternMarket, PhantomLibrary, PumpkinFarm, Glowshroom, WaterPark, MirrorMaze,
+	                 ShoppingMall, GhostSubway, DinoMuseum, Stadium, NeonCity, GiantsKitchen,
+	                 CyberArcade, StormIslands, MoonBase, VoidThrone (one file each, named after the
+	                 zone Id, loaded only if the file exists). Gate walls at MinZ of zones 18-32, invisible walls at both ends
 	                 (Boundary), "BACK TO WORLD 1" portal at (0, 7010). A zone whose file is
 	                 missing gets a plain fallback (ground, path, side rails) so the track stays
 	                 walkable.
@@ -82,9 +83,18 @@ local Throne = require(script.Parent.Throne)
 local Hatchery = require(script.Parent.Hatchery)
 local Portals = require(script.Parent.Portals)
 
--- World 2 zone builders (each module: Build(map: Instance)), in zone order. A file that does
--- not exist yet is skipped and gets the plain fallback below instead.
-local WORLD2_MODULES = { "LanternMarket", "PhantomLibrary", "UpsideManor", "Glowshroom", "MirrorMaze", "GhostSubway", "NeonCity", "StormIslands", "MoonBase", "VoidThrone" }
+-- World 2 zone builders (each module: Build(map: Instance), named after the zone Id), in zone
+-- order: every zone from World 2's first on. A file that does not exist yet is skipped and gets
+-- the plain fallback below instead.
+local WORLD2_MODULES: { string } = {}
+do
+	local w2 = Config.Worlds[2]
+	for _, z in Config.Zones do
+		if w2 and z.Order >= w2.First then
+			table.insert(WORLD2_MODULES, z.Id)
+		end
+	end
+end
 
 local Builder = {}
 

@@ -1,16 +1,16 @@
 --!strict
--- ZONE 22: Ghost Subway (Z 8800..9160). A big underground station hall: grey concrete, cream
+-- ZONE 24: Ghost Subway (Z 9520..9880). A big underground station hall: grey concrete, cream
 -- wall tiles with teal bands, green riveted steel columns, a girder roof and safety-yellow lines.
 --   Ground: concrete slab; a light-tiled platform across the middle (|X| < 104) with a yellow
 --   safety line and tactile strip at each edge; the lane along X = 0 is a tiled walkway with
 --   yellow edge lines. Track beds with flat rails run along both sides (|X| 108..136).
---   Ghost areas get flat platform roundels ((0,8885) r30, (-82,8920) r24, (75,8980) r26,
---   (-62,9040) r24); the boss area (0,9105) r26 is a flat railway turntable.
---   Phantom trains: two ghostly see-through trains parked on the side tracks (left Z ~8860..8990,
---   right Z ~9000..9130), tunnel mouths in front of both gate walls over the tracks.
+--   Ghost areas get flat platform roundels ((0,9605) r30, (-82,9640) r24, (75,9700) r26,
+--   (-62,9760) r24); the boss area (0,9825) r26 is a flat railway turntable.
+--   Phantom trains: two ghostly see-through trains parked on the side tracks (left Z ~9580..9710,
+--   right Z ~9720..9850), tunnel mouths in front of both gate walls over the tracks.
 --   Roof: steel girders across the hall at Y 40..42 (bottoms at Y 40, so they clear the ghost
 --   areas), a tiled ceiling over the track beds, hanging station signs outside the areas.
---   Turnstiles across the entrance (Z ~8852, the lane, crate station and Fast Travel pad
+--   Turnstiles across the entrance (Z ~9572, the lane, crate station and Fast Travel pad
 --   stay open), benches, ticket machines, a subway map, clocks, bins and a steam vent.
 
 local Kit = require(script.Parent.Kit)
@@ -27,7 +27,7 @@ local TILES = Enum.Material.Pavement
 local WOOD = Enum.Material.WoodPlanks
 local GLASS = Enum.Material.Glass
 
-local Z0, Z1 = 8800, 9160
+local Z0, Z1 = 9520, 9880
 
 local CONC = C(105, 108, 122)
 local CONC_D = C(70, 72, 86)

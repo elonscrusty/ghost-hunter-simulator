@@ -78,6 +78,7 @@ local ACTIONS: { Action } = {
 	{ Text = "+1Qa ECTO", Cmd = "Ecto", Arg = 1e15, Color = "Green" },
 	{ Text = "+1Qi ECTO", Cmd = "Ecto", Arg = 1e18, Color = "Green" },
 	{ Text = "+100Sx ECTO", Cmd = "Ecto", Arg = 1e23, Color = "Green" },
+	{ Text = "+10Oc ECTO", Cmd = "Ecto", Arg = 1e28, Color = "Green" },
 	{ Text = "UNLOCK ALL AREAS (BOTH WORLDS)", Cmd = "Zones", Color = "Blue" },
 	{ Text = "GHOST KING: BEATEN", Cmd = "GhostKing", Arg = true, Color = "Purple" },
 	{ Text = "GHOST KING: NOT BEATEN", Cmd = "GhostKing", Arg = false, Color = "Red" },

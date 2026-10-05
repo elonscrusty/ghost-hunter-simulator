@@ -186,7 +186,7 @@ Config.Zones = {
 		Id = "Throne", Name = "GHOST KING'S THRONE", Order = 16, Cost = 840000000000000, Crate = "Throne",
 		Ambient = Color3.fromRGB(190, 170, 240), FogColor = Color3.fromRGB(70, 50, 130), Accent = Color3.fromRGB(255, 230, 140),
 		MinZ = 5200, MaxZ = 5560,
-	},	-- WORLD 2: THE OTHER SIDE (areas 17-26)
+	},	-- WORLD 2: THE OTHER SIDE (areas 17-32)
 	{
 		Id = "LanternMarket", Name = "LANTERN MARKET", Order = 17, Cost = 5.04e15, Crate = "Lantern",
 		Ambient = Color3.fromRGB(210, 150, 130), FogColor = Color3.fromRGB(110, 40, 50), Accent = Color3.fromRGB(255, 190, 80),
@@ -198,8 +198,8 @@ Config.Zones = {
 		MinZ = 7360, MaxZ = 7720,
 	},
 	{
-		Id = "UpsideManor", Name = "UPSIDE-DOWN MANOR", Order = 19, Cost = 1.81e17, Crate = "Topsy",
-		Ambient = Color3.fromRGB(180, 140, 190), FogColor = Color3.fromRGB(70, 40, 90), Accent = Color3.fromRGB(200, 160, 255),
+		Id = "PumpkinFarm", Name = "HAUNTED PUMPKIN FARM", Order = 19, Cost = 1.81e17, Crate = "Harvest",
+		Ambient = Color3.fromRGB(215, 165, 115), FogColor = Color3.fromRGB(95, 55, 30), Accent = Color3.fromRGB(255, 150, 50),
 		MinZ = 7720, MaxZ = 8080,
 	},
 	{
@@ -208,34 +208,64 @@ Config.Zones = {
 		MinZ = 8080, MaxZ = 8440,
 	},
 	{
-		Id = "MirrorMaze", Name = "MIRROR MAZE", Order = 21, Cost = 6.53e18, Crate = "Mirror",
-		Ambient = Color3.fromRGB(190, 210, 235), FogColor = Color3.fromRGB(110, 130, 170), Accent = Color3.fromRGB(200, 240, 255),
+		Id = "WaterPark", Name = "HAUNTED WATER PARK", Order = 21, Cost = 6.53e18, Crate = "Splash",
+		Ambient = Color3.fromRGB(150, 210, 235), FogColor = Color3.fromRGB(30, 90, 130), Accent = Color3.fromRGB(90, 230, 255),
 		MinZ = 8440, MaxZ = 8800,
 	},
 	{
-		Id = "GhostSubway", Name = "GHOST SUBWAY", Order = 22, Cost = 3.92e19, Crate = "Subway",
-		Ambient = Color3.fromRGB(150, 160, 180), FogColor = Color3.fromRGB(40, 45, 60), Accent = Color3.fromRGB(255, 220, 80),
+		Id = "MirrorMaze", Name = "MIRROR MAZE", Order = 22, Cost = 3.92e19, Crate = "Mirror",
+		Ambient = Color3.fromRGB(190, 210, 235), FogColor = Color3.fromRGB(110, 130, 170), Accent = Color3.fromRGB(200, 240, 255),
 		MinZ = 8800, MaxZ = 9160,
 	},
 	{
-		Id = "NeonCity", Name = "NEON GHOST CITY", Order = 23, Cost = 2.35e20, Crate = "Neon",
-		Ambient = Color3.fromRGB(170, 120, 220), FogColor = Color3.fromRGB(40, 20, 70), Accent = Color3.fromRGB(255, 80, 220),
+		Id = "ShoppingMall", Name = "HAUNTED SHOPPING MALL", Order = 23, Cost = 2.35e20, Crate = "Mall",
+		Ambient = Color3.fromRGB(220, 190, 225), FogColor = Color3.fromRGB(90, 60, 115), Accent = Color3.fromRGB(255, 140, 210),
 		MinZ = 9160, MaxZ = 9520,
 	},
 	{
-		Id = "StormIslands", Name = "STORM SKY ISLANDS", Order = 24, Cost = 1.41e21, Crate = "Storm",
-		Ambient = Color3.fromRGB(160, 180, 220), FogColor = Color3.fromRGB(70, 80, 120), Accent = Color3.fromRGB(255, 240, 120),
+		Id = "GhostSubway", Name = "GHOST SUBWAY", Order = 24, Cost = 1.41e21, Crate = "Subway",
+		Ambient = Color3.fromRGB(150, 160, 180), FogColor = Color3.fromRGB(40, 45, 60), Accent = Color3.fromRGB(255, 220, 80),
 		MinZ = 9520, MaxZ = 9880,
 	},
 	{
-		Id = "MoonBase", Name = "HAUNTED MOON BASE", Order = 25, Cost = 8.47e21, Crate = "Moon",
-		Ambient = Color3.fromRGB(170, 175, 200), FogColor = Color3.fromRGB(20, 20, 40), Accent = Color3.fromRGB(255, 150, 80),
+		Id = "DinoMuseum", Name = "DINO FOSSIL MUSEUM", Order = 25, Cost = 8.47e21, Crate = "Fossil",
+		Ambient = Color3.fromRGB(205, 190, 155), FogColor = Color3.fromRGB(85, 70, 50), Accent = Color3.fromRGB(150, 230, 120),
 		MinZ = 9880, MaxZ = 10240,
 	},
 	{
-		Id = "VoidThrone", Name = "THE VOID THRONE", Order = 26, Cost = 5.08e22, Crate = "Void",
+		Id = "Stadium", Name = "HAUNTED STADIUM", Order = 26, Cost = 5.08e22, Crate = "Champion",
+		Ambient = Color3.fromRGB(175, 200, 235), FogColor = Color3.fromRGB(40, 60, 105), Accent = Color3.fromRGB(120, 255, 140),
+		MinZ = 10240, MaxZ = 10600,
+	},
+	{
+		Id = "NeonCity", Name = "NEON GHOST CITY", Order = 27, Cost = 3.05e23, Crate = "Neon",
+		Ambient = Color3.fromRGB(170, 120, 220), FogColor = Color3.fromRGB(40, 20, 70), Accent = Color3.fromRGB(255, 80, 220),
+		MinZ = 10600, MaxZ = 10960,
+	},
+	{
+		Id = "GiantsKitchen", Name = "GIANT'S KITCHEN", Order = 28, Cost = 1.83e24, Crate = "CookieJar",
+		Ambient = Color3.fromRGB(240, 215, 185), FogColor = Color3.fromRGB(125, 85, 55), Accent = Color3.fromRGB(255, 170, 90),
+		MinZ = 10960, MaxZ = 11320,
+	},
+	{
+		Id = "CyberArcade", Name = "CYBER ARCADE DIMENSION", Order = 29, Cost = 1.1e25, Crate = "Arcade",
+		Ambient = Color3.fromRGB(150, 125, 225), FogColor = Color3.fromRGB(20, 10, 55), Accent = Color3.fromRGB(80, 255, 220),
+		MinZ = 11320, MaxZ = 11680,
+	},
+	{
+		Id = "StormIslands", Name = "STORM SKY ISLANDS", Order = 30, Cost = 6.58e25, Crate = "Storm",
+		Ambient = Color3.fromRGB(160, 180, 220), FogColor = Color3.fromRGB(70, 80, 120), Accent = Color3.fromRGB(255, 240, 120),
+		MinZ = 11680, MaxZ = 12040,
+	},
+	{
+		Id = "MoonBase", Name = "HAUNTED MOON BASE", Order = 31, Cost = 3.95e26, Crate = "Moon",
+		Ambient = Color3.fromRGB(170, 175, 200), FogColor = Color3.fromRGB(20, 20, 40), Accent = Color3.fromRGB(255, 150, 80),
+		MinZ = 12040, MaxZ = 12400,
+	},
+	{
+		Id = "VoidThrone", Name = "THE VOID THRONE", Order = 32, Cost = 2.37e27, Crate = "Void",
 		Ambient = Color3.fromRGB(120, 100, 170), FogColor = Color3.fromRGB(15, 5, 30), Accent = Color3.fromRGB(200, 150, 255),
-		MinZ = 10240, MaxZ = 10720,
+		MinZ = 12400, MaxZ = 12880,
 	},
 
 } :: { ZoneDef }
@@ -246,12 +276,12 @@ for _, z in Config.Zones do
 end
 
 -- WORLDS: runs of zones on separate tracks. World 1 is zones 1-16 (Z -140..5560); World 2
--- (THE OTHER SIDE) is zones 17-26 (Z 7000..10720), reached through the portal at the end of the
+-- (THE OTHER SIDE) is zones 17-32 (Z 7000..12880), reached through the portal at the end of the
 -- Ghost King's Throne (Config.Layout.Portals). First = order of the world's first zone.
 export type WorldDef = { Name: string, Title: string, First: number, Last: number, Accent: Color3 }
 Config.Worlds = {
 	{ Name = "WORLD 1", Title = "THE HAUNTED LANDS", First = 1, Last = 16, Accent = Color3.fromRGB(150, 255, 120) },
-	{ Name = "WORLD 2", Title = "THE OTHER SIDE", First = 17, Last = 26, Accent = Color3.fromRGB(200, 150, 255) },
+	{ Name = "WORLD 2", Title = "THE OTHER SIDE", First = 17, Last = 32, Accent = Color3.fromRGB(200, 150, 255) },
 } :: { WorldDef }
 
 --==================================================================
@@ -635,7 +665,7 @@ Config.Ghosts = {
 		Id = "GiantPoltergeist", Name = "GIANT POLTERGEIST", Zone = "Neighborhood",
 		Spirit = 6000, Reward = 0, Drops = 0, Respawn = 0, Scale = 6, Hover = 14, Speed = 4, Wander = 5,
 		Kind = "Event", Color = Color3.fromRGB(255, 120, 230), Glow = Color3.fromRGB(255, 230, 90), Style = "Giant",
-	},	-- WORLD 2: THE OTHER SIDE (areas 17-26)
+	},	-- WORLD 2: THE OTHER SIDE (areas 17-32)
 	-- ZONE 17
 	LanternWisp = {
 		Id = "LanternWisp", Name = "LANTERN WISP", Zone = "LanternMarket",
@@ -660,29 +690,32 @@ Config.Ghosts = {
 	},
 	InkblotPhantom = {
 		Id = "InkblotPhantom", Name = "INKBLOT PHANTOM", Zone = "PhantomLibrary",
-		Spirit = 978000000000000, Reward = 155000000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 980000000000000, Reward = 154000000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(70, 70, 120), Glow = Color3.fromRGB(140, 160, 255), Style = "Inkblot",
 	},
 	GrandGrimoire = {
 		Id = "GrandGrimoire", Name = "THE GRAND GRIMOIRE", Zone = "PhantomLibrary",
-		Spirit = 4.1e15, Reward = 589000000000000, Drops = 18, Respawn = 30, Scale = 6.50, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 4.1e15, Reward = 588000000000000, Drops = 18, Respawn = 30, Scale = 6.50, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(120, 70, 50), Glow = Color3.fromRGB(120, 255, 220), Style = "Grimoire",
 	},
 	-- ZONE 19
-	DizzySpirit = {
-		Id = "DizzySpirit", Name = "DIZZY SPIRIT", Zone = "UpsideManor",
+	-- CornCob: small ghost wearing a corn cob as a tall hat (yellow cylinder dotted with kernel balls, green husk wedges peeling down), popcorn puffs drifting round it
+	CornWisp = {
+		Id = "CornWisp", Name = "CORN WISP", Zone = "PumpkinFarm",
 		Spirit = 1.81e15, Reward = 311000000000000, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
-		Kind = "Normal", Color = Color3.fromRGB(235, 225, 255), Glow = Color3.fromRGB(200, 160, 255), Style = "Dizzy",
+		Kind = "Normal", Color = Color3.fromRGB(255, 245, 205), Glow = Color3.fromRGB(255, 215, 80), Style = "CornCob",
 	},
-	ChandelierPhantom = {
-		Id = "ChandelierPhantom", Name = "CHANDELIER PHANTOM", Zone = "UpsideManor",
-		Spirit = 4.89e15, Reward = 804000000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
-		Kind = "Normal", Color = Color3.fromRGB(240, 230, 210), Glow = Color3.fromRGB(255, 210, 120), Style = "Chandelier",
+	-- HayBale: ghost wearing a hay bale like a barrel (straw block with two twine bands), straw tufts poking out, red bandana round its neck
+	HayrideHaunt = {
+		Id = "HayrideHaunt", Name = "HAYRIDE HAUNT", Zone = "PumpkinFarm",
+		Spirit = 4.9e15, Reward = 803000000000000, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(245, 230, 180), Glow = Color3.fromRGB(255, 170, 60), Style = "HayBale",
 	},
-	CountessTopsyTurvy = {
-		Id = "CountessTopsyTurvy", Name = "COUNTESS TOPSY-TURVY", Zone = "UpsideManor",
-		Spirit = 2.05e16, Reward = 3.07e15, Drops = 18, Respawn = 30, Scale = 6.65, Hover = 12, Speed = 2.5, Wander = 6,
-		Kind = "Boss", Color = Color3.fromRGB(200, 150, 220), Glow = Color3.fromRGB(255, 180, 230), Style = "Topsy",
+	-- Scarecrow: boss: wide floppy straw hat, burlap patches with big cross-stitches, straw tufts at the nubs, a wooden crossbeam behind its arms with three little crows (black balls, orange wedge beaks) perched on it
+	ScarecrowKing = {
+		Id = "ScarecrowKing", Name = "THE SCARECROW KING", Zone = "PumpkinFarm",
+		Spirit = 2.05e16, Reward = 3.06e15, Drops = 18, Respawn = 30, Scale = 6.65, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(215, 185, 125), Glow = Color3.fromRGB(255, 140, 40), Style = "Scarecrow",
 	},
 	-- ZONE 20
 	SporeWisp = {
@@ -692,7 +725,7 @@ Config.Ghosts = {
 	},
 	MossyPhantom = {
 		Id = "MossyPhantom", Name = "MOSSY PHANTOM", Zone = "Glowshroom",
-		Spirit = 2.44e16, Reward = 4.18e15, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 2.45e16, Reward = 4.18e15, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(150, 200, 140), Glow = Color3.fromRGB(190, 255, 130), Style = "Moss",
 	},
 	MyceliumMonarch = {
@@ -701,99 +734,213 @@ Config.Ghosts = {
 		Kind = "Boss", Color = Color3.fromRGB(90, 160, 160), Glow = Color3.fromRGB(120, 255, 230), Style = "Mycelium",
 	},
 	-- ZONE 21
+	-- SwimRing: small ghost wearing a red-and-white striped swim ring round its middle, a snorkel mask over its eyes and a trail of water drops
+	SplashSprite = {
+		Id = "SplashSprite", Name = "SPLASH SPRITE", Zone = "WaterPark",
+		Spirit = 4.53e16, Reward = 8.41e15, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(225, 245, 255), Glow = Color3.fromRGB(90, 230, 255), Style = "SwimRing",
+	},
+	-- Floatie: ghost lounging on a pink inflatable donut float, sunglasses pushed up on its head and a little drink umbrella stuck in the float
+	LazyRiverPhantom = {
+		Id = "LazyRiverPhantom", Name = "LAZY RIVER PHANTOM", Zone = "WaterPark",
+		Spirit = 1.23e17, Reward = 2.17e16, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(205, 235, 250), Glow = Color3.fromRGB(255, 200, 120), Style = "Floatie",
+	},
+	-- WaveCrown: boss: rides a curling wave (arc of blue wedges topped with white foam balls) behind it, inflatable gold crown, lifeguard whistle on a cord, a loop of water-slide tube round its tail
+	KingCannonball = {
+		Id = "KingCannonball", Name = "KING CANNONBALL", Zone = "WaterPark",
+		Spirit = 5.13e17, Reward = 8.26e16, Drops = 18, Respawn = 30, Scale = 6.95, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(80, 170, 230), Glow = Color3.fromRGB(255, 240, 140), Style = "WaveCrown",
+	},
+	-- ZONE 22
 	GlintSpirit = {
 		Id = "GlintSpirit", Name = "GLINT SPIRIT", Zone = "MirrorMaze",
-		Spirit = 4.53e16, Reward = 8.4e15, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 2.27e17, Reward = 4.37e16, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(235, 245, 255), Glow = Color3.fromRGB(200, 240, 255), Style = "Glint",
 	},
 	CopycatPhantom = {
 		Id = "CopycatPhantom", Name = "COPYCAT PHANTOM", Zone = "MirrorMaze",
-		Spirit = 1.22e17, Reward = 2.17e16, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 6.13e17, Reward = 1.13e17, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(200, 220, 255), Glow = Color3.fromRGB(255, 180, 230), Style = "Copycat",
 	},
 	QueenOfReflections = {
 		Id = "QueenOfReflections", Name = "QUEEN OF REFLECTIONS", Zone = "MirrorMaze",
-		Spirit = 5.13e17, Reward = 8.29e16, Drops = 18, Respawn = 30, Scale = 6.95, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 2.56e18, Reward = 4.3e17, Drops = 18, Respawn = 30, Scale = 7.10, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(220, 230, 255), Glow = Color3.fromRGB(255, 215, 120), Style = "MirrorQueen",
 	},
-	-- ZONE 22
+	-- ZONE 23
+	-- ShoppingBags: small ghost with a paper shopping bag hanging from each nub arm (blocks with thin handle loops), sunglasses on its head and a long receipt curling off its tail
+	ShopperSpirit = {
+		Id = "ShopperSpirit", Name = "SHOPPER SPIRIT", Zone = "ShoppingMall",
+		Spirit = 1.13e18, Reward = 2.27e17, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(250, 235, 250), Glow = Color3.fromRGB(255, 140, 210), Style = "ShoppingBags",
+	},
+	-- Mannequin: ghost dressed like a shop-window mannequin: neat wig bob, a big price tag on a string, a scarf, and a thin display-stand pole under its tail
+	MannequinPhantom = {
+		Id = "MannequinPhantom", Name = "MANNEQUIN PHANTOM", Zone = "ShoppingMall",
+		Spirit = 3.06e18, Reward = 5.87e17, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(235, 225, 215), Glow = Color3.fromRGB(130, 230, 255), Style = "Mannequin",
+	},
+	-- FoodCourt: boss: wears a food-court tray as a crown piled with a burger, fries and a giant soda cup with a bendy straw; ketchup and mustard bottles orbit it
+	FoodCourtQueen = {
+		Id = "FoodCourtQueen", Name = "QUEEN OF THE FOOD COURT", Zone = "ShoppingMall",
+		Spirit = 1.28e19, Reward = 2.23e18, Drops = 18, Respawn = 30, Scale = 7.25, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(255, 190, 120), Glow = Color3.fromRGB(255, 230, 120), Style = "FoodCourt",
+	},
+	-- ZONE 24
 	CommuterSpecter = {
 		Id = "CommuterSpecter", Name = "COMMUTER SPECTER", Zone = "GhostSubway",
-		Spirit = 2.27e17, Reward = 4.37e16, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 5.66e18, Reward = 1.18e18, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(220, 225, 235), Glow = Color3.fromRGB(255, 220, 120), Style = "Commuter",
 	},
 	TicketPhantom = {
 		Id = "TicketPhantom", Name = "TICKET PHANTOM", Zone = "GhostSubway",
-		Spirit = 6.11e17, Reward = 1.13e17, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 1.53e19, Reward = 3.05e18, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(200, 240, 220), Glow = Color3.fromRGB(255, 120, 120), Style = "Ticket",
 	},
 	PhantomExpress = {
 		Id = "PhantomExpress", Name = "THE PHANTOM EXPRESS", Zone = "GhostSubway",
-		Spirit = 2.56e18, Reward = 4.31e17, Drops = 18, Respawn = 30, Scale = 7.10, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 6.41e19, Reward = 1.16e19, Drops = 18, Respawn = 30, Scale = 7.40, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(80, 90, 120), Glow = Color3.fromRGB(255, 230, 120), Style = "Locomotive",
 	},
-	-- ZONE 23
+	-- ZONE 25
+	-- Pterodactyl: small ghost with bony pterodactyl wings (thin bone-coloured wedges on rod struts), a long crest on the back of its head and a tiny beak
+	FossilFlitter = {
+		Id = "FossilFlitter", Name = "FOSSIL FLITTER", Zone = "DinoMuseum",
+		Spirit = 2.83e19, Reward = 6.15e18, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(240, 230, 205), Glow = Color3.fromRGB(150, 230, 120), Style = "Pterodactyl",
+	},
+	-- RaptorSkull: ghost wearing a raptor skull as a helmet (long snout block with a row of tiny tooth wedges, round eye holes) and a curved claw on each nub
+	RaptorSpecter = {
+		Id = "RaptorSpecter", Name = "RAPTOR SPECTER", Zone = "DinoMuseum",
+		Spirit = 7.66e19, Reward = 1.59e19, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(225, 215, 190), Glow = Color3.fromRGB(255, 200, 90), Style = "RaptorSkull",
+	},
+	-- BoneTyrant: boss: giant T-rex skeleton head worn over the ghost (big jaw blocks with tooth wedges), ribcage arcs round the body, tiny bony arms and a long tail of shrinking vertebra blocks
+	BoneTyrant = {
+		Id = "BoneTyrant", Name = "REX, THE BONE TYRANT", Zone = "DinoMuseum",
+		Spirit = 3.2e20, Reward = 6.04e19, Drops = 18, Respawn = 30, Scale = 7.55, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(235, 225, 200), Glow = Color3.fromRGB(150, 230, 120), Style = "BoneTyrant",
+	},
+	-- ZONE 26
+	-- Cheerleader: small ghost cheerleader: a fluffy pom-pom on each nub arm (clusters of small balls), a big hair bow and a little megaphone floating beside it
+	CheerSpirit = {
+		Id = "CheerSpirit", Name = "CHEER SPIRIT", Zone = "Stadium",
+		Spirit = 1.42e20, Reward = 3.2e19, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(250, 245, 255), Glow = Color3.fromRGB(255, 120, 160), Style = "Cheerleader",
+	},
+	-- FoamFinger: ghost waving a giant foam '#1' hand (big block with one tall finger), a team cap on backwards and two face-paint stripes on each cheek
+	FoamFingerPhantom = {
+		Id = "FoamFingerPhantom", Name = "FOAM-FINGER PHANTOM", Zone = "Stadium",
+		Spirit = 3.83e20, Reward = 8.26e19, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(230, 240, 255), Glow = Color3.fromRGB(120, 255, 140), Style = "FoamFinger",
+	},
+	-- Scoreboard: boss: its body is wrapped by a big stadium scoreboard (dark frame block with glowing digit bars), two horn speakers on top and a floodlight pole on each side
+	PhantomScoreboard = {
+		Id = "PhantomScoreboard", Name = "THE PHANTOM SCOREBOARD", Zone = "Stadium",
+		Spirit = 1.6e21, Reward = 3.14e20, Drops = 18, Respawn = 30, Scale = 7.70, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(50, 60, 90), Glow = Color3.fromRGB(120, 255, 140), Style = "Scoreboard",
+	},
+	-- ZONE 27
 	NeonSprite = {
 		Id = "NeonSprite", Name = "NEON SPRITE", Zone = "NeonCity",
-		Spirit = 1.13e18, Reward = 2.27e17, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 7.08e20, Reward = 1.66e20, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(255, 200, 250), Glow = Color3.fromRGB(255, 80, 220), Style = "NeonSign",
 	},
 	GraffitiPhantom = {
 		Id = "GraffitiPhantom", Name = "GRAFFITI PHANTOM", Zone = "NeonCity",
-		Spirit = 3.05e18, Reward = 5.88e17, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 1.91e21, Reward = 4.29e20, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(230, 240, 255), Glow = Color3.fromRGB(120, 255, 200), Style = "Graffiti",
 	},
 	BillboardBoss = {
 		Id = "BillboardBoss", Name = "THE BILLBOARD BOSS", Zone = "NeonCity",
-		Spirit = 1.28e19, Reward = 2.24e18, Drops = 18, Respawn = 30, Scale = 7.25, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 8.01e21, Reward = 1.63e21, Drops = 18, Respawn = 30, Scale = 7.85, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(60, 60, 90), Glow = Color3.fromRGB(120, 240, 255), Style = "Billboard",
 	},
-	-- ZONE 24
+	-- ZONE 28
+	-- Crumb: tiny ghost hugging a cookie crumb as big as itself (lumpy brown block with chocolate-chip balls), rainbow sprinkle sticks floating round it
+	CrumbSprite = {
+		Id = "CrumbSprite", Name = "CRUMB SPRITE", Zone = "GiantsKitchen",
+		Spirit = 3.54e21, Reward = 8.64e20, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(255, 240, 220), Glow = Color3.fromRGB(255, 170, 90), Style = "Crumb",
+	},
+	-- Teacup: ghost sitting in a flowery teacup (short wide cylinder with a ring handle) on a saucer disc, a tea-bag tag hanging over the rim, steam puffs rising
+	TeacupPhantom = {
+		Id = "TeacupPhantom", Name = "TEACUP PHANTOM", Zone = "GiantsKitchen",
+		Spirit = 9.57e21, Reward = 2.23e21, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(245, 240, 255), Glow = Color3.fromRGB(255, 200, 230), Style = "Teacup",
+	},
+	-- CheeseWheel: boss: half inside a giant wedge of holey cheese (yellow wedge with darker hole discs), a mousetrap worn like a crown and a butter-knife sword
+	BigCheese = {
+		Id = "BigCheese", Name = "THE BIG CHEESE", Zone = "GiantsKitchen",
+		Spirit = 4e22, Reward = 8.49e21, Drops = 18, Respawn = 30, Scale = 8.00, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(255, 215, 90), Glow = Color3.fromRGB(255, 170, 60), Style = "CheeseWheel",
+	},
+	-- ZONE 29
+	-- Pixel: small ghost built from chunky pixels: cube steps round its outline, square 8-bit eyes, a stair-stepped tail and little square coins floating beside it
+	PixelPhantom = {
+		Id = "PixelPhantom", Name = "PIXEL PHANTOM", Zone = "CyberArcade",
+		Spirit = 1.77e22, Reward = 4.5e21, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Kind = "Normal", Color = Color3.fromRGB(230, 240, 255), Glow = Color3.fromRGB(80, 255, 220), Style = "Pixel",
+	},
+	-- Glitch: ghost with offset colour slices (thin pink and cyan copies shifted left and right), jagged error bars and a floating '?' block over its head
+	GlitchGremlin = {
+		Id = "GlitchGremlin", Name = "GLITCH GREMLIN", Zone = "CyberArcade",
+		Spirit = 4.79e22, Reward = 1.16e22, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Kind = "Normal", Color = Color3.fromRGB(200, 180, 255), Glow = Color3.fromRGB(255, 80, 200), Style = "Glitch",
+	},
+	-- GameOver: boss: wears an arcade cabinet like armour (tall box with a glowing screen round its face, joystick and big round buttons on the control deck, coin slot), pixel hearts orbiting
+	GameOverGoliath = {
+		Id = "GameOverGoliath", Name = "THE GAME OVER GOLIATH", Zone = "CyberArcade",
+		Spirit = 2e23, Reward = 4.42e22, Drops = 18, Respawn = 30, Scale = 8.15, Hover = 12, Speed = 2.5, Wander = 6,
+		Kind = "Boss", Color = Color3.fromRGB(60, 40, 110), Glow = Color3.fromRGB(80, 255, 220), Style = "GameOver",
+	},
+	-- ZONE 30
 	BreezeSpirit = {
 		Id = "BreezeSpirit", Name = "BREEZE SPIRIT", Zone = "StormIslands",
-		Spirit = 5.66e18, Reward = 1.18e18, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 8.85e22, Reward = 2.34e22, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(230, 245, 255), Glow = Color3.fromRGB(170, 230, 255), Style = "Breeze",
 	},
 	ThundercloudPhantom = {
 		Id = "ThundercloudPhantom", Name = "THUNDERCLOUD PHANTOM", Zone = "StormIslands",
-		Spirit = 1.53e19, Reward = 3.06e18, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 2.39e23, Reward = 6.04e22, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(150, 160, 190), Glow = Color3.fromRGB(255, 240, 120), Style = "Thundercloud",
 	},
 	TempestRoc = {
 		Id = "TempestRoc", Name = "TEMPEST ROC", Zone = "StormIslands",
-		Spirit = 6.41e19, Reward = 1.17e19, Drops = 18, Respawn = 30, Scale = 7.40, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 1e24, Reward = 2.3e23, Drops = 18, Respawn = 30, Scale = 8.30, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(120, 140, 200), Glow = Color3.fromRGB(255, 240, 120), Style = "StormRoc",
 	},
-	-- ZONE 25
+	-- ZONE 31
 	MoondustSpirit = {
 		Id = "MoondustSpirit", Name = "MOONDUST SPIRIT", Zone = "MoonBase",
-		Spirit = 2.83e19, Reward = 6.14e18, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 4.43e23, Reward = 1.22e23, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(230, 230, 220), Glow = Color3.fromRGB(200, 220, 255), Style = "Moondust",
 	},
 	AstroPhantom = {
 		Id = "AstroPhantom", Name = "ASTRO PHANTOM", Zone = "MoonBase",
-		Spirit = 7.64e19, Reward = 1.59e19, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 1.2e24, Reward = 3.14e23, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(240, 245, 255), Glow = Color3.fromRGB(255, 150, 80), Style = "Astronaut",
 	},
 	SaucerOverseer = {
 		Id = "SaucerOverseer", Name = "THE SAUCER OVERSEER", Zone = "MoonBase",
-		Spirit = 3.2e20, Reward = 6.06e19, Drops = 18, Respawn = 30, Scale = 7.55, Hover = 12, Speed = 2.5, Wander = 6,
+		Spirit = 5e24, Reward = 1.19e24, Drops = 18, Respawn = 30, Scale = 8.45, Hover = 12, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(150, 230, 170), Glow = Color3.fromRGB(140, 255, 160), Style = "Saucer",
 	},
-	-- ZONE 26
+	-- ZONE 32
 	VoidMote = {
 		Id = "VoidMote", Name = "VOID MOTE", Zone = "VoidThrone",
-		Spirit = 1.42e20, Reward = 3.19e19, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
+		Spirit = 2.21e24, Reward = 6.32e23, Drops = 5, Respawn = 6, Scale = 1.55, Hover = 5.5, Speed = 5, Wander = 3.2,
 		Kind = "Normal", Color = Color3.fromRGB(40, 30, 70), Glow = Color3.fromRGB(200, 150, 255), Style = "Mote",
 	},
 	RiftPhantom = {
 		Id = "RiftPhantom", Name = "RIFT PHANTOM", Zone = "VoidThrone",
-		Spirit = 3.82e20, Reward = 8.27e19, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
+		Spirit = 5.98e24, Reward = 1.63e24, Drops = 6, Respawn = 9, Scale = 1.90, Hover = 6, Speed = 6, Wander = 2.7,
 		Kind = "Normal", Color = Color3.fromRGB(70, 50, 120), Glow = Color3.fromRGB(255, 120, 255), Style = "Rift",
 	},
 	VoidHerald = {
 		Id = "VoidHerald", Name = "VOID HERALD", Zone = "VoidThrone",
-		Spirit = 1.6e21, Reward = 3.15e20, Drops = 18, Respawn = 30, Scale = 7.70, Hover = 14, Speed = 2.5, Wander = 6,
+		Spirit = 2.5e25, Reward = 6.21e24, Drops = 18, Respawn = 30, Scale = 8.60, Hover = 14, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(50, 40, 90), Glow = Color3.fromRGB(255, 255, 255), Style = "Herald",
 	},
 	VoidEmperor = {
@@ -1657,7 +1804,7 @@ Config.Hunters = {
 		Blurb = "The hero every throne is waiting for. Ghosts bow before she asks.",
 		Look = { Skin = C(245, 220, 200), Hair = C(255, 235, 170), HairStyle = "Long", Shirt = C(250, 245, 255), Pants = C(200, 170, 255), Shoes = C(255, 215, 90),
 			Hat = "Tiara", HatColor = C(255, 215, 90), Back = "HeroCape", BackColor = C(255, 215, 90), Tool = "Sword", ToolColor = C(250, 245, 255), Beam = C(255, 230, 140), Aura = true },
-	},	-- WORLD 2: THE OTHER SIDE (areas 17-26)
+	},	-- WORLD 2: THE OTHER SIDE (areas 17-32)
 	-- ZONE 17: LANTERN CRATE
 	StallSweeper = {
 		Id = "StallSweeper", Name = "Stall Sweeper", Rarity = "Common", Zone = "LanternMarket", Power = 920000000000,
@@ -1665,10 +1812,11 @@ Config.Hunters = {
 		Look = { Skin = C(240, 200, 160), Hair = C(40, 30, 30), HairStyle = "Short", Shirt = C(220, 60, 60), Pants = C(60, 40, 40), Shoes = C(30, 30, 35),
 			Hat = "Cap", HatColor = C(255, 200, 80), Tool = "Vacuum", ToolColor = C(255, 120, 80), Beam = C(255, 190, 120) },
 	},
+	-- NOD: Rapunzel from Tangled (very long golden hair, floating lanterns); our own orange dress
 	LanternLighter = {
-		Id = "LanternLighter", Name = "Lantern Lighter", Rarity = "Uncommon", Zone = "LanternMarket", Power = 1530000000000,
-		Blurb = "Lights every lantern in the market. Ghosts follow her like moths.",
-		Look = { Skin = C(225, 175, 135), Hair = C(25, 20, 25), HairStyle = "Bob", Shirt = C(255, 150, 60), Pants = C(80, 40, 40), Shoes = C(40, 30, 30),
+		Id = "LanternLighter", Name = "Rapunzie Lanternlocks", Rarity = "Uncommon", Zone = "LanternMarket", Power = 1530000000000,
+		Blurb = "Lets down her very long golden hair and lights a floating lantern for every ghost she catches.",
+		Look = { Skin = C(225, 175, 135), Hair = C(250, 210, 110), HairStyle = "Long", Shirt = C(255, 150, 60), Pants = C(80, 40, 40), Shoes = C(40, 30, 30),
 			Back = "LanternPole", BackColor = C(230, 50, 50), Tool = "Lantern", ToolColor = C(255, 200, 90), Beam = C(255, 170, 70) },
 	},
 	ChefSqueaks = {
@@ -1714,10 +1862,11 @@ Config.Hunters = {
 		Look = { Skin = C(245, 205, 175), Hair = C(150, 90, 50), HairStyle = "Bob", Shirt = C(130, 170, 240), Pants = C(130, 170, 240), Shoes = C(255, 150, 180),
 			Hat = "Nightcap", HatColor = C(70, 100, 200), Tool = "Candle", ToolColor = C(220, 180, 90), Beam = C(255, 200, 110) },
 	},
+	-- NOD: The Very Hungry Caterpillar (eats more every day of the week); a green shirt, his worm pal does the eating
 	BookwormBenny = {
-		Id = "BookwormBenny", Name = "Bookworm Benny", Rarity = "Uncommon", Zone = "PhantomLibrary", Power = 7630000000000,
-		Blurb = "Carries every book he hasn't finished yet. His worm pal Wiggles reads the top one.",
-		Look = { Skin = C(160, 110, 80), Hair = C(30, 25, 25), HairStyle = "Short", Shirt = C(240, 190, 60), Pants = C(120, 85, 60), Shoes = C(220, 70, 60),
+		Id = "BookwormBenny", Name = "Benny & the Hungry Bookworm", Rarity = "Uncommon", Zone = "PhantomLibrary", Power = 7650000000000,
+		Blurb = "On Monday his worm pal Wiggles ate one book. On Tuesday, two. By Sunday he was hungry for ghosts.",
+		Look = { Skin = C(160, 110, 80), Hair = C(30, 25, 25), HairStyle = "Short", Shirt = C(120, 200, 80), Pants = C(120, 85, 60), Shoes = C(220, 70, 60),
 			Back = "BookStack", BackColor = C(200, 70, 60), Tool = "Spellbook", ToolColor = C(60, 110, 200), Beam = C(120, 255, 220) },
 	},
 	SpecsMcSpellbook = {
@@ -1745,7 +1894,7 @@ Config.Hunters = {
 			Back = "Tentacles", BackColor = C(150, 100, 215), Tool = "Quill", ToolColor = C(90, 230, 210), Beam = C(90, 240, 220), Aura = true },
 	},
 	TheOverdueOne = {
-		Id = "TheOverdueOne", Name = "The Overdue One", Rarity = "Secret", Zone = "PhantomLibrary", Power = 195000000000000,
+		Id = "TheOverdueOne", Name = "The Overdue One", Rarity = "Secret", Zone = "PhantomLibrary", Power = 196000000000000,
 		Blurb = "A library book nobody ever returned... so it walked back on its own.",
 		Look = { Skin = C(220, 230, 225), Hair = C(40, 60, 50), HairStyle = "None", Shirt = C(35, 70, 55), Pants = C(28, 45, 38), Shoes = C(200, 160, 60),
 			Hat = "BookHead", HatColor = C(40, 105, 80), Back = "Pages", Tool = "Lantern", ToolColor = C(200, 160, 60), Beam = C(150, 255, 170), Aura = true },
@@ -1756,54 +1905,58 @@ Config.Hunters = {
 		Look = { Skin = C(235, 195, 165), Hair = C(200, 180, 255), HairStyle = "Beard", Shirt = C(75, 50, 170), Pants = C(60, 40, 140), Shoes = C(255, 205, 70),
 			Hat = "Wizard", HatColor = C(55, 35, 130), Back = "RuneBooks", BackColor = C(230, 150, 50), Tool = "BookStaff", ToolColor = C(150, 60, 50), Beam = C(120, 255, 235), Aura = true },
 	},
-	-- ZONE 19: TOPSY-TURVY CRATE
-	ButlerBartleby = {
-		Id = "ButlerBartleby", Name = "Butler Bartleby", Rarity = "Common", Zone = "UpsideManor", Power = 23000000000000,
-		Blurb = "Serves tea on the ceiling. Hasn't spilled a drop. Yet.",
-		Look = { Skin = C(235, 205, 180), Hair = C(150, 150, 160), HairStyle = "Short", Shirt = C(30, 30, 40), Pants = C(30, 30, 40), Shoes = C(20, 20, 25),
-			Hat = "TopHat", HatColor = C(30, 30, 40), Tool = "Flashlight", ToolColor = C(220, 220, 230), Beam = C(255, 245, 200) },
+	-- ZONE 19: HARVEST CRATE
+	FarmhandFinn = {
+		Id = "FarmhandFinn", Name = "Farmhand Finn", Rarity = "Common", Zone = "PumpkinFarm", Power = 23000000000000,
+		Blurb = "Up at dawn to feed the chickens. The ghost chickens too.",
+		Look = { Skin = C(240, 200, 165), Hair = C(200, 120, 60), HairStyle = "Short", Shirt = C(200, 60, 50), Pants = C(70, 100, 160), Shoes = C(90, 60, 40),
+			Hat = "Cap", HatColor = C(235, 195, 95), Tool = "Pitchfork", ToolColor = C(150, 105, 60), Beam = C(255, 200, 120) },
 	},
-	GravityGwen = {
-		Id = "GravityGwen", Name = "Gravity Gwen", Rarity = "Uncommon", Zone = "UpsideManor", Power = 38100000000000,
-		Blurb = "Wears her boots on the ceiling and her socks on the floor.",
-		Look = { Skin = C(200, 150, 110), Hair = C(255, 140, 180), HairStyle = "Floaty", Shirt = C(160, 110, 220), Pants = C(60, 50, 90), Shoes = C(255, 210, 80),
-			Back = "Backpack", BackColor = C(255, 140, 180), Tool = "Scanner", ToolColor = C(200, 160, 255), Beam = C(220, 180, 255) },
+	CornMazeCora = {
+		Id = "CornMazeCora", Name = "Corn-Maze Cora", Rarity = "Uncommon", Zone = "PumpkinFarm", Power = 38300000000000,
+		Blurb = "Knows every twist of the corn maze. Ghosts ask HER for directions.",
+		Look = { Skin = C(200, 150, 110), Hair = C(60, 35, 25), HairStyle = "Braids", Shirt = C(250, 210, 80), Pants = C(90, 120, 70), Shoes = C(120, 80, 50),
+			Hat = "StrawHat", HatColor = C(235, 200, 110), Back = "Backpack", BackColor = C(120, 160, 80), Tool = "Lantern", ToolColor = C(255, 190, 80), Beam = C(255, 215, 120) },
 	},
-	ThursdayGloom = {
-		Id = "ThursdayGloom", Name = "Thursday Gloom", Rarity = "Rare", Zone = "UpsideManor", Power = 63500000000000,
-		Blurb = "Never smiles. Except at ghosts. She LOVES ghosts.",
-		Look = { Skin = C(240, 235, 240), Hair = C(20, 15, 25), HairStyle = "Braids", Shirt = C(30, 25, 35), Pants = C(30, 25, 35), Shoes = C(120, 60, 160),
-			Tool = "Lantern", ToolColor = C(80, 60, 110), Beam = C(190, 140, 255) },
+	-- NOD: the Scarecrow from The Wizard of Oz (straw hair, patched clothes); our own green shirt and pitchfork
+	BrainyStrawford = {
+		Id = "BrainyStrawford", Name = "Brainy Strawford", Rarity = "Rare", Zone = "PumpkinFarm", Power = 63500000000000,
+		Blurb = "Finally got the brain he always wanted. Uses all of it for ghost puns.",
+		Look = { Skin = C(235, 210, 160), Hair = C(245, 205, 95), HairStyle = "Spiky", Shirt = C(100, 150, 80), Pants = C(120, 95, 65), Shoes = C(80, 60, 40),
+			Hat = "StrawHat", HatColor = C(200, 160, 90), Tool = "Pitchfork", ToolColor = C(170, 120, 70), Beam = C(255, 170, 70) },
 	},
-	NannyBrolly = {
-		Id = "NannyBrolly", Name = "Nanny Brolly", Rarity = "Rare", Zone = "UpsideManor", Power = 63500000000000,
-		Blurb = "Floats in by umbrella and tidies up every ghost in a snap.",
-		Look = { Skin = C(245, 210, 190), Hair = C(60, 40, 30), HairStyle = "Buns", Shirt = C(120, 40, 90), Pants = C(60, 30, 50), Shoes = C(30, 25, 30),
-			Hat = "Bow", HatColor = C(255, 120, 160), Back = "Backpack", BackColor = C(130, 80, 50), Tool = "Umbrella", ToolColor = C(70, 40, 90), Beam = C(255, 200, 230) },
+	-- NOD: Wilbur from Charlotte's Web ('SOME PIG'); a pink pig in our own blue overalls
+	SomePigSammy = {
+		Id = "SomePigSammy", Name = "Some-Pig Sammy", Rarity = "Rare", Zone = "PumpkinFarm", Power = 63500000000000,
+		Blurb = "A spider wrote SOME HUNTER in a web over his pen. Everybody agrees.",
+		Look = { Skin = C(255, 180, 190), Hair = C(255, 165, 180), HairStyle = "PointyEars", Shirt = C(255, 180, 190), Pants = C(80, 130, 200), Shoes = C(200, 120, 130),
+			Tool = "Scanner", ToolColor = C(255, 220, 120), Beam = C(255, 190, 210) },
 	},
-	MagnetMaya = {
-		Id = "MagnetMaya", Name = "Magnet Maya", Rarity = "Legendary", Zone = "UpsideManor", Power = 156000000000000,
-		Blurb = "Holds the whole manor together with one giant magnet.",
-		Look = { Skin = C(170, 120, 90), Hair = C(40, 30, 30), HairStyle = "Puff", Shirt = C(220, 60, 60), Pants = C(70, 70, 90), Shoes = C(230, 230, 240),
-			Hat = "Goggles", HatColor = C(220, 220, 230), Back = "Tank", BackColor = C(180, 180, 200), Tool = "Magnet", ToolColor = C(220, 50, 60), Beam = C(255, 120, 140), Aura = true },
+	-- NOD: the nursery rhyme Old MacDonald Had a Farm (public domain)
+	OldMacBoonald = {
+		Id = "OldMacBoonald", Name = "Old MacBoonald", Rarity = "Legendary", Zone = "PumpkinFarm", Power = 156000000000000,
+		Blurb = "Had a farm. E-I-E-I-BOO! With a ghost-ghost here and a ghost-ghost there.",
+		Look = { Skin = C(235, 195, 165), Hair = C(235, 235, 235), HairStyle = "Beard", Shirt = C(210, 60, 60), Pants = C(70, 100, 160), Shoes = C(80, 55, 35),
+			Hat = "StrawHat", HatColor = C(230, 195, 110), Tool = "Pitchfork", ToolColor = C(170, 170, 185), Beam = C(255, 220, 140), Aura = true },
 	},
-	BaronVonFlip = {
-		Id = "BaronVonFlip", Name = "Baron Von Flip", Rarity = "Mythic", Zone = "UpsideManor", Power = 390000000000000,
-		Blurb = "Did a backflip in 1802 and never landed.",
-		Look = { Skin = C(230, 200, 180), Hair = C(250, 250, 255), HairStyle = "Floaty", Shirt = C(110, 40, 90), Pants = C(50, 30, 50), Shoes = C(255, 215, 90),
-			Hat = "TopHat", HatColor = C(110, 40, 90), Back = "Cape", BackColor = C(60, 20, 60), Tool = "Staff", ToolColor = C(255, 215, 90), Beam = C(255, 180, 230), Aura = true },
+	GemmaGourdheart = {
+		Id = "GemmaGourdheart", Name = "Gemma Gourdheart", Rarity = "Mythic", Zone = "PumpkinFarm", Power = 390000000000000,
+		Blurb = "Grows pumpkins as big as houses. Ghosts move in. She moves them out.",
+		Look = { Skin = C(240, 200, 170), Hair = C(200, 90, 40), HairStyle = "Long", Shirt = C(90, 140, 70), Pants = C(120, 80, 50), Shoes = C(200, 110, 40),
+			Hat = "FlowerHead", HatColor = C(255, 170, 60), Back = "Wings", BackColor = C(255, 160, 60), Tool = "PumpkinLance", ToolColor = C(255, 150, 50), Beam = C(255, 170, 70), Aura = true },
 	},
-	TheHouseItself = {
-		Id = "TheHouseItself", Name = "The House Itself", Rarity = "Secret", Zone = "UpsideManor", Power = 976000000000000,
-		Blurb = "Nobody hired it. It just shows up to help.",
-		Look = { Skin = C(160, 110, 70), Hair = C(90, 60, 40), HairStyle = "None", Shirt = C(140, 95, 60), Pants = C(110, 75, 50), Shoes = C(80, 55, 40),
-			Hat = "Roof", HatColor = C(120, 50, 70), Tool = "Lantern", ToolColor = C(255, 220, 140), Beam = C(255, 230, 150), Aura = true },
+	-- NOD: the Headless Horseman from The Legend of Sleepy Hollow (public domain); friendly, with a lantern
+	HeadlessHayrider = {
+		Id = "HeadlessHayrider", Name = "The Headless Hayrider", Rarity = "Secret", Zone = "PumpkinFarm", Power = 978000000000000,
+		Blurb = "Rides through the patch every Halloween looking for his head. Catches ghosts on the way.",
+		Look = { Skin = C(60, 50, 60), Hair = C(30, 30, 35), HairStyle = "None", Shirt = C(40, 35, 50), Pants = C(30, 28, 35), Shoes = C(20, 20, 25),
+			Hat = "PumpkinHelm", HatColor = C(255, 140, 40), Back = "Cape", BackColor = C(30, 25, 35), Tool = "Lantern", ToolColor = C(255, 150, 40), Beam = C(255, 150, 50), Aura = true },
 	},
-	VertigoValentina = {
-		Id = "VertigoValentina", Name = "Vertigo Valentina", Rarity = "Ultra", Zone = "UpsideManor", Power = 2.44e15,
-		Blurb = "Points one finger and the whole room flips. Ghosts fall right into her trap.",
-		Look = { Skin = C(245, 220, 205), Hair = C(200, 160, 255), HairStyle = "Floaty", Shirt = C(250, 245, 255), Pants = C(200, 160, 255), Shoes = C(255, 215, 90),
-			Hat = "Tiara", HatColor = C(255, 215, 90), Back = "Rings", BackColor = C(200, 160, 255), Tool = "Orb", ToolColor = C(220, 190, 255), Beam = C(220, 180, 255), Aura = true },
+	AutumnaHarvestQueen = {
+		Id = "AutumnaHarvestQueen", Name = "Autumna, Harvest Queen", Rarity = "Ultra", Zone = "PumpkinFarm", Power = 2.44e15,
+		Blurb = "Shakes one golden leaf and every pumpkin in the patch lights up. Ghosts can't resist a glow-up.",
+		Look = { Skin = C(245, 215, 190), Hair = C(220, 110, 40), HairStyle = "Long", Shirt = C(230, 140, 40), Pants = C(150, 60, 40), Shoes = C(255, 210, 90),
+			Hat = "Crown", HatColor = C(255, 200, 80), Back = "HeroCape", BackColor = C(200, 70, 40), Tool = "PumpkinLance", ToolColor = C(255, 200, 80), Beam = C(255, 170, 60), Aura = true },
 	},
 	-- ZONE 20: GLOWSHROOM CRATE
 	SporeSniffer = {
@@ -1812,11 +1965,12 @@ Config.Hunters = {
 		Look = { Skin = C(250, 215, 185), Hair = C(170, 90, 50), HairStyle = "Short", Shirt = C(80, 150, 90), Pants = C(80, 70, 50), Shoes = C(70, 50, 30),
 			Hat = "Cap", HatColor = C(60, 130, 80), Back = "Backpack", BackColor = C(150, 110, 60), Tool = "Scanner", ToolColor = C(120, 255, 230), Beam = C(120, 255, 230) },
 	},
+	-- NOD: Totoro from My Neighbor Totoro (big grey forest spirit, leaf umbrella, bus stop)
 	MossRangerMo = {
-		Id = "MossRangerMo", Name = "Moss Ranger Mo", Rarity = "Uncommon", Zone = "Glowshroom", Power = 191000000000000,
-		Blurb = "Dressed as a bush. The ghosts said hi anyway.",
-		Look = { Skin = C(200, 150, 110), Hair = C(60, 90, 50), HairStyle = "None", Shirt = C(90, 140, 70), Pants = C(70, 100, 50), Shoes = C(60, 50, 30),
-			Hat = "Hood", HatColor = C(80, 130, 60), Back = "Backpack", BackColor = C(100, 120, 60), Tool = "Lantern", ToolColor = C(80, 200, 180), Beam = C(120, 255, 210) },
+		Id = "MossRangerMo", Name = "Neighbour Tumtum", Rarity = "Uncommon", Zone = "Glowshroom", Power = 191000000000000,
+		Blurb = "A big, fluffy forest spirit. Waits at the glowshroom bus stop with a leaf for an umbrella.",
+		Look = { Skin = C(150, 150, 165), Hair = C(150, 150, 165), HairStyle = "PointyEars", Shirt = C(150, 150, 165), Pants = C(225, 225, 215), Shoes = C(120, 120, 135),
+			Tool = "Umbrella", ToolColor = C(90, 170, 80), Beam = C(120, 255, 210) },
 	},
 	GrandpaBluecap = {
 		Id = "GrandpaBluecap", Name = "Grandpa Bluecap", Rarity = "Rare", Zone = "Glowshroom", Power = 318000000000000,
@@ -1843,7 +1997,7 @@ Config.Hunters = {
 			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Wings", BackColor = C(160, 255, 220), Tool = "MoonStaff", ToolColor = C(200, 255, 230), Beam = C(180, 255, 220), Aura = true },
 	},
 	TheSporefather = {
-		Id = "TheSporefather", Name = "The Sporefather", Rarity = "Secret", Zone = "Glowshroom", Power = 4.88e15,
+		Id = "TheSporefather", Name = "The Sporefather", Rarity = "Secret", Zone = "Glowshroom", Power = 4.89e15,
 		Blurb = "One puff and the whole forest glows.",
 		Look = { Skin = C(200, 210, 190), Hair = C(90, 100, 80), HairStyle = "Beard", Shirt = C(60, 70, 60), Pants = C(40, 50, 40), Shoes = C(30, 35, 30),
 			Hat = "Hood", HatColor = C(70, 90, 70), Back = "Orbs", BackColor = C(120, 255, 230), Tool = "Orb", ToolColor = C(120, 255, 230), Beam = C(120, 255, 230), Aura = true },
@@ -1854,296 +2008,620 @@ Config.Hunters = {
 		Look = { Skin = C(245, 225, 210), Hair = C(150, 255, 230), HairStyle = "Long", Shirt = C(250, 240, 255), Pants = C(120, 220, 210), Shoes = C(255, 180, 230),
 			Hat = "ShroomCrown", HatColor = C(120, 255, 230), Back = "Wings", BackColor = C(200, 255, 245), Tool = "MoonStaff", ToolColor = C(255, 180, 230), Beam = C(150, 255, 230), Aura = true },
 	},
-	-- ZONE 21: MIRROR CRATE
+	-- ZONE 21: SPLASH CRATE
+	LifeguardLuca = {
+		Id = "LifeguardLuca", Name = "Lifeguard Luca", Rarity = "Common", Zone = "WaterPark", Power = 575000000000000,
+		Blurb = "Blows the whistle on every ghost running by the pool. NO RUNNING!",
+		Look = { Skin = C(230, 180, 140), Hair = C(250, 220, 120), HairStyle = "Short", Shirt = C(220, 50, 50), Pants = C(220, 50, 50), Shoes = C(250, 250, 250),
+			Hat = "Visor", HatColor = C(250, 250, 250), Back = "LifeRing", BackColor = C(255, 90, 80), Tool = "Megaphone", ToolColor = C(250, 250, 250), Beam = C(120, 230, 255) },
+	},
+	SunscreenSam = {
+		Id = "SunscreenSam", Name = "Sunscreen Sam", Rarity = "Uncommon", Zone = "WaterPark", Power = 956000000000000,
+		Blurb = "Wears SPF 1000. Ghosts can't see him through the glare.",
+		Look = { Skin = C(245, 225, 215), Hair = C(120, 70, 40), HairStyle = "Puff", Shirt = C(255, 220, 60), Pants = C(60, 170, 220), Shoes = C(255, 130, 60),
+			Hat = "Goggles", HatColor = C(60, 200, 230), Back = "Backpack", BackColor = C(255, 130, 60), Tool = "Blaster", ToolColor = C(255, 120, 200), Beam = C(120, 230, 255) },
+	},
+	-- NOD: Ariel from The Little Mermaid (long red hair); our own lilac top, teal tail-trousers and a gold trident
+	MermaidenMarina = {
+		Id = "MermaidenMarina", Name = "Mermaiden Marina", Rarity = "Rare", Zone = "WaterPark", Power = 1.59e15,
+		Blurb = "Swapped her fins for flip-flops just to hunt ghosts at the pool.",
+		Look = { Skin = C(245, 210, 185), Hair = C(230, 70, 60), HairStyle = "Long", Shirt = C(160, 110, 220), Pants = C(60, 200, 170), Shoes = C(60, 200, 170),
+			Back = "Shell", BackColor = C(255, 180, 200), Tool = "Trident", ToolColor = C(255, 210, 90), Beam = C(120, 240, 220) },
+	},
+	-- NOD: Dory from Finding Nemo ('just keep swimming'); a forgetful blue fish-girl with a bubble wand
+	ForgetfulFlo = {
+		Id = "ForgetfulFlo", Name = "Forgetful Flo", Rarity = "Rare", Zone = "WaterPark", Power = 1.59e15,
+		Blurb = "Just keep hunting, just keep hunting... wait, what were we doing?",
+		Look = { Skin = C(90, 150, 235), Hair = C(255, 215, 60), HairStyle = "Floaty", Shirt = C(90, 150, 235), Pants = C(255, 215, 60), Shoes = C(40, 40, 70),
+			Tool = "Wand", ToolColor = C(255, 215, 60), Beam = C(160, 230, 255) },
+	},
+	-- NOD: Flash Gordon (the space hero); our own teal-and-gold swim-hero suit
+	SplashGordon = {
+		Id = "SplashGordon", Name = "Splash Gordon", Rarity = "Legendary", Zone = "WaterPark", Power = 3.91e15,
+		Blurb = "Saviour of the swimming pool! Always dives in hero-first.",
+		Look = { Skin = C(240, 200, 170), Hair = C(250, 215, 100), HairStyle = "Short", Shirt = C(40, 170, 200), Pants = C(30, 110, 160), Shoes = C(255, 210, 80),
+			Hat = "Goggles", HatColor = C(255, 210, 80), Back = "HeroCape", BackColor = C(255, 210, 80), Tool = "Blaster", ToolColor = C(255, 210, 80), Beam = C(120, 240, 255), Aura = true },
+	},
+	SlideQueenShayla = {
+		Id = "SlideQueenShayla", Name = "Slide Queen Shayla", Rarity = "Mythic", Zone = "WaterPark", Power = 9.75e15,
+		Blurb = "Rides the tallest slide fifty times a day. Screams with joy every single time.",
+		Look = { Skin = C(170, 115, 85), Hair = C(255, 120, 200), HairStyle = "Puff", Shirt = C(255, 120, 200), Pants = C(60, 200, 230), Shoes = C(255, 230, 90),
+			Hat = "Visor", HatColor = C(255, 230, 90), Back = "Surfboard", BackColor = C(60, 200, 230), Tool = "Orb", ToolColor = C(120, 230, 255), Beam = C(120, 230, 255), Aura = true },
+	},
+	-- NOD: the shark from Jaws (the two-note theme); a cuddly shark onesie, no film poster
+	GnawsGentleShark = {
+		Id = "GnawsGentleShark", Name = "Gnaws, the Gentle Shark", Rarity = "Secret", Zone = "WaterPark", Power = 2.44e16,
+		Blurb = "Duh-dum... duh-dum... it's only Gnaws. He just wants a hug.",
+		Look = { Skin = C(245, 215, 190), Hair = C(120, 140, 160), HairStyle = "None", Shirt = C(120, 140, 170), Pants = C(230, 235, 240), Shoes = C(90, 105, 130),
+			Hat = "SharkHood", HatColor = C(120, 140, 170), Tool = "Vacuum", ToolColor = C(90, 200, 240), Beam = C(120, 230, 255), Aura = true },
+	},
+	TsunamiTiaWaveRider = {
+		Id = "TsunamiTiaWaveRider", Name = "Tsunami Tia, Wave Rider", Rarity = "Ultra", Zone = "WaterPark", Power = 6.09e16,
+		Blurb = "Rides a wave as tall as a water slide. When it crashes, every ghost is swept into her trap.",
+		Look = { Skin = C(200, 145, 105), Hair = C(40, 80, 120), HairStyle = "Long", Shirt = C(60, 210, 230), Pants = C(30, 110, 170), Shoes = C(255, 230, 120),
+			Hat = "Tiara", HatColor = C(255, 230, 120), Back = "Surfboard", BackColor = C(255, 120, 90), Tool = "Trident", ToolColor = C(120, 240, 255), Beam = C(90, 230, 255), Aura = true },
+	},
+	-- ZONE 22: MIRROR CRATE
+	-- NOD: the magic mirror from Snow White ('mirror, mirror on the wall', fairy tale)
 	PolisherPip = {
-		Id = "PolisherPip", Name = "Polisher Pip", Rarity = "Common", Zone = "MirrorMaze", Power = 575000000000000,
-		Blurb = "Polishes every mirror. Waves at his reflection 400 times a day.",
+		Id = "PolisherPip", Name = "Mirror-Mirror Mervin", Rarity = "Common", Zone = "MirrorMaze", Power = 2.88e15,
+		Blurb = "Polishes the magic mirror every day. It keeps telling him he's the fairest hunter of them all.",
 		Look = { Skin = C(250, 215, 185), Hair = C(240, 200, 100), HairStyle = "Short", Shirt = C(120, 180, 230), Pants = C(70, 80, 110), Shoes = C(240, 240, 250),
-			Hat = "Cap", HatColor = C(200, 220, 240), Tool = "Vacuum", ToolColor = C(170, 230, 255), Beam = C(200, 240, 255) },
+			Hat = "Cap", HatColor = C(200, 220, 240), Tool = "HandMirror", ToolColor = C(255, 215, 90), Beam = C(200, 240, 255) },
 	},
 	MazeMapper = {
-		Id = "MazeMapper", Name = "Maze Mapper", Rarity = "Uncommon", Zone = "MirrorMaze", Power = 953000000000000,
+		Id = "MazeMapper", Name = "Maze Mapper", Rarity = "Uncommon", Zone = "MirrorMaze", Power = 4.78e15,
 		Blurb = "Has a map of the maze. It's also a mirror. Very confusing.",
 		Look = { Skin = C(190, 140, 100), Hair = C(30, 25, 25), HairStyle = "Bob", Shirt = C(240, 200, 120), Pants = C(90, 80, 70), Shoes = C(70, 60, 50),
 			Hat = "Visor", HatColor = C(170, 230, 255), Back = "Backpack", BackColor = C(120, 140, 180), Tool = "Scanner", ToolColor = C(200, 220, 255), Beam = C(180, 230, 255) },
 	},
 	LookingGlassLucy = {
-		Id = "LookingGlassLucy", Name = "Looking-Glass Lucy", Rarity = "Rare", Zone = "MirrorMaze", Power = 1.59e15,
+		Id = "LookingGlassLucy", Name = "Looking-Glass Lucy", Rarity = "Rare", Zone = "MirrorMaze", Power = 7.94e15,
 		Blurb = "Stepped through a mirror and never looked back. Well, once.",
 		Look = { Skin = C(250, 225, 205), Hair = C(250, 200, 150), HairStyle = "Long", Shirt = C(200, 180, 255), Pants = C(250, 250, 255), Shoes = C(40, 40, 50),
 			Hat = "Bow", HatColor = C(200, 180, 255), Tool = "HandMirror", ToolColor = C(255, 215, 90), Beam = C(220, 200, 255) },
 	},
 	CopycatCass = {
-		Id = "CopycatCass", Name = "Copycat Cass", Rarity = "Rare", Zone = "MirrorMaze", Power = 1.59e15,
+		Id = "CopycatCass", Name = "Copycat Cass", Rarity = "Rare", Zone = "MirrorMaze", Power = 7.94e15,
 		Blurb = "Copies every move you make. Including this one.",
 		Look = { Skin = C(220, 180, 150), Hair = C(170, 180, 210), HairStyle = "Bob", Shirt = C(200, 205, 220), Pants = C(120, 130, 160), Shoes = C(200, 205, 220),
 			Hat = "Goggles", HatColor = C(200, 205, 220), Back = "MirrorShards", BackColor = C(220, 235, 255), Tool = "HandMirror", ToolColor = C(200, 205, 220), Beam = C(200, 240, 255) },
 	},
 	PrismKnight = {
-		Id = "PrismKnight", Name = "Prism Knight", Rarity = "Legendary", Zone = "MirrorMaze", Power = 3.91e15,
+		Id = "PrismKnight", Name = "Prism Knight", Rarity = "Legendary", Zone = "MirrorMaze", Power = 1.95e16,
 		Blurb = "Bends light into a rainbow, then bonks ghosts with it.",
 		Look = { Skin = C(240, 205, 180), Hair = C(255, 255, 255), HairStyle = "Short", Shirt = C(220, 230, 250), Pants = C(150, 160, 200), Shoes = C(200, 210, 240),
 			Hat = "Crystal", HatColor = C(200, 240, 255), Back = "Shield", BackColor = C(220, 235, 255), Tool = "Sword", ToolColor = C(220, 240, 255), Beam = C(255, 160, 230), Aura = true, Chrome = true },
 	},
 	MirageMystic = {
-		Id = "MirageMystic", Name = "Mirage Mystic", Rarity = "Mythic", Zone = "MirrorMaze", Power = 9.75e15,
+		Id = "MirageMystic", Name = "Mirage Mystic", Rarity = "Mythic", Zone = "MirrorMaze", Power = 4.88e16,
 		Blurb = "You're never sure which one is the real her. Neither are the ghosts.",
 		Look = { Skin = C(235, 200, 175), Hair = C(190, 220, 255), HairStyle = "Long", Shirt = C(170, 180, 230), Pants = C(110, 120, 180), Shoes = C(220, 230, 255),
 			Hat = "Hood", HatColor = C(200, 210, 240), Back = "MirrorShards", BackColor = C(220, 235, 255), Tool = "Orb", ToolColor = C(220, 240, 255), Beam = C(200, 230, 255), Aura = true },
 	},
 	TheReflection = {
-		Id = "TheReflection", Name = "The Reflection", Rarity = "Secret", Zone = "MirrorMaze", Power = 2.44e16,
+		Id = "TheReflection", Name = "The Reflection", Rarity = "Secret", Zone = "MirrorMaze", Power = 1.22e17,
 		Blurb = "It's you, but backwards. And way better at ghost hunting.",
 		Look = { Skin = C(210, 215, 230), Hair = C(150, 160, 190), HairStyle = "Spiky", Shirt = C(190, 195, 215), Pants = C(150, 155, 180), Shoes = C(210, 215, 230),
 			Back = "MirrorShards", BackColor = C(230, 240, 255), Tool = "HandMirror", ToolColor = C(230, 235, 250), Beam = C(230, 240, 255), Aura = true, Chrome = true },
 	},
 	KaleidaQueenOfFacets = {
-		Id = "KaleidaQueenOfFacets", Name = "Kaleida, Queen of Facets", Rarity = "Ultra", Zone = "MirrorMaze", Power = 6.09e16,
+		Id = "KaleidaQueenOfFacets", Name = "Kaleida, Queen of Facets", Rarity = "Ultra", Zone = "MirrorMaze", Power = 3.05e17,
 		Blurb = "Splits into a hundred reflections, and every one carries a ghost trap.",
 		Look = { Skin = C(250, 230, 220), Hair = C(255, 200, 240), HairStyle = "Long", Shirt = C(250, 250, 255), Pants = C(200, 220, 255), Shoes = C(255, 200, 240),
 			Hat = "PrismCrown", HatColor = C(220, 240, 255), Back = "MirrorShards", BackColor = C(255, 220, 245), Tool = "Kaleidoscope", ToolColor = C(220, 235, 255), Beam = C(255, 170, 240), Aura = true, Chrome = true },
 	},
-	-- ZONE 22: SUBWAY CRATE
+	-- ZONE 23: SHOPPING CRATE
+	CartPusherCody = {
+		Id = "CartPusherCody", Name = "Cart-Pusher Cody", Rarity = "Common", Zone = "ShoppingMall", Power = 1.44e16,
+		Blurb = "Rounds up runaway shopping carts. And runaway ghosts.",
+		Look = { Skin = C(210, 160, 120), Hair = C(60, 40, 30), HairStyle = "Spiky", Shirt = C(255, 140, 60), Pants = C(60, 70, 100), Shoes = C(230, 230, 235),
+			Hat = "Cap", HatColor = C(255, 140, 60), Back = "Backpack", BackColor = C(120, 130, 150), Tool = "Vacuum", ToolColor = C(255, 140, 200), Beam = C(255, 170, 220) },
+	},
+	PretzelPam = {
+		Id = "PretzelPam", Name = "Pretzel Pam", Rarity = "Uncommon", Zone = "ShoppingMall", Power = 2.39e16,
+		Blurb = "Twists pretzels shaped like ghosts. The real ghosts are very flattered.",
+		Look = { Skin = C(245, 215, 190), Hair = C(160, 90, 50), HairStyle = "Buns", Shirt = C(250, 250, 250), Pants = C(200, 60, 60), Shoes = C(60, 50, 50),
+			Hat = "ChefHat", HatColor = C(250, 250, 250), Tool = "FryingPan", ToolColor = C(190, 130, 70), Beam = C(255, 210, 140) },
+	},
+	-- NOD: Paul Blart: Mall Cop; a friendly mall guard with a radio, no badge or logo copied
+	OfficerBartBlurt = {
+		Id = "OfficerBartBlurt", Name = "Officer Bart Blurt", Rarity = "Rare", Zone = "ShoppingMall", Power = 3.97e16,
+		Blurb = "Patrols the mall on his scooter. No ghost gets past the food court on his watch.",
+		Look = { Skin = C(240, 200, 175), Hair = C(90, 60, 40), HairStyle = "Short", Shirt = C(220, 225, 235), Pants = C(50, 60, 90), Shoes = C(30, 30, 35),
+			Hat = "Cap", HatColor = C(50, 60, 90), Back = "Antenna", BackColor = C(70, 75, 90), Tool = "Flashlight", ToolColor = C(220, 220, 230), Beam = C(255, 240, 170) },
+	},
+	-- NOD: Buddy from the film Elf ('smiling's my favourite'); a grown-up elf in a pointy green hat
+	JollyBuddyElfington = {
+		Id = "JollyBuddyElfington", Name = "Jolly Buddy Elfington", Rarity = "Rare", Zone = "ShoppingMall", Power = 3.97e16,
+		Blurb = "Smiling's his favourite. Ghost hunting is a close second.",
+		Look = { Skin = C(245, 210, 185), Hair = C(190, 140, 80), HairStyle = "Short", Shirt = C(60, 160, 80), Pants = C(255, 215, 60), Shoes = C(40, 35, 30),
+			Hat = "ElfHat", HatColor = C(60, 160, 80), Tool = "Wand", ToolColor = C(230, 60, 60), Beam = C(255, 120, 140) },
+	},
+	-- NOD: Garfield (lazy orange cat, hates Mondays, loves lasagna); our own cat, no comic-strip look
+	MondaysMcFluff = {
+		Id = "MondaysMcFluff", Name = "Mondays McFluff", Rarity = "Legendary", Zone = "ShoppingMall", Power = 9.77e16,
+		Blurb = "Hates Mondays. Loves lasagna. Hunts ghosts in between naps.",
+		Look = { Skin = C(255, 160, 60), Hair = C(255, 150, 50), HairStyle = "PointyEars", Shirt = C(255, 160, 60), Pants = C(230, 130, 40), Shoes = C(255, 160, 60),
+			Tool = "FryingPan", ToolColor = C(200, 80, 60), Beam = C(255, 190, 90), Aura = true },
+	},
+	-- NOD: Barbie and her Dreamhouse (all-pink everything); no logo, our own heart wings
+	DreamHouseDebbie = {
+		Id = "DreamHouseDebbie", Name = "Dream-House Debbie", Rarity = "Mythic", Zone = "ShoppingMall", Power = 2.44e17,
+		Blurb = "Pink car, pink house, pink ghost trap. The ghosts LOVE the pink.",
+		Look = { Skin = C(250, 220, 200), Hair = C(255, 230, 120), HairStyle = "Long", Shirt = C(255, 120, 190), Pants = C(255, 180, 220), Shoes = C(255, 90, 170),
+			Hat = "Bow", HatColor = C(255, 90, 170), Back = "HeartWings", BackColor = C(255, 150, 210), Tool = "HeartWand", ToolColor = C(255, 120, 190), Beam = C(255, 150, 220), Aura = true },
+	},
+	TheMannequin = {
+		Id = "TheMannequin", Name = "The Mannequin", Rarity = "Secret", Zone = "ShoppingMall", Power = 6.11e17,
+		Blurb = "Stands perfectly still in the shop window. Then you blink, and the ghost is gone.",
+		Look = { Skin = C(235, 225, 215), Hair = C(235, 225, 215), HairStyle = "None", Shirt = C(40, 40, 50), Pants = C(40, 40, 50), Shoes = C(235, 225, 215),
+			Hat = "TopHat", HatColor = C(40, 40, 50), Back = "Cape", BackColor = C(200, 40, 60), Tool = "Wand", ToolColor = C(235, 225, 215), Beam = C(255, 240, 250), Aura = true },
+	},
+	BargainaMegaSale = {
+		Id = "BargainaMegaSale", Name = "Bargaina, Queen of the Mega Sale", Rarity = "Ultra", Zone = "ShoppingMall", Power = 1.52e18,
+		Blurb = "Shouts EVERYTHING HALF PRICE and every ghost in the mall rushes straight into her trap.",
+		Look = { Skin = C(200, 150, 115), Hair = C(120, 60, 160), HairStyle = "Long", Shirt = C(255, 215, 90), Pants = C(255, 120, 200), Shoes = C(130, 230, 255),
+			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Balloons", BackColor = C(255, 120, 200), Tool = "Megaphone", ToolColor = C(255, 215, 90), Beam = C(255, 140, 210), Aura = true },
+	},
+	-- ZONE 24: SUBWAY CRATE
 	PlatformPatrol = {
-		Id = "PlatformPatrol", Name = "Platform Patrol", Rarity = "Common", Zone = "GhostSubway", Power = 2.88e15,
+		Id = "PlatformPatrol", Name = "Platform Patrol", Rarity = "Common", Zone = "GhostSubway", Power = 7.19e16,
 		Blurb = "Mind the gap! And the ghosts.",
 		Look = { Skin = C(200, 150, 110), Hair = C(30, 25, 25), HairStyle = "Short", Shirt = C(40, 60, 120), Pants = C(30, 40, 80), Shoes = C(20, 20, 25),
 			Hat = "Cap", HatColor = C(40, 60, 120), Tool = "Flashlight", ToolColor = C(255, 220, 80), Beam = C(255, 240, 150) },
 	},
+	-- NOD: Thomas the Tank Engine ('really useful engine'); a little smokestack on his back, no face-on-a-train
 	TrackTinker = {
-		Id = "TrackTinker", Name = "Track Tinker", Rarity = "Uncommon", Zone = "GhostSubway", Power = 4.77e15,
-		Blurb = "Fixes the rails, the trains and the ghosts' attitudes.",
-		Look = { Skin = C(240, 200, 170), Hair = C(120, 60, 30), HairStyle = "Bob", Shirt = C(255, 140, 40), Pants = C(60, 70, 90), Shoes = C(70, 50, 30),
-			Hat = "Helmet", HatColor = C(255, 200, 40), Back = "Backpack", BackColor = C(255, 140, 40), Tool = "Wrench", ToolColor = C(180, 185, 200), Beam = C(255, 200, 100) },
+		Id = "TrackTinker", Name = "Tommy Tank-Engine", Rarity = "Uncommon", Zone = "GhostSubway", Power = 1.2e17,
+		Blurb = "Cheeky, cheerful and really, really useful. Puffs along the rails fixing every track.",
+		Look = { Skin = C(240, 200, 170), Hair = C(120, 60, 30), HairStyle = "Bob", Shirt = C(60, 120, 210), Pants = C(60, 70, 90), Shoes = C(70, 50, 30),
+			Hat = "Helmet", HatColor = C(255, 200, 40), Back = "Smokestack", BackColor = C(60, 60, 80), Tool = "Wrench", ToolColor = C(180, 185, 200), Beam = C(255, 200, 100) },
 	},
 	ProtonPete = {
-		Id = "ProtonPete", Name = "Proton Pete", Rarity = "Rare", Zone = "GhostSubway", Power = 7.94e15,
+		Id = "ProtonPete", Name = "Proton Pete", Rarity = "Rare", Zone = "GhostSubway", Power = 1.98e17,
 		Blurb = "Carries a buzzing ghost-zapper pack. Has never once read the instructions.",
 		Look = { Skin = C(235, 195, 165), Hair = C(90, 60, 40), HairStyle = "Short", Shirt = C(140, 120, 170), Pants = C(140, 120, 170), Shoes = C(40, 35, 45),
 			Back = "Tank", BackColor = C(170, 175, 190), Tool = "Blaster", ToolColor = C(255, 210, 60), Beam = C(255, 160, 80) },
 	},
 	ShellyShellshock = {
-		Id = "ShellyShellshock", Name = "Shelly Shellshock", Rarity = "Rare", Zone = "GhostSubway", Power = 7.94e15,
+		Id = "ShellyShellshock", Name = "Shelly Shellshock", Rarity = "Rare", Zone = "GhostSubway", Power = 1.98e17,
 		Blurb = "Lives under the subway, eats pizza for breakfast and flips ghosts for fun.",
 		Look = { Skin = C(110, 190, 90), Hair = C(80, 150, 70), HairStyle = "None", Shirt = C(200, 180, 110), Pants = C(110, 190, 90), Shoes = C(110, 190, 90),
 			Hat = "Bandana", HatColor = C(255, 120, 180), Back = "Shell", BackColor = C(110, 140, 60), Tool = "Staff", ToolColor = C(150, 100, 60), Beam = C(255, 140, 200) },
 	},
 	MidnightConductor = {
-		Id = "MidnightConductor", Name = "Midnight Conductor", Rarity = "Legendary", Zone = "GhostSubway", Power = 1.95e16,
+		Id = "MidnightConductor", Name = "Midnight Conductor", Rarity = "Legendary", Zone = "GhostSubway", Power = 4.88e17,
 		Blurb = "Punches your ticket and the ghost's ticket. One way only.",
 		Look = { Skin = C(230, 195, 170), Hair = C(220, 220, 230), HairStyle = "Short", Shirt = C(30, 40, 80), Pants = C(25, 30, 60), Shoes = C(20, 20, 25),
 			Hat = "ConductorCap", HatColor = C(30, 40, 80), Back = "Cape", BackColor = C(255, 210, 80), Tool = "Lantern", ToolColor = C(220, 50, 50), Beam = C(255, 120, 100), Aura = true },
 	},
 	ThirdRailRhea = {
-		Id = "ThirdRailRhea", Name = "Third-Rail Rhea", Rarity = "Mythic", Zone = "GhostSubway", Power = 4.88e16,
+		Id = "ThirdRailRhea", Name = "Third-Rail Rhea", Rarity = "Mythic", Zone = "GhostSubway", Power = 1.22e18,
 		Blurb = "Runs on pure electricity and three cups of cocoa.",
 		Look = { Skin = C(180, 130, 100), Hair = C(255, 240, 90), HairStyle = "Spiky", Shirt = C(60, 60, 70), Pants = C(40, 40, 50), Shoes = C(255, 240, 90),
 			Hat = "Goggles", HatColor = C(255, 240, 90), Back = "Tank", BackColor = C(255, 240, 90), Tool = "Projector", ToolColor = C(255, 240, 90), Beam = C(255, 250, 120), Aura = true },
 	},
 	TheLastTrainHome = {
-		Id = "TheLastTrainHome", Name = "The Last Train Home", Rarity = "Secret", Zone = "GhostSubway", Power = 1.22e17,
+		Id = "TheLastTrainHome", Name = "The Last Train Home", Rarity = "Secret", Zone = "GhostSubway", Power = 3.05e18,
 		Blurb = "Arrives exactly at midnight and takes every ghost along.",
 		Look = { Skin = C(200, 220, 240), Hair = C(40, 40, 60), HairStyle = "None", Shirt = C(20, 25, 40), Pants = C(15, 20, 30), Shoes = C(255, 230, 120),
 			Hat = "ConductorCap", HatColor = C(15, 20, 30), Back = "Cape", BackColor = C(40, 50, 80), Tool = "Lantern", ToolColor = C(255, 230, 120), Beam = C(255, 240, 170), Aura = true },
 	},
 	RailsPhantomEngineer = {
-		Id = "RailsPhantomEngineer", Name = "Rails, the Phantom Engineer", Rarity = "Ultra", Zone = "GhostSubway", Power = 3.05e17,
+		Id = "RailsPhantomEngineer", Name = "Rails, the Phantom Engineer", Rarity = "Ultra", Zone = "GhostSubway", Power = 7.62e18,
 		Blurb = "Built a train out of ghost-light. It is ALWAYS on time.",
 		Look = { Skin = C(240, 210, 185), Hair = C(200, 90, 50), HairStyle = "Bob", Shirt = C(60, 90, 150), Pants = C(40, 50, 90), Shoes = C(255, 215, 90),
 			Hat = "ConductorCap", HatColor = C(255, 215, 90), Back = "Smokestack", BackColor = C(60, 60, 80), Tool = "Cannon", ToolColor = C(255, 215, 90), Beam = C(255, 230, 140), Aura = true },
 	},
-	-- ZONE 23: NEON CRATE
+	-- ZONE 25: FOSSIL CRATE
+	DustyBrushworth = {
+		Id = "DustyBrushworth", Name = "Dusty Brushworth", Rarity = "Common", Zone = "DinoMuseum", Power = 3.59e17,
+		Blurb = "Dusts dinosaur bones with a tiny brush. Ghosts get dusted too.",
+		Look = { Skin = C(240, 205, 175), Hair = C(130, 90, 50), HairStyle = "Short", Shirt = C(190, 170, 120), Pants = C(110, 90, 60), Shoes = C(80, 60, 40),
+			Hat = "Cap", HatColor = C(150, 120, 80), Back = "Backpack", BackColor = C(130, 100, 70), Tool = "Magnifier", ToolColor = C(200, 170, 90), Beam = C(255, 230, 150) },
+	},
+	TourGuideTheo = {
+		Id = "TourGuideTheo", Name = "Tour Guide Theo", Rarity = "Uncommon", Zone = "DinoMuseum", Power = 5.98e17,
+		Blurb = "Has told the T-rex story nine thousand times. Still gets goosebumps.",
+		Look = { Skin = C(170, 120, 90), Hair = C(30, 25, 25), HairStyle = "Puff", Shirt = C(60, 140, 90), Pants = C(230, 215, 180), Shoes = C(70, 50, 35),
+			Hat = "Cap", HatColor = C(60, 140, 90), Tool = "Megaphone", ToolColor = C(255, 200, 80), Beam = C(160, 240, 140) },
+	},
+	-- NOD: Larry the night guard from Night at the Museum; a plain guard uniform, no film logo
+	NightShiftLarry = {
+		Id = "NightShiftLarry", Name = "Night-Shift Larry", Rarity = "Rare", Zone = "DinoMuseum", Power = 9.92e17,
+		Blurb = "Every night the exhibits come alive. He just says hi and carries on with his rounds.",
+		Look = { Skin = C(240, 200, 175), Hair = C(70, 50, 35), HairStyle = "Short", Shirt = C(60, 70, 110), Pants = C(40, 45, 70), Shoes = C(30, 30, 35),
+			Hat = "Cap", HatColor = C(40, 45, 70), Back = "Antenna", BackColor = C(60, 60, 70), Tool = "Flashlight", ToolColor = C(230, 230, 240), Beam = C(255, 240, 170) },
+	},
+	-- NOD: the park rangers of Jurassic Park; khaki ranger kit, no park logo
+	JurassicJeff = {
+		Id = "JurassicJeff", Name = "Jurassic Jeff", Rarity = "Rare", Zone = "DinoMuseum", Power = 9.92e17,
+		Blurb = "Runs the dino tours. Has never lost a raptor. Okay, once. Twice.",
+		Look = { Skin = C(230, 190, 155), Hair = C(120, 80, 45), HairStyle = "Short", Shirt = C(200, 180, 130), Pants = C(120, 105, 75), Shoes = C(90, 65, 40),
+			Hat = "Pith", HatColor = C(210, 190, 140), Back = "Backpack", BackColor = C(110, 130, 80), Tool = "Spyglass", ToolColor = C(80, 80, 90), Beam = C(160, 240, 140) },
+	},
+	-- NOD: Indiana Jones (fedora, whip, hates snakes); our own colours
+	IndianaBones = {
+		Id = "IndianaBones", Name = "Indiana Bones", Rarity = "Legendary", Zone = "DinoMuseum", Power = 2.44e18,
+		Blurb = "Hates snakes. Loves fossils. Snaps ghosts into his trap with one crack of the whip.",
+		Look = { Skin = C(235, 195, 160), Hair = C(110, 75, 45), HairStyle = "Short", Shirt = C(210, 190, 150), Pants = C(120, 95, 65), Shoes = C(80, 55, 35),
+			Hat = "Fedora", HatColor = C(120, 85, 55), Back = "Backpack", BackColor = C(140, 100, 60), Tool = "Whip", ToolColor = C(110, 70, 40), Beam = C(255, 210, 120), Aura = true },
+	},
+	-- NOD: Barney the purple dinosaur (sings about friendship); a lilac dino hood with lime trim
+	PurplePalBarnaby = {
+		Id = "PurplePalBarnaby", Name = "Purple Pal Barnaby", Rarity = "Mythic", Zone = "DinoMuseum", Power = 6.09e18,
+		Blurb = "Sings ghosts a lullaby about friendship. They nap right into the trap.",
+		Look = { Skin = C(170, 120, 210), Hair = C(170, 120, 210), HairStyle = "None", Shirt = C(170, 120, 210), Pants = C(150, 220, 110), Shoes = C(150, 100, 190),
+			Hat = "DinoHood", HatColor = C(170, 120, 210), Tool = "Wand", ToolColor = C(150, 220, 110), Beam = C(200, 160, 255), Aura = true },
+	},
+	TheLivingExhibit = {
+		Id = "TheLivingExhibit", Name = "The Living Exhibit", Rarity = "Secret", Zone = "DinoMuseum", Power = 1.53e19,
+		Blurb = "Stood very still in a glass case for 65 million years. Now it's stretching its legs.",
+		Look = { Skin = C(235, 225, 200), Hair = C(235, 225, 200), HairStyle = "None", Shirt = C(220, 210, 185), Pants = C(200, 190, 165), Shoes = C(180, 170, 145),
+			Hat = "DinoHood", HatColor = C(235, 225, 200), Back = "BatWings", BackColor = C(220, 210, 185), Tool = "Staff", ToolColor = C(200, 170, 90), Beam = C(160, 240, 140), Aura = true },
+	},
+	AmberlynFossilQueen = {
+		Id = "AmberlynFossilQueen", Name = "Amberlyn, the Fossil Queen", Rarity = "Ultra", Zone = "DinoMuseum", Power = 3.81e19,
+		Blurb = "One tap of her amber staff and every fossil in the hall wakes up to help.",
+		Look = { Skin = C(245, 215, 190), Hair = C(255, 170, 60), HairStyle = "Long", Shirt = C(255, 190, 80), Pants = C(150, 90, 40), Shoes = C(255, 210, 90),
+			Hat = "Tiara", HatColor = C(255, 190, 80), Back = "BatWings", BackColor = C(255, 170, 60), Tool = "MoonStaff", ToolColor = C(255, 170, 40), Beam = C(255, 190, 80), Aura = true },
+	},
+	-- ZONE 26: CHAMPION CRATE
+	PopcornPercy = {
+		Id = "PopcornPercy", Name = "Popcorn Percy", Rarity = "Common", Zone = "Stadium", Power = 1.8e18,
+		Blurb = "Sells popcorn in the stands. Throws the extra at ghosts.",
+		Look = { Skin = C(250, 215, 185), Hair = C(230, 120, 60), HairStyle = "Spiky", Shirt = C(230, 60, 60), Pants = C(250, 250, 250), Shoes = C(60, 60, 70),
+			Hat = "Cap", HatColor = C(230, 60, 60), Back = "Backpack", BackColor = C(255, 220, 90), Tool = "Vacuum", ToolColor = C(255, 230, 120), Beam = C(255, 240, 170) },
+	},
+	RefereeRita = {
+		Id = "RefereeRita", Name = "Referee Rita", Rarity = "Uncommon", Zone = "Stadium", Power = 2.99e18,
+		Blurb = "One whistle, one red card, and that ghost is OFF the pitch.",
+		Look = { Skin = C(200, 145, 110), Hair = C(40, 30, 30), HairStyle = "Bob", Shirt = C(240, 240, 240), Pants = C(30, 30, 35), Shoes = C(30, 30, 35),
+			Hat = "Cap", HatColor = C(30, 30, 35), Tool = "Megaphone", ToolColor = C(240, 240, 240), Beam = C(255, 90, 90) },
+	},
+	-- NOD: Coach Ted Lasso (moustache, believes in everyone, bakes biscuits); our own team colours
+	CoachNedLassiter = {
+		Id = "CoachNedLassiter", Name = "Coach Ned Lassiter", Rarity = "Rare", Zone = "Stadium", Power = 4.96e18,
+		Blurb = "Believes in every hunter on the team. Bakes them biscuits, too.",
+		Look = { Skin = C(240, 200, 175), Hair = C(120, 85, 50), HairStyle = "Beard", Shirt = C(60, 90, 170), Pants = C(50, 55, 70), Shoes = C(30, 30, 35),
+			Hat = "Cap", HatColor = C(60, 90, 170), Tool = "Megaphone", ToolColor = C(230, 230, 240), Beam = C(160, 200, 255) },
+	},
+	-- NOD: Rocky Balboa (grey sweats, running up the steps); just one big padded glove
+	RockyBalBooa = {
+		Id = "RockyBalBooa", Name = "Rocky Bal-BOO-a", Rarity = "Rare", Zone = "Stadium", Power = 4.96e18,
+		Blurb = "Runs up the stadium steps every morning and punches the air at the top. Ghosts can't keep up.",
+		Look = { Skin = C(235, 195, 165), Hair = C(40, 30, 25), HairStyle = "Short", Shirt = C(120, 130, 145), Pants = C(120, 130, 145), Shoes = C(40, 40, 45),
+			Hat = "Beanie", HatColor = C(40, 40, 45), Tool = "BoxingGlove", ToolColor = C(220, 50, 50), Beam = C(255, 120, 100) },
+	},
+	-- NOD: Air Bud ('no rule says a dog can't play basketball'); a golden pup with a ball
+	AirPup = {
+		Id = "AirPup", Name = "Air Pup", Rarity = "Legendary", Zone = "Stadium", Power = 1.22e19,
+		Blurb = "There's no rule that says a dog can't hunt ghosts!",
+		Look = { Skin = C(230, 180, 90), Hair = C(220, 165, 75), HairStyle = "RoundEars", Shirt = C(255, 200, 60), Pants = C(60, 90, 170), Shoes = C(250, 250, 250),
+			Tool = "Orb", ToolColor = C(255, 140, 50), Beam = C(255, 170, 80), Aura = true },
+	},
+	-- NOD: The Mighty Ducks (duck hockey team, the flying-V); own green kit, no team crest
+	CaptainMightyQuack = {
+		Id = "CaptainMightyQuack", Name = "Captain Mighty Quack", Rarity = "Mythic", Zone = "Stadium", Power = 3.05e19,
+		Blurb = "Leads a team of hockey ducks. Their flying-V knocks ghosts flat.",
+		Look = { Skin = C(240, 200, 170), Hair = C(250, 200, 80), HairStyle = "Spiky", Shirt = C(40, 130, 90), Pants = C(250, 250, 250), Shoes = C(30, 30, 35),
+			Hat = "Helmet", HatColor = C(250, 250, 250), Tool = "Crook", ToolColor = C(60, 60, 70), Beam = C(120, 255, 160), Aura = true },
+	},
+	TheTwelfthFan = {
+		Id = "TheTwelfthFan", Name = "The Twelfth Fan", Rarity = "Secret", Zone = "Stadium", Power = 7.64e19,
+		Blurb = "Never misses a game. Nobody has ever seen him arrive or leave.",
+		Look = { Skin = C(220, 225, 235), Hair = C(60, 70, 90), HairStyle = "None", Shirt = C(60, 90, 170), Pants = C(40, 50, 80), Shoes = C(255, 220, 80),
+			Hat = "Hood", HatColor = C(60, 90, 170), Back = "Cape", BackColor = C(255, 220, 80), Tool = "Lantern", ToolColor = C(255, 220, 80), Beam = C(160, 200, 255), Aura = true },
+	},
+	VictoriaVortexMVP = {
+		Id = "VictoriaVortexMVP", Name = "Victoria Vortex, MVP", Rarity = "Ultra", Zone = "Stadium", Power = 1.9e20,
+		Blurb = "Scores the winning goal every single game. The goal is always a ghost trap.",
+		Look = { Skin = C(170, 115, 85), Hair = C(255, 220, 90), HairStyle = "Puff", Shirt = C(255, 220, 80), Pants = C(40, 90, 180), Shoes = C(120, 255, 140),
+			Hat = "Crown", HatColor = C(255, 220, 80), Back = "Wings", BackColor = C(250, 250, 255), Tool = "Trophy", ToolColor = C(255, 215, 90), Beam = C(255, 230, 120), Aura = true },
+	},
+	-- ZONE 27: NEON CRATE
 	RooftopRunner = {
-		Id = "RooftopRunner", Name = "Rooftop Runner", Rarity = "Common", Zone = "NeonCity", Power = 1.44e16,
+		Id = "RooftopRunner", Name = "Rooftop Runner", Rarity = "Common", Zone = "NeonCity", Power = 8.98e18,
 		Blurb = "Jumps between buildings. Lands mostly on the roofs.",
 		Look = { Skin = C(220, 180, 150), Hair = C(30, 25, 30), HairStyle = "Spiky", Shirt = C(255, 80, 220), Pants = C(40, 40, 60), Shoes = C(240, 240, 255),
 			Hat = "Cap", HatColor = C(40, 40, 60), Back = "Backpack", BackColor = C(120, 240, 255), Tool = "Flashlight", ToolColor = C(120, 240, 255), Beam = C(120, 240, 255) },
 	},
 	DJGhostbeat = {
-		Id = "DJGhostbeat", Name = "DJ Ghostbeat", Rarity = "Uncommon", Zone = "NeonCity", Power = 2.38e16,
+		Id = "DJGhostbeat", Name = "DJ Ghostbeat", Rarity = "Uncommon", Zone = "NeonCity", Power = 1.49e19,
 		Blurb = "Drops a beat so heavy that ghosts can't stop dancing.",
 		Look = { Skin = C(150, 100, 70), Hair = C(30, 25, 25), HairStyle = "Puff", Shirt = C(40, 40, 60), Pants = C(30, 30, 45), Shoes = C(255, 80, 220),
 			Hat = "Headphones", HatColor = C(120, 240, 255), Back = "Boombox", BackColor = C(60, 60, 80), Tool = "Projector", ToolColor = C(255, 80, 220), Beam = C(255, 120, 230) },
 	},
 	WebSpook = {
-		Id = "WebSpook", Name = "Web Spook", Rarity = "Rare", Zone = "NeonCity", Power = 3.97e16,
+		Id = "WebSpook", Name = "Web Spook", Rarity = "Rare", Zone = "NeonCity", Power = 2.48e19,
 		Blurb = "Swings between neon signs and sticks every landing.",
 		Look = { Skin = C(240, 210, 190), Hair = C(30, 30, 35), HairStyle = "Short", Shirt = C(40, 200, 190), Pants = C(30, 30, 40), Shoes = C(40, 200, 190),
 			Hat = "HeroMask", HatColor = C(30, 30, 40), Tool = "Blaster", ToolColor = C(240, 240, 250), Beam = C(250, 250, 255) },
 	},
+	-- NOD: Neo from The Matrix (black coat, dark glasses, slow-motion dodges); green glow instead of code rain
 	NeonNinjaNix = {
-		Id = "NeonNinjaNix", Name = "Neon Ninja Nix", Rarity = "Rare", Zone = "NeonCity", Power = 3.97e16,
-		Blurb = "Moves so fast you only see the glow sticks.",
-		Look = { Skin = C(230, 190, 160), Hair = C(20, 20, 30), HairStyle = "None", Shirt = C(30, 30, 45), Pants = C(30, 30, 45), Shoes = C(255, 80, 220),
-			Hat = "Bandana", HatColor = C(120, 255, 200), Tool = "Sword", ToolColor = C(120, 255, 200), Beam = C(120, 255, 200) },
+		Id = "NeonNinjaNix", Name = "Neeo the Chosen One", Rarity = "Rare", Zone = "NeonCity", Power = 2.48e19,
+		Blurb = "Leans back in slow motion and every blob of ghost goo whooshes right past. Whoa.",
+		Look = { Skin = C(230, 190, 160), Hair = C(20, 20, 30), HairStyle = "Short", Shirt = C(25, 25, 30), Pants = C(25, 25, 30), Shoes = C(25, 25, 30),
+			Hat = "Specs", HatColor = C(25, 25, 30), Back = "Cape", BackColor = C(30, 30, 35), Tool = "Sword", ToolColor = C(120, 255, 160), Beam = C(120, 255, 160) },
 	},
 	TheNightOwl = {
-		Id = "TheNightOwl", Name = "The Night Owl", Rarity = "Legendary", Zone = "NeonCity", Power = 9.77e16,
+		Id = "TheNightOwl", Name = "The Night Owl", Rarity = "Legendary", Zone = "NeonCity", Power = 6.1e19,
 		Blurb = "Watches the city from the tallest sign and hoots at ghosts. Menacingly.",
 		Look = { Skin = C(225, 185, 155), Hair = C(90, 60, 150), HairStyle = "PointyEars", Shirt = C(60, 50, 90), Pants = C(40, 35, 60), Shoes = C(255, 200, 80),
 			Hat = "HeroMask", HatColor = C(90, 60, 150), Back = "HeroCape", BackColor = C(90, 60, 150), Tool = "Blaster", ToolColor = C(255, 200, 80), Beam = C(255, 210, 100), Aura = true },
 	},
 	GlitchRider = {
-		Id = "GlitchRider", Name = "Glitch Rider", Rarity = "Mythic", Zone = "NeonCity", Power = 2.44e17,
+		Id = "GlitchRider", Name = "Glitch Rider", Rarity = "Mythic", Zone = "NeonCity", Power = 1.52e20,
 		Blurb = "Rides a light-bike made of pure neon and leaves glowing tyre marks.",
 		Look = { Skin = C(200, 210, 230), Hair = C(120, 240, 255), HairStyle = "Short", Shirt = C(20, 20, 30), Pants = C(20, 20, 30), Shoes = C(120, 240, 255),
 			Hat = "Helmet", HatColor = C(20, 20, 30), Back = "Tank", BackColor = C(120, 240, 255), Tool = "Projector", ToolColor = C(120, 240, 255), Beam = C(120, 240, 255), Aura = true },
 	},
 	TheStatic = {
-		Id = "TheStatic", Name = "The Static", Rarity = "Secret", Zone = "NeonCity", Power = 6.1e17,
+		Id = "TheStatic", Name = "The Static", Rarity = "Secret", Zone = "NeonCity", Power = 3.82e20,
 		Blurb = "Appears whenever the TV goes fuzzy and takes the ghost with it.",
 		Look = { Skin = C(170, 170, 180), Hair = C(120, 120, 130), HairStyle = "None", Shirt = C(90, 90, 100), Pants = C(60, 60, 70), Shoes = C(40, 40, 50),
 			Hat = "TVHead", HatColor = C(90, 80, 70), Tool = "Scanner", ToolColor = C(220, 220, 230), Beam = C(230, 230, 240), Aura = true },
 	},
 	NeonovaCitySuperstar = {
-		Id = "NeonovaCitySuperstar", Name = "Neonova, City Superstar", Rarity = "Ultra", Zone = "NeonCity", Power = 1.52e18,
+		Id = "NeonovaCitySuperstar", Name = "Neonova, City Superstar", Rarity = "Ultra", Zone = "NeonCity", Power = 9.52e20,
 		Blurb = "Her concerts light up the whole skyline. Ghosts buy front-row tickets.",
 		Look = { Skin = C(240, 205, 185), Hair = C(255, 80, 220), HairStyle = "Long", Shirt = C(255, 255, 255), Pants = C(120, 240, 255), Shoes = C(255, 80, 220),
 			Hat = "Headphones", HatColor = C(120, 240, 255), Back = "Wings", BackColor = C(255, 140, 240), Tool = "Guitar", ToolColor = C(255, 80, 220), Beam = C(255, 120, 240), Aura = true },
 	},
-	-- ZONE 24: STORM CRATE
+	-- ZONE 28: COOKIE JAR CRATE
+	SugarCubeSid = {
+		Id = "SugarCubeSid", Name = "Sugar-Cube Sid", Rarity = "Common", Zone = "GiantsKitchen", Power = 4.49e19,
+		Blurb = "Carries a sugar cube twice his size. Ghosts are very impressed.",
+		Look = { Skin = C(240, 205, 175), Hair = C(200, 90, 50), HairStyle = "Spiky", Shirt = C(90, 170, 230), Pants = C(70, 70, 100), Shoes = C(255, 255, 255),
+			Hat = "Cap", HatColor = C(255, 110, 90), Back = "Backpack", BackColor = C(250, 250, 250), Tool = "Flashlight", ToolColor = C(255, 220, 120), Beam = C(255, 240, 170) },
+	},
+	ThimbleThea = {
+		Id = "ThimbleThea", Name = "Thimble Thea", Rarity = "Uncommon", Zone = "GiantsKitchen", Power = 7.47e19,
+		Blurb = "Wears a thimble for a helmet. Very safe, very shiny.",
+		Look = { Skin = C(210, 160, 120), Hair = C(60, 40, 30), HairStyle = "Bob", Shirt = C(230, 90, 110), Pants = C(90, 60, 120), Shoes = C(60, 50, 50),
+			Hat = "Thimble", HatColor = C(200, 205, 220), Tool = "SewingPin", ToolColor = C(200, 205, 220), Beam = C(255, 200, 230) },
+	},
+	-- NOD: Stuart Little (a tiny white mouse in a sweater); our own green sweater
+	StueyTeeny = {
+		Id = "StueyTeeny", Name = "Stuey Teeny", Rarity = "Rare", Zone = "GiantsKitchen", Power = 1.24e20,
+		Blurb = "The smallest mouse in the family and the biggest ghost hunter in the kitchen.",
+		Look = { Skin = C(245, 240, 235), Hair = C(245, 240, 235), HairStyle = "RoundEars", Shirt = C(80, 170, 90), Pants = C(70, 90, 160), Shoes = C(60, 50, 50),
+			Tool = "Scanner", ToolColor = C(255, 210, 90), Beam = C(255, 230, 150) },
+	},
+	-- NOD: The Borrowers / Arrietty (tiny people who borrow from the big house); a sewing pin for a sword
+	BorrowerEtty = {
+		Id = "BorrowerEtty", Name = "Borrower Etty", Rarity = "Rare", Zone = "GiantsKitchen", Power = 1.24e20,
+		Blurb = "Borrows a button here, a pin there. She never borrows ghosts. She CATCHES them.",
+		Look = { Skin = C(240, 205, 180), Hair = C(160, 70, 40), HairStyle = "Long", Shirt = C(200, 90, 70), Pants = C(110, 80, 60), Shoes = C(80, 60, 40),
+			Hat = "Bow", HatColor = C(230, 200, 90), Back = "Backpack", BackColor = C(150, 110, 70), Tool = "SewingPin", ToolColor = C(210, 215, 230), Beam = C(255, 210, 150) },
+	},
+	-- NOD: The Gingerbread Man fairy tale (public domain)
+	GingerbreadRon = {
+		Id = "GingerbreadRon", Name = "Run-Run Gingerbread Ron", Rarity = "Legendary", Zone = "GiantsKitchen", Power = 3.05e20,
+		Blurb = "Run, run, as fast as you can! You can't catch... oh. He caught you.",
+		Look = { Skin = C(190, 120, 60), Hair = C(190, 120, 60), HairStyle = "None", Shirt = C(190, 120, 60), Pants = C(190, 120, 60), Shoes = C(250, 250, 250),
+			Tool = "RollingPin", ToolColor = C(210, 170, 120), Beam = C(255, 200, 140), Aura = true },
+	},
+	-- NOD: Thumbelina (Andersen fairy tale, public domain)
+	Thumbelinda = {
+		Id = "Thumbelinda", Name = "Thumbelinda", Rarity = "Mythic", Zone = "GiantsKitchen", Power = 7.62e20,
+		Blurb = "Sailed across the sink in a walnut shell. Now she rules the fruit bowl.",
+		Look = { Skin = C(250, 220, 200), Hair = C(255, 220, 140), HairStyle = "Long", Shirt = C(255, 170, 200), Pants = C(140, 210, 140), Shoes = C(255, 170, 200),
+			Hat = "FlowerHead", HatColor = C(255, 140, 180), Back = "Wings", BackColor = C(220, 240, 255), Tool = "Wand", ToolColor = C(255, 215, 90), Beam = C(255, 190, 220), Aura = true },
+	},
+	TheFridgeLight = {
+		Id = "TheFridgeLight", Name = "The Fridge Light", Rarity = "Secret", Zone = "GiantsKitchen", Power = 1.91e21,
+		Blurb = "Switches on when the door opens. Nobody knows what it does when the door is shut.",
+		Look = { Skin = C(240, 250, 255), Hair = C(200, 230, 255), HairStyle = "None", Shirt = C(230, 240, 250), Pants = C(200, 215, 235), Shoes = C(180, 195, 215),
+			Hat = "Halo", HatColor = C(255, 255, 230), Back = "Orbs", BackColor = C(220, 240, 255), Tool = "Lantern", ToolColor = C(255, 255, 230), Beam = C(230, 250, 255), Aura = true },
+	},
+	SprinklaQueenOfSweets = {
+		Id = "SprinklaQueenOfSweets", Name = "Sprinkla, Queen of Sweets", Rarity = "Ultra", Zone = "GiantsKitchen", Power = 4.76e21,
+		Blurb = "Bakes a cake so big that the ghosts move in. Then she pops the lid on.",
+		Look = { Skin = C(245, 215, 195), Hair = C(255, 140, 190), HairStyle = "Long", Shirt = C(255, 230, 240), Pants = C(140, 220, 255), Shoes = C(255, 140, 190),
+			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Balloons", BackColor = C(255, 170, 210), Tool = "Whisk", ToolColor = C(220, 225, 235), Beam = C(255, 170, 220), Aura = true },
+	},
+	-- ZONE 29: ARCADE CRATE
+	CoinOpCal = {
+		Id = "CoinOpCal", Name = "Coin-Op Cal", Rarity = "Common", Zone = "CyberArcade", Power = 2.25e20,
+		Blurb = "Pockets full of tokens, heart full of high scores.",
+		Look = { Skin = C(240, 205, 175), Hair = C(60, 40, 30), HairStyle = "Spiky", Shirt = C(60, 200, 180), Pants = C(50, 40, 90), Shoes = C(255, 80, 200),
+			Hat = "Headphones", HatColor = C(80, 80, 100), Tool = "Blaster", ToolColor = C(255, 80, 200), Beam = C(80, 255, 220) },
+	},
+	ButtonMasherBea = {
+		Id = "ButtonMasherBea", Name = "Button-Masher Bea", Rarity = "Uncommon", Zone = "CyberArcade", Power = 3.74e20,
+		Blurb = "Presses every button at once. Somehow it always works.",
+		Look = { Skin = C(170, 115, 85), Hair = C(255, 80, 200), HairStyle = "Puff", Shirt = C(255, 220, 80), Pants = C(60, 60, 120), Shoes = C(80, 255, 220),
+			Hat = "Visor", HatColor = C(80, 255, 220), Back = "Backpack", BackColor = C(255, 80, 200), Tool = "Joystick", ToolColor = C(255, 80, 200), Beam = C(255, 120, 220) },
+	},
+	-- NOD: Mario (jumping moustached plumber); our own teal cap, orange shirt, purple overalls, no letter badge
+	MustachioThePlumber = {
+		Id = "MustachioThePlumber", Name = "Mustachio the Plumber", Rarity = "Rare", Zone = "CyberArcade", Power = 6.2e20,
+		Blurb = "Jumps on ghosts' heads, fixes the pipes and shouts 'Wahoo!' all the way down.",
+		Look = { Skin = C(245, 205, 175), Hair = C(70, 45, 30), HairStyle = "Beard", Shirt = C(255, 140, 50), Pants = C(120, 70, 190), Shoes = C(120, 80, 50),
+			Hat = "Cap", HatColor = C(40, 180, 170), Tool = "Wrench", ToolColor = C(190, 195, 210), Beam = C(255, 200, 90) },
+	},
+	-- NOD: Sonic the Hedgehog ('gotta go fast', gold rings); a lime-green hedgehog with orange shoes
+	SpeedySpikes = {
+		Id = "SpeedySpikes", Name = "Speedy Spikes", Rarity = "Rare", Zone = "CyberArcade", Power = 6.2e20,
+		Blurb = "Gotta go fast? He's already gone FASTER.",
+		Look = { Skin = C(245, 210, 175), Hair = C(120, 220, 80), HairStyle = "Spiky", Shirt = C(120, 220, 80), Pants = C(120, 220, 80), Shoes = C(255, 140, 50),
+			Back = "Rings", BackColor = C(255, 210, 70), Tool = "Orb", ToolColor = C(255, 210, 70), Beam = C(255, 230, 120) },
+	},
+	-- NOD: Pac-Man (waka-waka, power pellets, ghosts turn blue); a chomping round-head hat
+	WakaWakaWanda = {
+		Id = "WakaWakaWanda", Name = "Waka-Waka Wanda", Rarity = "Legendary", Zone = "CyberArcade", Power = 1.53e21,
+		Blurb = "Munches power pellets for breakfast. Ghosts turn blue the moment she walks in.",
+		Look = { Skin = C(245, 215, 185), Hair = C(255, 220, 60), HairStyle = "None", Shirt = C(255, 220, 60), Pants = C(60, 70, 160), Shoes = C(255, 220, 60),
+			Hat = "ChompHead", HatColor = C(255, 220, 60), Tool = "Orb", ToolColor = C(255, 240, 200), Beam = C(120, 160, 255), Aura = true },
+	},
+	-- NOD: Tetris (falling blocks, clearing four lines); our own block colours
+	BlockDropBoris = {
+		Id = "BlockDropBoris", Name = "Block-Drop Boris", Rarity = "Mythic", Zone = "CyberArcade", Power = 3.81e21,
+		Blurb = "Stacks ghosts in perfect lines. Four lines at once? Easy.",
+		Look = { Skin = C(235, 200, 170), Hair = C(150, 90, 50), HairStyle = "Short", Shirt = C(220, 60, 70), Pants = C(60, 90, 200), Shoes = C(255, 210, 60),
+			Hat = "Beanie", HatColor = C(60, 180, 90), Back = "Blocks", BackColor = C(120, 220, 255), Tool = "Joystick", ToolColor = C(255, 210, 60), Beam = C(150, 230, 255), Aura = true },
+	},
+	PlayerTwo = {
+		Id = "PlayerTwo", Name = "Player Two", Rarity = "Secret", Zone = "CyberArcade", Power = 9.55e21,
+		Blurb = "Has been waiting to join the game since 1982. Finally pressed START.",
+		Look = { Skin = C(210, 220, 240), Hair = C(60, 60, 90), HairStyle = "None", Shirt = C(40, 40, 70), Pants = C(30, 30, 55), Shoes = C(80, 255, 220),
+			Hat = "TVHead", HatColor = C(50, 50, 70), Back = "Antenna", BackColor = C(80, 80, 100), Tool = "Blaster", ToolColor = C(80, 255, 220), Beam = C(80, 255, 220), Aura = true },
+	},
+	PixellaArcadeEmpress = {
+		Id = "PixellaArcadeEmpress", Name = "Pixella, Arcade Empress", Rarity = "Ultra", Zone = "CyberArcade", Power = 2.38e22,
+		Blurb = "Presses START and every ghost in the arcade turns 8-bit and lines up for her trap.",
+		Look = { Skin = C(245, 215, 195), Hair = C(80, 255, 220), HairStyle = "Long", Shirt = C(120, 60, 200), Pants = C(255, 80, 200), Shoes = C(80, 255, 220),
+			Hat = "PrismCrown", HatColor = C(255, 80, 200), Back = "Wings", BackColor = C(80, 255, 220), Tool = "Joystick", ToolColor = C(255, 215, 90), Beam = C(80, 255, 220), Aura = true },
+	},
+	-- ZONE 30: STORM CRATE
 	KiteFlyerKit = {
-		Id = "KiteFlyerKit", Name = "Storm Chaser Kit", Rarity = "Common", Zone = "StormIslands", Power = 7.19e16,
+		Id = "KiteFlyerKit", Name = "Storm Chaser Kit", Rarity = "Common", Zone = "StormIslands", Power = 1.12e21,
 		Blurb = "Chases storms in her rain boots. The vane on her cap points at the next ghost.",
 		Look = { Skin = C(250, 215, 185), Hair = C(200, 110, 50), HairStyle = "Bob", Shirt = C(255, 205, 50), Pants = C(70, 110, 170), Shoes = C(60, 170, 90),
 			Hat = "WeatherVane", HatColor = C(230, 70, 60), Tool = "Anemometer", ToolColor = C(240, 240, 245), Beam = C(255, 240, 150) },
 	},
+	-- NOD: the nursery rhyme Little Bo-Peep (lost her sheep; public domain)
 	CloudHopper = {
-		Id = "CloudHopper", Name = "Shepherd Nimbus", Rarity = "Uncommon", Zone = "StormIslands", Power = 1.19e17,
-		Blurb = "Herds fluffy cloud-sheep from island to island. Counting them makes ghosts sleepy.",
+		Id = "CloudHopper", Name = "Little Bo Leap", Rarity = "Uncommon", Zone = "StormIslands", Power = 1.87e21,
+		Blurb = "Lost her cloud-sheep, found them, lost them again... and found a ghost instead!",
 		Look = { Skin = C(150, 100, 70), Hair = C(35, 25, 25), HairStyle = "Braids", Shirt = C(110, 175, 100), Pants = C(120, 95, 70), Shoes = C(90, 60, 40),
-			Hat = "Bandana", HatColor = C(90, 170, 240), Back = "CloudSheep", BackColor = C(240, 245, 255), Tool = "Crook", ToolColor = C(160, 110, 65), Beam = C(190, 230, 255) },
+			Hat = "Bow", HatColor = C(255, 150, 190), Back = "CloudSheep", BackColor = C(240, 245, 255), Tool = "Crook", ToolColor = C(160, 110, 65), Beam = C(190, 230, 255) },
 	},
 	GrandpaBalloony = {
-		Id = "GrandpaBalloony", Name = "Captain Balloony", Rarity = "Rare", Zone = "StormIslands", Power = 1.98e17,
+		Id = "GrandpaBalloony", Name = "Captain Balloony", Rarity = "Rare", Zone = "StormIslands", Power = 3.1e21,
 		Blurb = "Floated up here in his patchwork balloon and decided to stay forever.",
 		Look = { Skin = C(240, 205, 180), Hair = C(205, 95, 45), HairStyle = "Beard", Shirt = C(140, 85, 50), Pants = C(190, 170, 120), Shoes = C(70, 50, 40),
 			Hat = "Goggles", HatColor = C(120, 80, 50), Back = "HotAirBalloon", BackColor = C(225, 60, 70), Tool = "Spyglass", ToolColor = C(220, 180, 90), Beam = C(255, 220, 150) },
 	},
 	ZephyrZoe = {
-		Id = "ZephyrZoe", Name = "Rainbow Zoe", Rarity = "Rare", Zone = "StormIslands", Power = 1.98e17,
+		Id = "ZephyrZoe", Name = "Rainbow Zoe", Rarity = "Rare", Zone = "StormIslands", Power = 3.1e21,
 		Blurb = "Races across rainbows faster than the rain. Leaves a stripe of every colour behind.",
 		Look = { Skin = C(240, 200, 170), Hair = C(255, 90, 170), HairStyle = "Floaty", Shirt = C(60, 200, 235), Pants = C(130, 90, 220), Shoes = C(255, 220, 60),
 			Back = "RainbowScarf", Tool = "Pinwheel", ToolColor = C(250, 250, 255), Beam = C(255, 200, 240) },
 	},
 	ThunderThad = {
-		Id = "ThunderThad", Name = "Sparkplug Thad", Rarity = "Legendary", Zone = "StormIslands", Power = 4.88e17,
+		Id = "ThunderThad", Name = "Sparkplug Thad", Rarity = "Legendary", Zone = "StormIslands", Power = 7.63e21,
 		Blurb = "Builds lightning rods out of spare parts. The storm charges his battery for free.",
 		Look = { Skin = C(160, 110, 80), Hair = C(30, 25, 25), HairStyle = "Short", Shirt = C(60, 100, 160), Pants = C(240, 120, 40), Shoes = C(50, 45, 45),
 			Hat = "HardHat", HatColor = C(255, 200, 40), Back = "Battery", BackColor = C(45, 50, 60), Tool = "Wrench", ToolColor = C(180, 185, 200), Beam = C(255, 240, 120), Aura = true },
 	},
 	TempestTamsin = {
-		Id = "TempestTamsin", Name = "Captain Tamsin Gale", Rarity = "Mythic", Zone = "StormIslands", Power = 1.22e18,
+		Id = "TempestTamsin", Name = "Captain Tamsin Gale", Rarity = "Mythic", Zone = "StormIslands", Power = 1.9e22,
 		Blurb = "Captain of the sky-ship Thunder-Gull. Steers straight into storms with a grin.",
 		Look = { Skin = C(225, 185, 160), Hair = C(40, 165, 175), HairStyle = "Long", Shirt = C(195, 40, 55), Pants = C(40, 50, 90), Shoes = C(40, 35, 40),
 			Hat = "SkyTricorn", HatColor = C(95, 60, 50), Back = "ShipWheel", BackColor = C(160, 105, 60), Tool = "Sword", ToolColor = C(215, 220, 235), Beam = C(120, 230, 255), Aura = true },
 	},
 	TheLightningKid = {
-		Id = "TheLightningKid", Name = "The Thunderbird Kid", Rarity = "Secret", Zone = "StormIslands", Power = 3.05e18,
+		Id = "TheLightningKid", Name = "The Thunderbird Kid", Rarity = "Secret", Zone = "StormIslands", Power = 4.77e22,
 		Blurb = "Wears the mask of the storm bird. When those wings flap, thunder rolls.",
 		Look = { Skin = C(230, 190, 160), Hair = C(30, 40, 90), HairStyle = "None", Shirt = C(30, 40, 85), Pants = C(25, 25, 55), Shoes = C(255, 220, 60),
 			Hat = "BirdMask", HatColor = C(45, 95, 215), Back = "FeatherWings", BackColor = C(45, 95, 215), Tool = "Thunderbolt", ToolColor = C(255, 230, 80), Beam = C(255, 240, 120), Aura = true },
 	},
 	AerisQueenOfTheTempest = {
-		Id = "AerisQueenOfTheTempest", Name = "Aeris, Tempest Titan Queen", Rarity = "Ultra", Zone = "StormIslands", Power = 7.62e18,
+		Id = "AerisQueenOfTheTempest", Name = "Aeris, Tempest Titan Queen", Rarity = "Ultra", Zone = "StormIslands", Power = 1.19e23,
 		Blurb = "Rides the eye of the storm. One wave of her trident and the clouds bow.",
 		Look = { Skin = C(235, 205, 190), Hair = C(100, 110, 230), HairStyle = "Long", Shirt = C(60, 70, 150), Pants = C(45, 55, 125), Shoes = C(255, 215, 80),
 			Hat = "TempestCrown", HatColor = C(255, 205, 70), Back = "Cyclone", BackColor = C(140, 155, 200), Tool = "Trident", ToolColor = C(255, 210, 80), Beam = C(255, 245, 150), Aura = true },
 	},
-	-- ZONE 25: MOON BASE CRATE
+	-- ZONE 31: MOON BASE CRATE
 	MoonCadet = {
-		Id = "MoonCadet", Name = "Moon Cadet", Rarity = "Common", Zone = "MoonBase", Power = 3.59e17,
+		Id = "MoonCadet", Name = "Moon Cadet", Rarity = "Common", Zone = "MoonBase", Power = 5.62e21,
 		Blurb = "Bounces three metres with every step. Loves it.",
 		Look = { Skin = C(240, 205, 180), Hair = C(120, 70, 40), HairStyle = "Short", Shirt = C(240, 240, 245), Pants = C(200, 205, 215), Shoes = C(255, 130, 60),
 			Hat = "SpaceHelmet", HatColor = C(240, 240, 245), Back = "Backpack", BackColor = C(200, 205, 215), Tool = "Flashlight", ToolColor = C(255, 130, 60), Beam = C(255, 220, 160) },
 	},
 	CraterMechanic = {
-		Id = "CraterMechanic", Name = "Crater Mechanic", Rarity = "Uncommon", Zone = "MoonBase", Power = 5.96e17,
+		Id = "CraterMechanic", Name = "Crater Mechanic", Rarity = "Uncommon", Zone = "MoonBase", Power = 9.34e21,
 		Blurb = "Fixes moon rovers with sticky tape and moon rocks.",
 		Look = { Skin = C(170, 120, 90), Hair = C(30, 25, 25), HairStyle = "Puff", Shirt = C(255, 130, 60), Pants = C(80, 85, 100), Shoes = C(60, 60, 70),
 			Hat = "Helmet", HatColor = C(240, 240, 245), Back = "Tank", BackColor = C(200, 205, 215), Tool = "Wrench", ToolColor = C(190, 195, 210), Beam = C(255, 180, 120) },
 	},
+	-- NOD: Buzz Lightyear from Toy Story ('to infinity and beyond'); our own white-and-orange suit
 	CosmoZoomer = {
-		Id = "CosmoZoomer", Name = "Cosmo Zoomer", Rarity = "Rare", Zone = "MoonBase", Power = 9.92e17,
-		Blurb = "Zooms past the moon, waves at the stars, and is still home for dinner.",
+		Id = "CosmoZoomer", Name = "Fuzz Moonyear", Rarity = "Rare", Zone = "MoonBase", Power = 1.55e22,
+		Blurb = "To the moon and a little bit further! Lands every jump. Mostly.",
 		Look = { Skin = C(240, 205, 180), Hair = C(90, 60, 40), HairStyle = "Short", Shirt = C(250, 250, 255), Pants = C(255, 140, 60), Shoes = C(250, 250, 255),
 			Hat = "SpaceHelmet", HatColor = C(250, 250, 255), Back = "Jetpack", BackColor = C(255, 140, 60), Tool = "RayGun", ToolColor = C(250, 250, 255), Beam = C(255, 120, 80) },
 	},
 	DocFizzbang = {
-		Id = "DocFizzbang", Name = "Doc Fizzbang", Rarity = "Rare", Zone = "MoonBase", Power = 9.92e17,
+		Id = "DocFizzbang", Name = "Doc Fizzbang", Rarity = "Rare", Zone = "MoonBase", Power = 1.55e22,
 		Blurb = "Built a ghost-zapper out of a toaster. It also makes toast.",
 		Look = { Skin = C(220, 215, 205), Hair = C(170, 200, 230), HairStyle = "Spiky", Shirt = C(250, 250, 250), Pants = C(120, 90, 60), Shoes = C(60, 50, 40),
 			Hat = "Specs", HatColor = C(60, 60, 70), Tool = "RayGun", ToolColor = C(140, 255, 160), Beam = C(140, 255, 160) },
 	},
 	OrbitOlivia = {
-		Id = "OrbitOlivia", Name = "Orbit Olivia", Rarity = "Legendary", Zone = "MoonBase", Power = 2.44e18,
+		Id = "OrbitOlivia", Name = "Orbit Olivia", Rarity = "Legendary", Zone = "MoonBase", Power = 3.81e22,
 		Blurb = "Has done a thousand laps of the moon and still gets dizzy.",
 		Look = { Skin = C(160, 110, 80), Hair = C(30, 20, 20), HairStyle = "Buns", Shirt = C(110, 120, 220), Pants = C(60, 70, 140), Shoes = C(250, 250, 255),
 			Hat = "SpaceHelmet", HatColor = C(250, 250, 255), Back = "Rings", BackColor = C(255, 200, 120), Tool = "Orb", ToolColor = C(255, 200, 120), Beam = C(255, 210, 140), Aura = true },
 	},
 	LunarLancer = {
-		Id = "LunarLancer", Name = "Lunar Lancer", Rarity = "Mythic", Zone = "MoonBase", Power = 6.09e18,
+		Id = "LunarLancer", Name = "Lunar Lancer", Rarity = "Mythic", Zone = "MoonBase", Power = 9.52e22,
 		Blurb = "Jousts ghosts from a moon buggy. Wins every single time.",
 		Look = { Skin = C(240, 205, 180), Hair = C(200, 200, 210), HairStyle = "Short", Shirt = C(200, 205, 220), Pants = C(120, 125, 140), Shoes = C(255, 130, 60),
 			Hat = "KnightHelm", HatColor = C(220, 225, 240), Back = "Jetpack", BackColor = C(120, 125, 140), Tool = "Sword", ToolColor = C(220, 225, 240), Beam = C(255, 160, 100), Aura = true },
 	},
 	TheMoonFace = {
-		Id = "TheMoonFace", Name = "The Moon Face", Rarity = "Secret", Zone = "MoonBase", Power = 1.53e19,
+		Id = "TheMoonFace", Name = "The Moon Face", Rarity = "Secret", Zone = "MoonBase", Power = 2.39e23,
 		Blurb = "Has watched every ghost hunt since forever. Finally joined in.",
 		Look = { Skin = C(250, 240, 190), Hair = C(220, 215, 170), HairStyle = "None", Shirt = C(40, 40, 70), Pants = C(30, 30, 55), Shoes = C(250, 240, 190),
 			Hat = "MoonHood", HatColor = C(40, 40, 70), Back = "Cape", BackColor = C(60, 60, 100), Tool = "MoonStaff", ToolColor = C(250, 240, 190), Beam = C(255, 250, 210), Aura = true },
 	},
 	NebulaNyxCometRider = {
-		Id = "NebulaNyxCometRider", Name = "Nebula Nyx, Comet Rider", Rarity = "Ultra", Zone = "MoonBase", Power = 3.81e19,
+		Id = "NebulaNyxCometRider", Name = "Nebula Nyx, Comet Rider", Rarity = "Ultra", Zone = "MoonBase", Power = 5.95e23,
 		Blurb = "Rides a comet to work. Ghosts see the tail and give up.",
 		Look = { Skin = C(245, 220, 210), Hair = C(255, 120, 220), HairStyle = "Buns", Shirt = C(60, 40, 120), Pants = C(120, 80, 200), Shoes = C(120, 240, 255),
 			Hat = "SpaceHelmet", HatColor = C(220, 200, 255), Back = "CometTail", BackColor = C(120, 240, 255), Tool = "RayGun", ToolColor = C(120, 240, 255), Beam = C(255, 140, 230), Aura = true },
 	},
-	-- ZONE 26: VOID CRATE
+	-- ZONE 32: VOID CRATE
+	-- NOD: Doctor Who (time traveller, bigger on the inside, very long scarf); no police box logo
 	RiftScout = {
-		Id = "RiftScout", Name = "Rift Scout", Rarity = "Common", Zone = "VoidThrone", Power = 1.8e18,
-		Blurb = "First through every rift. Always packs a snack.",
-		Look = { Skin = C(240, 205, 180), Hair = C(80, 60, 120), HairStyle = "Short", Shirt = C(80, 60, 140), Pants = C(40, 30, 70), Shoes = C(200, 150, 255),
-			Hat = "Visor", HatColor = C(200, 150, 255), Back = "Backpack", BackColor = C(60, 45, 100), Tool = "Flashlight", ToolColor = C(200, 150, 255), Beam = C(220, 180, 255) },
+		Id = "RiftScout", Name = "Doctor When", Rarity = "Common", Zone = "VoidThrone", Power = 2.81e22,
+		Blurb = "Travels through time in a blue box that's much bigger on the inside. Always late, never too late.",
+		Look = { Skin = C(240, 205, 180), Hair = C(90, 60, 40), HairStyle = "Spiky", Shirt = C(120, 70, 50), Pants = C(60, 50, 60), Shoes = C(70, 50, 40),
+			Back = "RainbowScarf", BackColor = C(200, 120, 60), Tool = "Scanner", ToolColor = C(120, 230, 255), Beam = C(220, 180, 255) },
 	},
 	StarStitcher = {
-		Id = "StarStitcher", Name = "Star Stitcher", Rarity = "Uncommon", Zone = "VoidThrone", Power = 2.98e18,
+		Id = "StarStitcher", Name = "Star Stitcher", Rarity = "Uncommon", Zone = "VoidThrone", Power = 4.67e22,
 		Blurb = "Sews the holes in the sky shut, one star at a time.",
 		Look = { Skin = C(200, 150, 110), Hair = C(250, 250, 255), HairStyle = "Buns", Shirt = C(40, 40, 80), Pants = C(30, 30, 60), Shoes = C(255, 240, 160),
 			Hat = "Beanie", HatColor = C(60, 50, 110), Back = "Orbs", BackColor = C(255, 240, 160), Tool = "Wand", ToolColor = C(255, 240, 160), Beam = C(255, 245, 190) },
 	},
 	NullKnight = {
-		Id = "NullKnight", Name = "Null Knight", Rarity = "Rare", Zone = "VoidThrone", Power = 4.96e18,
+		Id = "NullKnight", Name = "Null Knight", Rarity = "Rare", Zone = "VoidThrone", Power = 7.75e22,
 		Blurb = "Armour made of pure nothing. Surprisingly comfy.",
 		Look = { Skin = C(60, 50, 80), Hair = C(20, 15, 30), HairStyle = "None", Shirt = C(30, 25, 45), Pants = C(25, 20, 40), Shoes = C(200, 150, 255),
 			Hat = "KnightHelm", HatColor = C(30, 25, 45), Back = "Shield", BackColor = C(40, 30, 60), Tool = "Sword", ToolColor = C(200, 150, 255), Beam = C(210, 170, 255) },
 	},
 	PortalPolly = {
-		Id = "PortalPolly", Name = "Portal Polly", Rarity = "Rare", Zone = "VoidThrone", Power = 4.96e18,
+		Id = "PortalPolly", Name = "Portal Polly", Rarity = "Rare", Zone = "VoidThrone", Power = 7.75e22,
 		Blurb = "Opens a portal, pops the ghost in, closes it. Done by lunch.",
 		Look = { Skin = C(245, 215, 195), Hair = C(120, 240, 255), HairStyle = "Bob", Shirt = C(255, 140, 60), Pants = C(60, 60, 90), Shoes = C(255, 140, 60),
 			Hat = "Goggles", HatColor = C(255, 140, 60), Back = "Rings", BackColor = C(120, 240, 255), Tool = "Orb", ToolColor = C(120, 240, 255), Beam = C(120, 240, 255) },
 	},
 	GlenAndJeff = {
-		Id = "GlenAndJeff", Name = "Glen & Jeff", Rarity = "Legendary", Zone = "VoidThrone", Power = 1.22e19,
+		Id = "GlenAndJeff", Name = "Glen & Jeff", Rarity = "Legendary", Zone = "VoidThrone", Power = 1.91e23,
 		Blurb = "A brave kid and his stretchy dog. Adventure is their middle name.",
 		Look = { Skin = C(250, 220, 195), Hair = C(250, 250, 250), HairStyle = "None", Shirt = C(240, 110, 70), Pants = C(40, 60, 120), Shoes = C(30, 30, 40),
 			Hat = "EarHood", HatColor = C(160, 235, 210), Back = "StretchyDog", BackColor = C(235, 160, 70), Tool = "Sword", ToolColor = C(255, 215, 90), Beam = C(255, 220, 120), Aura = true },
 	},
 	UmbraShadowTwin = {
-		Id = "UmbraShadowTwin", Name = "Umbra, the Shadow Twin", Rarity = "Mythic", Zone = "VoidThrone", Power = 3.05e19,
+		Id = "UmbraShadowTwin", Name = "Umbra, the Shadow Twin", Rarity = "Mythic", Zone = "VoidThrone", Power = 4.76e23,
 		Blurb = "Steps out of your shadow to help, then steps right back in.",
 		Look = { Skin = C(70, 50, 110), Hair = C(20, 15, 30), HairStyle = "Long", Shirt = C(40, 30, 60), Pants = C(25, 20, 40), Shoes = C(200, 150, 255),
 			Hat = "Hood", HatColor = C(30, 20, 50), Back = "Cape", BackColor = C(60, 40, 100), Tool = "Orb", ToolColor = C(200, 150, 255), Beam = C(200, 150, 255), Aura = true },
 	},
 	TheLastLightKeeper = {
-		Id = "TheLastLightKeeper", Name = "The Last Light Keeper", Rarity = "Secret", Zone = "VoidThrone", Power = 7.63e19,
+		Id = "TheLastLightKeeper", Name = "The Last Light Keeper", Rarity = "Secret", Zone = "VoidThrone", Power = 1.19e24,
 		Blurb = "Keeps the final lantern burning so the Void never wins.",
 		Look = { Skin = C(250, 245, 235), Hair = C(255, 255, 255), HairStyle = "Long", Shirt = C(250, 250, 255), Pants = C(220, 220, 240), Shoes = C(255, 230, 140),
 			Hat = "Halo", HatColor = C(255, 240, 180), Back = "Wings", BackColor = C(255, 255, 255), Tool = "Lantern", ToolColor = C(255, 255, 255), Beam = C(255, 250, 220), Aura = true },
 	},
 	NovaEmperorsBane = {
-		Id = "NovaEmperorsBane", Name = "Nova, the Emperor's Bane", Rarity = "Ultra", Zone = "VoidThrone", Power = 1.9e20,
+		Id = "NovaEmperorsBane", Name = "Nova, the Emperor's Bane", Rarity = "Ultra", Zone = "VoidThrone", Power = 2.98e24,
 		Blurb = "The only hunter the Void Emperor is scared of. She's four feet tall.",
 		Look = { Skin = C(245, 220, 205), Hair = C(255, 255, 255), HairStyle = "Floaty", Shirt = C(20, 15, 35), Pants = C(250, 250, 255), Shoes = C(255, 230, 140),
 			Hat = "StarCrown", HatColor = C(255, 230, 140), Back = "VoidRing", BackColor = C(20, 15, 35), Tool = "StarBlade", ToolColor = C(255, 255, 255), Beam = C(255, 240, 200), Aura = true, Signature = "Supernova" },
@@ -2161,11 +2639,11 @@ Config.Hunters = {
 		Look = { Skin = C(255, 225, 200), Hair = C(150, 255, 230), HairStyle = "Spiky", Shirt = C(210, 215, 230), Pants = C(150, 255, 230), Shoes = C(210, 215, 230),
 			Hat = "BookHat", HatColor = C(210, 215, 230), Back = "BookWings", BackColor = C(150, 255, 230), Tool = "Quill", ToolColor = C(210, 215, 230), Beam = C(150, 255, 230), Aura = true },
 	},
-	ExclusiveUpsideManor = {
-		Id = "ExclusiveUpsideManor", Name = "Amethyst Acrobat", Rarity = "Exclusive", Zone = "UpsideManor", Power = 235000000000000,
+	ExclusivePumpkinFarm = {
+		Id = "ExclusivePumpkinFarm", Name = "Copper Cornkeeper", Rarity = "Exclusive", Zone = "PumpkinFarm", Power = 235000000000000,
 		Blurb = "Only from the Exclusive Crate. Shiny!",
-		Look = { Skin = C(255, 225, 200), Hair = C(240, 220, 255), HairStyle = "Spiky", Shirt = C(170, 110, 255), Pants = C(240, 220, 255), Shoes = C(170, 110, 255),
-			Hat = "TopHat", HatColor = C(170, 110, 255), Back = "Rings", BackColor = C(240, 220, 255), Tool = "Umbrella", ToolColor = C(170, 110, 255), Beam = C(240, 220, 255), Aura = true },
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 185, 120), HairStyle = "Spiky", Shirt = C(200, 110, 60), Pants = C(255, 185, 120), Shoes = C(200, 110, 60),
+			Hat = "StrawHat", HatColor = C(200, 110, 60), Back = "Wings", BackColor = C(255, 185, 120), Tool = "Pitchfork", ToolColor = C(200, 110, 60), Beam = C(255, 185, 120), Aura = true },
 	},
 	ExclusiveGlowshroom = {
 		Id = "ExclusiveGlowshroom", Name = "Opal Shroomkin", Rarity = "Exclusive", Zone = "Glowshroom", Power = 1.18e15,
@@ -2173,38 +2651,74 @@ Config.Hunters = {
 		Look = { Skin = C(255, 225, 200), Hair = C(255, 190, 240), HairStyle = "Spiky", Shirt = C(220, 255, 245), Pants = C(255, 190, 240), Shoes = C(220, 255, 245),
 			Hat = "ShroomCap", HatColor = C(220, 255, 245), Back = "Wings", BackColor = C(255, 190, 240), Tool = "MoonStaff", ToolColor = C(220, 255, 245), Beam = C(255, 190, 240), Aura = true },
 	},
+	ExclusiveWaterPark = {
+		Id = "ExclusiveWaterPark", Name = "Aquamarine Lifeguard", Rarity = "Exclusive", Zone = "WaterPark", Power = 5.88e15,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(150, 255, 240), HairStyle = "Spiky", Shirt = C(60, 190, 230), Pants = C(150, 255, 240), Shoes = C(60, 190, 230),
+			Hat = "Visor", HatColor = C(60, 190, 230), Back = "Surfboard", BackColor = C(150, 255, 240), Tool = "Trident", ToolColor = C(60, 190, 230), Beam = C(150, 255, 240), Aura = true },
+	},
 	ExclusiveMirrorMaze = {
-		Id = "ExclusiveMirrorMaze", Name = "Platinum Reflection", Rarity = "Exclusive", Zone = "MirrorMaze", Power = 5.88e15,
+		Id = "ExclusiveMirrorMaze", Name = "Platinum Reflection", Rarity = "Exclusive", Zone = "MirrorMaze", Power = 2.94e16,
 		Blurb = "Only from the Exclusive Crate. Shiny!",
 		Look = { Skin = C(255, 225, 200), Hair = C(200, 240, 255), HairStyle = "Spiky", Shirt = C(225, 228, 240), Pants = C(200, 240, 255), Shoes = C(225, 228, 240),
 			Hat = "PrismCrown", HatColor = C(225, 228, 240), Back = "MirrorShards", BackColor = C(200, 240, 255), Tool = "HandMirror", ToolColor = C(225, 228, 240), Beam = C(200, 240, 255), Aura = true },
 	},
+	ExclusiveShoppingMall = {
+		Id = "ExclusiveShoppingMall", Name = "Rose-Gold Shopper", Rarity = "Exclusive", Zone = "ShoppingMall", Power = 1.47e17,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 195, 185), HairStyle = "Spiky", Shirt = C(230, 140, 155), Pants = C(255, 195, 185), Shoes = C(230, 140, 155),
+			Hat = "Bow", HatColor = C(230, 140, 155), Back = "Balloons", BackColor = C(255, 195, 185), Tool = "Megaphone", ToolColor = C(230, 140, 155), Beam = C(255, 195, 185), Aura = true },
+	},
 	ExclusiveGhostSubway = {
-		Id = "ExclusiveGhostSubway", Name = "Chrome Conductor", Rarity = "Exclusive", Zone = "GhostSubway", Power = 2.94e16,
+		Id = "ExclusiveGhostSubway", Name = "Chrome Conductor", Rarity = "Exclusive", Zone = "GhostSubway", Power = 7.34e17,
 		Blurb = "Only from the Exclusive Crate. Shiny!",
 		Look = { Skin = C(255, 225, 200), Hair = C(255, 220, 80), HairStyle = "Spiky", Shirt = C(200, 205, 220), Pants = C(255, 220, 80), Shoes = C(200, 205, 220),
 			Hat = "ConductorCap", HatColor = C(200, 205, 220), Back = "Smokestack", BackColor = C(255, 220, 80), Tool = "Lantern", ToolColor = C(200, 205, 220), Beam = C(255, 220, 80), Aura = true },
 	},
+	ExclusiveDinoMuseum = {
+		Id = "ExclusiveDinoMuseum", Name = "Amber Paleontologist", Rarity = "Exclusive", Zone = "DinoMuseum", Power = 3.67e18,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 205, 120), HairStyle = "Spiky", Shirt = C(150, 220, 130), Pants = C(255, 205, 120), Shoes = C(150, 220, 130),
+			Hat = "Pith", HatColor = C(150, 220, 130), Back = "BatWings", BackColor = C(255, 205, 120), Tool = "Whip", ToolColor = C(150, 220, 130), Beam = C(255, 205, 120), Aura = true },
+	},
+	ExclusiveStadium = {
+		Id = "ExclusiveStadium", Name = "Golden Champion", Rarity = "Exclusive", Zone = "Stadium", Power = 1.84e19,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 230, 140), HairStyle = "Spiky", Shirt = C(60, 110, 220), Pants = C(255, 230, 140), Shoes = C(60, 110, 220),
+			Hat = "Helmet", HatColor = C(60, 110, 220), Back = "Wings", BackColor = C(255, 230, 140), Tool = "Trophy", ToolColor = C(60, 110, 220), Beam = C(255, 230, 140), Aura = true },
+	},
 	ExclusiveNeonCity = {
-		Id = "ExclusiveNeonCity", Name = "Prismatic Popstar", Rarity = "Exclusive", Zone = "NeonCity", Power = 1.47e17,
+		Id = "ExclusiveNeonCity", Name = "Prismatic Popstar", Rarity = "Exclusive", Zone = "NeonCity", Power = 9.18e19,
 		Blurb = "Only from the Exclusive Crate. Shiny!",
 		Look = { Skin = C(255, 225, 200), Hair = C(120, 240, 255), HairStyle = "Spiky", Shirt = C(255, 120, 220), Pants = C(120, 240, 255), Shoes = C(255, 120, 220),
 			Hat = "Headphones", HatColor = C(255, 120, 220), Back = "Boombox", BackColor = C(120, 240, 255), Tool = "Guitar", ToolColor = C(255, 120, 220), Beam = C(120, 240, 255), Aura = true },
 	},
+	ExclusiveGiantsKitchen = {
+		Id = "ExclusiveGiantsKitchen", Name = "Sugar-Glass Baker", Rarity = "Exclusive", Zone = "GiantsKitchen", Power = 4.59e20,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(255, 240, 250), HairStyle = "Spiky", Shirt = C(255, 150, 200), Pants = C(255, 240, 250), Shoes = C(255, 150, 200),
+			Hat = "ChefHat", HatColor = C(255, 150, 200), Back = "Balloons", BackColor = C(255, 240, 250), Tool = "Whisk", ToolColor = C(255, 150, 200), Beam = C(255, 240, 250), Aura = true },
+	},
+	ExclusiveCyberArcade = {
+		Id = "ExclusiveCyberArcade", Name = "Holo High-Scorer", Rarity = "Exclusive", Zone = "CyberArcade", Power = 2.29e21,
+		Blurb = "Only from the Exclusive Crate. Shiny!",
+		Look = { Skin = C(255, 225, 200), Hair = C(180, 255, 240), HairStyle = "Spiky", Shirt = C(200, 120, 255), Pants = C(180, 255, 240), Shoes = C(200, 120, 255),
+			Hat = "Headphones", HatColor = C(200, 120, 255), Back = "Blocks", BackColor = C(180, 255, 240), Tool = "Joystick", ToolColor = C(200, 120, 255), Beam = C(180, 255, 240), Aura = true },
+	},
 	ExclusiveStormIslands = {
-		Id = "ExclusiveStormIslands", Name = "Sapphire Stormcaller", Rarity = "Exclusive", Zone = "StormIslands", Power = 7.34e17,
+		Id = "ExclusiveStormIslands", Name = "Sapphire Stormcaller", Rarity = "Exclusive", Zone = "StormIslands", Power = 1.15e22,
 		Blurb = "Only from the Exclusive Crate. Shiny!",
 		Look = { Skin = C(255, 225, 200), Hair = C(255, 240, 120), HairStyle = "Spiky", Shirt = C(60, 110, 255), Pants = C(255, 240, 120), Shoes = C(60, 110, 255),
 			Hat = "StormCloud", HatColor = C(60, 110, 255), Back = "StormWings", BackColor = C(255, 240, 120), Tool = "Thunderbolt", ToolColor = C(60, 110, 255), Beam = C(255, 240, 120), Aura = true },
 	},
 	ExclusiveMoonBase = {
-		Id = "ExclusiveMoonBase", Name = "Moonstone Astronaut", Rarity = "Exclusive", Zone = "MoonBase", Power = 3.67e18,
+		Id = "ExclusiveMoonBase", Name = "Moonstone Astronaut", Rarity = "Exclusive", Zone = "MoonBase", Power = 5.74e22,
 		Blurb = "Only from the Exclusive Crate. Shiny!",
 		Look = { Skin = C(255, 225, 200), Hair = C(255, 150, 80), HairStyle = "Spiky", Shirt = C(230, 235, 255), Pants = C(255, 150, 80), Shoes = C(230, 235, 255),
 			Hat = "SpaceHelmet", HatColor = C(230, 235, 255), Back = "Jetpack", BackColor = C(255, 150, 80), Tool = "RayGun", ToolColor = C(230, 235, 255), Beam = C(255, 150, 80), Aura = true },
 	},
 	ExclusiveVoidThrone = {
-		Id = "ExclusiveVoidThrone", Name = "Obsidian Starborn", Rarity = "Exclusive", Zone = "VoidThrone", Power = 1.84e19,
+		Id = "ExclusiveVoidThrone", Name = "Obsidian Starborn", Rarity = "Exclusive", Zone = "VoidThrone", Power = 2.87e23,
 		Blurb = "Only from the Exclusive Crate. Shiny!",
 		Look = { Skin = C(255, 225, 200), Hair = C(255, 255, 255), HairStyle = "Spiky", Shirt = C(40, 30, 50), Pants = C(255, 255, 255), Shoes = C(40, 30, 50),
 			Hat = "StarCrown", HatColor = C(40, 30, 50), Back = "VoidRing", BackColor = C(255, 255, 255), Tool = "StarBlade", ToolColor = C(40, 30, 50), Beam = C(255, 255, 255), Aura = true },
@@ -2230,14 +2744,20 @@ Config.Exclusives = {
 	Clockwork = "ExclusiveClockwork",
 	Inferno = "ExclusiveInferno",
 	Throne = "ExclusiveThrone",
-	-- WORLD 2: THE OTHER SIDE (areas 17-26)
+	-- WORLD 2: THE OTHER SIDE (areas 17-32)
 	LanternMarket = "ExclusiveLanternMarket",
 	PhantomLibrary = "ExclusivePhantomLibrary",
-	UpsideManor = "ExclusiveUpsideManor",
+	PumpkinFarm = "ExclusivePumpkinFarm",
 	Glowshroom = "ExclusiveGlowshroom",
+	WaterPark = "ExclusiveWaterPark",
 	MirrorMaze = "ExclusiveMirrorMaze",
+	ShoppingMall = "ExclusiveShoppingMall",
 	GhostSubway = "ExclusiveGhostSubway",
+	DinoMuseum = "ExclusiveDinoMuseum",
+	Stadium = "ExclusiveStadium",
 	NeonCity = "ExclusiveNeonCity",
+	GiantsKitchen = "ExclusiveGiantsKitchen",
+	CyberArcade = "ExclusiveCyberArcade",
 	StormIslands = "ExclusiveStormIslands",
 	MoonBase = "ExclusiveMoonBase",
 	VoidThrone = "ExclusiveVoidThrone",
@@ -2482,7 +3002,7 @@ Config.Crates = {
 		Id = "Exclusive", Name = "EXCLUSIVE CRATE", Zone = "Neighborhood", Price = 0,
 		Color = C(60, 40, 110), Trim = C(120, 240, 255), Style = "Spirit",
 		Pool = {}, -- granted by the Robux product (Config.Exclusives), never rolled
-	},	-- WORLD 2: THE OTHER SIDE (areas 17-26)
+	},	-- WORLD 2: THE OTHER SIDE (areas 17-32)
 	Lantern = {
 		Id = "Lantern", Name = "LANTERN CRATE", Zone = "LanternMarket", Price = 1.31e15,
 		Color = C(200, 40, 50), Trim = C(255, 200, 80), Style = "Lantern",
@@ -2498,7 +3018,7 @@ Config.Crates = {
 		},
 	},
 	Library = {
-		Id = "Library", Name = "SPELLBOOK CRATE", Zone = "PhantomLibrary", Price = 7.85e15,
+		Id = "Library", Name = "SPELLBOOK CRATE", Zone = "PhantomLibrary", Price = 7.86e15,
 		Color = C(90, 50, 40), Trim = C(120, 255, 220), Style = "Library",
 		Pool = {
 			{ Hunter = "ShushScout", Weight = 46 }, -- Common 46%
@@ -2511,18 +3031,18 @@ Config.Crates = {
 			{ Hunter = "InkwellStorySorcerer", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
-	Topsy = {
-		Id = "Topsy", Name = "TOPSY-TURVY CRATE", Zone = "UpsideManor", Price = 4.71e16,
-		Color = C(90, 40, 80), Trim = C(200, 160, 255), Style = "Topsy",
+	Harvest = {
+		Id = "Harvest", Name = "HARVEST CRATE", Zone = "PumpkinFarm", Price = 4.72e16,
+		Color = C(205, 110, 40), Trim = C(255, 215, 90), Style = "Harvest",
 		Pool = {
-			{ Hunter = "ButlerBartleby", Weight = 46 }, -- Common 46%
-			{ Hunter = "GravityGwen", Weight = 32 }, -- Uncommon 32%
-			{ Hunter = "ThursdayGloom", Weight = 7 }, -- Rare 14% (split 2 ways)
-			{ Hunter = "NannyBrolly", Weight = 7 }, -- Rare 14% (split 2 ways)
-			{ Hunter = "MagnetMaya", Weight = 5.5 }, -- Legendary 5.5%
-			{ Hunter = "BaronVonFlip", Weight = 1.8 }, -- Mythic 1.8%
-			{ Hunter = "TheHouseItself", Weight = 0.55 }, -- Secret 0.55%
-			{ Hunter = "VertigoValentina", Weight = 0.15 }, -- Ultra 0.15%
+			{ Hunter = "FarmhandFinn", Weight = 46 }, -- Common 46%
+			{ Hunter = "CornMazeCora", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "BrainyStrawford", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "SomePigSammy", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "OldMacBoonald", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "GemmaGourdheart", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "HeadlessHayrider", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "AutumnaHarvestQueen", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
 	Shroom = {
@@ -2539,8 +3059,22 @@ Config.Crates = {
 			{ Hunter = "LuminaBloomheart", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
+	Splash = {
+		Id = "Splash", Name = "SPLASH CRATE", Zone = "WaterPark", Price = 1.7e18,
+		Color = C(40, 170, 220), Trim = C(255, 230, 90), Style = "Splash",
+		Pool = {
+			{ Hunter = "LifeguardLuca", Weight = 46 }, -- Common 46%
+			{ Hunter = "SunscreenSam", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "MermaidenMarina", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "ForgetfulFlo", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "SplashGordon", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "SlideQueenShayla", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "GnawsGentleShark", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "TsunamiTiaWaveRider", Weight = 0.15 }, -- Ultra 0.15%
+		},
+	},
 	Mirror = {
-		Id = "Mirror", Name = "MIRROR CRATE", Zone = "MirrorMaze", Price = 1.7e18,
+		Id = "Mirror", Name = "MIRROR CRATE", Zone = "MirrorMaze", Price = 1.02e19,
 		Color = C(200, 215, 235), Trim = C(170, 230, 255), Style = "Mirror",
 		Pool = {
 			{ Hunter = "PolisherPip", Weight = 46 }, -- Common 46%
@@ -2553,8 +3087,22 @@ Config.Crates = {
 			{ Hunter = "KaleidaQueenOfFacets", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
+	Mall = {
+		Id = "Mall", Name = "SHOPPING CRATE", Zone = "ShoppingMall", Price = 6.11e19,
+		Color = C(235, 110, 170), Trim = C(130, 230, 255), Style = "Shopping",
+		Pool = {
+			{ Hunter = "CartPusherCody", Weight = 46 }, -- Common 46%
+			{ Hunter = "PretzelPam", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "OfficerBartBlurt", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "JollyBuddyElfington", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "MondaysMcFluff", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "DreamHouseDebbie", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheMannequin", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "BargainaMegaSale", Weight = 0.15 }, -- Ultra 0.15%
+		},
+	},
 	Subway = {
-		Id = "Subway", Name = "SUBWAY CRATE", Zone = "GhostSubway", Price = 1.02e19,
+		Id = "Subway", Name = "SUBWAY CRATE", Zone = "GhostSubway", Price = 3.67e20,
 		Color = C(70, 80, 100), Trim = C(255, 220, 80), Style = "Subway",
 		Pool = {
 			{ Hunter = "PlatformPatrol", Weight = 46 }, -- Common 46%
@@ -2567,8 +3115,36 @@ Config.Crates = {
 			{ Hunter = "RailsPhantomEngineer", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
+	Fossil = {
+		Id = "Fossil", Name = "FOSSIL CRATE", Zone = "DinoMuseum", Price = 2.2e21,
+		Color = C(185, 150, 100), Trim = C(140, 230, 130), Style = "Fossil",
+		Pool = {
+			{ Hunter = "DustyBrushworth", Weight = 46 }, -- Common 46%
+			{ Hunter = "TourGuideTheo", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "NightShiftLarry", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "JurassicJeff", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "IndianaBones", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "PurplePalBarnaby", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheLivingExhibit", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "AmberlynFossilQueen", Weight = 0.15 }, -- Ultra 0.15%
+		},
+	},
+	Champion = {
+		Id = "Champion", Name = "CHAMPION CRATE", Zone = "Stadium", Price = 1.32e22,
+		Color = C(40, 90, 180), Trim = C(255, 220, 80), Style = "Trophy",
+		Pool = {
+			{ Hunter = "PopcornPercy", Weight = 46 }, -- Common 46%
+			{ Hunter = "RefereeRita", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "CoachNedLassiter", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "RockyBalBooa", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "AirPup", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "CaptainMightyQuack", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheTwelfthFan", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "VictoriaVortexMVP", Weight = 0.15 }, -- Ultra 0.15%
+		},
+	},
 	Neon = {
-		Id = "Neon", Name = "NEON CRATE", Zone = "NeonCity", Price = 6.1e19,
+		Id = "Neon", Name = "NEON CRATE", Zone = "NeonCity", Price = 7.92e22,
 		Color = C(30, 25, 50), Trim = C(255, 80, 220), Style = "Neon",
 		Pool = {
 			{ Hunter = "RooftopRunner", Weight = 46 }, -- Common 46%
@@ -2581,8 +3157,36 @@ Config.Crates = {
 			{ Hunter = "NeonovaCitySuperstar", Weight = 0.15 }, -- Ultra 0.15%
 		},
 	},
+	CookieJar = {
+		Id = "CookieJar", Name = "COOKIE JAR CRATE", Zone = "GiantsKitchen", Price = 4.75e23,
+		Color = C(225, 190, 140), Trim = C(255, 110, 90), Style = "CookieJar",
+		Pool = {
+			{ Hunter = "SugarCubeSid", Weight = 46 }, -- Common 46%
+			{ Hunter = "ThimbleThea", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "StueyTeeny", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "BorrowerEtty", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "GingerbreadRon", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "Thumbelinda", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "TheFridgeLight", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "SprinklaQueenOfSweets", Weight = 0.15 }, -- Ultra 0.15%
+		},
+	},
+	Arcade = {
+		Id = "Arcade", Name = "ARCADE CRATE", Zone = "CyberArcade", Price = 2.85e24,
+		Color = C(50, 30, 90), Trim = C(80, 255, 220), Style = "Arcade",
+		Pool = {
+			{ Hunter = "CoinOpCal", Weight = 46 }, -- Common 46%
+			{ Hunter = "ButtonMasherBea", Weight = 32 }, -- Uncommon 32%
+			{ Hunter = "MustachioThePlumber", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "SpeedySpikes", Weight = 7 }, -- Rare 14% (split 2 ways)
+			{ Hunter = "WakaWakaWanda", Weight = 5.5 }, -- Legendary 5.5%
+			{ Hunter = "BlockDropBoris", Weight = 1.8 }, -- Mythic 1.8%
+			{ Hunter = "PlayerTwo", Weight = 0.55 }, -- Secret 0.55%
+			{ Hunter = "PixellaArcadeEmpress", Weight = 0.15 }, -- Ultra 0.15%
+		},
+	},
 	Storm = {
-		Id = "Storm", Name = "STORM CRATE", Zone = "StormIslands", Price = 3.66e20,
+		Id = "Storm", Name = "STORM CRATE", Zone = "StormIslands", Price = 1.71e25,
 		Color = C(70, 90, 140), Trim = C(255, 240, 120), Style = "Storm",
 		Pool = {
 			{ Hunter = "KiteFlyerKit", Weight = 46 }, -- Common 46%
@@ -2596,7 +3200,7 @@ Config.Crates = {
 		},
 	},
 	Moon = {
-		Id = "Moon", Name = "MOON BASE CRATE", Zone = "MoonBase", Price = 2.2e21,
+		Id = "Moon", Name = "MOON BASE CRATE", Zone = "MoonBase", Price = 1.03e26,
 		Color = C(200, 205, 215), Trim = C(255, 130, 60), Style = "Moon",
 		Pool = {
 			{ Hunter = "MoonCadet", Weight = 46 }, -- Common 46%
@@ -2610,7 +3214,7 @@ Config.Crates = {
 		},
 	},
 	Void = {
-		Id = "Void", Name = "VOID CRATE", Zone = "VoidThrone", Price = 1.32e22,
+		Id = "Void", Name = "VOID CRATE", Zone = "VoidThrone", Price = 6.16e26,
 		Color = C(25, 15, 40), Trim = C(255, 255, 255), Style = "Void",
 		Pool = {
 			{ Hunter = "RiftScout", Weight = 46 }, -- Common 46%
@@ -2962,7 +3566,7 @@ Config.Daily = {
 	-- Ecto rewards scale with your best unlocked zone so late players still care
 	-- (roughly the ratio of typical farming income per zone).
 	ZoneMultiplier = { 1, 6, 30, 200, 1200, 7000, 40000, 220000, 1190000, 6430000, 34700000, 187000000, 1010000000, 5450000000, 29400000000, 159000000000,
-		859000000000, 4640000000000, 25000000000000, 135000000000000, 730000000000000, 3.94e15, 2.13e16, 1.15e17, 6.21e17, 3.35e18 }, -- 17-26: World 2
+		859000000000, 4640000000000, 25000000000000, 135000000000000, 730000000000000, 3.94e15, 2.13e16, 1.15e17, 6.21e17, 3.35e18, 1.81e19, 9.78e19, 5.28e20, 2.85e21, 1.54e22, 8.32e22 }, -- 17-32: World 2
 }
 
 --==================================================================
@@ -3135,14 +3739,20 @@ Config.Layout = {
 		Throne = { Z = 5200, Width = 34 },
 		-- World 2 (Lantern Market has no gate wall: its entry is the portal at the end of the Throne)
 		PhantomLibrary = { Z = 7360, Width = 34 },
-		UpsideManor = { Z = 7720, Width = 34 },
+		PumpkinFarm = { Z = 7720, Width = 34 },
 		Glowshroom = { Z = 8080, Width = 34 },
-		MirrorMaze = { Z = 8440, Width = 34 },
-		GhostSubway = { Z = 8800, Width = 34 },
-		NeonCity = { Z = 9160, Width = 34 },
-		StormIslands = { Z = 9520, Width = 34 },
-		MoonBase = { Z = 9880, Width = 34 },
-		VoidThrone = { Z = 10240, Width = 34 },
+		WaterPark = { Z = 8440, Width = 34 },
+		MirrorMaze = { Z = 8800, Width = 34 },
+		ShoppingMall = { Z = 9160, Width = 34 },
+		GhostSubway = { Z = 9520, Width = 34 },
+		DinoMuseum = { Z = 9880, Width = 34 },
+		Stadium = { Z = 10240, Width = 34 },
+		NeonCity = { Z = 10600, Width = 34 },
+		GiantsKitchen = { Z = 10960, Width = 34 },
+		CyberArcade = { Z = 11320, Width = 34 },
+		StormIslands = { Z = 11680, Width = 34 },
+		MoonBase = { Z = 12040, Width = 34 },
+		VoidThrone = { Z = 12400, Width = 34 },
 	},
 	CrateStations = {
 		Beginner = Vector3.new(-28, 0, -6), -- just inside the lobby entrance
@@ -3164,14 +3774,20 @@ Config.Layout = {
 		-- World 2 (Lantern Market has no gate wall: its entry is the portal at the end of the Throne)
 		Lantern = Vector3.new(-28, 0, 7032),
 		Library = Vector3.new(-28, 0, 7392),
-		Topsy = Vector3.new(-28, 0, 7752),
+		Harvest = Vector3.new(-28, 0, 7752),
 		Shroom = Vector3.new(-28, 0, 8112),
-		Mirror = Vector3.new(-28, 0, 8472),
-		Subway = Vector3.new(-28, 0, 8832),
-		Neon = Vector3.new(-28, 0, 9192),
-		Storm = Vector3.new(-28, 0, 9552),
-		Moon = Vector3.new(-28, 0, 9912),
-		Void = Vector3.new(-28, 0, 10272),
+		Splash = Vector3.new(-28, 0, 8472),
+		Mirror = Vector3.new(-28, 0, 8832),
+		Mall = Vector3.new(-28, 0, 9192),
+		Subway = Vector3.new(-28, 0, 9552),
+		Fossil = Vector3.new(-28, 0, 9912),
+		Champion = Vector3.new(-28, 0, 10272),
+		Neon = Vector3.new(-28, 0, 10632),
+		CookieJar = Vector3.new(-28, 0, 10992),
+		Arcade = Vector3.new(-28, 0, 11352),
+		Storm = Vector3.new(-28, 0, 11712),
+		Moon = Vector3.new(-28, 0, 12072),
+		Void = Vector3.new(-28, 0, 12432),
 	},
 	-- Fast Travel (WORLDS menu) arrival points: open ground beside each zone's path, clear of
 	-- ghost areas, stations and props (the builders keep a circle around each one free).
@@ -3195,14 +3811,20 @@ Config.Layout = {
 		-- World 2 (Lantern Market has no gate wall: its entry is the portal at the end of the Throne)
 		LanternMarket = Vector3.new(26, 3, 7032),
 		PhantomLibrary = Vector3.new(26, 3, 7392),
-		UpsideManor = Vector3.new(26, 3, 7752),
+		PumpkinFarm = Vector3.new(26, 3, 7752),
 		Glowshroom = Vector3.new(26, 3, 8112),
-		MirrorMaze = Vector3.new(26, 3, 8472),
-		GhostSubway = Vector3.new(26, 3, 8832),
-		NeonCity = Vector3.new(26, 3, 9192),
-		StormIslands = Vector3.new(26, 3, 9552),
-		MoonBase = Vector3.new(26, 3, 9912),
-		VoidThrone = Vector3.new(26, 3, 10272),
+		WaterPark = Vector3.new(26, 3, 8472),
+		MirrorMaze = Vector3.new(26, 3, 8832),
+		ShoppingMall = Vector3.new(26, 3, 9192),
+		GhostSubway = Vector3.new(26, 3, 9552),
+		DinoMuseum = Vector3.new(26, 3, 9912),
+		Stadium = Vector3.new(26, 3, 10272),
+		NeonCity = Vector3.new(26, 3, 10632),
+		GiantsKitchen = Vector3.new(26, 3, 10992),
+		CyberArcade = Vector3.new(26, 3, 11352),
+		StormIslands = Vector3.new(26, 3, 11712),
+		MoonBase = Vector3.new(26, 3, 12072),
+		VoidThrone = Vector3.new(26, 3, 12432),
 	},
 	-- World portals (World/Portals.luau, ProgressService). ToWorld2 stands at the far end of the
 	-- Ghost King's Throne and works like the gate of Zone (bought with the same UnlockZone flow
@@ -3319,66 +3941,102 @@ Config.Layout = {
 		{ Ghost = "ShadowPhantom", Center = Vector3.new(75, 0, 5380), Radius = 26, Count = 4 },
 		{ Ghost = "ShadowPhantom", Center = Vector3.new(-62, 0, 5440), Radius = 24, Count = 4 },
 		{ Ghost = "GhostKing", Center = Vector3.new(0, 0, 5505), Radius = 28, Count = 1 },
-		-- ZONE 17 (World 2) LanternMarket (Z 7000..)
+		-- ZONE 17 (World 2) LanternMarket (Z 7000..7360)
 		{ Ghost = "LanternWisp", Center = Vector3.new(0, 0, 7085), Radius = 30, Count = 6 },
 		{ Ghost = "LanternWisp", Center = Vector3.new(-82, 0, 7120), Radius = 24, Count = 4 },
 		{ Ghost = "DumplingDrifter", Center = Vector3.new(75, 0, 7180), Radius = 26, Count = 4 },
 		{ Ghost = "DumplingDrifter", Center = Vector3.new(-62, 0, 7240), Radius = 24, Count = 4 },
 		{ Ghost = "LanternDragon", Center = Vector3.new(0, 0, 7305), Radius = 26, Count = 1 },
-		-- ZONE 18 (World 2) PhantomLibrary (Z 7360..)
+		-- ZONE 18 (World 2) PhantomLibrary (Z 7360..7720)
 		{ Ghost = "PageSprite", Center = Vector3.new(0, 0, 7445), Radius = 30, Count = 6 },
 		{ Ghost = "PageSprite", Center = Vector3.new(-82, 0, 7480), Radius = 24, Count = 4 },
 		{ Ghost = "InkblotPhantom", Center = Vector3.new(75, 0, 7540), Radius = 26, Count = 4 },
 		{ Ghost = "InkblotPhantom", Center = Vector3.new(-62, 0, 7600), Radius = 24, Count = 4 },
 		{ Ghost = "GrandGrimoire", Center = Vector3.new(0, 0, 7665), Radius = 26, Count = 1 },
-		-- ZONE 19 (World 2) UpsideManor (Z 7720..)
-		{ Ghost = "DizzySpirit", Center = Vector3.new(0, 0, 7805), Radius = 30, Count = 6 },
-		{ Ghost = "DizzySpirit", Center = Vector3.new(-82, 0, 7840), Radius = 24, Count = 4 },
-		{ Ghost = "ChandelierPhantom", Center = Vector3.new(75, 0, 7900), Radius = 26, Count = 4 },
-		{ Ghost = "ChandelierPhantom", Center = Vector3.new(-62, 0, 7960), Radius = 24, Count = 4 },
-		{ Ghost = "CountessTopsyTurvy", Center = Vector3.new(0, 0, 8025), Radius = 26, Count = 1 },
-		-- ZONE 20 (World 2) Glowshroom (Z 8080..)
+		-- ZONE 19 (World 2) PumpkinFarm (Z 7720..8080)
+		{ Ghost = "CornWisp", Center = Vector3.new(0, 0, 7805), Radius = 30, Count = 6 },
+		{ Ghost = "CornWisp", Center = Vector3.new(-82, 0, 7840), Radius = 24, Count = 4 },
+		{ Ghost = "HayrideHaunt", Center = Vector3.new(75, 0, 7900), Radius = 26, Count = 4 },
+		{ Ghost = "HayrideHaunt", Center = Vector3.new(-62, 0, 7960), Radius = 24, Count = 4 },
+		{ Ghost = "ScarecrowKing", Center = Vector3.new(0, 0, 8025), Radius = 26, Count = 1 },
+		-- ZONE 20 (World 2) Glowshroom (Z 8080..8440)
 		{ Ghost = "SporeWisp", Center = Vector3.new(0, 0, 8165), Radius = 30, Count = 6 },
 		{ Ghost = "SporeWisp", Center = Vector3.new(-82, 0, 8200), Radius = 24, Count = 4 },
 		{ Ghost = "MossyPhantom", Center = Vector3.new(75, 0, 8260), Radius = 26, Count = 4 },
 		{ Ghost = "MossyPhantom", Center = Vector3.new(-62, 0, 8320), Radius = 24, Count = 4 },
 		{ Ghost = "MyceliumMonarch", Center = Vector3.new(0, 0, 8385), Radius = 26, Count = 1 },
-		-- ZONE 21 (World 2) MirrorMaze (Z 8440..)
-		{ Ghost = "GlintSpirit", Center = Vector3.new(0, 0, 8525), Radius = 30, Count = 6 },
-		{ Ghost = "GlintSpirit", Center = Vector3.new(-82, 0, 8560), Radius = 24, Count = 4 },
-		{ Ghost = "CopycatPhantom", Center = Vector3.new(75, 0, 8620), Radius = 26, Count = 4 },
-		{ Ghost = "CopycatPhantom", Center = Vector3.new(-62, 0, 8680), Radius = 24, Count = 4 },
-		{ Ghost = "QueenOfReflections", Center = Vector3.new(0, 0, 8745), Radius = 26, Count = 1 },
-		-- ZONE 22 (World 2) GhostSubway (Z 8800..)
-		{ Ghost = "CommuterSpecter", Center = Vector3.new(0, 0, 8885), Radius = 30, Count = 6 },
-		{ Ghost = "CommuterSpecter", Center = Vector3.new(-82, 0, 8920), Radius = 24, Count = 4 },
-		{ Ghost = "TicketPhantom", Center = Vector3.new(75, 0, 8980), Radius = 26, Count = 4 },
-		{ Ghost = "TicketPhantom", Center = Vector3.new(-62, 0, 9040), Radius = 24, Count = 4 },
-		{ Ghost = "PhantomExpress", Center = Vector3.new(0, 0, 9105), Radius = 26, Count = 1 },
-		-- ZONE 23 (World 2) NeonCity (Z 9160..)
-		{ Ghost = "NeonSprite", Center = Vector3.new(0, 0, 9245), Radius = 30, Count = 6 },
-		{ Ghost = "NeonSprite", Center = Vector3.new(-82, 0, 9280), Radius = 24, Count = 4 },
-		{ Ghost = "GraffitiPhantom", Center = Vector3.new(75, 0, 9340), Radius = 26, Count = 4 },
-		{ Ghost = "GraffitiPhantom", Center = Vector3.new(-62, 0, 9400), Radius = 24, Count = 4 },
-		{ Ghost = "BillboardBoss", Center = Vector3.new(0, 0, 9465), Radius = 26, Count = 1 },
-		-- ZONE 24 (World 2) StormIslands (Z 9520..)
-		{ Ghost = "BreezeSpirit", Center = Vector3.new(0, 0, 9605), Radius = 30, Count = 6 },
-		{ Ghost = "BreezeSpirit", Center = Vector3.new(-82, 0, 9640), Radius = 24, Count = 4 },
-		{ Ghost = "ThundercloudPhantom", Center = Vector3.new(75, 0, 9700), Radius = 26, Count = 4 },
-		{ Ghost = "ThundercloudPhantom", Center = Vector3.new(-62, 0, 9760), Radius = 24, Count = 4 },
-		{ Ghost = "TempestRoc", Center = Vector3.new(0, 0, 9825), Radius = 26, Count = 1 },
-		-- ZONE 25 (World 2) MoonBase (Z 9880..)
-		{ Ghost = "MoondustSpirit", Center = Vector3.new(0, 0, 9965), Radius = 30, Count = 6 },
-		{ Ghost = "MoondustSpirit", Center = Vector3.new(-82, 0, 10000), Radius = 24, Count = 4 },
-		{ Ghost = "AstroPhantom", Center = Vector3.new(75, 0, 10060), Radius = 26, Count = 4 },
-		{ Ghost = "AstroPhantom", Center = Vector3.new(-62, 0, 10120), Radius = 24, Count = 4 },
-		{ Ghost = "SaucerOverseer", Center = Vector3.new(0, 0, 10185), Radius = 26, Count = 1 },
-		-- ZONE 26 (World 2) VoidThrone (Z 10240..)
-		{ Ghost = "VoidMote", Center = Vector3.new(0, 0, 10325), Radius = 30, Count = 6 },
-		{ Ghost = "VoidMote", Center = Vector3.new(-82, 0, 10360), Radius = 24, Count = 4 },
-		{ Ghost = "RiftPhantom", Center = Vector3.new(75, 0, 10420), Radius = 26, Count = 4 },
-		{ Ghost = "RiftPhantom", Center = Vector3.new(-62, 0, 10480), Radius = 24, Count = 4 },
-		{ Ghost = "VoidHerald", Center = Vector3.new(0, 0, 10480), Radius = 26, Count = 1 }, -- Void Emperor arena at (0, 10600) r60 beyond it
+		-- ZONE 21 (World 2) WaterPark (Z 8440..8800)
+		{ Ghost = "SplashSprite", Center = Vector3.new(0, 0, 8525), Radius = 30, Count = 6 },
+		{ Ghost = "SplashSprite", Center = Vector3.new(-82, 0, 8560), Radius = 24, Count = 4 },
+		{ Ghost = "LazyRiverPhantom", Center = Vector3.new(75, 0, 8620), Radius = 26, Count = 4 },
+		{ Ghost = "LazyRiverPhantom", Center = Vector3.new(-62, 0, 8680), Radius = 24, Count = 4 },
+		{ Ghost = "KingCannonball", Center = Vector3.new(0, 0, 8745), Radius = 26, Count = 1 },
+		-- ZONE 22 (World 2) MirrorMaze (Z 8800..9160)
+		{ Ghost = "GlintSpirit", Center = Vector3.new(0, 0, 8885), Radius = 30, Count = 6 },
+		{ Ghost = "GlintSpirit", Center = Vector3.new(-82, 0, 8920), Radius = 24, Count = 4 },
+		{ Ghost = "CopycatPhantom", Center = Vector3.new(75, 0, 8980), Radius = 26, Count = 4 },
+		{ Ghost = "CopycatPhantom", Center = Vector3.new(-62, 0, 9040), Radius = 24, Count = 4 },
+		{ Ghost = "QueenOfReflections", Center = Vector3.new(0, 0, 9105), Radius = 26, Count = 1 },
+		-- ZONE 23 (World 2) ShoppingMall (Z 9160..9520)
+		{ Ghost = "ShopperSpirit", Center = Vector3.new(0, 0, 9245), Radius = 30, Count = 6 },
+		{ Ghost = "ShopperSpirit", Center = Vector3.new(-82, 0, 9280), Radius = 24, Count = 4 },
+		{ Ghost = "MannequinPhantom", Center = Vector3.new(75, 0, 9340), Radius = 26, Count = 4 },
+		{ Ghost = "MannequinPhantom", Center = Vector3.new(-62, 0, 9400), Radius = 24, Count = 4 },
+		{ Ghost = "FoodCourtQueen", Center = Vector3.new(0, 0, 9465), Radius = 26, Count = 1 },
+		-- ZONE 24 (World 2) GhostSubway (Z 9520..9880)
+		{ Ghost = "CommuterSpecter", Center = Vector3.new(0, 0, 9605), Radius = 30, Count = 6 },
+		{ Ghost = "CommuterSpecter", Center = Vector3.new(-82, 0, 9640), Radius = 24, Count = 4 },
+		{ Ghost = "TicketPhantom", Center = Vector3.new(75, 0, 9700), Radius = 26, Count = 4 },
+		{ Ghost = "TicketPhantom", Center = Vector3.new(-62, 0, 9760), Radius = 24, Count = 4 },
+		{ Ghost = "PhantomExpress", Center = Vector3.new(0, 0, 9825), Radius = 26, Count = 1 },
+		-- ZONE 25 (World 2) DinoMuseum (Z 9880..10240)
+		{ Ghost = "FossilFlitter", Center = Vector3.new(0, 0, 9965), Radius = 30, Count = 6 },
+		{ Ghost = "FossilFlitter", Center = Vector3.new(-82, 0, 10000), Radius = 24, Count = 4 },
+		{ Ghost = "RaptorSpecter", Center = Vector3.new(75, 0, 10060), Radius = 26, Count = 4 },
+		{ Ghost = "RaptorSpecter", Center = Vector3.new(-62, 0, 10120), Radius = 24, Count = 4 },
+		{ Ghost = "BoneTyrant", Center = Vector3.new(0, 0, 10185), Radius = 26, Count = 1 },
+		-- ZONE 26 (World 2) Stadium (Z 10240..10600)
+		{ Ghost = "CheerSpirit", Center = Vector3.new(0, 0, 10325), Radius = 30, Count = 6 },
+		{ Ghost = "CheerSpirit", Center = Vector3.new(-82, 0, 10360), Radius = 24, Count = 4 },
+		{ Ghost = "FoamFingerPhantom", Center = Vector3.new(75, 0, 10420), Radius = 26, Count = 4 },
+		{ Ghost = "FoamFingerPhantom", Center = Vector3.new(-62, 0, 10480), Radius = 24, Count = 4 },
+		{ Ghost = "PhantomScoreboard", Center = Vector3.new(0, 0, 10545), Radius = 26, Count = 1 },
+		-- ZONE 27 (World 2) NeonCity (Z 10600..10960)
+		{ Ghost = "NeonSprite", Center = Vector3.new(0, 0, 10685), Radius = 30, Count = 6 },
+		{ Ghost = "NeonSprite", Center = Vector3.new(-82, 0, 10720), Radius = 24, Count = 4 },
+		{ Ghost = "GraffitiPhantom", Center = Vector3.new(75, 0, 10780), Radius = 26, Count = 4 },
+		{ Ghost = "GraffitiPhantom", Center = Vector3.new(-62, 0, 10840), Radius = 24, Count = 4 },
+		{ Ghost = "BillboardBoss", Center = Vector3.new(0, 0, 10905), Radius = 26, Count = 1 },
+		-- ZONE 28 (World 2) GiantsKitchen (Z 10960..11320)
+		{ Ghost = "CrumbSprite", Center = Vector3.new(0, 0, 11045), Radius = 30, Count = 6 },
+		{ Ghost = "CrumbSprite", Center = Vector3.new(-82, 0, 11080), Radius = 24, Count = 4 },
+		{ Ghost = "TeacupPhantom", Center = Vector3.new(75, 0, 11140), Radius = 26, Count = 4 },
+		{ Ghost = "TeacupPhantom", Center = Vector3.new(-62, 0, 11200), Radius = 24, Count = 4 },
+		{ Ghost = "BigCheese", Center = Vector3.new(0, 0, 11265), Radius = 26, Count = 1 },
+		-- ZONE 29 (World 2) CyberArcade (Z 11320..11680)
+		{ Ghost = "PixelPhantom", Center = Vector3.new(0, 0, 11405), Radius = 30, Count = 6 },
+		{ Ghost = "PixelPhantom", Center = Vector3.new(-82, 0, 11440), Radius = 24, Count = 4 },
+		{ Ghost = "GlitchGremlin", Center = Vector3.new(75, 0, 11500), Radius = 26, Count = 4 },
+		{ Ghost = "GlitchGremlin", Center = Vector3.new(-62, 0, 11560), Radius = 24, Count = 4 },
+		{ Ghost = "GameOverGoliath", Center = Vector3.new(0, 0, 11625), Radius = 26, Count = 1 },
+		-- ZONE 30 (World 2) StormIslands (Z 11680..12040)
+		{ Ghost = "BreezeSpirit", Center = Vector3.new(0, 0, 11765), Radius = 30, Count = 6 },
+		{ Ghost = "BreezeSpirit", Center = Vector3.new(-82, 0, 11800), Radius = 24, Count = 4 },
+		{ Ghost = "ThundercloudPhantom", Center = Vector3.new(75, 0, 11860), Radius = 26, Count = 4 },
+		{ Ghost = "ThundercloudPhantom", Center = Vector3.new(-62, 0, 11920), Radius = 24, Count = 4 },
+		{ Ghost = "TempestRoc", Center = Vector3.new(0, 0, 11985), Radius = 26, Count = 1 },
+		-- ZONE 31 (World 2) MoonBase (Z 12040..12400)
+		{ Ghost = "MoondustSpirit", Center = Vector3.new(0, 0, 12125), Radius = 30, Count = 6 },
+		{ Ghost = "MoondustSpirit", Center = Vector3.new(-82, 0, 12160), Radius = 24, Count = 4 },
+		{ Ghost = "AstroPhantom", Center = Vector3.new(75, 0, 12220), Radius = 26, Count = 4 },
+		{ Ghost = "AstroPhantom", Center = Vector3.new(-62, 0, 12280), Radius = 24, Count = 4 },
+		{ Ghost = "SaucerOverseer", Center = Vector3.new(0, 0, 12345), Radius = 26, Count = 1 },
+		-- ZONE 32 (World 2) VoidThrone (Z 12400..12880)
+		{ Ghost = "VoidMote", Center = Vector3.new(0, 0, 12485), Radius = 30, Count = 6 },
+		{ Ghost = "VoidMote", Center = Vector3.new(-82, 0, 12520), Radius = 24, Count = 4 },
+		{ Ghost = "RiftPhantom", Center = Vector3.new(75, 0, 12580), Radius = 26, Count = 4 },
+		{ Ghost = "RiftPhantom", Center = Vector3.new(-62, 0, 12640), Radius = 24, Count = 4 },
+		{ Ghost = "VoidHerald", Center = Vector3.new(0, 0, 12640), Radius = 26, Count = 1 }, -- Void Emperor arena at (0, 12760) r60 beyond it
 	} :: { GhostArea },
 }
 
@@ -3404,9 +4062,9 @@ Config.UpdateNotes = {
 	Title = "WORLD 2 IS HERE!",
 	Lines = {
 		"🌀 WORLD 2: THE OTHER SIDE! Beat THE GHOST KING to open the portal",
-		"🏮 10 new areas, from Lantern Market to The Void Throne",
-		"🧑‍🚀 80 new hunters + 10 new Exclusives",
-		"👻 30 new ghosts and 10 new crates",
+		"🏮 16 new areas, from Lantern Market to The Void Throne",
+		"🧑‍🚀 128 new hunters + 16 new Exclusives",
+		"👻 48 new ghosts and 16 new crates",
 		"👑 THE VOID EMPEROR: a huge team boss fight in The Void Throne",
 		"🌍 WORLD 1 / WORLD 2 tabs in the Worlds menu",
 		"📱 Bigger, easier menus on phones",
@@ -3423,7 +4081,7 @@ Config.VoidEmperor = {
 	Ghost = "VoidEmperor",
 	Pylon = "VoidPylon", -- the phase-1 pylons (ghost entry added below)
 	Zone = "VoidThrone",
-	Center = Vector3.new(0, 0, 10600), -- arena centre (ground top Y = 0)
+	Center = Vector3.new(0, 0, 12760), -- arena centre (ground top Y = 0)
 	Radius = 60, -- players inside this ring take part / set the boss Spirit
 	PylonRadius = 45, -- fallback pylon spots (map parts VoidPylonSpot1..4 win when present)
 	LightRadius = 30, -- fallback light circle spots (map parts VoidLightSpot1..4)
@@ -3439,8 +4097,8 @@ Config.VoidEmperor = {
 	-- Spirit = SpiritSeconds * max(sum(min(crew power, PowerCap)), MinCrews * PowerRef)
 	SpiritSeconds = 150,
 	MinCrews = 4,
-	PowerRef = 1e20, -- about one full crew of 8 area-26 Legendaries
-	PowerCap = 2e20, -- one huge crew can't make the boss unbeatable for everyone else
+	PowerRef = 1.56e24, -- about one full crew of 8 area-32 (Void Throne) Legendaries
+	PowerCap = 3.12e24, -- one huge crew can't make the boss unbeatable for everyone else
 	Walls = { 0.66, 0.33 }, -- phase walls (share of Spirit left)
 	-- phase 1: THE CROWN
 	PylonShare = 0.04, -- each pylon's Spirit (share of the boss Spirit)
@@ -3461,10 +4119,10 @@ Config.VoidEmperor = {
 	CircleMoveSeconds = 30,
 	FinalShare = 0.05, -- last 5%: one big circle in the centre
 	FinalRadius = 16,
-	-- rewards per participant: RewardBase * ZoneMultiplier[26] * clamp(share * participants,
+	-- rewards per participant: RewardBase * ZoneMultiplier[Void Throne's Order] * clamp(share * participants,
 	-- MinShare, MaxShare) * the player's Ectoplasm multiplier; a timeout pays FailShare of it
 	RewardBase = 900,
-	RewardZone = 26,
+	RewardZone = (Config.ZoneById.VoidThrone :: ZoneDef).Order, -- the final area (32)
 	MinShare = 0.35,
 	MaxShare = 2.5,
 	FailShare = 0.25,

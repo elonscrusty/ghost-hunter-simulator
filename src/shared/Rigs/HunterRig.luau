@@ -94,6 +94,8 @@ HunterRig.Known = {
 		"ChefHat", "LanternRing", "Specs", "BookHat", "Roof", "ShroomCap", "ShroomCrown", "PrismCrown", "ConductorCap",
 		"Headphones", "TVHead", "StormCloud", "SpaceHelmet", "EarHood", "StarCrown",
 		"Nightcap", "BookHead", "WeatherVane", "HardHat", "SkyTricorn", "BirdMask", "TempestCrown",
+		-- World 2 areas 19-29 (PLACEHOLDER (world2b) builds below until the real parts land)
+		"StrawHat", "SharkHood", "ElfHat", "DinoHood", "Thimble", "ChompHead",
 	}),
 	Back = set({
 		"Backpack", "Tank", "Cape", "Wings", "Antenna", "Balloons", "MedKit", "LifeRing", "Shield", "Orbs", "HeroCape",
@@ -103,6 +105,8 @@ HunterRig.Known = {
 		"StormWings", "Jetpack", "CometTail", "StretchyDog", "VoidRing",
 		"BookStack", "BookCart", "PopUpCastle", "Tentacles", "Pages", "RuneBooks", "CloudSheep", "HotAirBalloon",
 		"RainbowScarf", "Battery", "ShipWheel", "Cyclone", "FeatherWings",
+		-- World 2 areas 19-29 (PLACEHOLDER (world2b))
+		"Surfboard", "Blocks",
 	}),
 	Tool = set({
 		"Flashlight", "Vacuum", "Scanner", "Blaster", "Cannon", "Lantern", "Staff", "Projector", "Megaphone", "Wand", "Orb",
@@ -111,6 +115,8 @@ HunterRig.Known = {
 		"FryingPan", "SteamBasket", "Spellbook", "Quill", "Umbrella", "Magnet", "Teapot", "HandMirror", "Kaleidoscope",
 		"Guitar", "Hammer", "Thunderbolt", "RayGun", "StarBlade",
 		"Candle", "Stamp", "Magnifier", "BookStaff", "Anemometer", "Crook", "Pinwheel",
+		-- World 2 areas 19-29 (PLACEHOLDER (world2b))
+		"Pitchfork", "Whip", "BoxingGlove", "Trophy", "SewingPin", "RollingPin", "Whisk", "Joystick",
 	}),
 	Signature = set({ "Supernova" }),
 }
@@ -306,6 +312,9 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		or hat == "EarHood"
 		or hat == "BookHead"
 		or hat == "BirdMask"
+		or hat == "SharkHood"
+		or hat == "DinoHood"
+		or hat == "ChompHead"
 	-- the glass space helmet shows the hair inside it, so only styles that fit stay as they are
 	local glass = hat == "SpaceHelmet"
 	local hairTop = 1.25
@@ -1026,6 +1035,9 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			ball(head, 0.7, ccf * CFrame.new(math.cos(a) * 0.95, 0.15, math.sin(a) * 0.8), Color3.fromRGB(205, 210, 235))
 		end
 		block(head, Vector3.new(0.3, 0.3, 0.3), ccf * CFrame.new(0, 0.02, -0.8) * U.VertexUp, Color3.fromRGB(80, 150, 255), { Reflectance = 0.3 }) -- gem
+	elseif hat == "StrawHat" or hat == "SharkHood" or hat == "ElfHat" or hat == "DinoHood" or hat == "Thimble" or hat == "ChompHead" then
+		-- PLACEHOLDER (world2b): one small block until the real hat is built (see NEW_PARTS_16.md)
+		block(head, Vector3.new(0.8, 0.4, 0.8), CFrame.new(0, hairTop + 0.1, 0.1), look.HatColor or look.Shirt)
 	end
 
 	------------------------------------------------------------------ body accent / aura
@@ -1561,6 +1573,9 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		local b0 = top + Vector3.new(0.9, -0.6, -0.4)
 		bar(torso, b0, b0 + Vector3.new(0.18, -0.4, 0), 0.14, 0.06, bolt)
 		bar(torso, b0 + Vector3.new(0.05, -0.35, 0), b0 + Vector3.new(0.25, -0.8, 0), 0.11, 0.06, bolt)
+	elseif back == "Surfboard" or back == "Blocks" then
+		-- PLACEHOLDER (world2b): one small block until the real back item is built (see NEW_PARTS_16.md)
+		block(torso, Vector3.new(0.8, 0.8, 0.4), CFrame.new(0, 0.1, 0.75), backColor)
 	end
 
 	------------------------------------------------------------------ tool (right hand)
@@ -1965,6 +1980,10 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		end
 		muzzle = tpart(U.Ball(0.18, pc * CFrame.new(0, 0, -0.06), beam, model, NEON))
 		tipWorld = pc * CFrame.new(0, 0, -0.1)
+	elseif tool == "Pitchfork" or tool == "Whip" or tool == "BoxingGlove" or tool == "Trophy" or tool == "SewingPin" or tool == "RollingPin" or tool == "Whisk" or tool == "Joystick" then
+		-- PLACEHOLDER (world2b): one small block (also the muzzle) until the real tool is built (see NEW_PARTS_16.md)
+		muzzle = tpart(U.Block(Vector3.new(0.4, 0.4, 0.8), T(0, 0, -0.5), tc, model))
+		tipWorld = T(0, 0, -0.95)
 	else -- Flashlight (default)
 		tpart(U.Cyl(1.2, 0.36, T(0, 0, -0.3) * U.AxisZ, U.Shade(tc, 0.7), model))
 		tpart(U.Cyl(0.38, 0.62, T(0, 0, -1.05) * U.AxisZ, tc, model))

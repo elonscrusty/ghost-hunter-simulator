@@ -18,7 +18,7 @@ local HW = Config.Layout.HalfWidth -- 140
 local LOBBY = Config.Layout.Lobby
 
 -- Zone-separation wall look per gate (wall / cap stone / cap ball / painted band).
--- Mat: wall material (default Cobblestone); Glow: the band is a thin neon tube (Neon City only)
+-- Mat: wall material (default Cobblestone); Glow: the band is a thin neon tube (Neon City, Cyber Arcade)
 type WallLook = { Wall: Color3, Cap: Color3, Ball: Color3, Band: Color3, Pumpkins: boolean, Mat: Enum.Material?, Glow: boolean? }
 local WALLS: { [string]: WallLook } = {
 	Cemetery = { Wall = C(135, 115, 175), Cap = C(185, 170, 220), Ball = C(255, 160, 60), Band = C(150, 255, 120), Pumpkins = true },
@@ -36,13 +36,19 @@ local WALLS: { [string]: WallLook } = {
 	Clockwork = { Wall = C(150, 110, 75), Cap = C(200, 170, 110), Ball = C(230, 200, 120), Band = C(120, 90, 60), Pumpkins = false },
 	Inferno = { Wall = C(80, 50, 50), Cap = C(110, 70, 60), Ball = C(255, 150, 60), Band = C(255, 110, 50), Pumpkins = false },
 	Throne = { Wall = C(240, 235, 255), Cap = C(200, 180, 240), Ball = C(255, 215, 90), Band = C(150, 100, 230), Pumpkins = false },
-	-- World 2 (walls at the gates of zones 18-26, in the style of the zone each gate opens)
+	-- World 2 (walls at the gates of zones 18-32, in the style of the zone each gate opens)
 	PhantomLibrary = { Wall = C(95, 60, 40), Cap = C(60, 38, 28), Ball = C(120, 255, 220), Band = C(170, 40, 50), Pumpkins = false, Mat = Enum.Material.Wood }, -- dark wood, red spine band
-	UpsideManor = { Wall = C(120, 80, 150), Cap = C(70, 45, 95), Ball = C(200, 160, 255), Band = C(230, 200, 120), Pumpkins = false, Mat = Enum.Material.Brick },
+	PumpkinFarm = { Wall = C(170, 60, 50), Cap = C(235, 225, 205), Ball = C(255, 150, 50), Band = C(235, 200, 110), Pumpkins = true, Mat = Enum.Material.WoodPlanks }, -- red barn wall, white trim
 	Glowshroom = { Wall = C(80, 110, 85), Cap = C(60, 85, 65), Ball = C(230, 80, 90), Band = C(120, 255, 230), Pumpkins = false, Mat = Enum.Material.Slate }, -- mossy stone, mushroom-cap balls
+	WaterPark = { Wall = C(230, 235, 240), Cap = C(40, 170, 220), Ball = C(255, 230, 90), Band = C(90, 230, 255), Pumpkins = false, Mat = Enum.Material.SmoothPlastic }, -- pool tiles
 	MirrorMaze = { Wall = C(205, 215, 230), Cap = C(170, 180, 200), Ball = C(230, 245, 255), Band = C(150, 200, 255), Pumpkins = false, Mat = Enum.Material.Foil },
+	ShoppingMall = { Wall = C(235, 225, 230), Cap = C(200, 185, 200), Ball = C(130, 230, 255), Band = C(255, 140, 210), Pumpkins = false, Mat = Enum.Material.Marble },
 	GhostSubway = { Wall = C(235, 225, 195), Cap = C(70, 80, 90), Ball = C(255, 220, 80), Band = C(40, 160, 160), Pumpkins = false, Mat = Enum.Material.SmoothPlastic }, -- cream tile, teal band
+	DinoMuseum = { Wall = C(210, 195, 160), Cap = C(170, 150, 115), Ball = C(240, 230, 205), Band = C(150, 230, 120), Pumpkins = false, Mat = Enum.Material.Sandstone }, -- museum stone, bone-white balls
+	Stadium = { Wall = C(70, 80, 110), Cap = C(200, 205, 215), Ball = C(255, 220, 80), Band = C(120, 255, 140), Pumpkins = false, Mat = Enum.Material.Concrete },
 	NeonCity = { Wall = C(60, 45, 70), Cap = C(40, 30, 50), Ball = C(255, 80, 220), Band = C(255, 90, 210), Pumpkins = false, Mat = Enum.Material.Brick, Glow = true },
+	GiantsKitchen = { Wall = C(240, 225, 200), Cap = C(200, 150, 100), Ball = C(255, 110, 90), Band = C(120, 190, 230), Pumpkins = false, Mat = Enum.Material.SmoothPlastic },
+	CyberArcade = { Wall = C(45, 30, 80), Cap = C(30, 20, 55), Ball = C(80, 255, 220), Band = C(255, 80, 200), Pumpkins = false, Mat = Enum.Material.SmoothPlastic, Glow = true },
 	StormIslands = { Wall = C(110, 120, 145), Cap = C(185, 195, 215), Ball = C(255, 240, 120), Band = C(255, 230, 110), Pumpkins = false, Mat = Enum.Material.Slate },
 	MoonBase = { Wall = C(225, 228, 235), Cap = C(150, 155, 170), Ball = C(255, 150, 80), Band = C(255, 140, 60), Pumpkins = false, Mat = Enum.Material.DiamondPlate }, -- white panels, orange stripe
 	VoidThrone = { Wall = C(25, 20, 35), Cap = C(45, 35, 60), Ball = C(200, 150, 255), Band = C(170, 110, 255), Pumpkins = false, Mat = Enum.Material.Basalt }, -- obsidian, violet trim

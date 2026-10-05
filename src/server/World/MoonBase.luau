@@ -1,13 +1,13 @@
 --!strict
--- ZONE 25: Haunted Moon Base (Z 9880..10240). A quiet, slightly spooky research base on the
+-- ZONE 31: Haunted Moon Base (Z 12040..12400). A quiet, slightly spooky research base on the
 -- grey Moon: dusty cratered ground, white habitat domes joined by tubes, a glass greenhouse,
 -- antennas and a big radar dish, a rover, a gold-foil lander, a rocket on its launch pad and a
 -- crashed saucer. Earth hangs huge in the sky. Lighting stays low-key: cool floodlights and
 -- small orange beacons, no big glow.
 --   Ground: grey moondust slab (top Y = 0) + a white metal walkway along X = 0 with orange
---   edge stripes. Ghost areas are flat craters ((0,9965) r30, (-82,10000) r24, (75,10060) r26,
---   (-62,10120) r24); the boss area (0,10185) r26 is a flat saucer landing pad.
---   Landmarks: the rocket at (100, 10200) (nose ~Y 86) and Earth at (-250, 190, 10110).
+--   edge stripes. Ghost areas are flat craters ((0,12125) r30, (-82,12160) r24, (75,12220) r26,
+--   (-62,12280) r24); the boss area (0,12345) r26 is a flat saucer landing pad.
+--   Landmarks: the rocket at (100, 12360) (nose ~Y 86) and Earth at (-250, 190, 12270).
 
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
@@ -21,7 +21,7 @@ local METAL = Enum.Material.Metal
 local SAND = Enum.Material.Sand
 local ROCK = Enum.Material.Rock
 
-local Z0, Z1 = 9880, 10240
+local Z0, Z1 = 12040, 12400
 
 local DUST = C(138, 138, 146)
 local DUST_L = C(170, 170, 178)

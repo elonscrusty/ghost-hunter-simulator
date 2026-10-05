@@ -38,11 +38,17 @@ local THEMES: { [string]: Theme } = {
 	Throne = { Stone = C(240, 235, 255), Trim = C(255, 215, 90), Barrier = C(255, 230, 140), Lamp = C(255, 240, 180) },
 	-- World 2 (each arch in the style of the zone it opens; see Boundary WALLS for the walls)
 	PhantomLibrary = { Stone = C(95, 60, 40), Trim = C(170, 40, 50), Barrier = C(120, 255, 220), Lamp = C(255, 220, 150), Mat = Enum.Material.Wood },
-	UpsideManor = { Stone = C(120, 80, 150), Trim = C(230, 200, 120), Barrier = C(200, 160, 255), Lamp = C(230, 200, 255), Mat = Enum.Material.Brick },
+	PumpkinFarm = { Stone = C(150, 95, 55), Trim = C(255, 150, 50), Barrier = C(255, 190, 90), Lamp = C(255, 200, 120), Mat = Enum.Material.WoodPlanks }, -- red barn planks
 	Glowshroom = { Stone = C(80, 110, 85), Trim = C(230, 80, 90), Barrier = C(120, 255, 230), Lamp = C(160, 255, 230) },
+	WaterPark = { Stone = C(230, 235, 240), Trim = C(40, 170, 220), Barrier = C(90, 230, 255), Lamp = C(170, 240, 255), Mat = Enum.Material.SmoothPlastic }, -- white tiles, pool blue
 	MirrorMaze = { Stone = C(205, 215, 230), Trim = C(150, 200, 255), Barrier = C(220, 240, 255), Lamp = C(230, 245, 255), Mat = Enum.Material.Foil },
+	ShoppingMall = { Stone = C(235, 225, 230), Trim = C(255, 140, 210), Barrier = C(130, 230, 255), Lamp = C(255, 200, 235), Mat = Enum.Material.Marble },
 	GhostSubway = { Stone = C(235, 225, 195), Trim = C(40, 160, 160), Barrier = C(255, 220, 80), Lamp = C(255, 235, 150), Mat = Enum.Material.SmoothPlastic },
+	DinoMuseum = { Stone = C(210, 195, 160), Trim = C(150, 230, 120), Barrier = C(170, 240, 150), Lamp = C(255, 230, 170), Mat = Enum.Material.Sandstone },
+	Stadium = { Stone = C(70, 80, 110), Trim = C(255, 220, 80), Barrier = C(120, 255, 140), Lamp = C(240, 250, 255), Mat = Enum.Material.Concrete },
 	NeonCity = { Stone = C(60, 45, 70), Trim = C(255, 90, 210), Barrier = C(255, 80, 220), Lamp = C(255, 150, 230), Mat = Enum.Material.Brick },
+	GiantsKitchen = { Stone = C(240, 225, 200), Trim = C(255, 110, 90), Barrier = C(255, 190, 120), Lamp = C(255, 225, 170), Mat = Enum.Material.SmoothPlastic }, -- cream kitchen tiles
+	CyberArcade = { Stone = C(45, 30, 80), Trim = C(80, 255, 220), Barrier = C(80, 255, 220), Lamp = C(200, 140, 255), Mat = Enum.Material.SmoothPlastic },
 	StormIslands = { Stone = C(110, 120, 145), Trim = C(255, 230, 110), Barrier = C(255, 240, 120), Lamp = C(255, 245, 170) },
 	MoonBase = { Stone = C(225, 228, 235), Trim = C(255, 140, 60), Barrier = C(255, 150, 80), Lamp = C(255, 190, 130), Mat = Enum.Material.DiamondPlate },
 	VoidThrone = { Stone = C(25, 20, 35), Trim = C(170, 110, 255), Barrier = C(200, 150, 255), Lamp = C(215, 180, 255), Mat = Enum.Material.Basalt },

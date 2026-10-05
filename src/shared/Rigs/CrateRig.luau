@@ -51,6 +51,8 @@ local STYLES: { [string]: boolean } = {
 	-- World 2
 	Lantern = true, Library = true, Topsy = true, Shroom = true, Mirror = true, Subway = true,
 	Neon = true, Storm = true, Moon = true, Void = true,
+	-- PLACEHOLDER (world2b): listed but not decorated yet (plain chest) until the real styles land
+	Harvest = true, Splash = true, Shopping = true, Fossil = true, Trophy = true, CookieJar = true, Arcade = true,
 }
 CrateRig.Styles = STYLES
 
@@ -994,6 +996,8 @@ function CrateRig.Build(crateId: string): CrateRig
 		local gl = CFrame.new(op + Vector3.new(0.45, 0.7, -0.1))
 		lBlock(Vector3.new(0.2, 0.2, 0.04), gl, violet, NEON)
 		lBlock(Vector3.new(0.2, 0.2, 0.04), gl * CFrame.Angles(0, 0, math.pi / 4), violet, NEON)
+	elseif style == "Harvest" or style == "Splash" or style == "Shopping" or style == "Fossil" or style == "Trophy" or style == "CookieJar" or style == "Arcade" then
+		-- PLACEHOLDER (world2b): plain chest, no decorations until the real styles are built (see NEW_PARTS_16.md)
 	elseif style ~= "Basic" then
 		warn("CrateRig: no decorations for style " .. tostring(style))
 	end

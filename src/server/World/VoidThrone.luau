@@ -1,15 +1,15 @@
 --!strict
--- ZONE 26: The Void Throne (Z 10240..10720), the last area of World 2. Black-violet nothingness
+-- ZONE 32: The Void Throne (Z 12400..12880), the last area of World 2. Black-violet nothingness
 -- under a dense star field: a starry obsidian floor, a path of floating stone slabs, broken
 -- stone shards drifting in the air, a shattered ringed planet, nebula veils, small void rifts,
 -- and a colossal black throne with a white star halo beyond the end of the play area.
---   Ghost areas are flat "orbit" medallions ((0,10325) r30, (-82,10360) r24, (75,10420) r26,
---   (-62,10480) r24); the Void Herald's area (0,10545) r26 is a flat violet star seal.
---   VOID EMPEROR ARENA: an open floor circle centred at (0, 10600), radius 60, with no props
+--   Ghost areas are flat "orbit" medallions ((0,12485) r30, (-82,12520) r24, (75,12580) r26,
+--   (-62,12640) r24); the Void Herald's area (0,12705) r26 is a flat violet star seal.
+--   VOID EMPEROR ARENA: an open floor circle centred at (0, 12760), radius 60, with no props
 --   (only flat floor parts, top <= 0.2). Folder Map.VoidThrone.VoidArena holds named flat
 --   markers for the fight: VoidArenaCenter, VoidPylonSpot1..4 (radius 45 on the diagonals) and
 --   VoidLightSpot1..4 (radius 28 at +-30 deg off the X axis). NOTE: the arena circle overlaps the
---   back half of the Herald's ghost area (Z 10540..10571); the markers stay clear of it.
+--   back half of the Herald's ghost area (Z 12700..12731); the markers stay clear of it.
 --   Obelisks ring the arena just outside it (r 68), skipping the lane and the Herald's area.
 
 local Kit = require(script.Parent.Kit)
@@ -23,10 +23,10 @@ local NEON = Enum.Material.Neon
 local SLATE = Enum.Material.Slate
 local ROCK = Enum.Material.Rock
 
-local Z0, Z1 = 10240, 10720
+local Z0, Z1 = 12400, 12880
 local BACK = Z1 - 3 -- the throne backdrop starts here (route check ends at Z1 - 5)
 
-local ARENA_Z = 10600
+local ARENA_Z = Z0 + 360 -- = Config.VoidEmperor.Center.Z
 local ARENA_R = 60
 local PYLON_R = 45
 local LIGHT_R = 28

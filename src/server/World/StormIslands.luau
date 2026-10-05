@@ -1,15 +1,15 @@
 --!strict
--- ZONE 24: Storm Sky Islands (Z 9520..9880). High above the world on a sea of storm clouds:
+-- ZONE 30: Storm Sky Islands (Z 11680..12040). High above the world on a sea of storm clouds:
 -- slate-blue cloud tops, little grassy islands, rope bridges strung between floating islands,
 -- copper lightning rods and dark thunderheads.
 --   Ground: the cloud sea (a solid slab, top Y = 0) with grassy island patches and a wooden
 --   sky-boardwalk along X = 0 with rope rails. The "gaps" in the clouds are flat painted
 --   holes (you see tiny fields far below); there are no real holes.
---   Ghost areas are flat grassy islands ((0,9605) r30, (-82,9640) r24, (75,9700) r26,
---   (-62,9760) r24); the boss area (0,9825) r26 is a flat navy wind-rose.
+--   Ghost areas are flat grassy islands ((0,11765) r30, (-82,11800) r24, (75,11860) r26,
+--   (-62,11920) r24); the boss area (0,11985) r26 is a flat navy wind-rose.
 --   Five floating islands (Y 44..58, |X| >= 105) carry windmills, a cottage and trees; rope
 --   bridges hang between them, two of them span high over the boardwalk (bottom Y > 40).
---   Landmark: the Thunder Spire at (100, 9840), copper ball ~Y 84, struck by a frozen bolt.
+--   Landmark: the Thunder Spire at (100, 12000), copper ball ~Y 84, struck by a frozen bolt.
 --   Lightning rods with kites, cloud puffs, hot-air balloons outside the walls, thunderheads
 --   at Y ~80-100.
 
@@ -26,7 +26,7 @@ local WOOD = Enum.Material.WoodPlanks
 local GRASS = Enum.Material.Grass
 local ROCK = Enum.Material.Rock
 
-local Z0, Z1 = 9520, 9880
+local Z0, Z1 = 11680, 12040
 
 local CLOUD_SEA = C(146, 158, 194)
 local CLOUD_L = C(222, 228, 242)

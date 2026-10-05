@@ -1,16 +1,16 @@
 --!strict
--- ZONE 21: Mirror Maze (Z 8440..8800). A cool, calm labyrinth of glass and mirror panels on a
+-- ZONE 22: Mirror Maze (Z 8800..9160). A cool, calm labyrinth of glass and mirror panels on a
 -- polished ice-blue tiled floor: silver frames, frosted glass, pale lilac tints and a few small
 -- prism rainbows. No carnival bits: this is a crystal palace, not a funhouse.
 --   Ground: pale polished floor with a silver tile grid; frosted-white lane along X = 0 with
---   ice-blue edging. Ghost areas get flat kaleidoscope rosettes ((0,8525) r30, (-82,8560) r24,
---   (75,8620) r26, (-62,8680) r24); the boss area (0,8745) r26 is a big mirror disc with a
+--   ice-blue edging. Ghost areas get flat kaleidoscope rosettes ((0,8885) r30, (-82,8920) r24,
+--   (75,8980) r26, (-62,9040) r24); the boss area (0,9105) r26 is a big mirror disc with a
 --   12-point star, ringed (outside the circle) by a broken circle of tall mirror panels.
---   The maze: a 16-stud grid (X -136..136, Z 8468..8788) carved as a perfect maze with a third
+--   The maze: a 16-stud grid (X -136..136, Z 8828..9148) carved as a perfect maze with a third
 --   of the walls knocked out (braided), so every spot stays reachable. A wall is only built
 --   where its whole length is clear of the keep-outs (lane, ghost areas, crate station, Fast
 --   Travel pad, gate), so those always stay open.
---   Landmark: the Crystal Spire at (112, 8740), stacked glass diamonds up to Y ~72.
+--   Landmark: the Crystal Spire at (112, 9100), stacked glass diamonds up to Y ~72.
 --   Also: round looking-glass mirrors on stands along the lane, crystal-globe lamps, glass
 --   prisms casting flat rainbow fans, floating mirror shards, crystal clusters outside the walls.
 
@@ -24,7 +24,7 @@ local GLASS = Enum.Material.Glass
 local METAL = Enum.Material.Metal
 local MARBLE = Enum.Material.Marble
 
-local Z0, Z1 = 8440, 8800
+local Z0, Z1 = 8800, 9160
 
 local FLOOR = C(200, 212, 232)
 local FLOOR_L = C(225, 233, 246)

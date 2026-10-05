@@ -115,7 +115,12 @@ end
 
 local MODULES = { "Lighting", "Boundary", "Gates", "Stations", "Portals", "TowerEntrance", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
 -- World 2 zone files are optional (Builder falls back to a plain zone when one is missing)
-local WORLD2 = { "LanternMarket", "PhantomLibrary", "UpsideManor", "Glowshroom", "MirrorMaze", "GhostSubway", "NeonCity", "StormIslands", "MoonBase", "VoidThrone" }
+local WORLD2: { string } = {}
+for _, z in Config.Zones do
+	if Config.Worlds[2] and z.Order >= Config.Worlds[2].First then
+		table.insert(WORLD2, z.Id)
+	end
+end
 local WORLD2_PRESENT = {}
 for _, name in WORLD2 do
 	if WorldFolder:FindFirstChild(name) then

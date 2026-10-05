@@ -1,15 +1,15 @@
 --!strict
--- ZONE 23: Neon Ghost City (Z 9160..9520). A night-time city rooftop: dark purple tar roofs,
+-- ZONE 27: Neon Ghost City (Z 10600..10960). A night-time city rooftop: dark purple tar roofs,
 -- pink and cyan signs, warm windows in the skyline all around. Glow stays modest: signs are
 -- vivid solid colours with only thin neon tubes and small bulbs, so nothing blooms.
 --   Ground: rooftop deck (top Y 0) split into roof sections by flat metal seams; the lane along
 --   X = 0 is a steel grate walkway with pink edge strips and string lights on poles beside it.
---   Ghost areas get flat rooftop markings ((0,9245) r30 and (75,9340) r26 are helipads,
---   (-82,9280) r24 and (-62,9400) r24 are painted cyan/pink rings); the boss area (0,9465) r26
+--   Ghost areas get flat rooftop markings ((0,10685) r30 and (75,10780) r26 are helipads,
+--   (-82,10720) r24 and (-62,10840) r24 are painted cyan/pink rings); the boss area (0,10905) r26
 --   is a flat light-up dance floor (concentric coloured rings).
 --   Edges: low parapets with railings at |X| 140; past them the skyline: tall buildings rising
 --   from the dark street far below, window rows, antenna lights and a few rooftop signs.
---   Landmarks: the radio tower at (-118, 9480) (top ~Y 92) and the big "NEON GHOST CITY" sign
+--   Landmarks: the radio tower at (-118, 10920) (top ~Y 92) and the big "NEON GHOST CITY" sign
 --   on a lattice frame beyond the east parapet.
 --   Props: water towers, AC units, billboards on steel frames, stair huts with graffiti,
 --   skylights, satellite dishes, vent pipes, little neon signs on poles.
@@ -28,7 +28,7 @@ local WOOD = Enum.Material.WoodPlanks
 local GLASS = Enum.Material.Glass
 local BRICK = Enum.Material.Brick
 
-local Z0, Z1 = 9160, 9520
+local Z0, Z1 = 10600, 10960
 
 local TAR = C(72, 64, 98)
 local TAR_L = C(92, 82, 122)

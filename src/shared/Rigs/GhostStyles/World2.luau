@@ -1,5 +1,5 @@
 --!strict
--- World 2 ghost looks (areas 17-26 and the Void Emperor world boss).
+-- World 2 ghost looks (areas 17-32 and the Void Emperor world boss).
 --
 -- GhostRig.Build draws the standard body (diameter 3.5 at the origin, face towards -Z, nub arms
 -- at x = +-1.7, tail curling down and back to (0.2, -2.7, 1.9)) and the face, then calls
@@ -305,7 +305,7 @@ S.Grimoire = function(k)
 	k.block(v(0.9, 1.1, 0.04), at(2.8, 2.0, 1.0) * CFrame.Angles(-0.2, -0.5, -0.3), CREAM)
 end
 
------------------------------------------------------------------- 19 Upside-Down Manor
+------------------------------------------------------------------ (cut) Upside-Down Manor: area removed, styles kept for reuse
 S.Dizzy = function(k)
 	-- built normally and flipped by GhostRig (tail up); spiral eyes are drawn by GhostRig.
 	-- Three little stars circle its (now downward) head; a wisp curl tops the upturned tail.
@@ -433,7 +433,7 @@ S.Mycelium = function(k)
 	end
 end
 
------------------------------------------------------------------- 21 Mirror Maze
+------------------------------------------------------------------ 22 Mirror Maze
 S.Glint = function(k)
 	-- shiny body (GhostRig adds Reflectance), diamond facet tiles on the cheeks, a gem on top
 	-- and 4-point star glints popping around it
@@ -499,7 +499,7 @@ S.MirrorQueen = function(k)
 	end
 end
 
------------------------------------------------------------------- 22 Ghost Subway
+------------------------------------------------------------------ 24 Ghost Subway
 S.Commuter = function(k)
 	-- tired office ghost: droopy eyelids, shirt collar and necktie, briefcase in one nub, a
 	-- coffee cup floating by the other
@@ -595,7 +595,7 @@ S.Locomotive = function(k)
 	end
 end
 
------------------------------------------------------------------- 23 Neon Ghost City
+------------------------------------------------------------------ 27 Neon Ghost City
 S.NeonSign = function(k)
 	-- outlined by a thin neon-tube halo, with a little neon arrow sign floating beside it
 	arc(k, at(0, 0.0, 0.35), 2.5, 0, 2 * math.pi, 14, 0.16, k.glow, NEON)
@@ -672,7 +672,7 @@ S.Billboard = function(k)
 	end
 end
 
------------------------------------------------------------------- 24 Storm Sky Islands
+------------------------------------------------------------------ 30 Storm Sky Islands
 S.Breeze = function(k)
 	-- two tilted wind-swirl rings and little wind puffs trailing from the tail
 	local wind = Color3.fromRGB(205, 238, 255)
@@ -749,7 +749,7 @@ S.StormRoc = function(k)
 	k.point(pts[4], v(-0.4, -1, 0.4), 0.42, 0.65, 0.25, bolt)
 end
 
------------------------------------------------------------------- 25 Haunted Moon Base
+------------------------------------------------------------------ 31 Haunted Moon Base
 S.Moondust = function(k)
 	-- pale moon ghost with craters and three tiny moon rocks orbiting it
 	local crater = U.Shade(k.color, 0.6)
@@ -806,7 +806,7 @@ S.Saucer = function(k)
 	end
 end
 
------------------------------------------------------------------- 26 The Void Throne
+------------------------------------------------------------------ 32 The Void Throne
 S.Mote = function(k)
 	-- inky ghost with inverted colours (white eyes drawn by GhostRig), star specks on its body
 	-- and a thin orbit ring with a tiny moon
@@ -972,6 +972,31 @@ S.VoidEmperor = function(k)
 	end
 	k.block(v(1.0, 0.45, 0.8), at(-0.9, -4.6, 2.2) * CFrame.Angles(-0.3, 0.4, 0.2), VOID)
 end
+
+------------------------------------------------------------------ areas 19, 21, 23, 25, 26, 28, 29 (new in the 16-area World 2)
+-- PLACEHOLDER (world2b): plain ghost body (no accessories) until the real looks are built.
+-- Looks to build are described next to each ghost in Config.Ghosts.
+S.CornCob = function(_k) end -- PLACEHOLDER (world2b)
+S.HayBale = function(_k) end -- PLACEHOLDER (world2b)
+S.Scarecrow = function(_k) end -- PLACEHOLDER (world2b)
+S.SwimRing = function(_k) end -- PLACEHOLDER (world2b)
+S.Floatie = function(_k) end -- PLACEHOLDER (world2b)
+S.WaveCrown = function(_k) end -- PLACEHOLDER (world2b)
+S.ShoppingBags = function(_k) end -- PLACEHOLDER (world2b)
+S.Mannequin = function(_k) end -- PLACEHOLDER (world2b)
+S.FoodCourt = function(_k) end -- PLACEHOLDER (world2b)
+S.Pterodactyl = function(_k) end -- PLACEHOLDER (world2b)
+S.RaptorSkull = function(_k) end -- PLACEHOLDER (world2b)
+S.BoneTyrant = function(_k) end -- PLACEHOLDER (world2b)
+S.Cheerleader = function(_k) end -- PLACEHOLDER (world2b)
+S.FoamFinger = function(_k) end -- PLACEHOLDER (world2b)
+S.Scoreboard = function(_k) end -- PLACEHOLDER (world2b)
+S.Crumb = function(_k) end -- PLACEHOLDER (world2b)
+S.Teacup = function(_k) end -- PLACEHOLDER (world2b)
+S.CheeseWheel = function(_k) end -- PLACEHOLDER (world2b)
+S.Pixel = function(_k) end -- PLACEHOLDER (world2b)
+S.Glitch = function(_k) end -- PLACEHOLDER (world2b)
+S.GameOver = function(_k) end -- PLACEHOLDER (world2b)
 
 World2.Styles = S
 

@@ -9,11 +9,11 @@ T.short_keeps_integer_zeros = function()
 	eq(Format.Short(200000), "200K"); eq(Format.Short(130000), "130K"); eq(Format.Short(1e8), "100M")
 	eq(Format.Short(10500000), "10.5M"); eq(Format.Short(-250000), "-250K"); eq(Format.Short(1000000), "1M")
 end
--- World 2 prices reach 1e21+ (Sx): Short keeps shrinking, Commas never prints "1e+21"
+-- World 2 prices reach 1e21+ (Sx; area 32 costs 2.37e27 = Oc): Short keeps shrinking, Commas never prints "1e+21"
 T.short_big_suffixes = function()
 	eq(Format.Short(5.04e15), "5.04Qa"); eq(Format.Short(6.53e18), "6.53Qi"); eq(Format.Short(1.41e21), "1.41Sx")
 	eq(Format.Short(5.08e22), "50.8Sx"); eq(Format.Short(1.32e22), "13.2Sx"); eq(Format.Short(2.5e24), "2.5Sp")
-	eq(Format.Short(1e27), "1Oc"); eq(Format.Short(3e30), "3No"); eq(Format.Short(4.4e33), "4.4Dc"); eq(Format.Short(1e36), "1000Dc")
+	eq(Format.Short(1e27), "1Oc"); eq(Format.Short(2.37e27), "2.37Oc"); eq(Format.Short(3.95e26), "395Sp"); eq(Format.Short(3e30), "3No"); eq(Format.Short(4.4e33), "4.4Dc"); eq(Format.Short(1e36), "1000Dc")
 	eq(Format.Short(-1.41e21), "-1.41Sx"); eq(Format.Short(0 / 0), "0")
 end
 T.commas_big = function()
