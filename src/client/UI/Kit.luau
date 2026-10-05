@@ -13,6 +13,7 @@ local TextService = game:GetService("TextService")
 local Theme = require(script.Parent.Theme)
 local Signal = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Signal)
 local Icons = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Icons)
+local Layout = require(game:GetService("ReplicatedStorage"):WaitForChild("GH").Logic.Layout)
 
 local Kit = {}
 
@@ -524,24 +525,40 @@ end
 -- ~8 px letters and smeared them; the smallest styles also fell below what a phone renders
 -- cleanly. Every Kit label is registered here and, whenever the scale changes:
 --   * its outline is scaled with the screen (and kept thin relative to the letters)
---   * its text never renders smaller than MIN_TEXT_PX real pixels
-local MIN_TEXT_PX = 10
+--   * its text never renders smaller than Layout.MinTextPx real pixels
+-- "Real pixels" counts every layout UIScale above the label (the side menus' fit scale, the Boss
+-- Tower bar's 0.68, see Kit.LayoutScale), not just the screen's: nested scales used to take menu
+-- labels down to ~6 px on phones while the screen-only check said they were fine.
 type TextInfo = { Base: number, Stroke: number, Min: boolean }
 -- strong keys (a weak-keyed Instance table can lose labels that still exist); entries are
 -- removed when the label is destroyed
 local fitted: { [TextLabel]: TextInfo } = {}
+local LAYOUT_ATTR = "LayoutScale" -- set on UIScales registered with Kit.LayoutScale
+
+-- product of the screen scale and every registered layout UIScale above `l` (press / pop
+-- animation scales are not registered, so they never resize text)
+local function combinedScale(l: Instance): number
+	local k = currentScale
+	local node = l.Parent
+	while node and not node:IsA("LayerCollector") do
+		local sc = node:FindFirstChildOfClass("UIScale") -- Roblox applies one UIScale per object
+		if sc and sc:GetAttribute(LAYOUT_ATTR) == true then
+			k *= sc.Scale
+		end
+		node = node.Parent
+	end
+	return k
+end
 
 local function applyFit(l: TextLabel, info: TextInfo)
-	local size = info.Base
-	if info.Min and size * currentScale < MIN_TEXT_PX then
-		size = math.ceil(MIN_TEXT_PX / currentScale)
-	end
+	local k = combinedScale(l)
+	local size = if info.Min then Layout.FitTextSize(info.Base, k, Layout.MinTextPx) else info.Base
 	l.TextSize = size
 	local st = l:FindFirstChildOfClass("UIStroke")
 	if st and info.Stroke > 0 then
 		-- whole pixels only: a fractional outline (e.g. 0.75 px) is drawn unevenly on phones and
 		-- makes the letters look broken / flickery
-		st.Thickness = math.max(1, math.floor(math.min(info.Stroke * currentScale, size * currentScale * 0.12) + 0.5))
+		st.Thickness = math.max(1, math.floor(math.min(info.Stroke * k, size * k * 0.12) + 0.5))
 	end
 end
 
@@ -554,6 +571,27 @@ function Kit.FitText(l: TextLabel, base: number, stroke: number, minSize: boolea
 	end
 	fitted[l] = info
 	applyFit(l, info)
+end
+
+-- Re-fits the labels under `root` (e.g. after moving it under a different layout scale).
+function Kit.Refit(root: Instance)
+	for l, info in fitted do
+		if l:IsDescendantOf(root) then
+			applyFit(l, info)
+		end
+	end
+end
+
+-- Registers a fixed layout UIScale (never animated): labels under its parent are re-fitted with
+-- it whenever its Scale changes, so their text keeps Layout.MinTextPx real pixels.
+function Kit.LayoutScale(sc: UIScale)
+	sc:SetAttribute(LAYOUT_ATTR, true)
+	sc:GetPropertyChangedSignal("Scale"):Connect(function()
+		local root = sc.Parent
+		if root then
+			Kit.Refit(root)
+		end
+	end)
 end
 
 local function applyScale()

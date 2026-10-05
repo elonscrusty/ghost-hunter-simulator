@@ -17,6 +17,7 @@ local RunService = game:GetService("RunService")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Layout = require(GH.Logic.Layout)
 local Client = script.Parent.Parent
 local Kit = require(Client.UI.Kit)
 local Effects = require(script.Parent.Effects)
@@ -353,8 +354,15 @@ function TowerHud.Init()
 	Kit.Stroke(bar, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
 	Kit.Gradient(bar, PURPLE_A, PURPLE_B, 90)
 	-- the whole room bar (text, health bar, timer, padding) drawn smaller so it blocks less of
-	-- the fight; a fixed scale on top of the screen's own phone/tablet/PC scaling (never animated)
-	Kit.new("UIScale", { Scale = 0.68, Parent = bar })
+	-- the fight; a fixed scale on top of the screen's own phone/tablet/PC scaling (never animated).
+	-- Phones shrink it less (combined scale >= BAR_FLOOR) and the text fit counts this scale, so
+	-- its small text stays >= 10 real px.
+	local BAR_SCALE, BAR_FLOOR = 0.68, 0.6
+	local barScale: UIScale = Kit.new("UIScale", { Scale = Layout.SubScale(BAR_SCALE, Kit.UIScale(), BAR_FLOOR), Parent = bar })
+	Kit.LayoutScale(barScale)
+	Kit.ScaleChanged:Connect(function(k: number)
+		barScale.Scale = Layout.SubScale(BAR_SCALE, k, BAR_FLOOR)
+	end)
 	titleLabel = Kit.Label(bar, "🏰 ROOM 1", { Size = UDim2.new(0.7, 0, 0, 22), Position = UDim2.fromOffset(10, 4), Align = Enum.TextXAlignment.Left, Color = Theme.Ecto, Style = "Heading", Fit = true, ZIndex = 31 })
 	timerLabel = Kit.Label(bar, "", { Size = UDim2.new(0.28, 0, 0, 22), Position = UDim2.new(1, -10, 0, 4), AnchorPoint = Vector2.new(1, 0), Align = Enum.TextXAlignment.Right, Style = "Body", Fit = true, ZIndex = 31 })
 	local track: Frame = Kit.new("Frame", { Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 31), BackgroundColor3 = Color3.fromRGB(30, 12, 45), ZIndex = 31, Parent = bar })

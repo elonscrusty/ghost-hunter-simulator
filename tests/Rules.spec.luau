@@ -199,7 +199,9 @@ T.tower_scaling_grows_and_stays_finite = function()
 	local h5, f5 = Rules.TowerScale(5, towerCfg, 0)
 	eq(h1, 180)
 	assert(math.abs(h2 / h1 - 1.15) < 0.01, "+15% per room")
-	assert(h6 / h5 > 1.4, "extra bump after room 5") -- 1.15 * 1.25
+	local h4 = Rules.TowerScale(4, towerCfg, 0)
+	assert(h5 / h4 > 1.4, "the big-boss room 5 is the jump") -- 1.15 * 1.25
+	assert(math.abs(h6 / h5 - 1.15) < 0.01, "room 6 is a normal step after the big boss")
 	assert(f5 > f1 and (f5 / f1) < (h5 / h1), "damage grows more gently than health")
 	local hBig, fBig = Rules.TowerScale(1e12, towerCfg, 1e308)
 	assert(hBig < math.huge and hBig == hBig and fBig <= 0.95)

@@ -1888,7 +1888,7 @@ Config.EggOrder = { "HauntedEgg", "PhantomEgg", "MoonlightEgg", "CursedEgg" }
 -- ENDLESS BOSS TOWER (v1.6). Party of up to 4 (pad at the entrance); every run starts at
 -- Room 1; rewards are paid the moment a boss is beaten and are never taken back.
 -- v1.7 scaling (starting values for testing): boss health is an ABSOLUTE curve, so stronger
--- teams climb further: HP = BaseHP * HPGrowth^(room-1) * FiveRoomBump^floor((room-1)/5),
+-- teams climb further: HP = BaseHP * HPGrowth^(room-1) * FiveRoomBump^floor(room/5),
 -- but never less than party power * MinKillSeconds (strong teams can't one-shot rooms).
 -- Boss hit = target hunter max HP (without the pet HP bonus) * HitFraction(room), which grows
 -- more gently than health.
@@ -1901,7 +1901,7 @@ Config.Tower = {
 	BetweenRoomsSeconds = 30, -- time to choose CONTINUE / LEAVE before the run ends
 	BaseHP = 180, -- room 1: ~9 s for a beginner crew (~20 power)
 	HPGrowth = 1.25, -- +25% health per room (owner: a real grind; was 1.15)
-	FiveRoomBump = 1.35, -- extra x1.35 after every 5 rooms (was 1.25)
+	FiveRoomBump = 1.35, -- extra x1.35 from each big-boss room (5, 10, ...) on; owner D3: the big boss is the jump
 	MinKillSeconds = 0, -- owner: boss health never scales with the party's power (was 4 s of party damage minimum)
 	CheckpointEvery = 5, -- clearing room 5, 10, ... saves a checkpoint (next run may start at 6, 11, ...)
 	HitFractionBase = 0.1,

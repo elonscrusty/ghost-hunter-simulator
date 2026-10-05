@@ -1,5 +1,6 @@
 --!strict
 -- Derived per-player numbers (slots, multipliers, radius) from data + game passes.
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
@@ -71,11 +72,27 @@ function PlayerInfo.ServerLuckUntil(): number
 	return serverLuckUntil
 end
 
--- uncapped = a paid (Robux) grant: never throw bought time away, even past the usual cap
-function PlayerInfo.AddServerLuck(seconds: number, uncapped: boolean?)
+-- Server Luck grants in order ({ UserId, Seconds }; UserId 0 = free/dev time). Time is used up
+-- from the front, so when the server closes the time still left belongs to the newest grants (D4).
+local serverLuckBuys: { { UserId: number, Seconds: number } } = {}
+
+-- uncapped = a paid (Robux) grant: never throw bought time away, even past the usual cap.
+-- A capped (free) grant only caps its own extra time, never time already granted.
+-- buyer = the paying player (paid grants only): their unused time follows them if the server closes
+function PlayerInfo.AddServerLuck(seconds: number, uncapped: boolean?, buyer: Player?)
 	local now = os.time()
-	local total = math.max(serverLuckUntil, now) + seconds
-	serverLuckUntil = if uncapped then total else math.min(total, now + Config.ServerLuck.MaxStackSeconds)
+	if serverLuckUntil <= now then
+		table.clear(serverLuckBuys) -- everything granted earlier is used up
+	end
+	local from = math.max(serverLuckUntil, now)
+	local total = from + seconds
+	if not uncapped then
+		total = math.max(from, math.min(total, now + Config.ServerLuck.MaxStackSeconds))
+	end
+	serverLuckUntil = total
+	if total > from then
+		table.insert(serverLuckBuys, { UserId = if buyer then buyer.UserId else 0, Seconds = total - from })
+	end
 end
 
 -- AUTO OPEN pass, or the legacy (hidden, no longer sold) Auto Attack pass: Auto Attack itself is
@@ -253,5 +270,32 @@ function PlayerInfo.Init()
 		s.Passes = owned
 	end)
 end
+
+-- Server closing (e.g. an update was published): buyers still here keep their unused Server Luck
+-- as a personal LUCKY CRATES boost (same 2x), saved with their data; then the server-wide luck
+-- ends so the same seconds are never counted twice. Buyers who already left chose to leave it
+-- running for the server.
+DataService.AddShutdownHook(function()
+	local left = serverLuckUntil - os.time()
+	for i = #serverLuckBuys, 1, -1 do
+		if left <= 0 then
+			break
+		end
+		local buy = serverLuckBuys[i]
+		local give = math.min(left, buy.Seconds)
+		left -= give
+		if buy.UserId ~= 0 then
+			local player = Players:GetPlayerByUserId(buy.UserId)
+			local d = player and DataService.Get(player)
+			if d then
+				PlayerInfo.AddBoost(d, "Luck", give, true) -- paid time: never capped away
+			else
+				warn(("[PlayerInfo] Server Luck: %d s left for UserId %d, but they are not loaded at shutdown"):format(give, buy.UserId))
+			end
+		end
+	end
+	table.clear(serverLuckBuys)
+	serverLuckUntil = math.min(serverLuckUntil, os.time())
+end)
 
 return PlayerInfo

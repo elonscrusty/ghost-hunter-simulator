@@ -486,6 +486,13 @@ function DataService.AddLeaveHook(fn: (Player, any) -> ())
 	table.insert(leaveHooks, fn)
 end
 
+-- run once when the server closes, BEFORE the leave hooks and the final saves (must not yield)
+local shutdownHooks: { () -> () } = {}
+
+function DataService.AddShutdownHook(fn: () -> ())
+	table.insert(shutdownHooks, fn)
+end
+
 local function runHooks(list: { (Player, any) -> () }, player: Player, data: any)
 	for _, fn in list do
 		local ok, err = pcall(function()
@@ -1027,6 +1034,14 @@ function DataService.Start()
 	game:BindToClose(function()
 		if not storeOk then
 			return
+		end
+		for _, fn in shutdownHooks do
+			local ok, err = pcall(function()
+				fn()
+			end)
+			if not ok then
+				warn("[Data] shutdown hook failed: " .. tostring(err))
+			end
 		end
 		for player, p in profiles do
 			if p.Loaded and not p.Leaving then

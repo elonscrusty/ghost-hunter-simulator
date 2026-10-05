@@ -62,7 +62,7 @@ local function grantProduct(player: Player, d: DataService.Data, p: Config.Produ
 			Fx.To(player, "Exclusive", { Uid = uid, Hunter = hunterId, IsNew = isNew })
 		end
 	elseif p.Kind == "ServerLuck" and p.Seconds then
-		PlayerInfo.AddServerLuck(p.Seconds, true) -- paid: never capped away
+		PlayerInfo.AddServerLuck(p.Seconds, true, player) -- paid: never capped away; unused time follows the buyer on shutdown
 		Fx.All("Announce", { Text = player.DisplayName .. " turned on SERVER LUCK for everyone! 🍀", Color = "Rare" })
 		for _, other in Players:GetPlayers() do
 			DataService.Changed(other)

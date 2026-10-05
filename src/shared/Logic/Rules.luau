@@ -410,12 +410,13 @@ export type TowerCfg = {
 	MilestoneEvery: { [number]: number },
 }
 
--- Boss health for room `room` (absolute curve, floored at partyPower * MinKillSeconds) and the
+-- Boss health for room `room` (the x FiveRoomBump step lands ON the big-boss rooms 5, 10, ...;
+-- absolute curve, floored at partyPower * MinKillSeconds) and the
 -- boss hit as a fraction of the target hunter's max HP. Room is clamped and health capped so
 -- numbers stay finite at any height.
 function Rules.TowerScale(room: number, cfg: TowerCfg, partyPower: number): (number, number)
 	local r = math.clamp(math.floor(room), 1, cfg.MaxScaledRoom)
-	local hp = cfg.BaseHP * cfg.HPGrowth ^ (r - 1) * cfg.FiveRoomBump ^ ((r - 1) // 5)
+	local hp = cfg.BaseHP * cfg.HPGrowth ^ (r - 1) * cfg.FiveRoomBump ^ (r // 5)
 	local power = if partyPower == partyPower then math.max(0, partyPower) else 0
 	hp = math.min(1e300, math.max(hp, power * cfg.MinKillSeconds))
 	local hit = math.min(cfg.HitFractionCap, cfg.HitFractionBase * cfg.HitFractionGrowth ^ (r - 1))

@@ -15,6 +15,7 @@ local Config = require(GH.Config)
 local Icons = require(GH.Icons)
 local Format = require(GH.Logic.Format)
 local Rules = require(GH.Logic.Rules)
+local Layout = require(GH.Logic.Layout)
 local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
@@ -221,6 +222,8 @@ end
 --   RIGHT (vertical, bottom-anchored stack): UPGRADES, SHOP, DAILY, then the free AUTO ATTACK
 --   toggle, then the lower-right row: [DEV] [TRADE] FEEDBACK SETTINGS. On touch screens the stack sits
 --   above the Roblox jump button; on desktop the left column starts under the chat window.
+--   Short phone screens (Layout.Menu) get shorter cells, the lower-right row moves left of the
+--   jump button and the lift shrinks, so labels stay >= 10 px and taps >= 44 px.
 local MENU_LEFT = {
 	{ Name = "Hunters", Icon = "🔦", Text = "HUNTERS", Color = "Orange" },
 	{ Name = "Index", Icon = "📖", Text = "INDEX", Color = "Blue" },
@@ -232,14 +235,25 @@ local MENU_RIGHT = {
 	{ Name = "Shop", Icon = "🛒", Text = "SHOP", Color = "Pink" },
 	{ Name = "Daily", Icon = "🎁", Text = "DAILY", Color = "Purple" },
 }
-local CELL_MAX = 84
-local GAP = 6
-local SMALL = 44 -- settings / feedback / trade / dev buttons
-local ROW_W = SMALL * 4 + GAP * 3
-local AUTO_W, AUTO_H = 132, 40
+-- sizes (cells, gaps, corner buttons, AUTO toggle) live in Shared/Logic/Layout, which also
+-- decides how far the menus may shrink on small screens (readable labels, 44 px taps)
+local CELL_MAX = Layout.Cell
+local GAP = Layout.Gap
+local SMALL = Layout.SmallButton -- settings / feedback / trade / dev buttons
+local ROW_COUNT = 4 -- DEV, TRADE, FEEDBACK, SETTINGS (the most that can show)
 
+type Cell = { Button: TextButton, Icon: GuiObject, Label: TextLabel }
+local leftCells: { Cell } = {}
+local rightCells: { Cell } = {}
 local menu: Frame -- left column
 local menuScale: UIScale
+local menuList: UIListLayout
+local rightColumn: Frame
+local rightColumnList: UIListLayout
+local rightList: UIListLayout
+local rowScale: UIScale -- the corner-button row's own scale while it sits beside the jump button
+local rowList: UIListLayout
+local screenGui: ScreenGui
 Hud.TopStack = nil :: Frame?
 Hud.ShardsPill = nil :: Frame?
 Hud.Counters = {} :: { [string]: Frame }
@@ -273,47 +287,107 @@ local function readChatBottom()
 	end)
 end
 
--- Room to keep free above the bottom edge on the right (the touch jump button), logical px,
--- plus MENU_LIFT so both menu columns sit a little higher (the fit scaling still shrinks them).
+-- Room to keep free above the bottom edge on the right (the touch jump button), logical px.
+-- MENU_LIFT is added on top so both menu columns sit a little higher; on a short phone screen
+-- Layout.Menu uses less of it when the full lift would make the menus unreadable / untappable.
 local MENU_LIFT = 90 -- owner: a bit higher again (was 40)
-local function bottomReserve(): number
+local function jumpReserve(): number
 	if not touchOnly() then
-		return 10 + MENU_LIFT
+		return 10
 	end
 	local cam = workspace.CurrentCamera
 	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
 	local small = math.min(vp.X, vp.Y) < 500 -- Roblox uses the small jump button below 500 px
 	local physical = if small then 100 else 225
-	return physical / Kit.UIScale() + MENU_LIFT
+	return physical / Kit.UIScale()
 end
 
-local function columnHeight(n: number): number
-	return CELL_MAX * n + GAP * (n - 1)
+-- Touch only: logical distance from our screen's right edge to the jump button's left edge
+-- (Roblox: 70 px button at (1, -95) below 500 px, else 120 px at (1, -170), device pixels).
+-- Measured as if our screen reached the device edge: with a notch inset the row just sits a
+-- little further left, never on the jump button.
+local function jumpLeft(): number?
+	if not touchOnly() then
+		return nil
+	end
+	local cam = workspace.CurrentCamera
+	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
+	local small = math.min(vp.X, vp.Y) < 500
+	return (if small then 95 else 170) / Kit.UIScale()
+end
+
+-- one menu cell: compact cells are shorter (smaller icon), the label keeps its room
+local function sizeCell(c: Cell, h: number, compact: boolean)
+	c.Button.Size = UDim2.fromOffset(CELL_MAX, h)
+	local iconH = if compact then 34 else 44
+	c.Icon.Size = UDim2.new(1, 0, 0, iconH)
+	c.Icon.Position = UDim2.fromOffset(0, if compact then 4 else 7)
+	if c.Icon:IsA("TextLabel") then
+		Kit.FitText(c.Icon, if compact then 28 else 36, 0, false) -- emoji fallback
+	end
+	c.Label.Position = UDim2.new(0, Layout.LabelPad, 1, if compact then -22 else -25)
 end
 
 local function layoutMenu()
 	local logical = Kit.LogicalSize()
+	local L = Layout.Menu({
+		Scale = Kit.UIScale(),
+		Width = logical.X,
+		Height = logical.Y,
+		Reserve = jumpReserve(),
+		Lift = MENU_LIFT,
+		JumpLeft = jumpLeft(),
+		-- desktop: never above the bottom of the chat window
+		TopMin = if chatBottomCache > 0 then chatBottomCache + 8 else 0,
+		Left = #MENU_LEFT,
+		Right = #MENU_RIGHT,
+		Small = ROW_COUNT,
+	})
+	local R = L.Right
 	-- right stack (anchored bottom-right, above the jump button on touch screens)
-	local reserve = bottomReserve()
-	local rightH = columnHeight(#MENU_RIGHT) + GAP * 2 + AUTO_H + GAP * 2 + SMALL
-	local rightW = math.max(CELL_MAX, AUTO_W, ROW_W)
-	local rfit = math.clamp((logical.Y - reserve - 8) / rightH, 0.5, 1)
-	rightScale.Scale = rfit
-	rightStack.Size = UDim2.fromOffset(rightW, rightH)
-	rightStack.Position = UDim2.new(1, -8, 1, -reserve)
+	rightScale.Scale = L.RightScale
+	rightStack.Size = UDim2.fromOffset(L.RightW, L.RightH)
+	rightStack.Position = UDim2.new(1, -Layout.Margin, 1, -L.RightBottom)
 	rightStack.AnchorPoint = Vector2.new(1, 1)
+	rightList.Padding = UDim.new(0, R.RowGap)
+	rightColumnList.Padding = UDim.new(0, R.Gap)
+	rightColumn.Size = UDim2.fromOffset(CELL_MAX, Layout.ColumnHeight(R, #MENU_RIGHT))
+	for _, c in rightCells do
+		sizeCell(c, R.CellH, L.Compact)
+	end
+	if autoButton then
+		autoButton.Size = UDim2.fromOffset(Layout.AutoW, R.AutoH)
+	end
+	-- corner buttons: the stack's bottom row, or (short touch screens) left of the jump button
+	lowerRow.Size = UDim2.fromOffset(L.RowW, R.Small)
+	rowList.Padding = UDim.new(0, R.Gap)
+	for _, b in lowerRow:GetChildren() do
+		if b:IsA("GuiButton") then
+			b.Size = UDim2.fromOffset(R.Small, R.Small)
+		end
+	end
+	local rowParent: Instance = if L.RowBeside then screenGui else rightStack
+	rowScale.Scale = if L.RowBeside then L.RightScale else 1
+	if lowerRow.Parent ~= rowParent then
+		lowerRow.Parent = rowParent
+		Kit.Refit(lowerRow)
+	end
+	if L.RowBeside then
+		lowerRow.Position = UDim2.new(1, -L.RowRight, 1, -L.RowBottom)
+		lowerRow.AnchorPoint = Vector2.new(1, 1)
+	end
 	-- left column: same button size as the right, top lined up with the right column's top
-	-- (desktop: never above the bottom of the chat window)
-	local rightTop = logical.Y - reserve - rightH * rfit
-	local top = math.max(4, rightTop, if chatBottomCache > 0 then chatBottomCache + 8 else 0)
-	local full = columnHeight(#MENU_LEFT)
-	menuScale.Scale = math.min(rfit, math.clamp((logical.Y - top - 10) / full, 0.5, 1))
-	menu.Size = UDim2.fromOffset(CELL_MAX, full)
-	menu.Position = UDim2.fromOffset(8, top)
+	menuScale.Scale = L.LeftScale
+	menuList.Padding = UDim.new(0, L.Left.Gap)
+	for _, c in leftCells do
+		sizeCell(c, L.Left.CellH, L.Compact)
+	end
+	menu.Size = UDim2.fromOffset(CELL_MAX, L.LeftH)
+	menu.Position = UDim2.fromOffset(Layout.Margin, L.LeftTop)
 	menu.AnchorPoint = Vector2.zero
 end
 
-local function menuButton(parent: Instance, i: number, m: any): TextButton
+local function menuButton(parent: Instance, i: number, m: any, cells: { Cell }): TextButton
 	local b = Kit.Button(parent, {
 		Text = "",
 		Color = m.Color,
@@ -323,24 +397,30 @@ local function menuButton(parent: Instance, i: number, m: any): TextButton
 	})
 	b.LayoutOrder = i
 	b.Size = UDim2.fromOffset(CELL_MAX, CELL_MAX)
-	Kit.Icon(b, "menu_" .. string.lower(m.Name), m.Icon, { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 7), Style = "Icon", TextSize = 36, Stroke = 0, ZIndex = 3 })
-	Kit.Label(b, m.Text, { Size = UDim2.new(1, -4, 0, 19), Position = UDim2.new(0, 2, 1, -25), Style = "Tiny", TextSize = 14, Fit = true, ZIndex = 3 })
+	local icon = Kit.Icon(b, "menu_" .. string.lower(m.Name), m.Icon, { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 7), Style = "Icon", TextSize = 36, Stroke = 0, ZIndex = 3 })
+	-- the label's text fit counts the menu's own scale, so it may grow a little on phones: it
+	-- gets the cell's whole width
+	local label = Kit.Label(b, m.Text, { Size = UDim2.new(1, -2 * Layout.LabelPad, 0, 19), Position = UDim2.new(0, Layout.LabelPad, 1, -25), Style = "Tiny", TextSize = Layout.LabelSize, Fit = true, ZIndex = 3 })
+	table.insert(cells, { Button = b, Icon = icon, Label = label })
 	Hud.Buttons[m.Name] = b
 	return b
 end
 
 local function buildMenu(screen: ScreenGui)
 	-- LEFT column
+	screenGui = screen
 	menu = Kit.new("Frame", { Name = "Menu", BackgroundTransparency = 1, Parent = screen })
 	menuScale = Kit.new("UIScale", { Parent = menu })
-	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Parent = menu })
+	Kit.LayoutScale(menuScale)
+	menuList = Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Parent = menu })
 	for i, m in MENU_LEFT do
-		menuButton(menu, i, m)
+		menuButton(menu, i, m, leftCells)
 	end
 	-- RIGHT stack
 	rightStack = Kit.new("Frame", { Name = "RightMenu", BackgroundTransparency = 1, Parent = screen })
 	rightScale = Kit.new("UIScale", { Parent = rightStack })
-	Kit.new("UIListLayout", {
+	Kit.LayoutScale(rightScale)
+	rightList = Kit.new("UIListLayout", {
 		Padding = UDim.new(0, GAP * 2),
 		FillDirection = Enum.FillDirection.Vertical,
 		HorizontalAlignment = Enum.HorizontalAlignment.Right,
@@ -348,13 +428,19 @@ local function buildMenu(screen: ScreenGui)
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = rightStack,
 	})
-	local col: Frame = Kit.new("Frame", { Name = "Column", BackgroundTransparency = 1, Size = UDim2.fromOffset(CELL_MAX, columnHeight(#MENU_RIGHT)), LayoutOrder = 1, Parent = rightStack })
-	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Parent = col })
+	rightColumn = Kit.new("Frame", { Name = "Column", BackgroundTransparency = 1, Size = UDim2.fromOffset(CELL_MAX, CELL_MAX * #MENU_RIGHT), LayoutOrder = 1, Parent = rightStack })
+	rightColumnList = Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Vertical, SortOrder = Enum.SortOrder.LayoutOrder, Parent = rightColumn })
 	for i, m in MENU_RIGHT do
-		menuButton(col, i, m)
+		menuButton(rightColumn, i, m, rightCells)
 	end
-	lowerRow = Kit.new("Frame", { Name = "LowerRow", BackgroundTransparency = 1, Size = UDim2.fromOffset(ROW_W, SMALL), LayoutOrder = 3, Parent = rightStack })
-	Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, SortOrder = Enum.SortOrder.LayoutOrder, Parent = lowerRow })
+	lowerRow = Kit.new("Frame", { Name = "LowerRow", BackgroundTransparency = 1, Size = UDim2.fromOffset(SMALL * ROW_COUNT + GAP * (ROW_COUNT - 1), SMALL), LayoutOrder = 3, Parent = rightStack })
+	rowScale = Kit.new("UIScale", { Parent = lowerRow })
+	Kit.LayoutScale(rowScale)
+	rowList = Kit.new("UIListLayout", { Padding = UDim.new(0, GAP), FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, SortOrder = Enum.SortOrder.LayoutOrder, Parent = lowerRow })
+	-- the DEV button (DevPanel) joins later: size it like the rest
+	lowerRow.ChildAdded:Connect(function()
+		task.defer(layoutMenu)
+	end)
 	Hud.LowerRow = lowerRow
 	Hud.RightStack = rightStack
 	-- red "!" on DAILY when a reward is waiting
@@ -513,7 +599,7 @@ local function buildAuto(screen: ScreenGui)
 	autoButton = Kit.Button(rightStack, {
 		Text = "🤖 AUTO: OFF",
 		Color = "Gray",
-		Size = UDim2.fromOffset(AUTO_W, AUTO_H),
+		Size = UDim2.fromOffset(Layout.AutoW, Layout.AutoH),
 		TextStyle = "Small",
 		OnClick = function()
 			if busyAuto then
@@ -740,6 +826,7 @@ function Hud.Init()
 	buildMenu(screen)
 	buildSettings(screen)
 	buildAuto(screen)
+	layoutMenu() -- again now that the AUTO toggle exists
 	buildBanners()
 	Hud.Buttons.Pets.Visible = false
 	-- world kiosks open their panels (always, even before the menu buttons are revealed)
