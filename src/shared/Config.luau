@@ -798,7 +798,7 @@ Config.Ghosts = {
 	},
 	VoidEmperor = {
 		Id = "VoidEmperor", Name = "THE VOID EMPEROR", Zone = "VoidThrone",
-		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 12, Hover = 18, Speed = 2, Wander = 6, -- Spirit set at spawn (Config.WorldBoss)
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 6, Hover = 32, Speed = 2, Wander = 6, -- Spirit set at spawn (Config.WorldBoss)
 		Kind = "WorldBoss", Color = Color3.fromRGB(20, 15, 35), Glow = Color3.fromRGB(255, 255, 255), Style = "VoidEmperor",
 	},
 
@@ -827,7 +827,7 @@ export type HunterLook = {
 	Beam: Color3, -- attack beam colour
 	Aura: boolean?, -- extra sparkle for high rarities
 	Chrome: boolean?, -- shiny metal body (World 2)
-	Signature: boolean?, -- one-of-a-kind effects (World 2 final Ultra)
+	Signature: string?, -- one-of-a-kind effect set, e.g. "Supernova" (World 2 final Ultra)
 }
 
 export type HunterDef = {
