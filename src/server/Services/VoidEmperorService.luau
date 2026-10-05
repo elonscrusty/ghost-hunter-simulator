@@ -46,6 +46,7 @@ local ORBIT_SPEED = 0.05 -- rad/s the copies circle the arena (slow: easy to tap
 local ORBIT_STEP = 2 -- seconds between copy move orders
 local KNEEL_DROP = 10 -- studs he sinks while kneeling
 local DEV_SPIRIT_SECONDS = 60 -- dev test fights: ~1 min of the dev's own crew (no rewards)
+local ACTIVE_SECONDS = 10 -- phase 3 counts only challengers who hit / picked the boss this recently
 
 type Ghost = GhostService.Ghost
 
@@ -76,6 +77,8 @@ type Fight = {
 	Final: boolean,
 	ShieldDown: boolean,
 	Dealt: { [Player]: number }, -- effective damage (boss Spirit + pylons)
+	Peak: { [Player]: number }, -- highest crew power seen while fighting (participation test)
+	ActiveAt: { [Player]: number }, -- last hit / boss pick (server time)
 	Mirror: { [Player]: number }, -- server time the mirror ends
 	LastTarget: { [Player]: number },
 	Done: boolean,
@@ -187,6 +190,20 @@ local function sinceCrownLost(f: Fight, uid: number, t: number): number
 	return if lost then t - lost else math.huge
 end
 
+local function isBossPiece(f: Fight, uid: number): boolean
+	for _, g in { f.Body, table.unpack(f.Copies) } do
+		if g.Uid == uid then
+			return true
+		end
+	end
+	for _, g in f.Pylons do
+		if g.Uid == uid then
+			return true
+		end
+	end
+	return false
+end
+
 local function syncSpirit(f: Fight)
 	local hp = math.max(0, f.Hp)
 	for _, g in { f.Body, table.unpack(f.Copies) } do
@@ -214,6 +231,10 @@ local function bossFilter(f: Fight, g: Ghost): (Player, number) -> number
 		if hit > 0 then
 			f.Hp -= hit
 			f.Dealt[player] = (f.Dealt[player] or 0) + hit
+			f.ActiveAt[player] = t
+			if not f.Peak[player] then
+				f.Peak[player] = VER.PeakPower(nil, HunterService.CrewPower(player))
+			end
 			syncSpirit(f)
 		end
 		return 0 -- the pool above is the boss's Spirit; GhostService only shows it
@@ -228,6 +249,10 @@ local function pylonFilter(f: Fight, g: Ghost): (Player, number) -> number
 		local hit = math.min(raw, g.Spirit)
 		if hit == hit and hit > 0 then
 			f.Dealt[player] = (f.Dealt[player] or 0) + hit
+			f.ActiveAt[player] = now()
+			if not f.Peak[player] then
+				f.Peak[player] = VER.PeakPower(nil, HunterService.CrewPower(player))
+			end
 		end
 		return raw
 	end
@@ -399,7 +424,7 @@ local function pay(f: Fight, won: boolean)
 	local list: { { P: Player, D: number } } = {}
 	local total = 0
 	for p, dealt in f.Dealt do
-		if p.Parent and DataService.Get(p) and VER.IsParticipant(dealt, f.Max, HunterService.CrewPower(p), C.MinContribution, C.MinSeconds) then
+		if p.Parent and DataService.Get(p) and VER.IsParticipant(dealt, f.Max, VER.PeakPower(f.Peak[p], HunterService.CrewPower(p)), C.MinContribution, C.MinSeconds) then
 			table.insert(list, { P = p, D = dealt })
 			total += dealt
 		elseif p.Parent and dealt > 0 then
@@ -550,6 +575,8 @@ local function startFight(joined: { Player }, dev: boolean)
 		Final = false,
 		ShieldDown = false,
 		Dealt = {},
+		Peak = {},
+		ActiveAt = {},
 		Mirror = {},
 		LastTarget = {},
 		Done = false,
@@ -606,15 +633,26 @@ local function tickFight(f: Fight)
 		return
 	end
 
+	-- highest crew power seen while dealing damage (unequipping later doesn't lower the bar)
+	for p in f.Dealt do
+		if p.Parent then
+			f.Peak[p] = VER.PeakPower(f.Peak[p], HunterService.CrewPower(p))
+		end
+	end
+
 	-- mirror: a fresh pick of a copy without the crown (phase 2)
 	for _, p in Players:GetPlayers() do
 		local tg = p:GetAttribute("Target")
 		local uid = if type(tg) == "number" then tg else 0
 		if f.LastTarget[p] ~= uid then
 			f.LastTarget[p] = uid
+			if uid ~= 0 and isBossPiece(f, uid) then
+				f.ActiveAt[p] = t
+			end
 			if f.Phase == 2 and uid ~= 0 then
 				for i, g in f.Copies do
-					if g.Uid == uid and VER.Mistake(i == f.Crown, sinceCrownLost(f, uid, t), C.MirrorGrace) then
+					local announced = f.Told and i == f.NextCrown
+					if g.Uid == uid and VER.Mistake(i == f.Crown, sinceCrownLost(f, uid, t), C.MirrorGrace, announced) then
 						f.Mirror[p] = t + C.MirrorSeconds
 						p:SetAttribute("VEMirror", f.Mirror[p])
 						Fx.To(p, "VoidEmperor", { Kind = "Mirror", Until = f.Mirror[p] })
@@ -683,7 +721,14 @@ local function tickFight(f: Fight)
 			Fx.All("VoidEmperor", { Kind = "CirclesMove" })
 		end
 		local here = challengers()
-		local need = if f.Final then 1 else math.min(#f.Circles, VER.ActiveCircles(#here, C.Circles))
+		-- AFK players in the ring don't raise the circle count
+		local fighting = 0
+		for _, p in here do
+			if VER.IsActive(f.ActiveAt[p], t, ACTIVE_SECONDS) then
+				fighting += 1
+			end
+		end
+		local need = if f.Final then 1 else math.min(#f.Circles, VER.ActiveCircles(fighting, C.Circles))
 		local held: { boolean } = {}
 		for i = 1, need do
 			local part = f.Circles[i]
@@ -837,6 +882,8 @@ function VoidEmperorService.Start()
 		local f = fight
 		if f then
 			f.Dealt[player] = nil
+			f.Peak[player] = nil
+			f.ActiveAt[player] = nil
 			f.Mirror[player] = nil
 			f.LastTarget[player] = nil
 		end

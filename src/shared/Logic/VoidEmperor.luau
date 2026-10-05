@@ -109,6 +109,17 @@ function VoidEmperor.Final(hp: number, max: number, share: number): boolean
 	return max > 0 and hp <= max * share
 end
 
+-- Highest crew power seen during the fight (garbage samples are ignored).
+function VoidEmperor.PeakPower(prev: number?, cur: number): number
+	local best = if prev and finite(prev) and prev > 0 then prev else 0
+	return if finite(cur) and cur > best then cur else best
+end
+
+-- An active challenger dealt damage or picked a boss piece within the last `window` seconds.
+function VoidEmperor.IsActive(lastActive: number?, now: number, window: number): boolean
+	return lastActive ~= nil and now - lastActive <= window
+end
+
 -- Took part: dealt at least minContribution of the Spirit, or minSeconds of their own crew's power
 -- (so a small crew next to a huge one still counts). No damage = never a participant.
 function VoidEmperor.IsParticipant(dealt: number, max: number, power: number, minContribution: number, minSeconds: number): boolean
@@ -159,9 +170,10 @@ function VoidEmperor.NextCrown(current: number, count: number, roll: number): nu
 end
 
 -- A fresh pick of a copy is a mistake (mirror) when it isn't crowned and lost the crown more
--- than `grace` seconds ago (picks right as the crown hops are forgiven).
-function VoidEmperor.Mistake(crowned: boolean, uncrownedFor: number, grace: number): boolean
-	return not crowned and uncrownedFor >= grace
+-- than `grace` seconds ago (picks right as the crown hops are forgiven). The copy announced as
+-- the next crowned one (during the tell) is forgiven too.
+function VoidEmperor.Mistake(crowned: boolean, uncrownedFor: number, grace: number, announced: boolean?): boolean
+	return not crowned and announced ~= true and uncrownedFor >= grace
 end
 
 export type OpenCheck = {

@@ -318,7 +318,10 @@ T.board_encoding_is_monotone_and_fits = function()
 		local e = Rules.BoardEncode(v)
 		assert(e >= prev, "not monotone at " .. v)
 		assert(e == math.floor(e), "not an integer at " .. v)
-		assert(e < 9e15 and e < 2 ^ 53, "too big at " .. v)
+		assert(e < 2 ^ 53, "too big at " .. v)
+		if v >= 1e15 then
+			assert(e >= 2 ^ 53 - 85e9, "encoded value below the top band at " .. v)
+		end
 		if v >= 1e15 and v <= 1e99 then
 			-- clearly different values never tie
 			assert(Rules.BoardEncode(v * 1.000001) > e, "tie at " .. v)
@@ -334,14 +337,22 @@ T.board_encoding_is_monotone_and_fits = function()
 	assert(Rules.BoardEncode(1e15 - 1) < Rules.BoardEncode(1e15))
 	assert(Rules.BoardEncode(1e15) < Rules.BoardEncode(1.0001e15))
 	eq(Rules.BoardEncode(math.huge), Rules.BoardEncode(1e100))
+	assert(Rules.BoardEncode(1e100) < 2 ^ 53)
+	-- strictly increasing across the 1e15 boundary and far past 1e30
+	local chain = { 999999999999999, 1e15, 1.0001e15, 2e15, 1e18, 1e25, 1e30, 1e31, 1e45, 1e99 }
+	for i = 2, #chain do
+		assert(Rules.BoardEncode(chain[i]) > Rules.BoardEncode(chain[i - 1]), "order at " .. chain[i])
+	end
 end
 T.board_legacy_raw_values_decode_as_themselves = function()
 	-- old servers stored raw values up to 2^53: everything above the log band is one of those
-	for _, v in { 2e15, 5.5e15, 9e15, 2 ^ 53 } do
+	for _, v in { 1e15, 1.0001e15, 1.5e15, 2e15 - 1, 2e15, 5.5e15, 9e15, 2 ^ 53 } do
 		assert(Rules.BoardIsLegacy(v), "legacy " .. v)
 		eq(Rules.BoardDecode(v), v)
 	end
 	assert(not Rules.BoardIsLegacy(999999999999999))
+	-- a legacy 1.0001e15 no longer decodes as an absurd number
+	assert(Rules.BoardDecode(1.0001e15) < 1.1e15)
 end
 T.upgrades = function()
 	eq(Rules.UpgradeCost({ 10, 20 }, 1), 10); eq(Rules.UpgradeCost({ 10, 20 }, 3), nil)

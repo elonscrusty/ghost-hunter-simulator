@@ -8,10 +8,10 @@
 -- Then the top rows are read back. Without DataStore access (Studio with API off) a board ranks
 -- the players in this server instead. Studio never writes, and developer accounts stay off the
 -- public boards.
--- Stored numbers use Rules.BoardEncode (OrderedDataStore values must stay below 2^53, World 2
+-- Stored numbers use Rules.BoardEncode (OrderedDataStore values must stay at most 2^53, World 2
 -- totals go far past that): below 1e15 a value is stored as it is, bigger values in an
--- order-keeping log form. Same DataStore names as before; an old raw entry of 1e15 or more is
--- re-written in the new form the first time it shows up in a board's top rows.
+-- order-keeping log form just under 2^53. Same DataStore names as before; an old raw entry of
+-- 1e15 or more is re-written in the new form the first time it shows up in a board's top rows.
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")

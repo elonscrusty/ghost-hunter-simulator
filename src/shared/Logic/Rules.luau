@@ -240,17 +240,20 @@ function Rules.WorldOf(order: number, firsts: { number }): number
 end
 
 --==================================================================
--- Leaderboard value encoding (OrderedDataStore values must be integers below 2^53 ~ 9.007e15)
+-- Leaderboard value encoding (OrderedDataStore values must be integers up to 2^53 ~ 9.007e15)
 --==================================================================
 -- Values below 1e15 are stored as they are (exactly what older servers wrote). Bigger values
--- are stored as 1e15 + floor((log10(v) - 15) * BOARD_K), which keeps the order (bigger value ->
--- bigger stored number) and stays tiny: a value of 1e100 is stored as 1e15 + 8.5e11. Stored
--- numbers above that band can only be legacy raw values (old servers clamped at 2^53), so they
--- decode as themselves and LeaderboardService rewrites them in the new form.
+-- are stored at the very top of the exact-integer range: BOARD_BASE + floor((log10(v) - 15) *
+-- BOARD_K), always inside [BOARD_BASE, 2^53). That keeps the order (bigger value -> bigger
+-- stored number). Old servers wrote raw values clamped to [0, 2^53]; World 1 totals never get
+-- near 9.007e15, so every stored number outside the band (1e15..BOARD_BASE, or exactly 2^53)
+-- is a legacy raw value: it decodes as itself and LeaderboardService rewrites it in the new form.
 local BOARD_RAW = 1e15
-local BOARD_K = 1e10 -- steps per power of ten (relative precision ~2e-10)
+local BOARD_K = 1e9 -- steps per power of ten (relative precision ~2.3e-9)
 local BOARD_MAX_LOG = 100 -- values are capped at 1e100 before encoding
+local BOARD_TOP = 2 ^ 53
 local BOARD_BAND = (BOARD_MAX_LOG - 15) * BOARD_K
+local BOARD_BASE = BOARD_TOP - BOARD_BAND
 
 function Rules.BoardEncode(v: number): number
 	if v ~= v or v <= 0 then
@@ -260,12 +263,13 @@ function Rules.BoardEncode(v: number): number
 		return math.floor(v)
 	end
 	local lg = math.min(math.log10(v), BOARD_MAX_LOG)
-	return BOARD_RAW + math.floor((lg - 15) * BOARD_K)
+	local step = math.clamp(math.floor((lg - 15) * BOARD_K), 0, BOARD_BAND - 1)
+	return BOARD_BASE + step
 end
 
 -- true when a stored number can only have been written by an old server (raw value >= 1e15)
 function Rules.BoardIsLegacy(stored: number): boolean
-	return stored > BOARD_RAW + BOARD_BAND
+	return stored >= BOARD_RAW and (stored < BOARD_BASE or stored >= BOARD_TOP)
 end
 
 function Rules.BoardDecode(stored: number): number
@@ -275,7 +279,7 @@ function Rules.BoardDecode(stored: number): number
 	if stored < BOARD_RAW or Rules.BoardIsLegacy(stored) then
 		return stored
 	end
-	return 10 ^ (15 + (stored - BOARD_RAW) / BOARD_K)
+	return 10 ^ (15 + (stored - BOARD_BASE) / BOARD_K)
 end
 
 --==================================================================

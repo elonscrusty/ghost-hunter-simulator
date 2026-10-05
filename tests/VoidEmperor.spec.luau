@@ -125,6 +125,25 @@ T.crown_always_hops_to_another_copy = function()
 	end
 	check(VE.NextCrown(1, 1, 0.5) == 1, "single copy")
 	check(VE.Mistake(false, 5, 2.5) and not VE.Mistake(true, 5, 2.5) and not VE.Mistake(false, 1, 2.5), "mirror rule")
+	check(not VE.Mistake(false, 5, 2.5, true), "the announced next crown is forgiven during the tell")
+	check(VE.Mistake(false, 5, 2.5, false), "other uncrowned copies still mirror")
+end
+
+T.participation_uses_the_peak_crew_power = function()
+	-- 1 s with a 1e9 crew, then swap to a weak hunter: still not 8 s of the peak
+	local peak = VE.PeakPower(nil, 1e9)
+	peak = VE.PeakPower(peak, 10)
+	check(peak == 1e9, "peak kept")
+	check(not VE.IsParticipant(1e9, 1e15, peak, 0.01, 8), "unequip trick fails")
+	check(VE.IsParticipant(8e9, 1e15, peak, 0.01, 8), "8 s of the peak counts")
+	check(VE.PeakPower(nil, 0 / 0) == 0 and VE.PeakPower(5, -1) == 5 and VE.PeakPower(0 / 0, 3) == 3, "garbage ignored")
+end
+
+T.only_active_challengers_count_for_circles = function()
+	check(VE.IsActive(95, 100, 10), "hit 5 s ago")
+	check(not VE.IsActive(85, 100, 10), "idle 15 s")
+	check(not VE.IsActive(nil, 100, 10), "never hit")
+	check(VE.ActiveCircles(0, 4) == 1, "all AFK: still one circle")
 end
 
 T.portal_opening = function()
