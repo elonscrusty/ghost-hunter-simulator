@@ -34978,7 +34978,7 @@ local function refreshButtons()
 	actions.Visible = inRun
 	continueButton.Visible = phase == "Between"
 	if phase == "Between" then
-		Kit.SetButtonText(continueButton, if voted then "✔ WAITING..." else "▶ CONTINUE")
+		Kit.SetButtonText(continueButton, if voted then "WAITING..." else "CONTINUE")
 	end
 	Kit.SetButtonText(leaveButton, if os.clock() < leaveArmedUntil then "SURE? TAP AGAIN" else "LEAVE")
 end
@@ -35292,7 +35292,7 @@ function TowerHud.Init()
 	})
 	padInfo = Kit.Label(padBox, "", { Size = UDim2.new(1, 0, 0, 22), Style = "Small", Color = Theme.Gold, Fit = true, ZIndex = 26 })
 	enterButton = Kit.Button(padBox, {
-		Text = "🏰 ENTER BOSS TOWER",
+		Text = "ENTER BOSS TOWER",
 		Color = "Purple",
 		Size = UDim2.fromOffset(230, 48),
 		Position = UDim2.new(0.5, 0, 1, 0),
@@ -35303,7 +35303,7 @@ function TowerHud.Init()
 		end,
 	})
 	checkpointButton = Kit.Button(padBox, {
-		Text = "⏩ START AT ROOM 6",
+		Text = "START AT ROOM 6",
 		Color = "Green",
 		Size = UDim2.fromOffset(230, 48),
 		Position = UDim2.new(0.5, 6, 1, 0),
@@ -35326,7 +35326,7 @@ function TowerHud.Init()
 	})
 	infoLabel = Kit.Label(actions, "", { Size = UDim2.new(1, 0, 0, 22), Style = "Body", Fit = true, ZIndex = 26 })
 	continueButton = Kit.Button(actions, {
-		Text = "▶ CONTINUE",
+		Text = "CONTINUE",
 		Color = "Green",
 		Size = UDim2.fromOffset(160, 48),
 		Position = UDim2.new(0.5, -6, 1, 0),
@@ -35395,8 +35395,8 @@ function TowerHud.Start()
 				checkpointButton.Visible = cp > 0
 				enterButton.Position = if cp > 0 then UDim2.new(0.5, -6, 1, 0) else UDim2.new(0.5, 0, 1, 0)
 				enterButton.AnchorPoint = if cp > 0 then Vector2.new(1, 1) else Vector2.new(0.5, 1)
-				Kit.SetButtonText(enterButton, if cp > 0 then "▶ START AT ROOM 1" else "🏰 ENTER BOSS TOWER")
-				Kit.SetButtonText(checkpointButton, "⏩ START AT ROOM " .. (cp + 1))
+				Kit.SetButtonText(enterButton, if cp > 0 then "START AT ROOM 1" else "ENTER BOSS TOWER")
+				Kit.SetButtonText(checkpointButton, "START AT ROOM " .. (cp + 1))
 				padInfo.Text = if cp > 0
 					then string.format("🚩 Checkpoint: Room %d cleared  ·  skipped rooms give no rewards", cp)
 					else string.format("🚩 Clear Room %d to save a checkpoint", every)
