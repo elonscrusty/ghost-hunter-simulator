@@ -84,7 +84,7 @@ local function set(list: { string }): { [string]: boolean }
 end
 
 HunterRig.Known = {
-	HairStyle = set({ "Spiky", "Bob", "Puff", "Short", "Long", "None", "RoundEars", "PointyEars", "Buns", "Braids", "Floaty", "Beard" }),
+	HairStyle = set({ "Spiky", "Bob", "Puff", "Short", "Long", "None", "RoundEars", "PointyEars", "Buns", "Braids", "Floaty", "Beard", "Owl", "Octo" }),
 	Hat = set({
 		"Cap", "Beanie", "Fedora", "Hood", "Helmet", "Mortarboard", "Visor", "Goggles", "Halo", "TopHat", "Jester",
 		"NurseCap", "HeadMirror", "SailorCap", "Bandana", "Tricorn", "KnightHelm", "Wizard", "Crown", "Crystal", "Pith",
@@ -93,6 +93,7 @@ HunterRig.Known = {
 		-- World 2
 		"ChefHat", "LanternRing", "Specs", "BookHat", "Roof", "ShroomCap", "ShroomCrown", "PrismCrown", "ConductorCap",
 		"Headphones", "TVHead", "StormCloud", "SpaceHelmet", "EarHood", "StarCrown",
+		"Nightcap", "BookHead", "WeatherVane", "HardHat", "SkyTricorn", "BirdMask", "TempestCrown",
 	}),
 	Back = set({
 		"Backpack", "Tank", "Cape", "Wings", "Antenna", "Balloons", "MedKit", "LifeRing", "Shield", "Orbs", "HeroCape",
@@ -100,6 +101,8 @@ HunterRig.Known = {
 		-- World 2
 		"LanternPole", "FireworkRack", "BookWings", "Rings", "MirrorShards", "Shell", "Smokestack", "Boombox", "Glider",
 		"StormWings", "Jetpack", "CometTail", "StretchyDog", "VoidRing",
+		"BookStack", "BookCart", "PopUpCastle", "Tentacles", "Pages", "RuneBooks", "CloudSheep", "HotAirBalloon",
+		"RainbowScarf", "Battery", "ShipWheel", "Cyclone", "FeatherWings",
 	}),
 	Tool = set({
 		"Flashlight", "Vacuum", "Scanner", "Blaster", "Cannon", "Lantern", "Staff", "Projector", "Megaphone", "Wand", "Orb",
@@ -107,6 +110,7 @@ HunterRig.Known = {
 		-- World 2
 		"FryingPan", "SteamBasket", "Spellbook", "Quill", "Umbrella", "Magnet", "Teapot", "HandMirror", "Kaleidoscope",
 		"Guitar", "Hammer", "Thunderbolt", "RayGun", "StarBlade",
+		"Candle", "Stamp", "Magnifier", "BookStaff", "Anemometer", "Crook", "Pinwheel",
 	}),
 	Signature = set({ "Supernova" }),
 }
@@ -259,7 +263,7 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		return c.R * 0.3 + c.G * 0.59 + c.B * 0.11
 	end
 	local panda = style == "RoundEars" and lum(look.Hair) < 0.3 and lum(look.Skin) > 0.75
-	if hat ~= "TVHead" then -- the TV draws its own face on the screen
+	if hat ~= "TVHead" and hat ~= "BookHead" then -- the TV and the book draw their own faces
 		for _, s in { -1, 1 } do
 			local eyePos = Vector3.new(0.34 * s, 0.0, -0.8)
 			ball(head, 0.5, CFrame.new(eyePos), EYE, { Shadow = false })
@@ -273,7 +277,7 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			end
 		end
 		-- little open smile: a WedgePart turned into a "▽" (FlowerHead draws its own toothy grin)
-		if hat ~= "FlowerHead" and style ~= "Beard" then
+		if hat ~= "FlowerHead" and style ~= "Beard" and style ~= "Owl" then
 			wedge(head, Vector3.new(0.1, 0.26, 0.26), CFrame.new(0, -0.34, -0.88) * CFrame.Angles(-0.35, 0, 0) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, MOUTH)
 		end
 		if style == "RoundEars" then
@@ -300,6 +304,8 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		or hat == "ShroomCap"
 		or hat == "TVHead"
 		or hat == "EarHood"
+		or hat == "BookHead"
+		or hat == "BirdMask"
 	-- the glass space helmet shows the hair inside it, so only styles that fit stay as they are
 	local glass = hat == "SpaceHelmet"
 	local hairTop = 1.25
@@ -401,6 +407,31 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			wisp(Vector3.new(0.9 * sd, 0.2, 0.3), Vector3.new(0.75 * sd, 0.7, 0.1), Vector3.new(0.04 * sd, 0.05, 0), { 0.58, 0.46 })
 		end
 		hairTop = 1.35
+	elseif style == "Owl" then
+		-- owl: feathered cap over the top and back, upright ear tufts, pale feather discs round the
+		-- eyes and a little hooked beak (drawn even under hats)
+		if not covered then
+			cap()
+		end
+		hairTop = 1.3
+		local pale = U.Mix(look.Skin, WHITE, 0.55)
+		for _, s in { -1, 1 } do
+			spike(head, CFrame.new(0.58 * s, 0.82, 0.12) * CFrame.Angles(0, 0, -0.4 * s), 0.55, 0.8, 0.24, hairColor)
+			local n = Vector3.new(0.34 * s, 0.0, -0.8).Unit
+			cyl(head, 0.06, 0.88, U.DiscFacing(n * 0.9, n), pale)
+		end
+		block(head, Vector3.new(0.26, 0.26, 0.34), CFrame.new(0, -0.26, -0.9) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(245, 165, 45)) -- beak
+	elseif style == "Octo" then
+		-- octopus: a tall soft mantle swept up and back over the head, with a few pale spots
+		hairTop = 2.0
+		local spot = U.Mix(hairColor, WHITE, 0.45)
+		for _, q in { { 0, 0.85, 0.55, 2.45 } } do
+			ball(head, q[4], CFrame.new(q[1], q[2], q[3]), hairColor)
+		end
+		for _, q in { { 0, 0.85, 0.55, -0.55, 0.45, -0.7, 1.24 }, { 0, 0.85, 0.55, 0.75, 0.5, -0.45, 1.24 }, { 0, 0.85, 0.55, 0.15, 0.95, -0.3, 1.24 } } do
+			local d = Vector3.new(q[4], q[5], q[6]).Unit
+			ball(head, 0.32, CFrame.new(Vector3.new(q[1], q[2], q[3]) + d * q[7] * 0.95), spot)
+		end
 	else -- Short (and covered Puff/Spiky/Floaty): a neat hair cap
 		cap()
 	end
@@ -871,6 +902,130 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			block(head, Vector3.new(sz, sz, 0.06), scf * CFrame.Angles(0, 0, math.pi / 4), c, NEON) -- diamond star
 		end
 		block(head, Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, y + 0.1, 0.12) * U.VertexUp, U.Vivid(look.Beam), { Reflectance = 0.4 })
+	elseif hat == "Nightcap" then
+		-- striped sleeping cap with a fluffy brim that flops over to one side, pompom on the end
+		local c = look.HatColor or Color3.fromRGB(90, 120, 220)
+		local alt = U.Mix(c, WHITE, 0.5)
+		local base = CFrame.new(0, 0.58 + lift, 0.14) * CFrame.Angles(-0.12, 0, 0.1)
+		cyl(head, 0.3, 2.12, base * U.AxisY, CREAM) -- fluffy brim
+		local tipCf = cone(head, base * CFrame.new(0, 0.12, 0), 1.95, 1.0, 3, c, alt)
+		local floppy = cone(head, tipCf * CFrame.new(0, -0.12, 0) * CFrame.Angles(0, 0, -1.35), 0.66, 0.85, 2, alt, c)
+		ball(head, 0.52, floppy, CREAM) -- pompom
+	elseif hat == "BookHead" then
+		-- the whole head is a storybook standing on end: covers front and back, spine on the left, cream
+		-- page edges, a goofy face on the front cover and a ribbon bookmark sticking out like a tongue
+		local c = look.HatColor or Color3.fromRGB(40, 90, 70)
+		local eye = U.Mix(U.Vivid(look.Beam), WHITE, 0.35)
+		local bc = Vector3.new(0, 0.15, 0)
+		block(head, Vector3.new(2.15, 2.3, 1.9), CFrame.new(bc + Vector3.new(0.08, 0, 0)), CREAM) -- pages
+		for _, z in { -1, 1 } do
+			block(head, Vector3.new(2.35, 2.45, 0.14), CFrame.new(bc + Vector3.new(0, 0, 1.0 * z)), c) -- covers
+		end
+		block(head, Vector3.new(0.22, 2.45, 2.14), CFrame.new(bc + Vector3.new(-1.1, 0, 0)), U.Shade(c, 0.7)) -- spine
+		for _, y in { 0.8, -0.8 } do
+			block(head, Vector3.new(0.26, 0.12, 2.16), CFrame.new(bc + Vector3.new(-1.1, y, 0)), GOLD, METAL_MAT) -- spine bands
+		end
+		local fz = -1.08
+		for _, s in { -1, 1 } do
+			cyl(head, 0.06, 0.64, CFrame.new(0.42 * s, 0.32, fz) * U.AxisZ, eye) -- eyes
+			cyl(head, 0.08, 0.3, CFrame.new(0.42 * s + 0.06, 0.28, fz - 0.02) * U.AxisZ, EYE) -- pupils
+			for _, y in { 1.17, -1.17 } do
+				block(head, Vector3.new(0.3, 0.3, 0.18), CFrame.new(1.05, bc.Y + y, 1.0 * s), GOLD, METAL_MAT) -- corner caps
+			end
+		end
+		block(head, Vector3.new(0.9, 0.16, 0.06), CFrame.new(0, -0.32, fz), EYE) -- grin
+		block(head, Vector3.new(1.1, 0.14, 0.05), CFrame.new(0, 1.0, fz), GOLD) -- title
+		block(head, Vector3.new(0.24, 0.7, 0.05), CFrame.new(0.2, -1.1, fz - 0.02) * CFrame.Angles(0, 0, 0.15), RED) -- bookmark tongue
+	elseif hat == "WeatherVane" then
+		-- rain cap with a little weather vane on top: compass cross with knobs and a turning arrow
+		local c = look.HatColor or RED
+		ball(head, 2.04, CFrame.new(0, 0.45, 0.12), c)
+		cyl(head, 0.1, 1.3, CFrame.new(0, 0.55, -0.95) * CFrame.Angles(-0.12, 0, 0) * U.AxisY, U.Shade(c, 0.85)) -- peak
+		local top = Vector3.new(0, 1.42, 0.12)
+		rod(head, top, top + Vector3.new(0, 1.1, 0), 0.08, METAL, METAL_MAT)
+		local cy = top + Vector3.new(0, 0.38, 0)
+		rod(head, cy - Vector3.new(0.5, 0, 0), cy + Vector3.new(0.5, 0, 0), 0.05, METAL, METAL_MAT)
+		rod(head, cy - Vector3.new(0, 0, 0.5), cy + Vector3.new(0, 0, 0.5), 0.05, METAL, METAL_MAT)
+		for _, d in { Vector3.xAxis, -Vector3.xAxis, Vector3.zAxis, -Vector3.zAxis } do
+			ball(head, 0.14, CFrame.new(cy + d * 0.5), GOLD, METAL_MAT)
+		end
+		local acf = CFrame.new(top + Vector3.new(0, 0.95, 0)) * CFrame.Angles(0, 0.45, 0)
+		block(head, Vector3.new(1.1, 0.08, 0.06), acf, U.Shade(c, 0.45)) -- arrow shaft
+		spike(head, acf * CFrame.new(0.55, 0, 0) * CFrame.Angles(0, 0, -math.pi / 2), 0.4, 0.34, 0.07, GOLD) -- point
+		block(head, Vector3.new(0.36, 0.36, 0.06), acf * CFrame.new(-0.55, 0, 0) * CFrame.Angles(0, 0, math.pi / 4), c) -- tail fin
+	elseif hat == "HardHat" then
+		-- builder's hard hat with a copper-coiled lightning rod sticking up and a spark on its tip
+		local c = look.HatColor or Color3.fromRGB(255, 200, 40)
+		local copper = Color3.fromRGB(205, 120, 60)
+		local hcf = CFrame.new(0, 0.5 + lift, 0.1)
+		ball(head, 2.14, hcf, c)
+		cyl(head, 0.1, 2.6, hcf * CFrame.new(0, -0.02, 0) * U.AxisY, U.Shade(c, 0.85)) -- brim
+		cyl(head, 0.22, 2.2, hcf, U.Shade(c, 0.85)) -- ridge
+		local n = Vector3.new(0, 0.45, -0.9).Unit
+		cyl(head, 0.06, 0.46, U.DiscFacing(hcf.Position + n * 1.06, n), WHITE) -- sticker
+		block(head, Vector3.new(0.18, 0.18, 0.04), U.Facing(hcf.Position + n * 1.09, n) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(40, 40, 50))
+		local r0 = Vector3.new(0.3, 1.45 + lift, 0.25)
+		rod(head, r0, r0 + Vector3.new(0, 1.1, 0), 0.08, copper, METAL_MAT)
+		for i = 0, 2 do
+			cyl(head, 0.07, 0.3, CFrame.new(r0 + Vector3.new(0, 0.3 + i * 0.16, 0)) * U.AxisY, U.Shade(copper, 0.8), METAL_MAT) -- coil
+		end
+		ball(head, 0.26, CFrame.new(r0 + Vector3.new(0, 1.18, 0)), U.Vivid(look.Beam), NEON)
+	elseif hat == "SkyTricorn" then
+		-- sky-pirate tricorn with gold trim and a little propeller spinning on top
+		local tcf = CFrame.new(0, 0.95 + lift, 0.1)
+		cyl(head, 0.6, 1.55, tcf * CFrame.new(0, 0.25, 0) * U.AxisY, hatColor)
+		for i = 0, 2 do
+			local side = tcf * CFrame.Angles(0, math.pi / 3 + i * 2 * math.pi / 3, 0) * CFrame.new(0, 0.15, -0.68) * CFrame.Angles(-0.4, 0, 0)
+			block(head, Vector3.new(2.3, 0.5, 0.1), side, hatColor)
+			block(head, Vector3.new(2.3, 0.08, 0.14), side * CFrame.new(0, 0.26, 0), GOLD, METAL_MAT) -- gold trim
+		end
+		cyl(head, 0.3, 0.1, tcf * CFrame.new(0, 0.7, 0) * U.AxisY, METAL, METAL_MAT)
+		ball(head, 0.2, tcf * CFrame.new(0, 0.86, 0), GOLD, METAL_MAT)
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.95, 0.05, 0.24), tcf * CFrame.new(0.48 * s, 0.86, 0) * CFrame.Angles(0.3 * s, 0, 0), if s < 0 then WHITE else U.Vivid(look.Beam))
+		end
+		spike(head, tcf * CFrame.new(0.7, 0.35, 0.2) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(0, 0, 0.9), 0.36, 1.3, 0.1, WHITE) -- feather plume
+	elseif hat == "BirdMask" then
+		-- storm-bird helmet: feathered hood, a big golden beak over the brow, three crest feathers swept
+		-- back and a lightning streak down each side
+		local c = look.HatColor or Color3.fromRGB(40, 90, 200)
+		local alt = U.Vivid(look.Beam)
+		ball(head, 2.16, CFrame.new(0, 0.36, 0.16), c)
+		-- hooked beak hanging down in front of the nose from the brow of the hood
+		block(head, Vector3.new(0.5, 0.2, 0.4), CFrame.new(0, 0.55, -0.98) * CFrame.Angles(0.3, 0, 0), GOLD) -- brow plate
+		wedge(head, Vector3.new(0.36, 0.5, 0.8), CFrame.new(0, 0.12, -1.12) * CFrame.Angles(-math.pi / 2, 0, 0), GOLD) -- beak
+		for i = -1, 1 do
+			local h = if i == 0 then 1.25 else 0.95
+			local fcf = CFrame.new(0.3 * i, 1.15, 0.35) * CFrame.Angles(0, 0, -0.3 * i) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(0, 0, 0.75)
+			spike(head, fcf, 0.42, h, 0.12, if i == 0 then alt else U.Mix(c, WHITE, 0.25))
+		end
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.5, 0.12, 0.06), U.Facing(Vector3.new(0.36 * s, 0.32, -0.85).Unit * 1.06, Vector3.new(0.36 * s, 0.32, -0.85).Unit) * CFrame.Angles(0, 0, 0.3 * s), EYE) -- fierce brow
+			bar(head, Vector3.new(0.98 * s, 0.6, -0.2), Vector3.new(1.08 * s, 0.25, 0.15), 0.16, 0.06, alt)
+			bar(head, Vector3.new(1.05 * s, 0.32, 0.05), Vector3.new(1.0 * s, -0.1, 0.45), 0.12, 0.06, alt)
+		end
+	elseif hat == "TempestCrown" then
+		-- gold band crowned with five tall zig-zag lightning bolts and a ring of storm clouds behind
+		local c = look.HatColor or GOLD
+		local bolt = U.Vivid(look.Beam)
+		local ccf = CFrame.new(0, hairTop - 0.3, 0.15)
+		cyl(head, 0.32, 1.6, ccf * U.AxisY, c, METAL_MAT)
+		for i = -2, 2 do
+			local h = 1.3 - math.abs(i) * 0.25
+			local f = ccf * CFrame.Angles(0, i * 0.6, 0) * CFrame.new(0, 0.12, -0.74) * CFrame.Angles(-0.25, 0, 0)
+			local p0 = f.Position
+			local p1 = (f * CFrame.new(0.14, h * 0.55, 0)).Position
+			local p2 = (f * CFrame.new(-0.12, h * 0.5, 0)).Position
+			local p3 = (f * CFrame.new(0.05, h, 0)).Position
+			bar(head, p0, p1, 0.24, 0.08, bolt)
+			bar(head, p1, p2, 0.16, 0.08, bolt)
+			bar(head, p2, p3, 0.16, 0.08, bolt, if i == 0 then NEON else nil)
+		end
+		for i = 0, 2 do
+			local a = i * math.pi / 2
+			ball(head, 0.7, ccf * CFrame.new(math.cos(a) * 0.95, 0.15, math.sin(a) * 0.8), Color3.fromRGB(205, 210, 235))
+		end
+		block(head, Vector3.new(0.3, 0.3, 0.3), ccf * CFrame.new(0, 0.02, -0.8) * U.VertexUp, Color3.fromRGB(80, 150, 255), { Reflectance = 0.3 }) -- gem
 	end
 
 	------------------------------------------------------------------ body accent / aura
@@ -1188,6 +1343,224 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		for i = 0, 3 do
 			block(torso, Vector3.new(0.3, 0.3, 0.3), rc * CFrame.Angles(0, 0, math.pi / 4 + i * math.pi / 2) * CFrame.new(0, 1.6, -0.12) * U.VertexUp, GOLD, { Reflectance = 0.3 })
 		end
+	elseif back == "BookStack" then
+		-- leaning tower of books strapped to the back, a little bookworm reading on the top one
+		local cols = { backColor, Color3.fromRGB(70, 120, 210), Color3.fromRGB(235, 170, 60), Color3.fromRGB(160, 80, 170), Color3.fromRGB(60, 165, 120), RED }
+		local y = -0.3
+		local topP = Vector3.zero
+		for i = 1, 6 do
+			local h = 0.34 + (i % 3) * 0.06
+			local w = 1.2 - (i % 2) * 0.18 - i * 0.03
+			local cf = CFrame.new(0.08 * math.sin(i * 2.1), y + h / 2, 0.66 + i * 0.17) * CFrame.Angles(0, 0.18 * math.sin(i * 1.7), 0.06 * math.sin(i * 2.6))
+			block(torso, Vector3.new(w, h, 0.72), cf, cols[i])
+			block(torso, Vector3.new(w - 0.04, h - 0.12, 0.76), cf * CFrame.new(0.04, 0, 0), CREAM) -- pages
+			y += h
+			topP = cf.Position + Vector3.new(0, h / 2, 0)
+		end
+		local green = Color3.fromRGB(120, 210, 90)
+		ball(torso, 0.3, CFrame.new(topP + Vector3.new(0.3, 0.12, 0.1)), green)
+		ball(torso, 0.34, CFrame.new(topP + Vector3.new(0.08, 0.18, -0.02)), green)
+		local wh = topP + Vector3.new(-0.12, 0.42, -0.12)
+		ball(torso, 0.42, CFrame.new(wh), green) -- worm head
+		for _, s in { -1, 1 } do
+			ball(torso, 0.1, CFrame.new(wh + Vector3.new(0.09 * s, 0.05, -0.18)), EYE)
+			block(torso, Vector3.new(0.18, 0.12, 0.9), CFrame.new(0.38 * s, 0.56, 0.05), Color3.fromRGB(110, 75, 50)) -- strap
+		end
+	elseif back == "BookCart" then
+		-- little library trolley worn on the back: two shelves of books, wheels, a push bar and a
+		-- sleepy ghost riding on top waiting to be sorted
+		local wood = backColor
+		local z = 0.95
+		local W = 0.95
+		local cols = { Color3.fromRGB(70, 120, 210), RED, Color3.fromRGB(235, 170, 60), Color3.fromRGB(60, 165, 120) }
+		for _, s in { -1, 1 } do
+			rod(torso, Vector3.new(W * s, -1.0, z), Vector3.new(W * s, 1.05, z), 0.12, U.Shade(wood, 0.8))
+			cyl(torso, 0.14, 0.44, CFrame.new(W * s, -1.0, z), Color3.fromRGB(40, 40, 50)) -- wheels
+		end
+		for k, sy in { -0.55, 0.3 } do
+			block(torso, Vector3.new(W * 2 + 0.1, 0.1, 0.64), CFrame.new(0, sy, z), wood) -- shelf
+			for i = 0, 4 do
+				local h = 0.58 - ((i + k) % 2) * 0.12
+				block(torso, Vector3.new(0.27, h, 0.5), CFrame.new(-0.7 + i * 0.33, sy + 0.05 + h / 2, z) * CFrame.Angles(0, 0, if i == 4 then -0.22 else 0), cols[(i + k) % 4 + 1])
+			end
+		end
+		rod(torso, Vector3.new(-W, 1.05, z), Vector3.new(W, 1.05, z), 0.1, METAL, METAL_MAT) -- push bar
+		local gc = Vector3.new(0.95, 1.4, z - 0.1)
+		ball(torso, 0.72, CFrame.new(gc), WHITE, { Transparency = 0.15 })
+		ball(torso, 0.5, CFrame.new(gc + Vector3.new(0, 0.32, 0.05)), WHITE, { Transparency = 0.15 })
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.12, 0.04, 0.04), CFrame.new(gc + Vector3.new(0.12 * s, 0.1, -0.36)), EYE) -- sleepy eyes
+		end
+	elseif back == "PopUpCastle" then
+		-- open pop-up book on the back with a paper castle standing up out of it: two pastel towers with
+		-- red cone roofs that peek out past the head, a crenellated wall and a pennant
+		local c = backColor
+		local paper = Color3.fromRGB(250, 240, 220)
+		local roof = RED
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(1.2, 0.1, 0.9), CFrame.new(0.6 * s, 0.5, 1.05) * CFrame.Angles(0, 0, 0.12 * s), c) -- covers
+			block(torso, Vector3.new(1.1, 0.08, 0.82), CFrame.new(0.57 * s, 0.57, 1.05) * CFrame.Angles(0, 0, 0.12 * s), CREAM) -- pages
+			block(torso, Vector3.new(0.18, 0.12, 0.8), CFrame.new(0.38 * s, 0.56, 0.4), U.Shade(c, 0.7)) -- strap
+			local tx = 1.0 * s
+			local tc0 = if s < 0 then Color3.fromRGB(255, 200, 215) else Color3.fromRGB(190, 215, 255)
+			block(torso, Vector3.new(0.48, 1.55, 0.44), CFrame.new(tx, 1.35, 1.1), tc0) -- tower
+			block(torso, Vector3.new(0.18, 0.3, 0.04), CFrame.new(tx, 1.5, 0.87), Color3.fromRGB(70, 60, 90)) -- window
+			local top = cone(torso, CFrame.new(tx, 2.12, 1.1), 0.7, 0.75, 3, roof)
+			if s > 0 then
+				rod(torso, top.Position, top.Position + Vector3.new(0, 0.5, 0), 0.05, METAL)
+				block(torso, Vector3.new(0.38, 0.22, 0.03), CFrame.new(top.Position + Vector3.new(0.2, 0.38, 0)), GOLD) -- pennant
+			end
+		end
+		block(torso, Vector3.new(1.6, 0.85, 0.14), CFrame.new(0, 1.0, 1.15), paper) -- wall
+		for i = -1, 1 do
+			block(torso, Vector3.new(0.26, 0.24, 0.14), CFrame.new(i * 0.5, 1.53, 1.15), paper) -- crenels
+		end
+	elseif back == "Tentacles" then
+		-- six octopus tentacles curling out from behind the waist (eight limbs with the arms); the top
+		-- two hold a spare book and an ink pot
+		local c = backColor
+		local tipC = U.Mix(c, WHITE, 0.3)
+		local tips: { [number]: Vector3 } = {}
+		for k, spec in { { -1, 0.9 }, { -1, 1.65 }, { -1, 2.35 }, { 1, 0.9 }, { 1, 1.65 }, { 1, 2.35 } } do
+			local s, a = spec[1], spec[2]
+			local p = Vector3.new(0.3 * s, -0.25, 0.45)
+			for i = 1, 4 do
+				p += Vector3.new(math.sin(a) * s, -math.cos(a), 0.06) * 0.46
+				ball(torso, 0.58 - i * 0.08, CFrame.new(p), if i == 4 then tipC else c)
+				a += 0.5
+			end
+			tips[k] = p
+		end
+		local bp = tips[3] + Vector3.new(0, 0.25, 0)
+		block(torso, Vector3.new(0.5, 0.6, 0.16), CFrame.new(bp) * CFrame.Angles(0, 0.4, 0.3), Color3.fromRGB(200, 70, 60)) -- book
+		block(torso, Vector3.new(0.44, 0.54, 0.2), CFrame.new(bp + Vector3.new(0.03, 0, 0)) * CFrame.Angles(0, 0.4, 0.3), CREAM)
+		local ip = tips[6] + Vector3.new(0, 0.22, 0)
+		cyl(torso, 0.34, 0.36, CFrame.new(ip) * U.AxisY, Color3.fromRGB(40, 40, 70), { Reflectance = 0.2 }) -- ink pot
+		cyl(torso, 0.1, 0.2, CFrame.new(ip + Vector3.new(0, 0.22, 0)) * U.AxisY, Color3.fromRGB(150, 100, 60))
+	elseif back == "Pages" then
+		-- loose pages fluttering round the shoulders, each with a line of writing
+		for _, q in { { -1.3, 0.75, 0.45, 0.3 }, { 1.35, 1.2, 0.55, -0.4 }, { -1.1, 2.0, 0.75, 0.55 }, { 1.15, 2.35, 0.85, -0.25 }, { 0.15, 2.85, 1.0, 0.15 }, { -1.5, -0.15, 0.3, -0.5 } } do
+			local cf = CFrame.new(q[1], q[2], q[3]) * CFrame.Angles(0.3, q[4] * 1.5, q[4])
+			block(torso, Vector3.new(0.5, 0.64, 0.03), cf, CREAM, { Transparency = 0.1 })
+			block(torso, Vector3.new(0.34, 0.2, 0.04), cf * CFrame.new(0, 0.08, 0), U.Mix(U.Vivid(look.Beam), EYE, 0.5)) -- writing
+		end
+	elseif back == "RuneBooks" then
+		-- halo of open spell books floating in an arc behind the head, each with a rune on its pages
+		local cols = { backColor, Color3.fromRGB(70, 120, 210), Color3.fromRGB(200, 70, 60), Color3.fromRGB(60, 165, 120), Color3.fromRGB(160, 80, 170) }
+		local hc = Vector3.new(0, 1.2, 0.95)
+		for i = -3, 3 do
+			local a = i * 0.5
+			local p = hc + Vector3.new(math.sin(a) * 2.0, math.cos(a) * 1.85, 0.1 * math.abs(i))
+			local cf = CFrame.new(p) * CFrame.Angles(0, -0.15 * i, -a * 0.5)
+			block(torso, Vector3.new(0.86, 0.66, 0.08), cf * CFrame.new(0, 0, 0.04), cols[(i + 3) % #cols + 1]) -- cover
+			block(torso, Vector3.new(0.76, 0.56, 0.08), cf, CREAM) -- pages
+			block(torso, Vector3.new(0.18, 0.18, 0.03), cf * CFrame.new(0, 0, -0.04) * CFrame.Angles(0, 0, math.pi / 4), U.Vivid(look.Beam), if i == 0 then NEON else nil) -- rune
+		end
+	elseif back == "CloudSheep" then
+		-- a fluffy cloud-sheep floating beside the left shoulder on a ribbon lead
+		local c = backColor
+		local dark = Color3.fromRGB(70, 75, 100)
+		local sc = Vector3.new(-1.75, 0.3, -0.1)
+		for _, q in { { 0, 0, 0, 1.0 }, { 0.38, 0.18, 0.2, 0.75 }, { -0.4, 0.12, 0.18, 0.75 }, { 0.05, 0.38, 0.1, 0.72 }, { 0, -0.05, 0.45, 0.72 } } do
+			ball(torso, q[4], CFrame.new(sc + Vector3.new(q[1], q[2], q[3])), c)
+		end
+		local hp = sc + Vector3.new(-0.05, 0.08, -0.55)
+		ball(torso, 0.52, CFrame.new(hp), dark)
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.3, 0.1, 0.16), CFrame.new(hp + Vector3.new(0.3 * s, 0.08, 0.05)) * CFrame.Angles(0, 0, -0.45 * s), dark) -- ears
+			ball(torso, 0.12, CFrame.new(hp + Vector3.new(0.11 * s, 0.06, -0.21)), WHITE) -- eyes
+			for _, z in { -0.2, 0.25 } do
+				cyl(torso, 0.3, 0.13, CFrame.new(sc + Vector3.new(0.25 * s, -0.55, z)) * U.AxisY, dark) -- legs
+			end
+		end
+		rod(torso, Vector3.new(-0.62, 0.2, -0.3), hp + Vector3.new(0.18, -0.1, 0.12), 0.05, RED) -- lead
+	elseif back == "HotAirBalloon" then
+		-- wicker basket on the back, ropes up to a little striped hot-air balloon behind the head
+		local c = backColor
+		local wicker = Color3.fromRGB(175, 125, 70)
+		local alt = Color3.fromRGB(255, 215, 70)
+		block(torso, Vector3.new(1.05, 0.75, 0.7), CFrame.new(0, -0.05, 0.85), wicker)
+		block(torso, Vector3.new(1.15, 0.14, 0.8), CFrame.new(0, 0.35, 0.85), U.Shade(wicker, 0.7)) -- rim
+		local bc = Vector3.new(0, 2.85, 1.5)
+		ball(torso, 1.7, CFrame.new(bc), c)
+		for _, a in { 0, math.pi / 3, -math.pi / 3 } do
+			cyl(torso, 0.24, 1.73, CFrame.new(bc) * CFrame.Angles(0, a, 0), alt) -- stripes
+		end
+		cone(torso, CFrame.new(bc - Vector3.new(0, 0.6, 0)) * CFrame.Angles(math.pi, 0, 0), 1.0, 0.45, 2, c, alt)
+		for _, s in { -1, 1 } do
+			rod(torso, Vector3.new(0.48 * s, 0.4, 1.15), bc + Vector3.new(0.28 * s, -1.0, 0), 0.04, Color3.fromRGB(120, 90, 60)) -- ropes
+		end
+		ball(torso, 0.24, CFrame.new(bc - Vector3.new(0, 1.15, 0)), Color3.fromRGB(255, 170, 70), NEON) -- burner flame
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.18, 0.12, 0.8), CFrame.new(0.38 * s, 0.56, 0.1), U.Shade(wicker, 0.6)) -- strap
+		end
+	elseif back == "RainbowScarf" then
+		-- long scarf round the neck streaming out behind in rainbow bands, one end hanging down the front
+		cyl(torso, 0.32, 1.42, CFrame.new(0, 0.6, 0) * U.AxisY, RAINBOW[1])
+		cyl(torso, 0.1, 1.46, CFrame.new(0, 0.6, 0) * U.AxisY, RAINBOW[3])
+		block(torso, Vector3.new(0.34, 0.62, 0.1), CFrame.new(0.32, 0.2, -0.47) * CFrame.Angles(0, 0, 0.1), RAINBOW[6]) -- front end
+		local prev = Vector3.new(0.45, 0.6, 0.45)
+		for i = 1, 7 do
+			local p = Vector3.new(0.45 + i * 0.3, 0.62 + 0.22 * math.sin(i * 1.2) + i * 0.08, 0.45 + i * 0.22)
+			block(torso, Vector3.new(0.07, 0.5, (p - prev).Magnitude + 0.04), CFrame.lookAt((p + prev) / 2, p), RAINBOW[i])
+			prev = p
+		end
+	elseif back == "Battery" then
+		-- big battery slung across the back, poking out past both shoulders: copper end, terminal,
+		-- a lightning badge and three charge lights
+		local c = backColor
+		local bc = CFrame.new(0, 0.1, 0.82)
+		cyl(torso, 1.9, 0.86, bc, c)
+		cyl(torso, 0.42, 0.88, bc * CFrame.new(0.76, 0, 0), Color3.fromRGB(205, 120, 60), METAL_MAT) -- copper end
+		cyl(torso, 0.2, 0.34, bc * CFrame.new(1.05, 0, 0), METAL, METAL_MAT) -- terminal
+		local bolt = U.Vivid(look.Beam)
+		bar(torso, Vector3.new(0.12, 0.38, 1.26), Vector3.new(-0.08, 0.06, 1.26), 0.14, 0.04, bolt)
+		bar(torso, Vector3.new(0.1, 0.14, 1.26), Vector3.new(-0.1, -0.2, 1.26), 0.14, 0.04, bolt)
+		for i = -1, 1 do
+			block(torso, Vector3.new(0.18, 0.08, 0.18), bc * CFrame.new(-0.45 + i * 0.22, 0.43, 0), Color3.fromRGB(110, 230, 120)) -- charge lights
+		end
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.18, 0.12, 0.8), CFrame.new(0.38 * s, 0.56, 0.1), Color3.fromRGB(60, 60, 70)) -- strap
+		end
+	elseif back == "ShipWheel" then
+		-- sky-ship steering wheel worn on the back: wooden rim, four crossing spokes with handles, gold hub
+		local c = backColor
+		local wc = CFrame.new(0.45, 0.55, 0.82) * CFrame.Angles(0, 0.35, 0.2)
+		for _, p in U.Hoop(0.82, 0.14, 0.14, 8, torso.CFrame * wc, c, model) do
+			add(torso, p)
+		end
+		cyl(torso, 0.22, 0.4, wc * U.AxisZ, GOLD, METAL_MAT) -- hub
+		for i = 0, 3 do
+			local a = i * math.pi / 4
+			local d = Vector3.new(math.cos(a), math.sin(a), 0)
+			local p0, p1 = (wc * CFrame.new(-d * 1.22)).Position, (wc * CFrame.new(d * 1.22)).Position
+			rod(torso, p0, p1, 0.1, U.Shade(c, 0.85))
+			ball(torso, 0.24, CFrame.new(p0), U.Shade(c, 0.7))
+			ball(torso, 0.24, CFrame.new(p1), U.Shade(c, 0.7))
+		end
+	elseif back == "FeatherWings" then
+		-- big storm-bird wings: four long feathers fanned out per side, alternating with lightning yellow
+		local c = backColor
+		local alt = U.Vivid(look.Beam)
+		for _, s in { -1, 1 } do
+			for i, a in { 0.55, 0.95, 1.35, 1.75 } do
+				local cf = CFrame.new(0.35 * s, 0.45, 0.62) * CFrame.Angles(0, 0.2 * s, -s * a)
+				spike(torso, cf, 0.55, 2.5 - i * 0.3, 0.08, if i % 2 == 1 then c else alt)
+			end
+		end
+	elseif back == "Cyclone" then
+		-- a little tornado swirling up behind her, leaning back and widening at the top, with a spark
+		local c = backColor
+		local top = Vector3.zero
+		for i = 0, 7 do
+			local p = Vector3.new(0.3 + 0.02 * i * i, -0.9 + i * 0.4, 0.85 + i * 0.11)
+			cyl(torso, 0.54, 0.45 + i * 0.3, CFrame.new(p) * U.AxisY, if i % 2 == 0 then c else U.Mix(c, WHITE, 0.45), { Transparency = 0.15 })
+			top = p
+		end
+		local bolt = U.Vivid(look.Beam)
+		local b0 = top + Vector3.new(0.9, -0.6, -0.4)
+		bar(torso, b0, b0 + Vector3.new(0.18, -0.4, 0), 0.14, 0.06, bolt)
+		bar(torso, b0 + Vector3.new(0.05, -0.35, 0), b0 + Vector3.new(0.25, -0.8, 0), 0.11, 0.06, bolt)
 	end
 
 	------------------------------------------------------------------ tool (right hand)
@@ -1514,6 +1887,84 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		end
 		muzzle = tpart(U.Block(Vector3.new(0.22, 0.22, 0.22), sc * U.VertexUp, beam, model, NEON))
 		tipWorld = T(0, 0, -2.05)
+	elseif tool == "Candle" then
+		-- chamberstick: brass saucer, fat cream candle with a wax drip and a little flame
+		local cc = T(0, 0.05, -0.45) * CFrame.Angles(math.pi / 6, 0, 0)
+		tpart(U.Cyl(0.08, 0.68, cc * U.AxisY, tc, model, METAL_MAT)) -- saucer
+		tpart(U.Cyl(0.55, 0.28, cc * CFrame.new(0, 0.3, 0) * U.AxisY, CREAM, model))
+		tpart(U.Ball(0.13, cc * CFrame.new(0.1, 0.45, -0.07), CREAM, model)) -- wax drip
+		muzzle = tpart(U.Block(Vector3.new(0.17, 0.17, 0.17), cc * CFrame.new(0, 0.7, 0) * U.VertexUp, beam, model, NEON)) -- flame
+		tipWorld = cc * CFrame.new(0, 0.78, 0)
+	elseif tool == "Stamp" then
+		-- library date stamp held upright: wooden knob, neck, chunky body and a glowing ink pad
+		local sc = T(0, 0, -0.12) * CFrame.Angles(math.pi / 6, 0, 0)
+		tpart(U.Ball(0.36, sc * CFrame.new(0, 0.1, 0), Color3.fromRGB(150, 100, 60), model)) -- knob
+		tpart(U.Cyl(0.4, 0.16, sc * CFrame.new(0, -0.2, 0) * U.AxisY, Color3.fromRGB(120, 80, 50), model))
+		tpart(U.Block(Vector3.new(0.72, 0.28, 0.46), sc * CFrame.new(0, -0.5, 0), tc, model))
+		tpart(U.Block(Vector3.new(0.74, 0.06, 0.48), sc * CFrame.new(0, -0.38, 0), GOLD, model, METAL_MAT)) -- trim
+		muzzle = tpart(U.Block(Vector3.new(0.64, 0.06, 0.4), sc * CFrame.new(0, -0.67, 0), beam, model, NEON)) -- ink pad
+		tipWorld = sc * CFrame.new(0, -0.72, 0)
+	elseif tool == "Magnifier" then
+		-- big magnifying glass held up and out: wooden handle, brass rim, glassy lens
+		local mf = grip * CFrame.Angles(0.9, 0, 0)
+		tpart(U.Cyl(0.7, 0.17, mf * CFrame.new(0, 0, -0.25) * U.AxisZ, Color3.fromRGB(120, 75, 45), model)) -- handle
+		tpart(U.Cyl(0.12, 0.2, mf * CFrame.new(0, 0, -0.62) * U.AxisZ, tc, model, METAL_MAT)) -- collar
+		local lc = mf * CFrame.new(0, 0, -1.12) * CFrame.Angles(0, 0.35, 0)
+		tpart(U.Cyl(0.1, 0.95, lc, tc, model, METAL_MAT)) -- rim
+		tpart(U.Cyl(0.12, 0.78, lc, Color3.fromRGB(200, 235, 255), model, { Transparency = 0.35, Reflectance = 0.3, Shadow = false })) -- lens
+		muzzle = tpart(U.Block(Vector3.new(0.14, 0.14, 0.14), lc * CFrame.new(0.08, 0.2, -0.18) * U.VertexUp, beam, model, NEON)) -- glint
+		tipWorld = lc
+	elseif tool == "BookStaff" then
+		-- archmage staff: tall dark pole, gold collar and an open book floating above with a glowing rune
+		local sf = grip * CFrame.Angles(0.05, 0, -0.5)
+		tpart(U.Cyl(3.0, 0.18, sf * CFrame.new(0, 0.55, 0) * U.AxisY, U.Shade(tc, 0.5), model))
+		tpart(U.Cyl(0.18, 0.44, sf * CFrame.new(0, 2.0, 0) * U.AxisY, GOLD, model, METAL_MAT))
+		tpart(U.Ball(0.3, sf * CFrame.new(0, 2.15, 0), GOLD, model, METAL_MAT))
+		local bk = sf * CFrame.new(0, 2.55, 0) * CFrame.Angles(0, 0, 0.5) * CFrame.Angles(-1.0, 0, 0)
+		for _, s in { -1, 1 } do
+			tpart(U.Block(Vector3.new(0.55, 0.06, 0.75), bk * CFrame.new(0.27 * s, 0, 0) * CFrame.Angles(0, 0, 0.18 * s), tc, model))
+		end
+		tpart(U.Block(Vector3.new(0.98, 0.1, 0.68), bk * CFrame.new(0, 0.08, 0), CREAM, model)) -- pages
+		muzzle = tpart(U.Block(Vector3.new(0.26, 0.26, 0.26), bk * CFrame.new(0, 0.5, 0) * U.VertexUp, beam, model, NEON))
+		tipWorld = bk * CFrame.new(0, 0.5, 0)
+	elseif tool == "Anemometer" then
+		-- hand-held wind meter: a pole with three spinning cups (one red) on top
+		local sf = grip * CFrame.Angles(0.05, 0, -0.35)
+		tpart(U.Cyl(1.9, 0.12, sf * CFrame.new(0, 0.6, 0) * U.AxisY, METAL, model, METAL_MAT))
+		local hc = sf * CFrame.new(0, 1.6, 0)
+		tpart(U.Cyl(0.22, 0.24, hc * U.AxisY, tc, model))
+		for i = 0, 2 do
+			local a = i * 2 * math.pi / 3 + 0.4
+			local d = Vector3.new(math.cos(a), 0, math.sin(a))
+			tpart(U.Cyl(0.62, 0.06, hc * CFrame.new(d * 0.3) * CFrame.Angles(0, -a, 0), METAL, model, METAL_MAT))
+			tpart(U.Ball(0.34, hc * CFrame.new(d * 0.64), if i == 0 then RED else tc, model)) -- cup
+		end
+		muzzle = tpart(U.Ball(0.16, hc * CFrame.new(0, 0.2, 0), beam, model, NEON))
+		tipWorld = hc * CFrame.new(0, 0.25, 0)
+	elseif tool == "Crook" then
+		-- shepherd's crook: tall pole whose top curls over outward, a little bell on the hook's end
+		local sf = grip * CFrame.Angles(0.05, 0, -0.42)
+		tpart(U.Cyl(2.6, 0.15, sf * CFrame.new(0, 0.55, 0) * U.AxisY, tc, model))
+		local cx, cy, r = 0.34, 1.85, 0.34
+		local prev = sf * CFrame.new(0, cy, 0)
+		for i = 1, 5 do
+			local a = math.pi - i * math.pi / 4
+			local p = sf * CFrame.new(cx + math.cos(a) * r, cy + math.sin(a) * r, 0)
+			tpart(U.Cyl((p.Position - prev.Position).Magnitude + 0.06, 0.15, U.Between(prev.Position, p.Position), tc, model))
+			prev = p
+		end
+		muzzle = tpart(U.Ball(0.2, prev * CFrame.new(0, -0.12, 0), beam, model, NEON)) -- bell
+		tipWorld = prev * CFrame.new(0, -0.2, 0)
+	elseif tool == "Pinwheel" then
+		-- rainbow pinwheel on a stick, turned a little toward the viewer
+		local sf = grip * CFrame.Angles(0.05, 0, -0.6)
+		tpart(U.Cyl(1.8, 0.1, sf * CFrame.new(0, 0.6, 0) * U.AxisY, tc, model))
+		local pc = sf * CFrame.new(0, 1.55, -0.08) * CFrame.Angles(0, -0.45, 0.6)
+		for i = 0, 3 do
+			tpart(U.Wedge(Vector3.new(0.05, 0.75, 0.75), pc * CFrame.Angles(0, 0, i * math.pi / 2) * CFrame.new(0.375, 0.375, 0) * CFrame.Angles(0, math.pi / 2, 0), RAINBOW[i * 2 + 1], model))
+		end
+		muzzle = tpart(U.Ball(0.18, pc * CFrame.new(0, 0, -0.06), beam, model, NEON))
+		tipWorld = pc * CFrame.new(0, 0, -0.1)
 	else -- Flashlight (default)
 		tpart(U.Cyl(1.2, 0.36, T(0, 0, -0.3) * U.AxisZ, U.Shade(tc, 0.7), model))
 		tpart(U.Cyl(0.38, 0.62, T(0, 0, -1.05) * U.AxisZ, tc, model))
