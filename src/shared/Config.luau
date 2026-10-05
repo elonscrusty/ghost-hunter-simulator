@@ -3400,17 +3400,16 @@ Config.Tutorial = {
 -- WHAT'S NEW popup: shown once per Version to returning players when they join (players who
 -- haven't finished the tutorial skip it). Bump Version and rewrite Lines for each update.
 Config.UpdateNotes = {
-	Version = "1.15",
-	Title = "WHAT'S NEW!",
+	Version = "2.0",
+	Title = "WORLD 2 IS HERE!",
 	Lines = {
-		"🏰 New lobby! The Boss Tower and Pet Hatchery are now right by spawn",
-		"🥚 18 new pets + the CURSED EGG with Mythic, Secret and Ultra pets",
-		"🍀 Better crate odds: more Rare, Legendary, Mythic and Ultra hunters!",
-		"🎁 Bigger daily rewards + your best area's crate on day 7",
-		"⚡ New TOP POWER leaderboard",
-		"🤝 Trading now happens at the TRADING booth",
-		"❤️ Hunter health shown on every hunter card",
-		"⚙️ Hide hunter & pet names in Settings",
+		"🌀 WORLD 2: THE OTHER SIDE! Beat THE GHOST KING to open the portal",
+		"🏮 10 new areas, from Lantern Market to The Void Throne",
+		"🧑‍🚀 80 new hunters + 10 new Exclusives",
+		"👻 30 new ghosts and 10 new crates",
+		"👑 THE VOID EMPEROR: a huge team boss fight in The Void Throne",
+		"🌍 WORLD 1 / WORLD 2 tabs in the Worlds menu",
+		"📱 Bigger, easier menus on phones",
 	},
 }
 
