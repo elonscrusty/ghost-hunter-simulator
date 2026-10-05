@@ -10,7 +10,9 @@ local Workspace = game:GetService("Workspace")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Rules = require(GH.Logic.Rules)
 local Fx = require(script.Parent.Fx)
+local DataService = require(script.Parent.DataService)
 
 local SafetyService = {}
 
@@ -42,15 +44,36 @@ local function groundBelow(pos: Vector3, character: Model): boolean
 	return Workspace:Raycast(pos + Vector3.new(0, 2, 0), Vector3.new(0, -14, 0), params) ~= nil
 end
 
--- Fast Travel arrival pad nearest to `pos` (falls back to the main spawn).
-local function nearestZoneSpawn(pos: Vector3): Vector3
+local zoneRanges: { { number } } = {}
+for _, z in Config.Zones do
+	table.insert(zoneRanges, { z.MinZ, z.MaxZ })
+end
+local worldFirsts: { number } = {}
+for _, w in Config.Worlds do
+	table.insert(worldFirsts, w.First)
+end
+
+-- World number of a Z position (a Z in the gap between worlds counts as the world before it).
+local function worldAt(z: number): number
+	return Rules.WorldOf(Rules.ZoneIndexAt(z, zoneRanges), worldFirsts)
+end
+
+-- Fast Travel arrival pad nearest to `pos`, in the same world and (when the profile is loaded)
+-- in a zone the player owns, so a fall in World 2 never lands you back in World 1. Falls back
+-- to the main spawn.
+local function nearestZoneSpawn(player: Player, pos: Vector3): Vector3
 	local best: Vector3 = Config.Layout.Spawn
 	local bestD = math.huge
 	local spawns: { [string]: Vector3 } = (Config.Layout :: any).ZoneSpawns or {}
-	for _, p in spawns do
-		local d = (Vector3.new(p.X, 0, p.Z) - Vector3.new(pos.X, 0, pos.Z)).Magnitude
-		if d < bestD then
-			best, bestD = p, d
+	local world = worldAt(pos.Z)
+	local data = DataService.Get(player)
+	for _, z in Config.Zones do
+		local p = spawns[z.Id]
+		if p and Rules.WorldOf(z.Order, worldFirsts) == world and (not data or data.Zones[z.Id]) then
+			local d = (Vector3.new(p.X, 0, p.Z) - Vector3.new(pos.X, 0, pos.Z)).Magnitude
+			if d < bestD then
+				best, bestD = p, d
+			end
 		end
 	end
 	return Vector3.new(best.X, 3, best.Z)
@@ -68,16 +91,18 @@ local function rescue(player: Player, character: Model, root: BasePart, t: Track
 			source = "TowerSafe"
 		end
 	end
-	-- a spot saved inside a tower room never counts on the main map (and vice versa)
-	if not target and t.LastSafe and t.SafeInTower == (player:GetAttribute("InTower") == true) then
+	-- a spot saved inside a tower room never counts on the main map (and vice versa), nor one
+	-- saved in the other world (e.g. just before taking a portal)
+	local inTower = player:GetAttribute("InTower") == true
+	if not target and t.LastSafe and t.SafeInTower == inTower then
 		local cf = (t.LastSafe :: CFrame) + Vector3.new(0, 3, 0)
-		if groundBelow(cf.Position, character) then
+		if (inTower or worldAt(cf.Position.Z) == worldAt(fellAt.Z)) and groundBelow(cf.Position, character) then
 			target = cf
 			source = "last safe spot"
 		end
 	end
 	if not target then
-		target = CFrame.new(nearestZoneSpawn(fellAt))
+		target = CFrame.new(nearestZoneSpawn(player, fellAt))
 	end
 	local dest = target :: CFrame
 

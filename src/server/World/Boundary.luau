@@ -1,6 +1,9 @@
 --!strict
--- Ground slabs (top at Y=0), lobby + themed outer walls, the two zone-separation walls and the
+-- Ground slabs (top at Y=0), lobby + themed outer walls, the zone-separation walls and the
 -- invisible collision walls up to Y=80 that keep players inside and in front of locked gates.
+-- Each world (Config.Worlds) is its own walled track: World 1 from the lobby to the end of the
+-- Throne, World 2 from Lantern Market's MinZ to the Void Throne's MaxZ, with an end wall at both
+-- ends of every track and nothing in the gap between them.
 
 local Config = require(game:GetService("ReplicatedStorage").GH.Config)
 local Kit = require(script.Parent.Kit)
@@ -12,11 +15,11 @@ local C = Color3.fromRGB
 local V = Vector3.new
 local INVIS_TOP = 80
 local HW = Config.Layout.HalfWidth -- 140
-local END = Config.Zones[#Config.Zones].MaxZ -- far end of the map
 local LOBBY = Config.Layout.Lobby
 
 -- Zone-separation wall look per gate (wall / cap stone / cap ball / painted band).
-type WallLook = { Wall: Color3, Cap: Color3, Ball: Color3, Band: Color3, Pumpkins: boolean }
+-- Mat: wall material (default Cobblestone); Glow: the band is a thin neon tube (Neon City only)
+type WallLook = { Wall: Color3, Cap: Color3, Ball: Color3, Band: Color3, Pumpkins: boolean, Mat: Enum.Material?, Glow: boolean? }
 local WALLS: { [string]: WallLook } = {
 	Cemetery = { Wall = C(135, 115, 175), Cap = C(185, 170, 220), Ball = C(255, 160, 60), Band = C(150, 255, 120), Pumpkins = true },
 	School = { Wall = C(215, 110, 95), Cap = C(250, 230, 210), Ball = C(200, 130, 255), Band = C(200, 120, 255), Pumpkins = true },
@@ -33,7 +36,27 @@ local WALLS: { [string]: WallLook } = {
 	Clockwork = { Wall = C(150, 110, 75), Cap = C(200, 170, 110), Ball = C(230, 200, 120), Band = C(120, 90, 60), Pumpkins = false },
 	Inferno = { Wall = C(80, 50, 50), Cap = C(110, 70, 60), Ball = C(255, 150, 60), Band = C(255, 110, 50), Pumpkins = false },
 	Throne = { Wall = C(240, 235, 255), Cap = C(200, 180, 240), Ball = C(255, 215, 90), Band = C(150, 100, 230), Pumpkins = false },
+	-- World 2 (walls at the gates of zones 18-26, in the style of the zone each gate opens)
+	PhantomLibrary = { Wall = C(95, 60, 40), Cap = C(60, 38, 28), Ball = C(120, 255, 220), Band = C(170, 40, 50), Pumpkins = false, Mat = Enum.Material.Wood }, -- dark wood, red spine band
+	UpsideManor = { Wall = C(120, 80, 150), Cap = C(70, 45, 95), Ball = C(200, 160, 255), Band = C(230, 200, 120), Pumpkins = false, Mat = Enum.Material.Brick },
+	Glowshroom = { Wall = C(80, 110, 85), Cap = C(60, 85, 65), Ball = C(230, 80, 90), Band = C(120, 255, 230), Pumpkins = false, Mat = Enum.Material.Slate }, -- mossy stone, mushroom-cap balls
+	MirrorMaze = { Wall = C(205, 215, 230), Cap = C(170, 180, 200), Ball = C(230, 245, 255), Band = C(150, 200, 255), Pumpkins = false, Mat = Enum.Material.Foil },
+	GhostSubway = { Wall = C(235, 225, 195), Cap = C(70, 80, 90), Ball = C(255, 220, 80), Band = C(40, 160, 160), Pumpkins = false, Mat = Enum.Material.SmoothPlastic }, -- cream tile, teal band
+	NeonCity = { Wall = C(60, 45, 70), Cap = C(40, 30, 50), Ball = C(255, 80, 220), Band = C(255, 90, 210), Pumpkins = false, Mat = Enum.Material.Brick, Glow = true },
+	StormIslands = { Wall = C(110, 120, 145), Cap = C(185, 195, 215), Ball = C(255, 240, 120), Band = C(255, 230, 110), Pumpkins = false, Mat = Enum.Material.Slate },
+	MoonBase = { Wall = C(225, 228, 235), Cap = C(150, 155, 170), Ball = C(255, 150, 80), Band = C(255, 140, 60), Pumpkins = false, Mat = Enum.Material.DiamondPlate }, -- white panels, orange stripe
+	VoidThrone = { Wall = C(25, 20, 35), Cap = C(45, 35, 60), Ball = C(200, 150, 255), Band = C(170, 110, 255), Pumpkins = false, Mat = Enum.Material.Basalt }, -- obsidian, violet trim
 }
+
+-- Zones without a hand-picked look (World 2) get one from their own colours.
+local function derivedLook(id: string): WallLook
+	local z = Config.ZoneById[id]
+	if not z then
+		return WALLS.School
+	end
+	local black = Color3.new(0, 0, 0)
+	return { Wall = z.FogColor:Lerp(z.Ambient, 0.45), Cap = z.FogColor:Lerp(black, 0.2), Ball = z.Accent, Band = z.Accent:Lerp(black, 0.15), Pumpkins = false }
+end
 
 local invisible: (Instance, Vector3, Vector3) -> ()
 function invisible(parent: Instance, a: Vector3, b: Vector3)
@@ -68,8 +91,8 @@ local function hedgeRun(f: Instance, a: Vector3, b: Vector3)
 	end
 end
 
-local function stoneRun(f: Instance, a: Vector3, b: Vector3, wall: Color3, cap: Color3, topBall: Color3, spacing: number)
-	Kit.Box(f, a, b, wall, { Mat = Enum.Material.Cobblestone, Solid = true })
+local function stoneRun(f: Instance, a: Vector3, b: Vector3, wall: Color3, cap: Color3, topBall: Color3, spacing: number, mat: Enum.Material?)
+	Kit.Box(f, a, b, wall, { Mat = mat or Enum.Material.Cobblestone, Solid = true })
 	local lo, hi = a:Min(b), a:Max(b)
 	Kit.Box(f, V(lo.X - 0.5, hi.Y, lo.Z - 0.5), V(hi.X + 0.5, hi.Y + 1.2, hi.Z + 0.5), cap, { Mat = Enum.Material.Slate })
 	local alongX = (hi.X - lo.X) > (hi.Z - lo.Z)
@@ -126,15 +149,20 @@ function Boundary.Build(map: Instance)
 		local z = gate.Z
 		local half = gate.Width / 2
 		local h = 18
-		local look = WALLS[id] or WALLS.School
+		local look = WALLS[id] or derivedLook(id)
 		for _, s in { -1, 1 } do
-			stoneRun(f, V(s * (half + 8), 0, z - 3), V(s * W, h, z + 3), look.Wall, look.Cap, look.Ball, 24)
+			stoneRun(f, V(s * (half + 8), 0, z - 3), V(s * W, h, z + 3), look.Wall, look.Cap, look.Ball, 24, look.Mat)
 		end
 		-- painted band along the wall faces
 		local band = Kit.Vivid(look.Band)
 		for _, s in { -1, 1 } do
 			for _, fz in { -1, 1 } do
-				Kit.Box(f, V(s * (half + 6), 3, z + fz * 3.05), V(s * (W - 1), 3.6, z + fz * 3.25), band)
+				if look.Glow then
+					-- a thin neon tube (0.25 tall) instead of the painted band: modest glow
+					Kit.Box(f, V(s * (half + 6), 3.2, z + fz * 3.05), V(s * (W - 1), 3.45, z + fz * 3.3), look.Band, { Mat = Enum.Material.Neon })
+				else
+					Kit.Box(f, V(s * (half + 6), 3, z + fz * 3.05), V(s * (W - 1), 3.6, z + fz * 3.25), band)
+				end
 			end
 			invisible(f, V(s * half, 0, z - 3), V(s * W, INVIS_TOP, z + 3))
 		end
@@ -149,10 +177,22 @@ function Boundary.Build(map: Instance)
 		end
 	end
 
-	-- Invisible outer walls (play area is |X| <= 140, Z front..END, plus the lobby)
-	invisible(f, V(-W, 0, front - 3), V(-HW, INVIS_TOP, END + 6))
-	invisible(f, V(HW, 0, front - 3), V(W, INVIS_TOP, END + 6))
-	invisible(f, V(-W, 0, END), V(W, INVIS_TOP, END + 6))
+	-- Invisible outer walls (play area is |X| <= 140) along each world's track, plus the lobby.
+	-- World 1 starts at the lobby's front hedge; later worlds start at their first zone's MinZ.
+	for wi, world in Config.Worlds do
+		local first, last = Config.Zones[world.First], Config.Zones[world.Last]
+		if not first or not last then
+			continue
+		end
+		local z0 = if wi == 1 then front - 3 else first.MinZ - 6
+		local z1 = last.MaxZ
+		invisible(f, V(-W, 0, z0), V(-HW, INVIS_TOP, z1 + 6))
+		invisible(f, V(HW, 0, z0), V(W, INVIS_TOP, z1 + 6))
+		invisible(f, V(-W, 0, z1), V(W, INVIS_TOP, z1 + 6)) -- far end
+		if wi > 1 then
+			invisible(f, V(-W, 0, z0), V(W, INVIS_TOP, first.MinZ)) -- back end
+		end
+	end
 	for _, s in { -1, 1 } do
 		invisible(f, V(s * eh, 0, front - 3), V(s * W, INVIS_TOP, front + 3))
 		local lx = if s < 0 then LX1 else LX2

@@ -18,7 +18,7 @@ local C = Color3.fromRGB
 local V = Vector3.new
 local NEON = Enum.Material.Neon
 
-type Theme = { Stone: Color3, Trim: Color3, Barrier: Color3, Lamp: Color3 }
+type Theme = { Stone: Color3, Trim: Color3, Barrier: Color3, Lamp: Color3, Mat: Enum.Material? } -- Mat: arch material (default Slate)
 
 local THEMES: { [string]: Theme } = {
 	Cemetery = { Stone = C(150, 125, 200), Trim = C(140, 255, 120), Barrier = C(180, 110, 255), Lamp = C(140, 255, 160) },
@@ -36,14 +36,31 @@ local THEMES: { [string]: Theme } = {
 	Clockwork = { Stone = C(160, 120, 80), Trim = C(230, 200, 120), Barrier = C(255, 190, 90), Lamp = C(255, 210, 130) },
 	Inferno = { Stone = C(90, 55, 55), Trim = C(255, 150, 60), Barrier = C(255, 120, 60), Lamp = C(255, 170, 90) },
 	Throne = { Stone = C(240, 235, 255), Trim = C(255, 215, 90), Barrier = C(255, 230, 140), Lamp = C(255, 240, 180) },
+	-- World 2 (each arch in the style of the zone it opens; see Boundary WALLS for the walls)
+	PhantomLibrary = { Stone = C(95, 60, 40), Trim = C(170, 40, 50), Barrier = C(120, 255, 220), Lamp = C(255, 220, 150), Mat = Enum.Material.Wood },
+	UpsideManor = { Stone = C(120, 80, 150), Trim = C(230, 200, 120), Barrier = C(200, 160, 255), Lamp = C(230, 200, 255), Mat = Enum.Material.Brick },
+	Glowshroom = { Stone = C(80, 110, 85), Trim = C(230, 80, 90), Barrier = C(120, 255, 230), Lamp = C(160, 255, 230) },
+	MirrorMaze = { Stone = C(205, 215, 230), Trim = C(150, 200, 255), Barrier = C(220, 240, 255), Lamp = C(230, 245, 255), Mat = Enum.Material.Foil },
+	GhostSubway = { Stone = C(235, 225, 195), Trim = C(40, 160, 160), Barrier = C(255, 220, 80), Lamp = C(255, 235, 150), Mat = Enum.Material.SmoothPlastic },
+	NeonCity = { Stone = C(60, 45, 70), Trim = C(255, 90, 210), Barrier = C(255, 80, 220), Lamp = C(255, 150, 230), Mat = Enum.Material.Brick },
+	StormIslands = { Stone = C(110, 120, 145), Trim = C(255, 230, 110), Barrier = C(255, 240, 120), Lamp = C(255, 245, 170) },
+	MoonBase = { Stone = C(225, 228, 235), Trim = C(255, 140, 60), Barrier = C(255, 150, 80), Lamp = C(255, 190, 130), Mat = Enum.Material.DiamondPlate },
+	VoidThrone = { Stone = C(25, 20, 35), Trim = C(170, 110, 255), Barrier = C(200, 150, 255), Lamp = C(215, 180, 255), Mat = Enum.Material.Basalt },
 }
 
 local function buildGate(folder: Instance, id: string, z: number, width: number)
 	local zone = Config.ZoneById[id]
-	local theme = THEMES[id] or THEMES.Cemetery
+	local theme = THEMES[id]
+	if not theme then
+		-- zones without a hand-picked theme (World 2) take one from their own colours
+		local white = Color3.new(1, 1, 1)
+		theme = { Stone = zone.FogColor:Lerp(zone.Ambient, 0.5), Trim = zone.Accent, Barrier = zone.Accent:Lerp(white, 0.2), Lamp = zone.Accent:Lerp(white, 0.35) }
+	end
 	local half = width / 2
 	local m = Kit.Model(folder, "Gate_" .. id)
 	local trim = Kit.Vivid(theme.Trim)
+	local w2 = Config.Worlds[2]
+	local otherSide = w2 ~= nil and zone.Order >= w2.First
 
 	-- Barrier: fills the opening. Other code toggles collision locally and tweens it.
 	local barrier = Kit.Part(m, V(width, 30, 2), CFrame.new(0, 15, z), theme.Barrier, {
@@ -61,8 +78,8 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 	local pw = 8 -- pillar width
 	for _, s in { -1, 1 } do
 		local x1, x2 = s * half, s * (half + pw)
-		Kit.Box(arch, V(x1, 0, z - 5), V(x2, 32, z + 5), theme.Stone, { Mat = Enum.Material.Slate, Solid = true })
-		Kit.Box(arch, V(s * (half + 0.01), 0, z - 6), V(s * (half + pw + 1), 3, z + 6), theme.Stone:Lerp(Color3.new(0, 0, 0), 0.2), { Mat = Enum.Material.Slate, Solid = true })
+		Kit.Box(arch, V(x1, 0, z - 5), V(x2, 32, z + 5), theme.Stone, { Mat = theme.Mat or Enum.Material.Slate, Solid = true })
+		Kit.Box(arch, V(s * (half + 0.01), 0, z - 6), V(s * (half + pw + 1), 3, z + 6), theme.Stone:Lerp(Color3.new(0, 0, 0), 0.2), { Mat = theme.Mat or Enum.Material.Slate, Solid = true })
 		-- painted trims on the pillar fronts (both sides)
 		for _, fz in { -1, 1 } do
 			for _, ex in { 0.6, pw - 0.6 } do
@@ -71,7 +88,12 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 			end
 		end
 		-- glowing jack-o'-lantern on top of each pillar
-		Props.Pumpkin(arch, V(s * (half + pw / 2), 36, z), 6.5, 0, -1, true)
+		if otherSide then
+			-- World 2: a plain orb in the zone's lamp colour instead of the jack-o'-lantern
+			Kit.Ball(arch, 5.5, V(s * (half + pw / 2), 35.5, z), Kit.Vivid(theme.Lamp), { Refl = 0.2 })
+		else
+			Props.Pumpkin(arch, V(s * (half + pw / 2), 36, z), 6.5, 0, -1, true)
+		end
 		-- hanging lantern on the approach side
 		local lx = s * (half + pw / 2)
 		Kit.Box(arch, V(lx - 0.3, 24, z - 5.8), V(lx + 0.3, 26, z - 5), C(50, 40, 70))
@@ -79,17 +101,23 @@ local function buildGate(folder: Instance, id: string, z: number, width: number)
 		Kit.Light(lamp, theme.Lamp, 22, 1.6)
 	end
 	-- top beam (Y 30..36) spanning the opening above the barrier
-	Kit.Box(arch, V(-(half + pw + 1), 30, z - 4), V(half + pw + 1, 36, z + 4), theme.Stone, { Mat = Enum.Material.Slate, Solid = true })
+	Kit.Box(arch, V(-(half + pw + 1), 30, z - 4), V(half + pw + 1, 36, z + 4), theme.Stone, { Mat = theme.Mat or Enum.Material.Slate, Solid = true })
 	for _, fz in { -1, 1 } do
 		Kit.Box(arch, V(-(half + pw + 1), 30, z + fz * 4), V(half + pw + 1, 30.6, z + fz * 4.3), trim)
 	end
 	-- crenellations
 	for i = -2, 2 do
 		local x = i * 9
-		Kit.Box(arch, V(x - 2, 36, z - 3), V(x + 2, 38, z + 3), theme.Stone, { Mat = Enum.Material.Slate })
+		Kit.Box(arch, V(x - 2, 36, z - 3), V(x + 2, 38, z + 3), theme.Stone, { Mat = theme.Mat or Enum.Material.Slate })
 	end
 	-- skull centrepiece on the approach face
-	Props.Skull(arch, V(0, 33, z - 5), 4.5, 0, -1)
+	if otherSide then
+		-- round emblem in the trim colour (World 2 gates aren't spooky-town)
+		Kit.CylFlat(arch, 0.6, 5, V(0, 33, z - 4.3), "Z", trim, {})
+		Kit.CylFlat(arch, 0.6, 3, V(0, 33, z - 4.6), "Z", Kit.Vivid(theme.Barrier), {})
+	else
+		Props.Skull(arch, V(0, 33, z - 5), 4.5, 0, -1)
+	end
 	-- low wisps either side of the opening
 	Props.Wisp(arch, V(-(half + 5), 0, z - 9), theme.Barrier, 10, false)
 	Props.Wisp(arch, V(half + 5, 0, z - 9), theme.Barrier, 10, false)

@@ -305,6 +305,11 @@ local function tick()
 				towerPointed = true
 				setGuide(towerPos, TOWER_GUIDE_SECONDS)
 			end
+		elseif nextZone and calm and nextZone.Id == Config.Layout.Portals.ToWorld2.Zone and not (d.BossesBeaten and d.BossesBeaten[Config.Layout.Portals.ToWorld2.Boss]) then
+			-- World 2's portal first needs THE GHOST KING beaten
+			goalChip.Visible = true
+			goalLabel.Text = "NEXT: DEFEAT " .. Config.Ghosts[Config.Layout.Portals.ToWorld2.Boss].Name .. " TO OPEN WORLD 2"
+			goalFill.Size = UDim2.fromScale(0.02, 1)
 		elseif nextZone and calm then
 			goalChip.Visible = true
 			goalLabel.Text = "NEXT: UNLOCK " .. nextZone.Name .. "  " .. Format.Short(math.min(d.Ecto, nextZone.Cost)) .. " / " .. Format.Short(nextZone.Cost)

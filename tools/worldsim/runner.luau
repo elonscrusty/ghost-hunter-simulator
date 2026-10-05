@@ -113,7 +113,16 @@ Kit.Float = function(...)
 	return ok
 end
 
-local MODULES = { "Lighting", "Boundary", "Gates", "Stations", "TowerEntrance", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
+local MODULES = { "Lighting", "Boundary", "Gates", "Stations", "Portals", "TowerEntrance", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
+-- World 2 zone files are optional (Builder falls back to a plain zone when one is missing)
+local WORLD2 = { "LanternMarket", "PhantomLibrary", "UpsideManor", "Glowshroom", "MirrorMaze", "GhostSubway", "NeonCity", "StormIslands", "MoonBase", "VoidThrone" }
+local WORLD2_PRESENT = {}
+for _, name in WORLD2 do
+	if WorldFolder:FindFirstChild(name) then
+		table.insert(MODULES, name)
+		WORLD2_PRESENT[name] = true
+	end
+end
 local MAP: any = nil
 local FAILED: { [string]: boolean } = {}
 for _, name in MODULES do
@@ -171,7 +180,18 @@ type PInfo = {
 	Mark: number,
 }
 local PARTS: { PInfo } = {}
-local FOLDERS = { "Boundary", "Gates", "Stations", "TowerEntrance", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
+local FOLDERS = { "Boundary", "Gates", "Stations", "Portals", "TowerEntrance", "Neighborhood", "Cemetery", "School", "Carnival", "Hospital", "Harbor", "Castle", "SpiritRealm" }
+local missingW2 = {}
+for _, name in WORLD2 do
+	if WORLD2_PRESENT[name] then
+		table.insert(FOLDERS, name)
+	else
+		table.insert(missingW2, name)
+	end
+end
+if #missingW2 > 0 then
+	print("  note: World 2 zone file(s) missing, built as plain fallback: " .. table.concat(missingW2, ", "))
+end
 
 if MAP then
 	local rows = {}
@@ -221,7 +241,7 @@ if MAP then
 	end
 	print(string.format("  %-14s %7d %6d %6d %8d   (neon %.1f%%)", "TOTAL", tot.Parts, tot.Neon, tot.Lights, tot.Emitters, 100 * tot.Neon / math.max(1, tot.Parts)))
 	local s = Kit.Stats
-	print(string.format("  Kit.Stats: parts %d, neon %d, lights %d (cap 170), emitters %d (cap 54), floating %d (cap 140), flicker %d (cap 34)", s.Parts, s.Neon, s.Lights, s.Emitters, s.Floating, s.Flicker))
+	print(string.format("  Kit.Stats: parts %d, neon %d, lights %d (cap 290), emitters %d (cap 90), floating %d (cap 230), flicker %d (cap 56)", s.Parts, s.Neon, s.Lights, s.Emitters, s.Floating, s.Flicker))
 	if s.Parts ~= tot.Parts then
 		print(string.format("  note: %d parts in the tree vs %d counted by Kit.Stats (parts made outside Kit)", tot.Parts, s.Parts))
 	end
@@ -472,9 +492,17 @@ if MAP then
 	--==================================================================
 	header("4. Main route X = 0 / +-6 (solid blockers Y 0.3..7, ground)")
 	print("  (steps with top <= 1.6 are walkable; side lanes X=+-6 are notes when X=0 is clear)")
-	local endZ = Config.Zones[#Config.Zones].MaxZ - 5
-	-- start in the lobby plaza just in front of the spawn pad
-	local START_Z = math.floor(Config.Layout.Spawn.Z) + 10
+	-- one walkable track per world: World 1 from the lobby plaza (just in front of the spawn pad)
+	-- to the end of the Throne, World 2 from just past the BACK TO WORLD 1 portal to its far end.
+	-- The gap between the worlds is crossed by portal, not on foot.
+	local SEGMENTS: { { number } } = {}
+	for wi, w in Config.Worlds do
+		local z0 = if wi == 1 then math.floor(Config.Layout.Spawn.Z) + 10 else Config.Zones[w.First].MinZ + 5
+		if wi == 2 then
+			z0 = math.max(z0, math.floor(Config.Layout.Portals.ToWorld1.Position.Z) + 16)
+		end
+		table.insert(SEGMENTS, { z0, Config.Zones[w.Last].MaxZ - 5 })
+	end
 	local gateZ = {}
 	for _, g in Config.Layout.Gates do
 		table.insert(gateZ, g.Z)
@@ -526,109 +554,114 @@ if MAP then
 		return walkGround(x, z)
 	end
 
-	for _, lane in { 0, -6, 6 } do
-		local blockedRuns = {}
-		local noGround = {}
-		local cur: any = nil
-		local z = START_Z
-		while z <= endZ do
-			local bl = {}
-			for _, p in blockersAt(lane, z) do
-				if not isStep(p) then
-					table.insert(bl, p)
+	for _, SEG in SEGMENTS do
+		local START_Z, endZ = SEG[1], SEG[2]
+		for _, lane in { 0, -6, 6 } do
+			local blockedRuns = {}
+			local noGround = {}
+			local cur: any = nil
+			local z = START_Z
+			while z <= endZ do
+				local bl = {}
+				for _, p in blockersAt(lane, z) do
+					if not isStep(p) then
+						table.insert(bl, p)
+					end
 				end
+				if #bl > 0 then
+					if cur and cur.Z2 == z - 4 then
+						cur.Z2 = z
+					else
+						cur = { Z1 = z, Z2 = z, Parts = {} }
+						table.insert(blockedRuns, cur)
+					end
+					for _, p in bl do
+						cur.Parts[p] = true
+					end
+				end
+				if not walkGround(lane, z) then
+					table.insert(noGround, z)
+				end
+				z += 4
 			end
-			if #bl > 0 then
-				if cur and cur.Z2 == z - 4 then
-					cur.Z2 = z
+			if #blockedRuns == 0 and #noGround == 0 then
+				print(string.format("  ok    lane X=%d clear from Z %d to %d", lane, START_Z, endZ))
+			end
+			for _, run in blockedRuns do
+				local names = {}
+				for p in run.Parts do
+					table.insert(names, p)
+				end
+				local msg = string.format("lane X=%d blocked Z %d..%d by %d part(s)", lane, run.Z1, run.Z2, #names)
+				if lane == 0 then
+					issue(msg)
 				else
-					cur = { Z1 = z, Z2 = z, Parts = {} }
-					table.insert(blockedRuns, cur)
+					print("  NOTE  " .. msg)
 				end
-				for _, p in bl do
-					cur.Parts[p] = true
+				for j, p in names do
+					if j > MAX_LIST then
+						break
+					end
+					print("      " .. describe(p))
 				end
-			end
-			if not walkGround(lane, z) then
-				table.insert(noGround, z)
-			end
-			z += 4
-		end
-		if #blockedRuns == 0 and #noGround == 0 then
-			print(string.format("  ok    lane X=%d clear from Z %d to %d", lane, START_Z, endZ))
-		end
-		for _, run in blockedRuns do
-			local names = {}
-			for p in run.Parts do
-				table.insert(names, p)
-			end
-			local msg = string.format("lane X=%d blocked Z %d..%d by %d part(s)", lane, run.Z1, run.Z2, #names)
-			if lane == 0 then
-				issue(msg)
-			else
-				print("  NOTE  " .. msg)
-			end
-			for j, p in names do
-				if j > MAX_LIST then
-					break
-				end
-				print("      " .. describe(p))
-			end
-			if lane == 0 then
-				-- nearest clear detour within +-40 at every blocked sample
-				local worst = 0
-				local zz = run.Z1
-				local ok = true
-				while zz <= run.Z2 do
-					local found = nil
-					for d = 2, 40, 2 do
-						if clearAt(d, zz) then
-							found = d
-							break
-						elseif clearAt(-d, zz) then
-							found = -d
-							break
+				if lane == 0 then
+					-- nearest clear detour within +-40 at every blocked sample
+					local worst = 0
+					local zz = run.Z1
+					local ok = true
+					while zz <= run.Z2 do
+						local found = nil
+						for d = 2, 40, 2 do
+							if clearAt(d, zz) then
+								found = d
+								break
+							elseif clearAt(-d, zz) then
+								found = -d
+								break
+							end
 						end
+						if not found then
+							ok = false
+							print(string.format("      no clear X within +-40 at Z %d", zz))
+						elseif math.abs(found) > math.abs(worst) then
+							worst = found
+						end
+						zz += 4
 					end
-					if not found then
-						ok = false
-						print(string.format("      no clear X within +-40 at Z %d", zz))
-					elseif math.abs(found) > math.abs(worst) then
-						worst = found
+					if ok then
+						print(string.format("      detour: clear lane within %d studs of X=0 at every blocked Z", math.abs(worst)))
 					end
-					zz += 4
 				end
-				if ok then
-					print(string.format("      detour: clear lane within %d studs of X=0 at every blocked Z", math.abs(worst)))
+			end
+			if #noGround > 0 then
+				local shown = {}
+				for j, zz in noGround do
+					if j > 12 then
+						table.insert(shown, "...")
+						break
+					end
+					table.insert(shown, tostring(zz))
+				end
+				local msg = string.format("lane X=%d: no solid ground at %d sample(s): Z %s", lane, #noGround, table.concat(shown, " "))
+				if lane == 0 then
+					issue(msg)
+				else
+					print("  NOTE  " .. msg)
 				end
 			end
 		end
-		if #noGround > 0 then
-			local shown = {}
-			for j, zz in noGround do
-				if j > 12 then
-					table.insert(shown, "...")
-					break
-				end
-				table.insert(shown, tostring(zz))
-			end
-			local msg = string.format("lane X=%d: no solid ground at %d sample(s): Z %s", lane, #noGround, table.concat(shown, " "))
-			if lane == 0 then
-				issue(msg)
-			else
-				print("  NOTE  " .. msg)
-			end
-		end
-	end
 
+	end
 	-- Play-area edge: something solid and unjumpable (bottom < 1, top > 8) across |X| 140..146
 	-- along the whole map, so players can't leave the map sideways.
 	do
-		local endWall = Config.Zones[#Config.Zones].MaxZ
+		for wi, w in Config.Worlds do
+		local endWall = Config.Zones[w.Last].MaxZ
+		local startZ = if wi == 1 then Config.Layout.Lobby.FrontZ - 2 else Config.Zones[w.First].MinZ + 2
 		for _, sx in { -1, 1 } do
 			local gaps = {}
 			local cur: any = nil
-			local z = Config.Layout.Lobby.FrontZ - 2
+			local z = startZ
 			while z <= endWall - 2 do
 				local walled = false
 				for _, p in query(math.min(sx * 146, sx * 140), z, math.max(sx * 146, sx * 140), z) do
@@ -648,7 +681,7 @@ if MAP then
 				z += 4
 			end
 			if #gaps == 0 then
-				print(string.format("  ok    edge X=%d walled from Z %d to %d", sx * 143, Config.Layout.Lobby.FrontZ - 2, endWall - 2))
+				print(string.format("  ok    edge X=%d walled from Z %d to %d", sx * 143, startZ, endWall - 2))
 			else
 				local list = {}
 				for _, g in gaps do
@@ -656,6 +689,7 @@ if MAP then
 				end
 				issue(string.format("edge X=%d: no solid wall (Y <1 .. >8) at %s", sx * 143, table.concat(list, ", ")))
 			end
+		end
 		end
 		-- lobby: walled on both sides (MinX-6..MinX, MaxX..MaxX+6) and behind (Z BackZ-6..BackZ)
 		local lobby = Config.Layout.Lobby
@@ -692,60 +726,63 @@ if MAP then
 		end
 	end
 
-	-- Reachability: flood fill on a 2-stud grid over X -40..40 from the spawn plaza to the far end.
-	local STEP = 2
-	local XS = 40
-	local cols = XS * 2 // STEP + 1
-	local rowsN = math.floor((endZ - START_Z) / STEP) + 1
-	local walk = {}
-	local function idx(ci: number, ri: number): number
-		return ri * cols + ci
-	end
-	for ri = 0, rowsN - 1 do
-		local z = START_Z + ri * STEP
-		for ci = 0, cols - 1 do
-			local x = -XS + ci * STEP
-			walk[idx(ci, ri)] = clearAt(x, z)
+	for _, SEG in SEGMENTS do
+		local START_Z, endZ = SEG[1], SEG[2]
+		-- Reachability: flood fill on a 2-stud grid over X -40..40 from the spawn plaza to the far end.
+		local STEP = 2
+		local XS = 40
+		local cols = XS * 2 // STEP + 1
+		local rowsN = math.floor((endZ - START_Z) / STEP) + 1
+		local walk = {}
+		local function idx(ci: number, ri: number): number
+			return ri * cols + ci
 		end
-	end
-	local seen = {}
-	local queue = {}
-	local startCi = XS // STEP
-	for d = 0, cols - 1 do
-		for _, ci in { startCi - d, startCi + d } do
-			if ci >= 0 and ci < cols and walk[idx(ci, 0)] and #queue == 0 then
-				table.insert(queue, idx(ci, 0))
-				seen[idx(ci, 0)] = true
+		for ri = 0, rowsN - 1 do
+			local z = START_Z + ri * STEP
+			for ci = 0, cols - 1 do
+				local x = -XS + ci * STEP
+				walk[idx(ci, ri)] = clearAt(x, z)
 			end
 		end
-	end
-	local head = 1
-	local maxRow = 0
-	while head <= #queue do
-		local k = queue[head]
-		head += 1
-		local ri = k // cols
-		local ci = k % cols
-		if ri > maxRow then
-			maxRow = ri
-		end
-		for _, nb in { { ci + 1, ri }, { ci - 1, ri }, { ci, ri + 1 }, { ci, ri - 1 } } do
-			local nc, nr = nb[1], nb[2]
-			if nc >= 0 and nc < cols and nr >= 0 and nr < rowsN then
-				local nk = idx(nc, nr)
-				if walk[nk] and not seen[nk] then
-					seen[nk] = true
-					table.insert(queue, nk)
+		local seen = {}
+		local queue = {}
+		local startCi = XS // STEP
+		for d = 0, cols - 1 do
+			for _, ci in { startCi - d, startCi + d } do
+				if ci >= 0 and ci < cols and walk[idx(ci, 0)] and #queue == 0 then
+					table.insert(queue, idx(ci, 0))
+					seen[idx(ci, 0)] = true
 				end
 			end
 		end
-	end
-	if #queue == 0 then
-		issue(string.format("reachability: no walkable start cell near (0, %d)", START_Z))
-	elseif maxRow == rowsN - 1 then
-		print(string.format("  ok    reachability: walkable path (|X| <= %d, gates open) from Z %d to Z %d", XS, START_Z, endZ))
-	else
-		issue(string.format("reachability: walking from Z %d (|X| <= %d, gates open) stops at Z %d (goal %d)", START_Z, XS, START_Z + maxRow * STEP, endZ))
+		local head = 1
+		local maxRow = 0
+		while head <= #queue do
+			local k = queue[head]
+			head += 1
+			local ri = k // cols
+			local ci = k % cols
+			if ri > maxRow then
+				maxRow = ri
+			end
+			for _, nb in { { ci + 1, ri }, { ci - 1, ri }, { ci, ri + 1 }, { ci, ri - 1 } } do
+				local nc, nr = nb[1], nb[2]
+				if nc >= 0 and nc < cols and nr >= 0 and nr < rowsN then
+					local nk = idx(nc, nr)
+					if walk[nk] and not seen[nk] then
+						seen[nk] = true
+						table.insert(queue, nk)
+					end
+				end
+			end
+		end
+		if #queue == 0 then
+			issue(string.format("reachability: no walkable start cell near (0, %d)", START_Z))
+		elseif maxRow == rowsN - 1 then
+			print(string.format("  ok    reachability: walkable path (|X| <= %d, gates open) from Z %d to Z %d", XS, START_Z, endZ))
+		else
+			issue(string.format("reachability: walking from Z %d (|X| <= %d, gates open) stops at Z %d (goal %d)", START_Z, XS, START_Z + maxRow * STEP, endZ))
+		end
 	end
 end
 

@@ -216,12 +216,22 @@ local function rebuild()
 			total += #list
 			found += zf
 		end
+		-- WORLD 1 / WORLD 2 divider above each world's first area
+		local zdef = Config.ZoneById[z.Id]
+		if zdef and #Config.Worlds > 1 then
+			for _, w in Config.Worlds do
+				if w.First == zdef.Order then
+					local div: Frame = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 30), BackgroundTransparency = 1, LayoutOrder = zi * 2 - 1, ZIndex = 62, Parent = scroll })
+					Kit.Label(div, w.Name .. ": " .. w.Title, { Size = UDim2.fromScale(1, 1), Color = w.Accent, Style = "Heading", Fit = true, ZIndex = 63 })
+				end
+			end
+		end
 		local section: Frame = Kit.new("Frame", {
 			Size = UDim2.new(1, -6, 0, 0),
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundColor3 = Theme.Bg,
 			BackgroundTransparency = 0.45,
-			LayoutOrder = zi,
+			LayoutOrder = zi * 2,
 			ZIndex = 62,
 			Parent = scroll,
 		})

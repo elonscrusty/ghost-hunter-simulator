@@ -28,11 +28,13 @@ export type Opts = {
 Kit.Rng = Random.new(42)
 
 Kit.Stats = { Parts = 0, Neon = 0, Lights = 0, Emitters = 0, Floating = 0, Flicker = 0 }
--- Budgets for the whole 16-zone map (per zone ~9 lights, 2-3 emitters, 6-8 floating, 2 flicker).
-local MAX_LIGHTS = 170
-local MAX_EMITTERS = 54
-local MAX_FLOATING = 140
-local MAX_FLICKER = 34
+-- Budgets for the whole map (per zone ~9 lights, 2-3 emitters, 6-8 floating, 2 flicker).
+-- World 1 (16 zones) used 170 / 54 / 140 / 34; World 2 adds 10 zones, 9 gates, 10 stations and
+-- the portals. Only lights near the camera cost anything, and the worlds are 1400 studs apart.
+local MAX_LIGHTS = 290
+local MAX_EMITTERS = 90
+local MAX_FLOATING = 230
+local MAX_FLICKER = 56
 
 local NO_OPTS: Opts = {}
 

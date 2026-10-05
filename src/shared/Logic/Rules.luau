@@ -198,16 +198,84 @@ function Rules.Forget(l: Limiter, prefix: string)
 end
 
 -- Zone index (1-based order) for a Z coordinate given ordered {MinZ, MaxZ} pairs.
+-- Between worlds there is an empty gap (World 1 ends at the Throne, World 2 starts further
+-- on): a Z in a gap belongs to the last zone that starts before it, so the gap after the Throne
+-- counts as the Throne (never as zone 1). Before the first zone -> 1, past the last -> last.
 function Rules.ZoneIndexAt(z: number, ranges: { { number } }): number
+	local best = 1
 	for i, r in ranges do
 		if z >= r[1] and z < r[2] then
 			return i
 		end
+		if z >= r[1] then
+			best = i
+		end
 	end
-	if #ranges > 0 and z >= ranges[#ranges][2] then
-		return #ranges
+	return best
+end
+
+-- Why a zone can't be bought yet: "Previous" (the zone before it isn't owned), "Boss" (it needs
+-- `needBoss` beaten at least once and it isn't; the World 2 portal needs THE GHOST KING), or nil
+-- when it can be bought. Gates, the portal and the Unlock Next Area product all use this.
+function Rules.ZoneUnlockBlock(owned: { [string]: boolean }, beaten: { [string]: boolean }?, prevId: string?, needBoss: string?): string?
+	if prevId and not owned[prevId] then
+		return "Previous"
 	end
-	return 1
+	if needBoss and not (beaten and beaten[needBoss] == true) then
+		return "Boss"
+	end
+	return nil
+end
+
+-- World number (1-based) of a zone order, given each world's first zone order ascending
+-- ({1, 17} = World 1 is zones 1-16, World 2 starts at 17).
+function Rules.WorldOf(order: number, firsts: { number }): number
+	local w = 1
+	for i, first in firsts do
+		if order >= first then
+			w = i
+		end
+	end
+	return w
+end
+
+--==================================================================
+-- Leaderboard value encoding (OrderedDataStore values must be integers below 2^53 ~ 9.007e15)
+--==================================================================
+-- Values below 1e15 are stored as they are (exactly what older servers wrote). Bigger values
+-- are stored as 1e15 + floor((log10(v) - 15) * BOARD_K), which keeps the order (bigger value ->
+-- bigger stored number) and stays tiny: a value of 1e100 is stored as 1e15 + 8.5e11. Stored
+-- numbers above that band can only be legacy raw values (old servers clamped at 2^53), so they
+-- decode as themselves and LeaderboardService rewrites them in the new form.
+local BOARD_RAW = 1e15
+local BOARD_K = 1e10 -- steps per power of ten (relative precision ~2e-10)
+local BOARD_MAX_LOG = 100 -- values are capped at 1e100 before encoding
+local BOARD_BAND = (BOARD_MAX_LOG - 15) * BOARD_K
+
+function Rules.BoardEncode(v: number): number
+	if v ~= v or v <= 0 then
+		return 0
+	end
+	if v < BOARD_RAW then
+		return math.floor(v)
+	end
+	local lg = math.min(math.log10(v), BOARD_MAX_LOG)
+	return BOARD_RAW + math.floor((lg - 15) * BOARD_K)
+end
+
+-- true when a stored number can only have been written by an old server (raw value >= 1e15)
+function Rules.BoardIsLegacy(stored: number): boolean
+	return stored > BOARD_RAW + BOARD_BAND
+end
+
+function Rules.BoardDecode(stored: number): number
+	if stored ~= stored or stored <= 0 then
+		return 0
+	end
+	if stored < BOARD_RAW or Rules.BoardIsLegacy(stored) then
+		return stored
+	end
+	return 10 ^ (15 + (stored - BOARD_RAW) / BOARD_K)
 end
 
 --==================================================================

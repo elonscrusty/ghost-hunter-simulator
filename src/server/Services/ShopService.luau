@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
+local Rules = require(GH.Logic.Rules)
 local DataService = require(script.Parent.DataService)
 local PlayerInfo = require(script.Parent.PlayerInfo)
 local HunterService = require(script.Parent.HunterService)
@@ -29,13 +30,22 @@ local function productById(id: number): Config.ProductDef?
 	return nil
 end
 
-local function nextLockedZone(d: DataService.Data): Config.ZoneDef?
+-- The zone Unlock Next Area would open: the first one not owned, unless it still needs a boss
+-- beaten (the World 2 portal needs THE GHOST KING): Robux never skips that, so then nil (and the
+-- second result names the boss).
+local function nextLockedZone(d: DataService.Data): (Config.ZoneDef?, string?)
+	local portal = Config.Layout.Portals.ToWorld2
 	for _, z in Config.Zones do
 		if not d.Zones[z.Id] then
-			return z
+			local prev = Config.Zones[z.Order - 1]
+			local needBoss = if z.Id == portal.Zone then portal.Boss else nil
+			if Rules.ZoneUnlockBlock(d.Zones, d.BossesBeaten, if prev then prev.Id else nil, needBoss) == "Boss" then
+				return nil, needBoss
+			end
+			return z, nil
 		end
 	end
-	return nil
+	return nil, nil
 end
 
 local function grantProduct(player: Player, d: DataService.Data, p: Config.ProductDef)
@@ -291,8 +301,13 @@ function ShopService.Init()
 				if p.Kind == "CrateSkip" and d and (d.SkipTokens or 0) >= Config.CrateSkip.MaxTokens then
 					return Remotes.Fail("You already have the most skips you can hold!")
 				end
-				if p.Kind == "SkipArea" and d and not nextLockedZone(d) then
-					return Remotes.Fail("Every area is already unlocked!")
+				if p.Kind == "SkipArea" and d then
+					local z, boss = nextLockedZone(d)
+					if boss then
+						return Remotes.Fail("Defeat " .. Config.Ghosts[boss].Name .. " first to open World 2!")
+					elseif not z then
+						return Remotes.Fail("Every area is already unlocked!")
+					end
 				end
 				if p.Kind == "ExclusiveCrate" and d then
 					local count = 0

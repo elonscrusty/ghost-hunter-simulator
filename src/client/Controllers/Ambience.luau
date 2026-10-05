@@ -3,7 +3,9 @@
 --  * per-zone lighting blend (ambient + fog colour) as you walk between areas
 --  * floating books/pumpkins (FloatingProp), flickering lights (FlickerLight), spinning
 --    display crates (SpinProp) - one loop, only props near the camera are animated
---  * gates: open locally for zones you own, the NEW AREA UNLOCKED! sequence, sign text
+--  * gates: open locally for zones you own, the NEW AREA UNLOCKED! sequence, sign text (the
+--    World 2 portal, Map.Portals.Gate_<zone>, is handled like a gate without a barrier)
+--  * world portal trips: the travel sound
 --  * station prompts open the right panel
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
@@ -71,7 +73,8 @@ end
 
 -- Gate sign cost row (World/Gates): the lock icon + price while locked, "✅ UNLOCKED" (whole
 -- row, icon hidden) once owned. Without the icon (no image id) the text carries the 🔒.
-local function setCost(cost: TextLabel, owned: boolean, price: number)
+-- `need` (the World 2 portal before THE GHOST KING is beaten) replaces the price with what's missing.
+local function setCost(cost: TextLabel, owned: boolean, price: number, need: string?)
 	local icon = cost.Parent and cost.Parent:FindFirstChild("CostIcon") :: GuiObject?
 	if not cost:GetAttribute("BasePos") then
 		cost:SetAttribute("BasePos", true)
@@ -84,13 +87,14 @@ local function setCost(cost: TextLabel, owned: boolean, price: number)
 		cost.Position = UDim2.new(if owned then 0.08 else x, 0, cost.Position.Y.Scale, cost.Position.Y.Offset)
 		cost.Size = UDim2.new(if owned then 0.84 else w, 0, cost.Size.Y.Scale, cost.Size.Y.Offset)
 	end
-	cost.Text = if owned then "✅ UNLOCKED" else (if icon then "" else "🔒 ") .. Format.Short(price) .. " ECTOPLASM"
+	cost.Text = if owned then "✅ UNLOCKED" else (if icon then "" else "🔒 ") .. (need or (Format.Short(price) .. " ECTOPLASM"))
 end
 
 local function gateParts(zoneId: string): (BasePart?, TextLabel?, ProximityPrompt?)
 	local map = workspace:FindFirstChild("Map")
 	local gates = map and map:FindFirstChild("Gates")
-	local gate = gates and gates:FindFirstChild("Gate_" .. zoneId)
+	local portals = map and map:FindFirstChild("Portals")
+	local gate = (gates and gates:FindFirstChild("Gate_" .. zoneId)) or (portals and portals:FindFirstChild("Gate_" .. zoneId))
 	if not gate then
 		return nil, nil, nil
 	end
@@ -111,7 +115,7 @@ local function applyGates()
 		return
 	end
 	for _, z in Config.Zones do
-		if not Config.Layout.Gates[z.Id] or unlocking[z.Id] then
+		if not (Config.Layout.Gates[z.Id] or z.Id == Config.Layout.Portals.ToWorld2.Zone) or unlocking[z.Id] then
 			continue
 		end
 		local barrier, cost, prompt = gateParts(z.Id)
@@ -129,7 +133,9 @@ local function applyGates()
 			end
 		end
 		if cost then
-			setCost(cost, owned, z.Cost)
+			local portal = Config.Layout.Portals.ToWorld2
+			local needBoss = z.Id == portal.Zone and not (d.BossesBeaten and d.BossesBeaten[portal.Boss])
+			setCost(cost, owned, z.Cost, if needBoss then "DEFEAT " .. Config.Ghosts[portal.Boss].Name .. " FIRST" else nil)
 		end
 		if prompt then
 			prompt.Enabled = not owned
@@ -284,6 +290,11 @@ function Ambience.Start()
 		if type(data) == "table" and type(data.Zone) == "string" then
 			unlockSequence(data.Zone)
 		end
+	end)
+	-- stepped through a world portal (the server already moved the character; Hud shows the
+	-- WORLD n banner when it sees the new world)
+	State.OnFx("WorldTravel", function()
+		Sound.Play("ZoneUnlock")
 	end)
 
 	-- prompts → panels

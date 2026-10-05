@@ -96,7 +96,7 @@ local function buildOddsBoard(board: BasePart, crate: Config.CrateDef)
 		g2.Parent = row
 		row.Parent = bg
 		label(row, string.upper(def.Name), UDim2.fromScale(0.55, 0.55), UDim2.fromScale(0.03, 0.05), Color3.new(1, 1, 1))
-		label(row, rar.Name .. "  ·  ⚡" .. Format.Commas(def.Power), UDim2.fromScale(0.55, 0.38), UDim2.fromScale(0.03, 0.58), Color3.fromRGB(255, 255, 230))
+		label(row, rar.Name .. "  ·  ⚡" .. Format.Short(def.Power), UDim2.fromScale(0.55, 0.38), UDim2.fromScale(0.03, 0.58), Color3.fromRGB(255, 255, 230))
 		label(row, Format.Percent(odds[e.Hunter]), UDim2.fromScale(0.35, 0.8), UDim2.fromScale(0.62, 0.1), Color3.new(1, 1, 1))
 	end
 	gui.Parent = board
@@ -129,17 +129,18 @@ function StationService.Start()
 		end
 		local anchor = station:FindFirstChild("PromptAnchor")
 		if anchor then
-			prompt(anchor, "Open Crate", crate.Name .. " · " .. Format.Commas(crate.Price), { Crate = crateId })
+			prompt(anchor, "Open Crate", crate.Name .. " · " .. Format.Short(crate.Price), { Crate = crateId })
 		end
 	end
 	local up = find({ "Map", "Stations", "UpgradeStation", "PromptAnchor" })
 	if up then
 		prompt(up, "Upgrades", "Upgrade Station", { Station = "Upgrades" })
 	end
+	-- zone gates, plus the World 2 portal (Map.Portals.Gate_<zone>), which sells its zone the same way
 	for _, zone in Config.Zones do
-		local anchor = find({ "Map", "Gates", "Gate_" .. zone.Id, "PromptAnchor" })
+		local anchor = find({ "Map", "Gates", "Gate_" .. zone.Id, "PromptAnchor" }) or find({ "Map", "Portals", "Gate_" .. zone.Id, "PromptAnchor" })
 		if anchor then
-			prompt(anchor, "Unlock", zone.Name .. " · " .. Format.Commas(zone.Cost), { Zone = zone.Id })
+			prompt(anchor, "Unlock", zone.Name .. " · " .. Format.Short(zone.Cost), { Zone = zone.Id })
 		end
 	end
 end

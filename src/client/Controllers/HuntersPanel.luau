@@ -274,7 +274,7 @@ local function updateMergeBar()
 	end
 	local nextTier = Config.Tiers[pickTier + 1]
 	local cost = cratePrice(id) * Config.Merge.CostMult[pickTier + 1]
-	mergeInfo.Text = "Uses the " .. Config.Merge.Count .. " highlighted " .. name .. ".\n\nYou get: " .. nextTier.Icon .. " " .. nextTier.Name .. " " .. string.upper(def.Name) .. "\n" .. Format.Commas(def.Power * nextTier.Mult) .. " CAPTURE POWER\n\nCost: " .. Format.Commas(cost) .. " ECTOPLASM"
+	mergeInfo.Text = "Uses the " .. Config.Merge.Count .. " highlighted " .. name .. ".\n\nYou get: " .. nextTier.Icon .. " " .. nextTier.Name .. " " .. string.upper(def.Name) .. "\n" .. Format.Short(def.Power * nextTier.Mult) .. " CAPTURE POWER\n\nCost: " .. Format.Short(cost) .. " ECTOPLASM"
 	Kit.SetButtonText(mergeConfirm, "CONFIRM 💚" .. Format.Short(cost))
 	mergeConfirm:SetAttribute("Color", if State.Ecto >= cost then "Green" else "Gray")
 end
@@ -538,7 +538,7 @@ function HuntersPanel.Init()
 		OnClick = function()
 			local res = act("EquipBest")
 			if res.ok then
-				Kit.Toast("Best crew equipped! ⚡ " .. Format.Commas(res.Power or 0), "Good")
+				Kit.Toast("Best crew equipped! ⚡ " .. Format.Short(res.Power or 0), "Good")
 			end
 		end,
 	})

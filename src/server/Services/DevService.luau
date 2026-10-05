@@ -36,7 +36,7 @@ function DevService.IsDev(player: Player): boolean
 	return devs[player] == true
 end
 
-local MAX_ECTO_GRANT = 1e12
+local MAX_ECTO_GRANT = 1e24 -- World 2 prices reach 5e22
 local MAX_SHARD_GRANT = 1e6
 local MAX_TOWER_ROOM = 400
 local ECTO2X_DEFAULT_HOURS = 48 -- "ON" without hours: never an endless global event
@@ -90,6 +90,20 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 	elseif cmd == "Zones" then
 		for _, z in Config.Zones do
 			d.Zones[z.Id] = true
+		end
+		d.BossesBeaten[Config.Layout.Portals.ToWorld2.Boss] = true -- owning World 2 implies it
+		DataService.Changed(player)
+	elseif cmd == "GhostKing" then
+		-- arg true: count THE GHOST KING as beaten (World 2 portal requirement); false: forget it
+		-- (only while World 2's first zone isn't owned, so the save stays consistent)
+		local portal = Config.Layout.Portals.ToWorld2
+		if arg == false then
+			if d.Zones[portal.Zone] then
+				return "You already own " .. Config.ZoneById[portal.Zone].Name
+			end
+			d.BossesBeaten[portal.Boss] = nil
+		else
+			d.BossesBeaten[portal.Boss] = true
 		end
 		DataService.Changed(player)
 	elseif cmd == "Hunters" then
@@ -153,6 +167,9 @@ function DevService.Run(player: Player, cmd: string, arg: any): (string?, any)
 			Lobby = Config.Layout.Spawn,
 			Tower = Config.Layout.TowerEntrance.Pad,
 			Hatchery = Config.Layout.Hatchery,
+			Portal = Config.Layout.Portals.ToWorld1.Arrive - Vector3.new(0, 3, 8), -- in front of the World 2 portal
+			World2 = Config.Layout.ZoneSpawns.LanternMarket - Vector3.new(0, 3, 8),
+			VoidThrone = Config.Layout.ZoneSpawns.VoidThrone - Vector3.new(0, 3, 8),
 		}
 		local spot = if type(arg) == "string" then spots[arg] else nil
 		local char = player.Character

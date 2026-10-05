@@ -30,7 +30,17 @@
 	  Z 1920..2280   ZONE 7 CURSED CASTLE (Castle.luau)
 	  Z 2280..2680   ZONE 8 SPIRIT REALM (SpiritRealm.luau)
 	  Z 2680..5560   ZONES 9-16, 360 each: Swamp, Frost, Tomb, ToyFactory, Sunken, Clockwork,
-	                 Inferno, Throne (one file each); far wall at the last zone's MaxZ.
+	                 Inferno, Throne (one file each); World 1's far wall at Z 5560.
+	  X 84, Z 5546   WORLD 2 PORTAL at the end of the Throne (Portals.luau; Config.Layout.Portals):
+	                 the "gate" of Lantern Market, bought like a gate, then touched to travel.
+	  Z 5560..7000   empty gap: nothing walkable between the two worlds.
+	  Z 7000..10720  WORLD 2: THE OTHER SIDE, zones 17-26 (360 each, the Void Throne 480):
+	                 LanternMarket, PhantomLibrary, UpsideManor, Glowshroom, MirrorMaze, GhostSubway,
+	                 NeonCity, StormIslands, MoonBase, VoidThrone (one file each, loaded only if the
+	                 file exists). Gate walls at MinZ of zones 18-26, invisible walls at both ends
+	                 (Boundary), "BACK TO WORLD 1" portal at (0, 7010). A zone whose file is
+	                 missing gets a plain fallback (ground, path, side rails) so the track stays
+	                 walkable.
 	  Every zone from the Cemetery on: gate wall at its MinZ (Boundary + Gates), crate station at
 	  (-28, MinZ + 32), Fast Travel arrival pad at Config.Layout.ZoneSpawns (kept free), main path
 	  along X = 0 to the next gate.
@@ -38,8 +48,9 @@
 	Every ghost area circle from Config.Layout.GhostAreas is registered as a keep-out, so no
 	prop taller than ~0.3 studs is placed inside one (flat road paint / cracks / rune lines only).
 	Instance tree:
-	  workspace.Map.{Boundary, Gates, Stations, TowerEntrance, Neighborhood, Cemetery, School, Carnival,
-	                 Hospital, Harbor, Castle, SpiritRealm}
+	  workspace.Map.{Boundary, Gates, Stations, Portals, TowerEntrance, Neighborhood, Cemetery, School,
+	                 Carnival, Hospital, Harbor, Castle, SpiritRealm, Swamp ... Throne, <World 2 zones>,
+	                 World2Fallback (only for missing World 2 zone files), Hatchery}
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -69,6 +80,11 @@ local Clockwork = require(script.Parent.Clockwork)
 local Inferno = require(script.Parent.Inferno)
 local Throne = require(script.Parent.Throne)
 local Hatchery = require(script.Parent.Hatchery)
+local Portals = require(script.Parent.Portals)
+
+-- World 2 zone builders (each module: Build(map: Instance)), in zone order. A file that does
+-- not exist yet is skipped and gets the plain fallback below instead.
+local WORLD2_MODULES = { "LanternMarket", "PhantomLibrary", "UpsideManor", "Glowshroom", "MirrorMaze", "GhostSubway", "NeonCity", "StormIslands", "MoonBase", "VoidThrone" }
 
 local Builder = {}
 
@@ -85,8 +101,9 @@ local function registerKeepOuts()
 	for _, p in Kit.ZoneSpawns(Config.Layout) do
 		Kit.AddCircle(p.X, p.Z, 9)
 	end
-	-- main path along X = 0 through zones 4-8 (zones 1-3 register their own roads)
+	-- main path along X = 0 from zone 4 on, in both worlds (zones 1-3 register their own roads)
 	Kit.AddRect(-10, 880, 10, Config.Zones[#Config.Zones].MaxZ, true)
+	Portals.RegisterKeepOuts()
 	-- the whole lobby plus its front hedge wall: nothing random grows in there
 	local lobby = Config.Layout.Lobby
 	Kit.AddRect(lobby.MinX - 6, lobby.BackZ - 6, lobby.MaxX + 6, lobby.FrontZ + 3)
@@ -106,30 +123,37 @@ local function emergencyGround()
 	end
 	local f = Instance.new("Folder")
 	f.Name = "EmergencyGround"
-	local maxZ = 5600
-	local okZones, lastZone = pcall(function()
-		return Config.Zones[#Config.Zones].MaxZ
+	-- one strip per world track (World 1 from behind the lobby; nothing in the gap between)
+	local strips: { { number } } = { { -200, 5600 } }
+	pcall(function()
+		local list = {}
+		for wi, w in Config.Worlds do
+			local z0 = if wi == 1 then -200 else Config.Zones[w.First].MinZ - 10
+			table.insert(list, { z0, Config.Zones[w.Last].MaxZ + 40 })
+		end
+		if #list > 0 then
+			strips = list
+		end
 	end)
-	if okZones and type(lastZone) == "number" then
-		maxZ = lastZone + 40
-	end
-	-- parts are capped at 2048 studs per axis, so tile the strip along Z
-	local z = -200
-	while z < maxZ do
-		local len = math.min(2000, maxZ - z)
-		local plate = Instance.new("Part")
-		plate.Name = "EmergencyFloor"
-		plate.Anchored = true
-		plate.CanCollide = true
-		plate.Size = Vector3.new(320, 4, len)
-		-- top at Y = -0.05: just under the normal ground top (no z-fighting if part of the map exists)
-		plate.CFrame = CFrame.new(0, -2.05, z + len / 2)
-		plate.Color = Color3.fromRGB(90, 140, 80)
-		plate.Material = Enum.Material.Grass
-		plate.TopSurface = Enum.SurfaceType.Smooth
-		plate.BottomSurface = Enum.SurfaceType.Smooth
-		plate.Parent = f
-		z += len
+	for _, strip in strips do
+		-- parts are capped at 2048 studs per axis, so tile the strip along Z
+		local z, maxZ = strip[1], strip[2]
+		while z < maxZ do
+			local len = math.min(2000, maxZ - z)
+			local plate = Instance.new("Part")
+			plate.Name = "EmergencyFloor"
+			plate.Anchored = true
+			plate.CanCollide = true
+			plate.Size = Vector3.new(320, 4, len)
+			-- top at Y = -0.05: just under the normal ground top (no z-fighting if part of the map exists)
+			plate.CFrame = CFrame.new(0, -2.05, z + len / 2)
+			plate.Color = Color3.fromRGB(90, 140, 80)
+			plate.Material = Enum.Material.Grass
+			plate.TopSurface = Enum.SurfaceType.Smooth
+			plate.BottomSurface = Enum.SurfaceType.Smooth
+			plate.Parent = f
+			z += len
+		end
 	end
 	local spawnPos = Config.Layout.Spawn
 	local sp = Instance.new("SpawnLocation")
@@ -144,6 +168,54 @@ local function emergencyGround()
 	sp.Parent = f
 	f.Parent = Workspace
 	warn("[GH World] build failed: emergency ground + spawn created")
+end
+
+-- Plain stand-in for a World 2 zone whose builder file is missing: ground (top Y = 0) from
+-- the zone's colours, the main path along X = 0, low side rails and a name sign at the entrance.
+local function fallbackZone(folder: Instance, zone: Config.ZoneDef)
+	local V = Vector3.new
+	local black = Color3.new(0, 0, 0)
+	local z0, z1 = zone.MinZ, zone.MaxZ
+	local f = Kit.Folder(folder, zone.Id)
+	Kit.Box(f, V(-190, -4, z0), V(190, 0, z1), zone.FogColor:Lerp(zone.Ambient, 0.5), { Mat = Enum.Material.Slate, Solid = true, Name = "Ground_" .. zone.Id })
+	Kit.Box(f, V(-8, 0, z0), V(8, 0.05, z1), zone.Ambient:Lerp(black, 0.35), { Mat = Enum.Material.Cobblestone, Solid = true, Name = "Path" })
+	for _, s in { -1, 1 } do
+		Kit.Box(f, V(s * 140, 0, z0 + 3), V(s * 146, 10, z1 - 3), zone.FogColor:Lerp(black, 0.25), { Mat = Enum.Material.Slate, Solid = true })
+		Kit.Box(f, V(s * 139.6, 10, z0 + 3), V(s * 146.4, 10.8, z1 - 3), Kit.Vivid(zone.Accent), {})
+	end
+end
+
+-- World 2 zones: the real builder when its file exists, else the fallback (kept apart so
+-- one missing or broken zone never stops the rest of the map).
+local function buildWorld2(map: Folder)
+	local fallback: Instance? = nil
+	for _, name in WORLD2_MODULES do
+		local zone = Config.ZoneById[name]
+		local file = script.Parent:FindFirstChild(name)
+		local built = false
+		if file and file:IsA("ModuleScript") then
+			local ok, err = pcall(function()
+				local okReq, mod = pcall(require, file :: ModuleScript)
+				if not okReq then
+					error(mod, 0)
+				end
+				(mod :: any).Build(map)
+			end)
+			built = ok
+			if not ok then
+				warn("[GH World] " .. name .. " failed: " .. tostring(err))
+				-- drop the half-built zone so the fallback doesn't overlap it
+				local partial = map:FindFirstChild(name)
+				if partial then
+					partial:Destroy()
+				end
+			end
+		end
+		if not built and zone then
+			fallback = fallback or Kit.Folder(map, "World2Fallback")
+			fallbackZone(fallback :: Instance, zone)
+		end
+	end
 end
 
 local function buildAll(map: Folder)
@@ -172,6 +244,8 @@ local function buildAll(map: Folder)
 	Clockwork.Build(map)
 	Inferno.Build(map)
 	Throne.Build(map)
+	Portals.Build(map)
+	buildWorld2(map)
 	Hatchery.Build(map) -- last: uses no Kit.Rng, so other zones' random props don't shift
 
 	map.Parent = Workspace

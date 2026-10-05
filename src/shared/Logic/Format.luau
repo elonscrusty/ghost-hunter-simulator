@@ -2,10 +2,12 @@
 -- Number/time formatting shared by UI and signs (pure).
 local Format = {}
 
--- 1250 -> "1,250"
+-- 1250 -> "1,250" (whole digits even past 1e21, where tostring would switch to "1e+21";
+-- prefer Format.Short for anything that can get that big)
 function Format.Commas(n: number): string
 	local neg = n < 0
-	local s = tostring(math.floor(math.abs(n)))
+	local a = math.floor(math.abs(n))
+	local s = if a < 1e15 then tostring(a) else string.format("%.0f", a)
 	local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
 	if out:sub(1, 1) == "," then
 		out = out:sub(2)
@@ -13,10 +15,15 @@ function Format.Commas(n: number): string
 	return (if neg then "-" else "") .. out
 end
 
-local SUFFIX = { "", "K", "M", "B", "T", "Qa", "Qi" }
+-- thousand steps: K 1e3, M 1e6, B 1e9, T 1e12, Qa 1e15, Qi 1e18, Sx 1e21, Sp 1e24, Oc 1e27,
+-- No 1e30, Dc 1e33 (World 2 prices reach the Sx range)
+local SUFFIX = { "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc" }
 
--- 1250 -> "1,250", 125000 -> "125K", 1520000 -> "1.52M"
+-- 1250 -> "1,250", 125000 -> "125K", 1520000 -> "1.52M", 1.41e21 -> "1.41Sx"
 function Format.Short(n: number): string
+	if n ~= n then
+		return "0"
+	end
 	if math.abs(n) < 100000 then
 		return Format.Commas(n)
 	end
@@ -27,7 +34,8 @@ function Format.Short(n: number): string
 		i += 1
 	end
 	local digits = if v >= 100 then 0 elseif v >= 10 then 1 else 2
-	local s = string.format("%." .. digits .. "f", math.floor(v * 10 ^ digits) / 10 ^ digits)
+	-- tiny epsilon: dividing by 1000 seven times can leave 1.41 as 1.4099999...
+	local s = string.format("%." .. digits .. "f", math.floor(v * 10 ^ digits + 1e-7) / 10 ^ digits)
 	if digits > 0 then
 		-- trim trailing decimal zeros only ("1.50" -> "1.5", "2.00" -> "2"; "100" stays "100")
 		s = s:gsub("0+$", "")

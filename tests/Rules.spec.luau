@@ -279,6 +279,70 @@ T.zone_index = function()
 	local r = { { -60, 260 }, { 260, 540 }, { 540, 880 } }
 	eq(Rules.ZoneIndexAt(0, r), 1); eq(Rules.ZoneIndexAt(300, r), 2); eq(Rules.ZoneIndexAt(900, r), 3); eq(Rules.ZoneIndexAt(-100, r), 1)
 end
+-- two worlds with an empty gap between them (World 1 ends at 880, World 2 runs 2000..2600)
+T.zone_index_world_gap = function()
+	local r = { { -60, 260 }, { 260, 880 }, { 2000, 2300 }, { 2300, 2600 } }
+	eq(Rules.ZoneIndexAt(879, r), 2); eq(Rules.ZoneIndexAt(880, r), 2, "gap start"); eq(Rules.ZoneIndexAt(1500, r), 2, "gap")
+	eq(Rules.ZoneIndexAt(1999, r), 2); eq(Rules.ZoneIndexAt(2000, r), 3); eq(Rules.ZoneIndexAt(2450, r), 4); eq(Rules.ZoneIndexAt(9000, r), 4)
+	eq(Rules.ZoneIndexAt(-500, r), 1)
+end
+-- World 2 portal: Throne owned AND THE GHOST KING beaten once (Robux / gates use the same rule)
+T.zone_unlock_block = function()
+	local owned = { Neighborhood = true, Throne = true }
+	eq(Rules.ZoneUnlockBlock(owned, {}, "Throne", "GhostKing"), "Boss")
+	eq(Rules.ZoneUnlockBlock(owned, nil, "Throne", "GhostKing"), "Boss", "old save without the set")
+	eq(Rules.ZoneUnlockBlock(owned, { GhostKing = true }, "Throne", "GhostKing"), nil)
+	eq(Rules.ZoneUnlockBlock({ Neighborhood = true }, { GhostKing = true }, "Throne", "GhostKing"), "Previous", "boss alone is not enough")
+	eq(Rules.ZoneUnlockBlock({}, {}, "Throne", "GhostKing"), "Previous", "previous zone checked first")
+	-- ordinary gates only need the previous zone
+	eq(Rules.ZoneUnlockBlock(owned, {}, "Neighborhood", nil), nil)
+	eq(Rules.ZoneUnlockBlock(owned, {}, nil, nil), nil)
+	eq(Rules.ZoneUnlockBlock(owned, { GhostKing = false } :: any, "Throne", "GhostKing"), "Boss", "only true counts")
+end
+T.world_of = function()
+	local firsts = { 1, 17 }
+	eq(Rules.WorldOf(1, firsts), 1); eq(Rules.WorldOf(16, firsts), 1); eq(Rules.WorldOf(17, firsts), 2); eq(Rules.WorldOf(26, firsts), 2)
+	eq(Rules.WorldOf(0, firsts), 1)
+end
+-- leaderboard encoding: raw below 1e15 (what old servers wrote), log band above, order kept
+T.board_encoding_keeps_small_values_raw = function()
+	for _, v in { 0, 1, 1250, 123456789, 2 ^ 40, 999999999999999 } do
+		eq(Rules.BoardEncode(v), v); eq(Rules.BoardDecode(v), v)
+	end
+	eq(Rules.BoardEncode(-5), 0); eq(Rules.BoardEncode(0 / 0), 0); eq(Rules.BoardDecode(0 / 0), 0)
+end
+T.board_encoding_is_monotone_and_fits = function()
+	local prev = -1
+	local v = 1
+	while v < 1e120 do
+		local e = Rules.BoardEncode(v)
+		assert(e >= prev, "not monotone at " .. v)
+		assert(e == math.floor(e), "not an integer at " .. v)
+		assert(e < 9e15 and e < 2 ^ 53, "too big at " .. v)
+		if v >= 1e15 and v <= 1e99 then
+			-- clearly different values never tie
+			assert(Rules.BoardEncode(v * 1.000001) > e, "tie at " .. v)
+			-- round trip within 1e-8 (relative)
+			local back = Rules.BoardDecode(e)
+			assert(math.abs(back - v) / v < 1e-8, "round trip at " .. v .. ": " .. back)
+			assert(not Rules.BoardIsLegacy(e), "new value looks legacy at " .. v)
+		end
+		prev = e
+		v *= 1.37
+	end
+	-- the switch-over is continuous: 1e15 - 1 < encode(1e15) < encode(1.0001e15)
+	assert(Rules.BoardEncode(1e15 - 1) < Rules.BoardEncode(1e15))
+	assert(Rules.BoardEncode(1e15) < Rules.BoardEncode(1.0001e15))
+	eq(Rules.BoardEncode(math.huge), Rules.BoardEncode(1e100))
+end
+T.board_legacy_raw_values_decode_as_themselves = function()
+	-- old servers stored raw values up to 2^53: everything above the log band is one of those
+	for _, v in { 2e15, 5.5e15, 9e15, 2 ^ 53 } do
+		assert(Rules.BoardIsLegacy(v), "legacy " .. v)
+		eq(Rules.BoardDecode(v), v)
+	end
+	assert(not Rules.BoardIsLegacy(999999999999999))
+end
 T.upgrades = function()
 	eq(Rules.UpgradeCost({ 10, 20 }, 1), 10); eq(Rules.UpgradeCost({ 10, 20 }, 3), nil)
 	eq(Rules.UpgradeValue({ 1, 2, 3 }, 9), 3)

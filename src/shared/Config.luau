@@ -245,6 +245,15 @@ for _, z in Config.Zones do
 	Config.ZoneById[z.Id] = z
 end
 
+-- WORLDS: runs of zones on separate tracks. World 1 is zones 1-16 (Z -140..5560); World 2
+-- (THE OTHER SIDE) is zones 17-26 (Z 7000..10720), reached through the portal at the end of the
+-- Ghost King's Throne (Config.Layout.Portals). First = order of the world's first zone.
+export type WorldDef = { Name: string, Title: string, First: number, Last: number, Accent: Color3 }
+Config.Worlds = {
+	{ Name = "WORLD 1", Title = "THE HAUNTED LANDS", First = 1, Last = 16, Accent = Color3.fromRGB(150, 255, 120) },
+	{ Name = "WORLD 2", Title = "THE OTHER SIDE", First = 17, Last = 26, Accent = Color3.fromRGB(200, 150, 255) },
+} :: { WorldDef }
+
 --==================================================================
 -- GHOSTS (Spirit = health; Reward = BASE Ectoplasm per kill. The same ghost type always pays the
 -- same base; FinalReward = Reward * the player's multiplier (upgrades, boosts, passes, global event))
@@ -3193,6 +3202,17 @@ Config.Layout = {
 		MoonBase = Vector3.new(26, 3, 9912),
 		VoidThrone = Vector3.new(26, 3, 10272),
 	},
+	-- World portals (World/Portals.luau, ProgressService). ToWorld2 stands at the far end of the
+	-- Ghost King's Throne and works like the gate of Zone (bought with the same UnlockZone flow
+	-- near Position); once owned, touching it sends you to Config.Layout.ZoneSpawns[Zone].
+	-- Buying Zone also needs Boss beaten at least once (kill credit on it, any share of the
+	-- damage counts; saved in the profile's BossesBeaten): Unlock Next Area can't skip that.
+	-- ToWorld1 stands at the start of Lantern Market and sends you back to Arrive (in front of
+	-- the World 2 portal, facing back into the Throne hall). Position = centre of the ring's base.
+	Portals = {
+		ToWorld2 = { Zone = "LanternMarket", Boss = "GhostKing", Position = Vector3.new(84, 0, 5546) },
+		ToWorld1 = { Position = Vector3.new(0, 0, 7010), Arrive = Vector3.new(84, 3, 5528) },
+	},
 	UpgradeStation = Vector3.new(28, 0, -6),
 	-- lobby boards on the right of the spawn plaza, side by side, turned toward the plaza:
 	-- TOP GHOST HUNTERS (all-time Ectoplasm) and TOP POWER (best crew power)
@@ -3356,7 +3376,7 @@ Config.Layout = {
 		{ Ghost = "VoidMote", Center = Vector3.new(-82, 0, 10360), Radius = 24, Count = 4 },
 		{ Ghost = "RiftPhantom", Center = Vector3.new(75, 0, 10420), Radius = 26, Count = 4 },
 		{ Ghost = "RiftPhantom", Center = Vector3.new(-62, 0, 10480), Radius = 24, Count = 4 },
-		{ Ghost = "VoidHerald", Center = Vector3.new(0, 0, 10545), Radius = 26, Count = 1 },
+		{ Ghost = "VoidHerald", Center = Vector3.new(0, 0, 10480), Radius = 26, Count = 1 }, -- Void Emperor arena at (0, 10600) r60 beyond it
 	} :: { GhostArea },
 }
 

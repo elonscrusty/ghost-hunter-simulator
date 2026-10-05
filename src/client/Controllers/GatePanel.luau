@@ -23,6 +23,15 @@ local perkIcons: { [string]: ImageLabel } = {} -- per-zone perk pictures (area /
 local current: string? = nil
 local busy = false
 
+-- The World 2 portal also needs THE GHOST KING beaten once: its name, or nil when nothing's missing.
+local function missingBoss(d: any, zoneId: string): string?
+	local portal = Config.Layout.Portals.ToWorld2
+	if zoneId == portal.Zone and not (d.BossesBeaten and d.BossesBeaten[portal.Boss]) then
+		return Config.Ghosts[portal.Boss].Name
+	end
+	return nil
+end
+
 local function refresh()
 	local d = State.Data
 	local zone = current and Config.ZoneById[current]
@@ -36,8 +45,12 @@ local function refresh()
 	local frac = math.clamp(d.Ecto / math.max(zone.Cost, 1), 0, 1)
 	Kit.Tween(fill, 0.25, { Size = UDim2.fromScale(math.max(frac, 0.03), 1) })
 	progressLabel.Text = Format.Short(math.min(d.Ecto, zone.Cost)) .. " / " .. Format.Short(zone.Cost)
+	local boss = missingBoss(d, zone.Id)
 	if d.Zones[zone.Id] then
 		Kit.SetButtonText(unlockButton, "UNLOCKED ✅")
+		unlockButton:SetAttribute("Color", "Gray")
+	elseif boss then
+		Kit.SetButtonText(unlockButton, "BEAT " .. boss)
 		unlockButton:SetAttribute("Color", "Gray")
 	elseif d.Ecto >= zone.Cost then
 		Kit.SetButtonText(unlockButton, "UNLOCK!")
@@ -95,6 +108,11 @@ function GatePanel.Init()
 			local zoneId = current
 			local d = State.Data
 			if busy or not zoneId or not d or d.Zones[zoneId] then
+				return
+			end
+			local boss = missingBoss(d, zoneId)
+			if boss then
+				Kit.Toast("Defeat " .. boss .. " to open the portal!", "Bad")
 				return
 			end
 			if d.Ecto < (Config.ZoneById[zoneId] :: Config.ZoneDef).Cost then

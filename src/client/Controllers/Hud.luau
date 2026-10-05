@@ -816,6 +816,10 @@ local zoneRanges: { { number } } = {}
 for _, z in Config.Zones do
 	table.insert(zoneRanges, { z.MinZ, z.MaxZ })
 end
+local worldFirsts: { number } = {}
+for _, w in Config.Worlds do
+	table.insert(worldFirsts, w.First)
+end
 
 function Hud.Init()
 	local screen = Kit.Screen()
@@ -904,7 +908,14 @@ function Hud.Start()
 				if idx ~= lastZone then
 					if lastZone ~= 0 then
 						local z = Config.Zones[idx]
-						Hud.Banner(z.Name, nil, z.Accent)
+						local world = Rules.WorldOf(idx, worldFirsts)
+						if world ~= Rules.WorldOf(lastZone, worldFirsts) then
+							-- portal / fast travel into the other world: name the world too
+							local w = Config.Worlds[world]
+							Hud.Banner(w.Name .. ": " .. w.Title, z.Name, w.Accent)
+						else
+							Hud.Banner(z.Name, nil, z.Accent)
+						end
 					end
 					lastZone = idx
 				end

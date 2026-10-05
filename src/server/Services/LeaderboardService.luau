@@ -8,6 +8,10 @@
 -- Then the top rows are read back. Without DataStore access (Studio with API off) a board ranks
 -- the players in this server instead. Studio never writes, and developer accounts stay off the
 -- public boards.
+-- Stored numbers use Rules.BoardEncode (OrderedDataStore values must stay below 2^53, World 2
+-- totals go far past that): below 1e15 a value is stored as it is, bigger values in an
+-- order-keeping log form. Same DataStore names as before; an old raw entry of 1e15 or more is
+-- re-written in the new form the first time it shows up in a board's top rows.
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -16,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Rules = require(GH.Logic.Rules)
 local DataService = require(script.Parent.DataService)
 local HunterService = require(script.Parent.HunterService)
 
@@ -26,9 +31,8 @@ type Row = { Name: string, Value: number }
 local store: OrderedDataStore? = nil
 local powerStore: OrderedDataStore? = nil
 local names: { [number]: string } = {}
-local written: { [number]: number } = {} -- userId -> value this server last wrote
-local bestPower: { [number]: number } = {} -- userId -> best power known to be stored
-local MAX_VALUE = 2 ^ 53
+local written: { [number]: number } = {} -- userId -> stored (encoded) number this server last wrote
+local bestPower: { [number]: number } = {} -- userId -> best power (real value) known to be stored
 local IS_STUDIO = RunService:IsStudio()
 
 local function isDev(userId: number): boolean
@@ -57,7 +61,8 @@ local function valueOf(player: Player): number?
 	if not d then
 		return nil
 	end
-	return math.clamp(math.floor(d.TotalEcto), 0, MAX_VALUE)
+	local v = math.floor(d.TotalEcto)
+	return if v == v and v > 0 then v else 0
 end
 
 local function powerOf(player: Player): number?
@@ -68,7 +73,7 @@ local function powerOf(player: Player): number?
 	if p ~= p then
 		return 0
 	end
-	return math.clamp(math.floor(p), 0, MAX_VALUE)
+	return math.max(0, math.floor(p))
 end
 
 local function localRows(get: (Player) -> number?): { Row }
@@ -94,7 +99,8 @@ local function globalRows(): { Row }?
 	end
 	for _, pl in Players:GetPlayers() do
 		local id = pl.UserId
-		local v = valueOf(pl)
+		local real = valueOf(pl)
+		local v = if real then Rules.BoardEncode(real) else nil
 		-- the current value (not the best): after a progress reset the entry goes down too
 		if v and canWrite(id) and v ~= written[id] and (v > 0 or written[id] ~= nil) then
 			names[id] = pl.Name
@@ -121,19 +127,40 @@ local function globalPowerRows(): { Row }?
 		if v and v > 0 and canWrite(id) and v > (bestPower[id] or 0) then
 			names[id] = pl.Name
 			-- returning nil cancels the write, so the stored best never goes down
+			-- compare real values (an old raw entry decodes as itself)
 			local keep: any = function(old: any): number?
-				local prev = tonumber(old) or 0
-				return if v > prev then v else nil
+				local prev = Rules.BoardDecode(tonumber(old) or 0)
+				return if v > prev then Rules.BoardEncode(v) else nil
 			end
 			local ok, stored = pcall(function(): any
 				return s:UpdateAsync(tostring(id), keep)
 			end)
 			if ok then
-				bestPower[id] = math.max(v, tonumber(stored) or 0)
+				bestPower[id] = math.max(v, Rules.BoardDecode(tonumber(stored) or 0))
 			end
 		end
 	end
 	return readTop(s)
+end
+
+-- An entry written by an older server as a raw value >= 1e15 (they clamped at 2^53): rewrite it
+-- in the new form so it sorts correctly against new entries. Only if it is unchanged meanwhile.
+local migrated: { [OrderedDataStore]: { [string]: boolean } } = {}
+local function migrate(s: OrderedDataStore, key: string, stored: number)
+	local done = migrated[s] or {}
+	migrated[s] = done
+	if done[key] then
+		return
+	end
+	done[key] = true
+	task.spawn(function()
+		pcall(function()
+			s:UpdateAsync(key, function(old: any): any
+				local cur = tonumber(old)
+				return if cur == stored then Rules.BoardEncode(stored) else nil
+			end)
+		end)
+	end)
 end
 
 function readTop(s: OrderedDataStore): { Row }?
@@ -146,10 +173,17 @@ function readTop(s: OrderedDataStore): { Row }?
 	local rows: { Row } = {}
 	for _, entry in (pages :: DataStorePages):GetCurrentPage() do
 		local id = tonumber(entry.key)
+		local stored = tonumber(entry.value) or 0
+		if id and Rules.BoardIsLegacy(stored) and canWrite(id) then
+			migrate(s, entry.key, stored)
+		end
 		if id and not isDev(id) and #rows < Config.Leaderboard.Rows then
-			table.insert(rows, { Name = nameOf(id), Value = tonumber(entry.value) or 0 })
+			table.insert(rows, { Name = nameOf(id), Value = Rules.BoardDecode(stored) })
 		end
 	end
+	table.sort(rows, function(a: Row, b: Row)
+		return a.Value > b.Value
+	end)
 	return rows
 end
 

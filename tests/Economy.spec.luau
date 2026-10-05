@@ -105,13 +105,42 @@ end
 
 T.every_zone_has_layout_and_a_boss = function()
 	assert(#Config.Daily.ZoneMultiplier == #Config.Zones, "ZoneMultiplier per zone")
+	-- worlds cover every zone exactly once, in order
+	local worldStart = {}
+	local expect = 1
+	for _, w in Config.Worlds do
+		assert(w.First == expect and w.Last >= w.First, "world " .. w.Name .. " must start at zone " .. expect)
+		worldStart[w.First] = true
+		expect = w.Last + 1
+	end
+	assert(expect == #Config.Zones + 1, "worlds must end at the last zone")
+	local portal = Config.Layout.Portals.ToWorld2
 	for i, z in Config.Zones do
 		assert(Config.Layout.ZoneSpawns[z.Id], "spawn " .. z.Id)
 		assert(Config.Layout.CrateStations[z.Crate], "station " .. z.Id)
-		if i > 1 then
+		if i > 1 and not worldStart[i] then
+			-- inside a world: a gate wall at MinZ, touching the previous zone
 			local g = Config.Layout.Gates[z.Id]
 			assert(g and g.Z == z.MinZ, "gate " .. z.Id)
 			assert(Config.Zones[i - 1].MaxZ == z.MinZ, "zones must touch " .. z.Id)
+		elseif i > 1 then
+			-- first zone of a later world: no gate wall, bought at the portal at the end of the
+			-- previous world (inside the previous zone), with a gap before this world's track
+			assert(not Config.Layout.Gates[z.Id], "first zone of a world has no gate " .. z.Id)
+			assert(portal.Zone == z.Id, "portal sells " .. z.Id)
+			-- the portal's boss requirement is the previous world's last boss
+			local boss = Config.Ghosts[portal.Boss]
+			assert(boss and boss.Kind == "Boss" and boss.Zone == Config.Zones[i - 1].Id, "portal boss must be the boss of " .. Config.Zones[i - 1].Id)
+			local prev = Config.Zones[i - 1]
+			assert(portal.Position.Z > prev.MinZ and portal.Position.Z < prev.MaxZ, "portal stands in " .. prev.Id)
+			assert(z.MinZ > prev.MaxZ, "gap between worlds before " .. z.Id)
+			local back = Config.Layout.Portals.ToWorld1
+			assert(back.Position.Z > z.MinZ and back.Position.Z < z.MaxZ, "return portal stands in " .. z.Id)
+			assert(back.Arrive.Z > prev.MinZ and back.Arrive.Z < prev.MaxZ, "return portal lands in " .. prev.Id)
+			for _, a in Config.Layout.GhostAreas do
+				local d = math.sqrt((a.Center.X - portal.Position.X) ^ 2 + (a.Center.Z - portal.Position.Z) ^ 2)
+				assert(d > a.Radius + 20, "portal too close to the " .. a.Ghost .. " area")
+			end
 		end
 		local hasBoss, hasNormal = false, false
 		for _, g in Config.Ghosts do

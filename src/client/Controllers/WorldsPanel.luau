@@ -1,6 +1,10 @@
 --!strict
 -- WORLDS (Fast Travel): a card per zone. Unlocked zones teleport you to their arrival pad
 -- (the server checks ownership and places you); locked zones show a lock and their price.
+-- WORLD 1 / WORLD 2 tabs (Config.Worlds) show one world's zones at a time. A world whose first
+-- zone isn't owned yet has a locked-looking tab and a hint row saying how to get in (open the
+-- portal at the end of the Throne; first defeat THE GHOST KING). Phone rules: 44 px tabs, fixed
+-- text sizes via Kit labels (no TextScaled, no text scale tweens).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -24,6 +28,15 @@ local player = Players.LocalPlayer
 local panel: Kit.Panel
 local cards: { [string]: Card } = {}
 local busy = false
+local worldFirsts: { number } = {}
+for _, w in Config.Worlds do
+	table.insert(worldFirsts, w.First)
+end
+local tab = 1 -- world shown
+local tabButtons: { [number]: TextButton } = {}
+local hintRow: Frame
+local hintLabel: TextLabel
+local list: ScrollingFrame
 
 local zoneRanges: { { number } } = {}
 for _, z in Config.Zones do
@@ -40,14 +53,49 @@ local function currentZone(): string?
 	return if z then z.Id else nil
 end
 
+-- How to get into world `wi` (nil when its first zone is owned).
+local function worldHint(d: any, wi: number): string?
+	local w = Config.Worlds[wi]
+	local first = w and Config.Zones[w.First]
+	if not first or d.Zones[first.Id] then
+		return nil
+	end
+	local portal = Config.Layout.Portals.ToWorld2
+	local prev = Config.Zones[w.First - 1]
+	if first.Id == portal.Zone then
+		if prev and not d.Zones[prev.Id] then
+			return "🔒 Unlock " .. prev.Name .. ", then defeat " .. Config.Ghosts[portal.Boss].Name .. " to open the portal."
+		elseif not (d.BossesBeaten and d.BossesBeaten[portal.Boss]) then
+			return "🔒 Defeat " .. Config.Ghosts[portal.Boss].Name .. " to open the portal at the end of " .. (if prev then prev.Name else "World 1") .. "."
+		end
+		return "🔒 Open the portal at the end of " .. (if prev then prev.Name else "World 1") .. ": 💚 " .. Format.Short(first.Cost)
+	end
+	return "🔒 Unlock " .. first.Name .. " to enter " .. w.Name .. "."
+end
+
 local function refresh()
 	local d = State.Data
 	if not d then
 		return
 	end
 	local here = currentZone()
+	for wi, b in tabButtons do
+		local w = Config.Worlds[wi]
+		local open = worldHint(d, wi) == nil
+		Kit.SetButtonText(b, (if open then "" else "🔒 ") .. w.Name)
+		b:SetAttribute("Color", if wi == tab then "Blue" elseif open then "Purple" else "Gray")
+	end
+	local hint = worldHint(d, tab)
+	hintRow.Visible = hint ~= nil
+	if hint then
+		Kit.IconText(hintLabel, hint)
+	end
+	local top = if hint then 106 else 56
+	list.Position = UDim2.fromOffset(0, top)
+	list.Size = UDim2.new(1, 0, 1, -(top + 2))
 	for _, z in Config.Zones do
 		local c = cards[z.Id]
+		c.Frame.Visible = Rules.WorldOf(z.Order, worldFirsts) == tab
 		local owned = d.Zones[z.Id] == true
 		c.Lock.Visible = not owned
 		c.Frame.BackgroundTransparency = if owned then 0 else 0.35
@@ -95,11 +143,36 @@ local function travel(zone: Config.ZoneDef)
 	end
 end
 
+local function setTab(wi: number)
+	if not Config.Worlds[wi] then
+		return
+	end
+	tab = wi
+	list.CanvasPosition = Vector2.zero
+	refresh()
+end
+
 function WorldsPanel.Init()
 	panel = Kit.Panel("Worlds", "WORLDS", Vector2.new(720, 420), "Blue")
-	local list: ScrollingFrame = Kit.new("ScrollingFrame", {
-		Size = UDim2.new(1, 0, 1, -8),
-		Position = UDim2.fromOffset(0, 8),
+	-- WORLD 1 / WORLD 2 tabs (44 px tall: phone tap size)
+	local tabRow: Frame = Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 6), BackgroundTransparency = 1, ZIndex = 62, Parent = panel.Body })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tabRow })
+	for wi, w in Config.Worlds do
+		local b = Kit.Button(tabRow, {
+			Text = w.Name,
+			Color = if wi == 1 then "Blue" else "Gray",
+			Size = UDim2.fromOffset(170, 44),
+			ZIndex = 63,
+			OnClick = function()
+				setTab(wi)
+			end,
+		})
+		b.LayoutOrder = wi
+		tabButtons[wi] = b
+	end
+	list = Kit.new("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, -58),
+		Position = UDim2.fromOffset(0, 56),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,
@@ -116,6 +189,12 @@ function WorldsPanel.Init()
 		Parent = list,
 	})
 	Kit.new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 6), Parent = list })
+	-- hint row under the tabs for a world you can't enter yet (the card grid moves down)
+	hintRow = Kit.new("Frame", { Size = UDim2.new(1, -16, 0, 44), Position = UDim2.fromOffset(8, 56), BackgroundColor3 = Theme.Panel3, Visible = false, ZIndex = 62, Parent = panel.Body })
+	Kit.Corner(hintRow, UDim.new(0, 14))
+	Kit.Stroke(hintRow, 3, Theme.Outline, Enum.ApplyStrokeMode.Border)
+	hintLabel = Kit.Label(hintRow, "", { Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromOffset(8, 4), Style = "Small", Fit = true, ZIndex = 64 })
+	hintLabel.TextWrapped = true
 	for _, z in Config.Zones do
 		local f: Frame = Kit.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = z.Order, ZIndex = 62, Parent = list })
 		Kit.Corner(f, UDim.new(0, 14))
@@ -152,7 +231,12 @@ function WorldsPanel.Init()
 end
 
 function WorldsPanel.Start()
-	panel.OnOpen:Connect(refresh)
+	panel.OnOpen:Connect(function()
+		-- open on the world you're standing in
+		local here = currentZone()
+		local z = here and Config.ZoneById[here]
+		setTab(if z then Rules.WorldOf(z.Order, worldFirsts) else 1)
+	end)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
 			refresh()

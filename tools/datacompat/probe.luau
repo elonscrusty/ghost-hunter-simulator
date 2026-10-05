@@ -129,6 +129,17 @@ check(v17.Variants["VoidHunter:2"] == true and v17.Variants.bad == nil, "variant
 check(v17.Variants["RookieHunter:1"] == true, "owned shiny backfilled as discovered")
 check(v17.Pets.p1.Nick == "Spooky" and v17.Pets.p2.Nick == nil and v17.Pets.p2 ~= nil, "pet nicknames kept, bad nick dropped, pet kept")
 
+-- World 2: bosses beaten (THE GHOST KING opens the portal). Old saves get an empty set; junk is
+-- dropped; a save that already owns Lantern Market keeps the portal open; an older server parks
+-- the set in Extra and it comes back.
+check(type(d.BossesBeaten) == "table" and next(d.BossesBeaten) == nil, "BossesBeaten defaults to empty for old saves")
+local w2 = migrate({ BossesBeaten = { GhostKing = true, bad = 3, [5] = true } })
+check(w2.BossesBeaten.GhostKing == true and w2.BossesBeaten.bad == nil and w2.BossesBeaten[5] == nil, "beaten bosses kept, junk dropped")
+local owner = migrate({ Zones = { Neighborhood = true, Throne = true, LanternMarket = true } })
+check(owner.BossesBeaten[Config.Layout.Portals.ToWorld2.Boss] == true, "owning World 2 counts as the portal boss beaten")
+local back = migrate({ Ecto = 1, Extra = { BossesBeaten = { GhostKing = true } } })
+check(back.BossesBeaten.GhostKing == true, "BossesBeaten restored from Extra after an older server")
+
 -- rolling update: a profile saved by a NEWER schema is refused (never loaded or saved here)
 local V = Config.DataSchemaVersion
 check(DS._TooNew({ Version = V + 1, Ecto = 5 }) == true, "newer schema version refused")

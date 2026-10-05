@@ -28,7 +28,7 @@ local busy = false
 local function rewardLabel(i: number, mult: number): string
 	local r = Config.Daily.Rewards[i]
 	if r.Amount and mult > 1 then
-		return (r.Label:gsub(Format.Commas(r.Amount), Format.Commas(r.Amount * mult)))
+		return (r.Label:gsub(Format.Commas(r.Amount), Format.Short(r.Amount * mult)))
 	end
 	return r.Label
 end

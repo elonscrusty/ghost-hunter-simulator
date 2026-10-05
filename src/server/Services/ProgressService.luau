@@ -1,5 +1,5 @@
 --!strict
--- Zone unlocks (+ keeping players out of locked zones), upgrades, daily reward,
+-- Zone unlocks (+ keeping players out of locked zones), world portals, upgrades, daily reward,
 -- settings and tutorial progress.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,6 +25,11 @@ local zoneRanges: { { number } } = {}
 for _, z in Config.Zones do
 	table.insert(zoneRanges, { z.MinZ, z.MaxZ })
 end
+
+-- World portals (Config.Layout.Portals, built by World/Portals.luau)
+local PORTALS = Config.Layout.Portals
+local PORTAL_COOLDOWN = 2 -- seconds between portal jumps (also blocks bouncing straight back)
+local lastPortal: { [Player]: number } = {}
 
 local function applyWalkSpeed(player: Player)
 	local char = player.Character
@@ -53,7 +58,7 @@ local function grantReward(player: Player, d: DataService.Data, reward: Config.R
 		d.FreeCrates[crateId] = (d.FreeCrates[crateId] or 0) + 1
 	end
 	if reward.Amount and mult > 1 then
-		return (reward.Label:gsub(Format.Commas(reward.Amount), Format.Commas(reward.Amount * mult)))
+		return (reward.Label:gsub(Format.Commas(reward.Amount), Format.Short(reward.Amount * mult)))
 	end
 	return reward.Label
 end
@@ -76,12 +81,20 @@ function ProgressService.Init()
 			return { ok = true }
 		end
 		local prev = Config.Zones[zone.Order - 1]
-		if prev and not d.Zones[prev.Id] then
+		local needBoss = if zone.Id == PORTALS.ToWorld2.Zone then PORTALS.ToWorld2.Boss else nil
+		local block = Rules.ZoneUnlockBlock(d.Zones, d.BossesBeaten, if prev then prev.Id else nil, needBoss)
+		if block == "Previous" and prev then
 			return Remotes.Fail("Unlock " .. prev.Name .. " first!")
+		elseif block == "Boss" and needBoss then
+			return Remotes.Fail("Defeat " .. Config.Ghosts[needBoss].Name .. " to open the portal!")
 		end
 		local gate = Config.Layout.Gates[zone.Id]
 		if gate and not Remotes.Near(player, Vector3.new(0, 3, gate.Z), GATE_RANGE) then
 			return Remotes.Fail("Walk to the gate first!")
+		end
+		-- the first zone of World 2 has a portal instead of a gate
+		if zone.Id == PORTALS.ToWorld2.Zone and not Remotes.Near(player, PORTALS.ToWorld2.Position + Vector3.new(0, 3, 0), GATE_RANGE) then
+			return Remotes.Fail("Walk to the portal first!")
 		end
 		if not DataService.Spend(player, zone.Cost) then
 			return Remotes.Fail("Not enough Ectoplasm!")
@@ -215,6 +228,101 @@ function ProgressService.Init()
 	end)
 end
 
+-- Where a player stands to buy `zone` (in front of its gate, or of the World 2 portal).
+local function frontOf(zone: Config.ZoneDef?): Vector3?
+	if not zone then
+		return nil
+	end
+	local gate = Config.Layout.Gates[zone.Id]
+	if gate then
+		return Vector3.new(0, 4, gate.Z - 12)
+	end
+	if zone.Id == PORTALS.ToWorld2.Zone then
+		return PORTALS.ToWorld1.Arrive + Vector3.new(0, 1, 0)
+	end
+	return nil
+end
+
+-- Moves a character, facing `dir` (flat), and stops its fall/run.
+local function place(player: Player, pos: Vector3, dir: Vector3)
+	local char = player.Character
+	local root = Remotes.Root(player)
+	if not char or not root then
+		return
+	end
+	root.AssemblyLinearVelocity = Vector3.zero
+	char:PivotTo(CFrame.lookAt(pos, pos + dir))
+end
+
+-- Someone touched a portal disc. ToWorld2 only works once its zone is owned (the Unlock prompt
+-- in front of it sells it like a gate); ToWorld1 always works.
+local function portalTouched(hit: BasePart, toWorld: number)
+	local model = hit:FindFirstAncestorOfClass("Model")
+	local player = model and Players:GetPlayerFromCharacter(model)
+	if not player then
+		return
+	end
+	local hum = (model :: Model):FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 or player:GetAttribute("InTower") == true then
+		return
+	end
+	local now = os.clock()
+	if now - (lastPortal[player] or -math.huge) < PORTAL_COOLDOWN then
+		return
+	end
+	local d = DataService.Get(player)
+	if not d then
+		return
+	end
+	if toWorld == 2 then
+		local zone = Config.ZoneById[PORTALS.ToWorld2.Zone]
+		if not d.Zones[zone.Id] then
+			lastPortal[player] = now
+			if now - (lastGuardToast[player] or -math.huge) >= GUARD_TOAST_COOLDOWN then
+				lastGuardToast[player] = now
+				Fx.Toast(player, "Unlock " .. zone.Name .. " to open the portal!", "Bad")
+			end
+			return
+		end
+		local spawnPos = (Config.Layout.ZoneSpawns :: any)[zone.Id] :: Vector3?
+		if not spawnPos then
+			return
+		end
+		lastPortal[player] = now
+		lastTravel[player] = now
+		place(player, spawnPos, Vector3.new(0, 0, 1))
+		Fx.To(player, "WorldTravel", { World = 2 })
+	else
+		lastPortal[player] = now
+		lastTravel[player] = now
+		place(player, PORTALS.ToWorld1.Arrive, Vector3.new(0, 0, -1))
+		Fx.To(player, "WorldTravel", { World = 1 })
+	end
+end
+
+local function hookPortals()
+	local map = workspace:WaitForChild("Map", 60)
+	local folder = map and map:WaitForChild("Portals", 30)
+	if not folder then
+		warn("[Zones] no Map.Portals: world portals are off")
+		return
+	end
+	for name, world in { ["Gate_" .. PORTALS.ToWorld2.Zone] = 2, Portal_World1 = 1 } do
+		local m = folder:FindFirstChild(name)
+		local surface = m and m:FindFirstChild("PortalSurface")
+		if surface and surface:IsA("BasePart") then
+			surface.Touched:Connect(function(hit)
+				local ok, err = pcall(function()
+					portalTouched(hit, world)
+				end)
+				if not ok then
+					warn("[Zones] portal error: " .. tostring(err))
+				end
+			end)
+		end
+	end
+end
+
 -- Server-side guard: anyone standing in a zone they don't own is moved back to the gate.
 local function zoneGuardTick()
 	for _, player in Players:GetPlayers() do
@@ -226,20 +334,20 @@ local function zoneGuardTick()
 		local idx = Rules.ZoneIndexAt(root.Position.Z, zoneRanges)
 		local zone = Config.Zones[idx]
 		if zone and not d.Zones[zone.Id] then
-			-- find the furthest owned zone and drop them in front of its exit gate
-			local safeZ = Config.Layout.Spawn.Z
+			-- find the furthest owned zone and drop them in front of its exit gate (or in front
+			-- of the World 2 portal when the next zone is the first one of World 2)
+			local safe = Vector3.new(math.clamp(root.Position.X, -10, 10), 4, Config.Layout.Spawn.Z)
 			for i = idx - 1, 1, -1 do
 				local z = Config.Zones[i]
 				if d.Zones[z.Id] then
-					local nextZone = Config.Zones[i + 1]
-					local gate = nextZone and Config.Layout.Gates[nextZone.Id]
-					safeZ = if gate then gate.Z - 12 else z.MinZ + 20
+					local front = frontOf(Config.Zones[i + 1])
+					safe = if front then Vector3.new(if front.X == 0 then safe.X else front.X, front.Y, front.Z) else Vector3.new(safe.X, 4, z.MinZ + 20)
 					break
 				end
 			end
 			local char = player.Character
 			if char then
-				char:PivotTo(CFrame.new(math.clamp(root.Position.X, -10, 10), 4, safeZ))
+				char:PivotTo(CFrame.new(safe))
 				local now = os.clock()
 				if now - (lastGuardToast[player] or -math.huge) >= GUARD_TOAST_COOLDOWN then
 					lastGuardToast[player] = now
@@ -281,6 +389,7 @@ function ProgressService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		lastTravel[player] = nil
 		lastGuardToast[player] = nil
+		lastPortal[player] = nil
 	end)
 	for _, pl in Players:GetPlayers() do
 		hook(pl)
@@ -288,6 +397,7 @@ function ProgressService.Start()
 	DataService.Loaded:Connect(function(player)
 		applyWalkSpeed(player)
 	end)
+	task.spawn(hookPortals)
 	task.spawn(function()
 		while true do
 			task.wait(1)

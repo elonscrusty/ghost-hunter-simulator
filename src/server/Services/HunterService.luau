@@ -534,7 +534,7 @@ function HunterService.Init()
 			DataService.AddEcto(player, refund)
 		end
 		DataService.Changed(player)
-		Fx.Toast(player, string.format("Released %d hunter%s (+%s Ectoplasm)", released, if released == 1 then "" else "s", Format.Commas(refund)))
+		Fx.Toast(player, string.format("Released %d hunter%s (+%s Ectoplasm)", released, if released == 1 then "" else "s", Format.Short(refund)))
 		return { ok = true, Released = released, Refund = refund }
 	end)
 
@@ -579,7 +579,7 @@ function HunterService.Init()
 		local newTier = fromTier + 1
 		local cost = math.floor(cratePrice(hunterId) * (Config.Merge.CostMult[newTier] or 1))
 		if cost > 0 and not DataService.Spend(player, cost) then
-			return Remotes.Fail("Merging costs " .. Format.Commas(cost) .. " Ectoplasm")
+			return Remotes.Fail("Merging costs " .. Format.Short(cost) .. " Ectoplasm")
 		end
 		-- consume, then create; the new hunter takes the first equipped slot of the consumed ones
 		local slot: number? = nil

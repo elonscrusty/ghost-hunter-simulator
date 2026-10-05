@@ -147,7 +147,7 @@ function refreshCards(crateId: string, d: any, odds: { [string]: number }, luck:
 		Kit.Label(card, if found then string.upper(def.Name) else "???", { Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 100), ZIndex = 64, Style = "Body", Fit = true })
 		Kit.Label(card, rar.Name, { Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 121), ZIndex = 64, Color = Color3.fromRGB(255, 255, 240), Style = "Small", Fit = true })
 		local powerText = Kit.Label(card, "", { Size = UDim2.new(0.55, 0, 0, 22), Position = UDim2.new(0, 8, 1, -28), ZIndex = 64, Color = Theme.Gold, Align = Enum.TextXAlignment.Left, Style = "Small", Fit = true })
-		Kit.IconText(powerText, "⚡ " .. Format.Commas(def.Power))
+		Kit.IconText(powerText, "⚡ " .. Format.Short(def.Power))
 		local pct = Kit.Label(card, Format.Percent(odds[e.Hunter]), { Size = UDim2.new(0.45, 0, 0, 24), Position = UDim2.new(1, -8, 1, -29), AnchorPoint = Vector2.new(1, 0), ZIndex = 64, Align = Enum.TextXAlignment.Right, Style = "Heading", Fit = true })
 		if luck > 1 and rar.Order >= Config.LuckAffectsFromOrder then
 			pct.TextColor3 = Theme.Ecto
@@ -163,7 +163,7 @@ function refreshButton(crateId: string, d: any, luck: number)
 		Kit.SetButtonText(openButton, "OPEN FREE! (" .. free .. ")")
 		openButton:SetAttribute("Color", "Orange")
 	elseif d.Ecto >= price then
-		Kit.SetButtonText(openButton, "OPEN  💚 " .. Format.Commas(price))
+		Kit.SetButtonText(openButton, "OPEN  💚 " .. Format.Short(price))
 		openButton:SetAttribute("Color", "Green")
 	else
 		Kit.SetButtonText(openButton, "NEED 💚 " .. Format.Short(price - d.Ecto) .. " MORE")

@@ -63,6 +63,7 @@ export type Data = {
 	-- v1.7
 	TowerCheckpoint: number, -- highest checkpoint room cleared (5, 10, ...); next run may start after it
 	PendingHatch: { [string]: Eggs.Record }, -- v1.8: hatch request id -> result (last 20; exactly-once egg retries)
+	BossesBeaten: { [string]: boolean }, -- World 2: boss ghost ids this player has had kill credit on (old saves: {})
 	Variants: { [string]: boolean }, -- "HunterId:1" / "HunterId:2" = Shiny / Mega discovered (Normal stays in Discovered)
 	Orphans: { [string]: any }, -- hunters whose id no longer exists in Config (kept, not used)
 	Extra: { [string]: any }, -- unknown top-level keys from a newer/older version (kept as-is)
@@ -105,6 +106,7 @@ local function defaults(): Data
 		TowerCheckpoint = 0,
 		PendingHatch = {},
 		Variants = {},
+		BossesBeaten = {},
 		Orphans = {},
 		Extra = {},
 	}
@@ -318,6 +320,16 @@ local function migrate(raw: any): Data
 		if type(k) ~= "string" or v ~= true then
 			d.Variants[k] = nil
 		end
+	end
+	for k, v in d.BossesBeaten do
+		if type(k) ~= "string" or v ~= true then
+			d.BossesBeaten[k] = nil
+		end
+	end
+	-- anyone who already owns World 2's first zone (granted before this rule) keeps the portal open
+	local portal = Config.Layout.Portals.ToWorld2
+	if d.Zones[portal.Zone] == true then
+		d.BossesBeaten[portal.Boss] = true
 	end
 	-- pets: unknown pet ids are kept (never deleted) but not equippable
 	local maxPet = 0
@@ -797,6 +809,7 @@ local function snapshot(player: Player, d: Data): any
 		TowerBest = d.TowerBest,
 		TowerCheckpoint = d.TowerCheckpoint,
 		Variants = d.Variants,
+		BossesBeaten = d.BossesBeaten,
 		Settings = d.Settings,
 		Tutorial = d.Tutorial,
 		SeenUpdate = d.SeenUpdate,

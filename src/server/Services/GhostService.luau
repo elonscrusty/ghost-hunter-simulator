@@ -343,6 +343,15 @@ function GhostService.Remove(g: Ghost, killer: Player?, reward: boolean)
 			local d = DataService.Get(player)
 			if d and shares.Weights[i] > 0 then
 				d.Stats.Ghosts += 1
+				-- bosses beaten (kill credit = any share of the damage, so party play counts);
+				-- THE GHOST KING opens the World 2 portal (Config.Layout.Portals.ToWorld2.Boss)
+				if (g.Def.Kind == "Boss" or g.Def.Kind == "MiniBoss") and not d.BossesBeaten[g.Def.Id] then
+					d.BossesBeaten[g.Def.Id] = true
+					DataService.Changed(player)
+					if g.Def.Id == Config.Layout.Portals.ToWorld2.Boss then
+						Fx.To(player, "Announce", { Text = g.Def.Name .. " IS BEATEN! The portal to World 2 can now be opened!", Color = "Legendary" })
+					end
+				end
 				if base > 0 then
 					local total = math.max(1, math.floor(base * PlayerInfo.EctoMultiplier(player) + 0.5))
 					DropService.Spawn(player, pos, total, g.Def.Drops, nil)

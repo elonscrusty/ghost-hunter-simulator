@@ -184,6 +184,13 @@ local function num(x: number?): string
 		return "-"
 	end
 	local a = math.abs(x)
+	-- World 2 numbers run to 1e22+: keep shrinking with the game's suffixes
+	local big = { { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" } }
+	for _, s in big do
+		if a >= s[1] then
+			return string.format("%.2f%s", x / s[1], s[2])
+		end
+	end
 	if a >= 1e12 then
 		return string.format("%.2fT", x / 1e12)
 	elseif a >= 1e9 then
