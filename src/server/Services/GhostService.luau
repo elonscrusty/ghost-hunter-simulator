@@ -49,6 +49,10 @@ export type Ghost = {
 	NextAttack: number, -- os.clock of the next retaliation
 	Pending: { Player: Player, Uid: string, Lands: number, Seen: { Player } }?, -- telegraphed hit in flight
 	LastKey: string?, -- "userId:uid" hit last (targets rotate)
+	-- world boss hooks (VoidEmperorService): Filter turns a crew's raw damage into the damage this
+	-- ghost takes (shields, phase walls; 0 = blocked); NoAuto keeps Auto Attack from picking it
+	Filter: ((Player, number) -> number)?,
+	NoAuto: boolean?,
 }
 
 local buildHitbox: (Config.GhostDef, Vector3) -> Model
@@ -249,6 +253,16 @@ local function setTarget(player: Player, uid: number?, auto: boolean?)
 	end
 end
 
+-- Moves an Auto Attack pick to another living ghost (world boss mechanics). A ghost the player
+-- chose by tapping is never replaced.
+function GhostService.MoveAutoTarget(player: Player, uid: number)
+	local tg = targets[player]
+	local g = ghosts[uid]
+	if tg and tg.Auto and tg.Uid ~= uid and g and g.Alive then
+		setTarget(player, uid, true)
+	end
+end
+
 function GhostService.AutoActive(player: Player): boolean
 	return autoOn[player] == true -- FREE for every player (no pass)
 end
@@ -266,7 +280,7 @@ local function autoCandidate(player: Player): Ghost?
 	local t = now()
 	for _, g in ghosts do
 		local zone = Config.ZoneById[g.Def.Zone]
-		if g.Alive and not g.Tower and zone and zone.Order == here and d.Zones[zone.Id] then
+		if g.Alive and not g.Tower and not g.NoAuto and zone and zone.Order == here and d.Zones[zone.Id] then
 			local dist = (GhostService.Position(g, t) - p).Magnitude
 			if dist < bestDist then
 				best, bestDist = g, dist
@@ -460,7 +474,12 @@ local function damageTick(dt: number)
 		if power <= 0 then
 			continue
 		end
-		local dmg = Rules.Effective(power * dt, g.Spirit) -- overkill never counts
+		local raw = power * dt
+		local filter = g.Filter
+		if filter then
+			raw = filter(player, raw)
+		end
+		local dmg = Rules.Effective(raw, g.Spirit) -- overkill never counts
 		g.Spirit -= dmg
 		g.Damage[player] = (g.Damage[player] or 0) + dmg
 		g.DirtySpirit = true

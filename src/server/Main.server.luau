@@ -37,6 +37,7 @@ local order = {
 	"ProgressService",
 	"EventService",
 	"TowerService",
+	"VoidEmperorService",
 	"ShopService",
 	"TradeService",
 	"StationService",

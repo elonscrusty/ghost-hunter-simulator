@@ -87,6 +87,7 @@ local order = {
 	"LikeReminder",
 	"Boss",
 	"TowerHud",
+	"VoidEmperorHud",
 	"Payouts",
 	"RarePetEvent",
 	"Ambience",

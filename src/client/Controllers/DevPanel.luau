@@ -106,6 +106,7 @@ local ACTIONS: { Action } = {
 	{ Text = "2X ECTOPLASM: 2 DAYS", Cmd = "Ecto2x", Arg = 48, Color = "Green" },
 	{ Text = "2X ECTOPLASM: ON (48H)", Cmd = "Ecto2x", Arg = true, Color = "Green" },
 	{ Text = "2X ECTOPLASM: OFF", Cmd = "Ecto2x", Arg = false, Color = "Red" },
+	{ Text = "VOID EMPEROR: FIGHT NOW (NO REWARDS)", Cmd = "VoidEmperor", Color = "Purple" },
 	{ Text = "RESET DAILY", Cmd = "ResetDaily", Color = "Purple" },
 	{ Text = "LEGACY PASS: AUTO OPEN", Cmd = "AutoAttack", Color = "Purple" },
 	{ Text = "ALL GAME PASSES", Cmd = "AllPasses", Color = "Purple" },
