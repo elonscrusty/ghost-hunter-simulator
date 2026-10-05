@@ -24,6 +24,7 @@ type Entry = { Pets: { Pet }, Conns: { RBXScriptConnection } }
 -- beside/behind the shoulders (root space: +X right, +Z behind)
 local SLOTS = { Vector3.new(-2.6, 1.4, 1.6), Vector3.new(2.6, 1.4, 1.6), Vector3.new(0, 2.6, 2.8) }
 local FAR = 200 -- don't bother moving pets this far from the camera
+local HIDDEN = CFrame.new(0, -5000, 0) -- where pets of far-away owners wait
 
 local folder: Folder
 local entries: { [Player]: Entry } = {}
@@ -911,6 +912,18 @@ function PetFollowers.Start()
 			local char = plr.Character
 			local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if not root or #e.Pets == 0 or (root.Position - camPos).Magnitude > FAR then
+				-- owner far away / not spawned yet: park the pets out of sight (they used to stay
+				-- wherever they were built, stuck in the ground near the map centre) and snap back
+				-- to the owner when they come near again
+				for _, pet in e.Pets do
+					if pet.Cur ~= HIDDEN then
+						pet.Cur = HIDDEN
+						for _, pc in pet.Pieces do
+							table.insert(parts, pc.Part)
+							table.insert(cfs, HIDDEN * pc.Offset)
+						end
+					end
+				end
 				continue
 			end
 			local base = root.CFrame

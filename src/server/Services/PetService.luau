@@ -11,6 +11,7 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
 local Eggs = require(GH.Logic.Eggs)
+local Rules = require(GH.Logic.Rules)
 local DataService = require(script.Parent.DataService)
 local HunterService = require(script.Parent.HunterService)
 local Remotes = require(script.Parent.Remotes)
@@ -101,7 +102,7 @@ function PetService.Init()
 			return Remotes.Fail(string.format("Reach Boss Tower checkpoint %d to unlock the %s", egg.Unlock, egg.Name))
 		end
 		if count(d.Pets) >= Config.PetRules.MaxOwned then
-			return Remotes.Fail("Your pet room is full!")
+			return Remotes.Fail("Your pet room is full! Release pets in the PETS menu to make room.")
 		end
 		if d.Shards < egg.Price then
 			return Remotes.Fail(string.format("Needs %s Spirit Shards (earn them in the Boss Tower)", Format.Commas(egg.Price)))
@@ -145,6 +146,76 @@ function PetService.Init()
 		end
 		refresh(player)
 		return { ok = true }
+	end)
+
+	-- EQUIP BEST: the MaxEquipped pets that add the most bonus without going over the caps
+	-- (Rules.BestPets). Like EquipPet, not while inside the Boss Tower.
+	Remotes.Register("EquipBestPets", "Inventory", function(player)
+		if player:GetAttribute("InTower") then
+			return Remotes.Fail("Can't change pets inside the Boss Tower")
+		end
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		local best = Rules.BestPets(d.Pets :: any, Config.Pets :: any, Config.PetRules.Caps, Config.PetRules.MaxEquipped)
+		if #best == 0 then
+			return Remotes.Fail("No pets yet: hatch eggs at the PET HATCHERY")
+		end
+		d.EquippedPets = best
+		refresh(player)
+		return { ok = true }
+	end)
+
+	-- RELEASE: deletes owned, unequipped pets for good (no refund). Event pets (in no egg) can't
+	-- be won again, so they can never be released. All-or-nothing: one bad uid rejects the
+	-- whole request and nothing is removed.
+	Remotes.Register("ReleasePet", "Inventory", function(player, uids)
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		local frozenWhy = HunterService.FrozenReason(player)
+		if frozenWhy then
+			return Remotes.Fail(frozenWhy)
+		end
+		if type(uids) ~= "table" then
+			return Remotes.Fail("Nothing selected")
+		end
+		-- only a plain list of distinct uid strings (keys exactly 1..n)
+		local n = 0
+		for _ in uids do
+			n += 1
+		end
+		if n == 0 or n > Config.PetRules.MaxOwned then
+			return Remotes.Fail("Nothing selected")
+		end
+		local seen: { [string]: boolean } = {}
+		for i = 1, n do
+			local uid = uids[i]
+			if type(uid) ~= "string" or seen[uid] then
+				return Remotes.Fail("Pick different pets")
+			end
+			seen[uid] = true
+		end
+		for uid in seen do
+			local pet = d.Pets[uid]
+			if not pet then
+				return Remotes.Fail("Unknown pet")
+			end
+			if table.find(d.EquippedPets, uid) then
+				return Remotes.Fail("Unequip a pet before releasing it")
+			end
+			if not Eggs.Hatchable(Config.Eggs :: any, pet.Id) then
+				return Remotes.Fail("Event pets can't be released: they can't be won again")
+			end
+		end
+		for uid in seen do
+			d.Pets[uid] = nil
+		end
+		refresh(player)
+		DataService.Save(player)
+		return { ok = true, Released = n }
 	end)
 
 	-- Nickname a pet. Only the FILTERED text is ever stored or shown; empty text clears it.

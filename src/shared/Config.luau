@@ -1730,6 +1730,7 @@ Config.Combat = {
 -- never deleted. Hunter max HP = (tiered) power * HPPerPower * (1 + pet HP bonus).
 -- Hit = ghost max Spirit * HitPerSpirit[kind], but never more than HitCap[kind] of the target's
 -- max HP (so a knockout always takes several hits and the telegraph gives time to react).
+-- Hits use max HP WITHOUT the pet HP bonus, so HP pets always mean more hits to a knockout.
 --==================================================================
 Config.Retaliation = {
 	Interval = 2.5,
@@ -1889,7 +1890,8 @@ Config.EggOrder = { "HauntedEgg", "PhantomEgg", "MoonlightEgg", "CursedEgg" }
 -- v1.7 scaling (starting values for testing): boss health is an ABSOLUTE curve, so stronger
 -- teams climb further: HP = BaseHP * HPGrowth^(room-1) * FiveRoomBump^floor((room-1)/5),
 -- but never less than party power * MinKillSeconds (strong teams can't one-shot rooms).
--- Boss hit = target hunter max HP * HitFraction(room), which grows more gently than health.
+-- Boss hit = target hunter max HP (without the pet HP bonus) * HitFraction(room), which grows
+-- more gently than health.
 --==================================================================
 Config.Tower = {
 	MaxParty = 4,

@@ -1,5 +1,6 @@
 --!strict
--- GHOST PETS: owned pets, equip up to 3 and rename. Pets come from eggs at the PET HATCHERY
+-- GHOST PETS: owned pets, equip up to 3 (or EQUIP BEST), rename, and a RELEASE mode (select
+-- pets, tap RELEASE twice; no refund; equipped and event pets can't be picked). Pets come from eggs at the PET HATCHERY
 -- near the Boss Tower (Controllers/Hatchery; v1.8 removed direct purchases). Each equipped
 -- pet gives a crew-wide bonus; the server validates every equip/rename. Nicknames shown here
 -- come back from the server already text-filtered.
@@ -8,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Eggs = require(GH.Logic.Eggs)
 local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
@@ -32,6 +34,14 @@ local renameBox: TextBox
 local renameUid: string? = nil
 local NICK_MAX = 20
 local busy = false
+-- release mode
+local releaseButton: TextButton
+local releaseBar: Frame
+local releaseConfirm: TextButton
+local releaseMode = false
+local selected: { [string]: boolean } = {}
+local armedAt: number? = nil -- os.clock() of the first RELEASE tap (a second tap within ARM_SECONDS confirms)
+local ARM_SECONDS = 4
 
 local function bonusText(kind: string, value: number): string
 	local pct = math.floor(value * 100 + 0.5) .. "%"
@@ -149,6 +159,23 @@ local function refresh()
 	if shown == 0 then
 		Kit.Label(equippedNames, "None: equip pets below", { Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
 	end
+	-- release selection: drop pets that are gone, equipped or can't be released
+	local nSelected = 0
+	for uid in selected do
+		local rec = d.Pets and d.Pets[uid]
+		if not rec or equipped[uid] or not Eggs.Hatchable(Config.Eggs :: any, rec.Id) then
+			selected[uid] = nil
+		else
+			nSelected += 1
+		end
+	end
+	if nSelected == 0 then
+		armedAt = nil
+	end
+	local armed = armedAt ~= nil and os.clock() - armedAt <= ARM_SECONDS
+	releaseBar.Visible = releaseMode
+	Kit.SetButtonText(releaseConfirm, if armed then "TAP AGAIN: RELEASE " .. nSelected else "RELEASE " .. nSelected .. "  (NO REFUND)")
+	releaseConfirm:SetAttribute("Color", if nSelected > 0 then "Red" else "Gray")
 	if renameUid and not (d.Pets and d.Pets[renameUid]) then
 		renameUid = nil
 	end
@@ -175,6 +202,29 @@ local function refresh()
 		if pet then
 			local on = equipped[uid] == true
 			local f = card(ownedRow, i, pet, rec.Nick)
+			if releaseMode then
+				if on then
+					cardButton(f, "EQUIPPED", "Gray", function()
+						Kit.Toast("Unequip a pet before releasing it", "Bad")
+					end)
+				elseif not Eggs.Hatchable(Config.Eggs :: any, rec.Id) then
+					cardButton(f, "EVENT PET", "Gray", function()
+						Kit.Toast("Event pets can't be released: they can't be won again", "Bad")
+					end)
+				else
+					local picked = selected[uid] == true
+					cardButton(f, if picked then "✓ SELECTED" else "SELECT", if picked then "Red" else "Orange", function()
+						if picked then
+							selected[uid] = nil
+						else
+							selected[uid] = true
+						end
+						armedAt = nil
+						refresh()
+					end)
+				end
+				continue
+			end
 			cardButton(f, if on then "UNEQUIP" else "EQUIP", if on then "Orange" else "Green", function()
 				request("EquipPet", uid, not on)
 			end)
@@ -201,6 +251,15 @@ local function refresh()
 	end
 end
 
+local function setRelease(on: boolean)
+	releaseMode = on
+	table.clear(selected)
+	armedAt = nil
+	Kit.SetButtonText(releaseButton, if on then "DONE" else "RELEASE")
+	releaseButton:SetAttribute("Color", if on then "Gray" else "Red")
+	refresh()
+end
+
 function PetsPanel.Init()
 	panel = Kit.Panel("Pets", "GHOST PETS", Vector2.new(780, 500), "Purple")
 	local scroll: ScrollingFrame = Kit.new("ScrollingFrame", {
@@ -224,6 +283,69 @@ function PetsPanel.Init()
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = equippedNames })
 	bonusLabel = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Color = Theme.Ecto, Style = "Small", Fit = true, ZIndex = 62 })
 	bonusLabel.LayoutOrder = 5
+	-- EQUIP BEST + RELEASE (mode toggle)
+	local actions: Frame = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 40), BackgroundTransparency = 1, LayoutOrder = 6, ZIndex = 62, Parent = scroll })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 10), Parent = actions })
+	Kit.Button(actions, {
+		Text = "EQUIP BEST",
+		Color = "Green",
+		Size = UDim2.fromOffset(150, 38),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = function()
+			local res = request("EquipBestPets")
+			if res and res.ok then
+				Kit.Toast("Best pets equipped!", "Good")
+			end
+		end,
+	})
+	releaseButton = Kit.Button(actions, {
+		Text = "RELEASE",
+		Color = "Red",
+		Size = UDim2.fromOffset(130, 38),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = function()
+			setRelease(not releaseMode)
+		end,
+	})
+	-- release bar (release mode only): what it does + RELEASE n (tap twice)
+	releaseBar = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 96), BackgroundTransparency = 1, LayoutOrder = 7, Visible = false, ZIndex = 62, Parent = scroll })
+	Kit.Label(releaseBar, "Tap pets to select them. Released pets are gone for good (no refund). Equipped and event pets can't be released.", { Size = UDim2.new(1, -20, 0, 44), Position = UDim2.fromOffset(10, 0), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Wrap = true, Stroke = 0, ZIndex = 63 })
+	releaseConfirm = Kit.Button(releaseBar, {
+		Text = "RELEASE 0",
+		Color = "Gray",
+		Size = UDim2.new(1, -20, 0, 44),
+		Position = UDim2.fromOffset(10, 48),
+		ZIndex = 63,
+		OnClick = function()
+			local list = {}
+			for uid in selected do
+				table.insert(list, uid)
+			end
+			if #list == 0 then
+				Kit.Toast("Tap pets to select them first", "Bad")
+				return
+			end
+			if not armedAt or os.clock() - armedAt > ARM_SECONDS then
+				armedAt = os.clock()
+				refresh()
+				task.delay(ARM_SECONDS + 0.1, function()
+					if panel.IsOpen then
+						refresh()
+					end
+				end)
+				return
+			end
+			armedAt = nil
+			local res = request("ReleasePet", list)
+			if res and res.ok then
+				table.clear(selected)
+				Kit.Toast(string.format("Released %d pet%s (no refund)", #list, if #list == 1 then "" else "s"), "Good")
+			end
+			refresh()
+		end,
+	})
 	local function section(order: number, title: string): (TextLabel, Frame)
 		local l = Kit.Label(scroll, title, { Size = UDim2.new(1, 0, 0, 24), Style = "Heading", ZIndex = 62 })
 		l.LayoutOrder = order
@@ -294,7 +416,9 @@ function PetsPanel.Init()
 end
 
 function PetsPanel.Start()
-	panel.OnOpen:Connect(refresh)
+	panel.OnOpen:Connect(function()
+		setRelease(false)
+	end)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
 			refresh()

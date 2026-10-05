@@ -63,7 +63,7 @@ local function blockReason(egg: Config.EggDef, d: any): string?
 		return string.format("Locked: reach Boss Tower checkpoint %d", egg.Unlock)
 	end
 	if countPets(d) >= Config.PetRules.MaxOwned then
-		return "Your pet room is full!"
+		return "Pet room full! Release pets in the PETS menu"
 	end
 	if (d.Shards or 0) < egg.Price then
 		return string.format("Needs %s more Spirit Shards (Boss Tower)", Format.Commas(egg.Price - (d.Shards or 0)))

@@ -45,7 +45,7 @@ export type Ghost = {
 	Damage: { [Player]: number },
 	DirtySpirit: boolean,
 	Tower: any?, -- Boss Tower run that owns this boss (only its members may fight it)
-	HitFrac: number?, -- tower bosses: hit = target max HP * this
+	HitFrac: number?, -- tower bosses: hit = target base max HP (no pet HP bonus) * this
 	NextAttack: number, -- os.clock of the next retaliation
 	Pending: { Player: Player, Uid: string, Lands: number, Seen: { Player } }?, -- telegraphed hit in flight
 	LastKey: string?, -- "userId:uid" hit last (targets rotate)
@@ -507,7 +507,9 @@ local function retaliationTick()
 				end
 			end
 			if still and table.find(CrewService.Targets(pend.Player), pend.Uid) then
-				local maxHP = CrewService.MaxHP(pend.Player, pend.Uid)
+				-- sized from the hunter's HP WITHOUT the pet HP bonus (the HP pool keeps it), so HP
+				-- pets always mean more hits to a knockout, in the tower and in the world
+				local maxHP = CrewService.BaseMaxHP(pend.Player, pend.Uid)
 				local hit
 				if g.HitFrac then
 					hit = maxHP * g.HitFrac

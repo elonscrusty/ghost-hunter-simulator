@@ -18,6 +18,7 @@ T.every_egg_totals_100 = function()
 		end
 	end
 	eq(n, #Config.EggOrder, "EggOrder lists every egg")
+	assert(Eggs.Hatchable(Config.Eggs, "GlowWisp") and not Eggs.Hatchable(Config.Eggs, "LanternSpirit"), "event pets aren't hatchable")
 	for _, id in Config.EggOrder do
 		assert(Config.Eggs[id], "EggOrder " .. id)
 	end

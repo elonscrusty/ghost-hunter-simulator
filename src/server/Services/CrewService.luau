@@ -29,6 +29,12 @@ function CrewService.MaxHP(player: Player, uid: string): number
 	return Rules.HunterMaxHP(HunterService.HunterPower(player, uid), R.HPPerPower, PlayerInfo.PetBonus(player, "HP"))
 end
 
+-- Max HP WITHOUT the pet HP bonus. Ghost hits are sized from this (never from MaxHP), so an HP
+-- pet really makes a hunter take more hits instead of making every hit bigger too.
+function CrewService.BaseMaxHP(player: Player, uid: string): number
+	return Rules.HunterMaxHP(HunterService.HunterPower(player, uid), R.HPPerPower, 0)
+end
+
 local function entry(player: Player, uid: string): Health
 	local h = health[player]
 	if not h then

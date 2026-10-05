@@ -342,6 +342,57 @@ function Rules.PetBonuses(bonuses: { { Kind: string, Value: number } }, caps: { 
 	return out
 end
 
+-- EQUIP BEST for pets: up to n uids, each step taking the pet that adds the most bonus still
+-- under its kind's cap (higher Value, then lower uid, breaks ties), so no slot is spent on a
+-- bonus that is already capped while a useful pet is left. If every remaining pet would add
+-- nothing, the free slots still get the strongest of them. Pets with unknown ids are skipped.
+function Rules.BestPets(pets: { [string]: { Id: string } }, defs: { [string]: { Bonus: { Kind: string, Value: number } } }, caps: { [string]: number }, n: number): { string }
+	local left: { string } = {}
+	for uid, p in pets do
+		local def = defs[p.Id]
+		local v = def and def.Bonus.Value
+		if type(v) == "number" and v == v and v > 0 then
+			table.insert(left, uid)
+		end
+	end
+	local function bonus(uid: string): { Kind: string, Value: number }
+		return defs[pets[uid].Id].Bonus
+	end
+	table.sort(left, function(a, b)
+		local va, vb = bonus(a).Value, bonus(b).Value
+		if va ~= vb then
+			return va > vb
+		end
+		return a < b
+	end)
+	local total: { [string]: number } = {}
+	local out: { string } = {}
+	while #out < n do
+		local bestI, bestGain = nil, 1e-9
+		for i, uid in left do
+			local b = bonus(uid)
+			local gain = math.min(b.Value, (caps[b.Kind] or math.huge) - (total[b.Kind] or 0))
+			if gain > bestGain then
+				bestI, bestGain = i, gain
+			end
+		end
+		if not bestI then
+			break
+		end
+		local uid = table.remove(left, bestI) :: string
+		local b = bonus(uid)
+		total[b.Kind] = (total[b.Kind] or 0) + b.Value
+		table.insert(out, uid)
+	end
+	for _, uid in left do
+		if #out >= n then
+			break
+		end
+		table.insert(out, uid)
+	end
+	return out
+end
+
 export type TowerCfg = {
 	BaseHP: number,
 	HPGrowth: number,

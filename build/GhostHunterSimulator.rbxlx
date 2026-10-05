@@ -1747,6 +1747,7 @@ Config.Combat = {
 -- never deleted. Hunter max HP = (tiered) power * HPPerPower * (1 + pet HP bonus).
 -- Hit = ghost max Spirit * HitPerSpirit[kind], but never more than HitCap[kind] of the target's
 -- max HP (so a knockout always takes several hits and the telegraph gives time to react).
+-- Hits use max HP WITHOUT the pet HP bonus, so HP pets always mean more hits to a knockout.
 --==================================================================
 Config.Retaliation = {
 	Interval = 2.5,
@@ -1906,7 +1907,8 @@ Config.EggOrder = { "HauntedEgg", "PhantomEgg", "MoonlightEgg", "CursedEgg" }
 -- v1.7 scaling (starting values for testing): boss health is an ABSOLUTE curve, so stronger
 -- teams climb further: HP = BaseHP * HPGrowth^(room-1) * FiveRoomBump^floor((room-1)/5),
 -- but never less than party power * MinKillSeconds (strong teams can't one-shot rooms).
--- Boss hit = target hunter max HP * HitFraction(room), which grows more gently than health.
+-- Boss hit = target hunter max HP (without the pet HP bonus) * HitFraction(room), which grows
+-- more gently than health.
 --==================================================================
 Config.Tower = {
 	MaxParty = 4,
@@ -2588,6 +2590,18 @@ function Eggs.Unlocked(egg: Egg, checkpoint: number): boolean
 	return (checkpoint or 0) >= (egg.Unlock or 0)
 end
 
+-- True when some egg can hatch this pet (pets in no egg, such as event pets, can't be won again).
+function Eggs.Hatchable(eggs: { [string]: Egg }, petId: string): boolean
+	for _, egg in eggs do
+		for _, o in egg.Odds do
+			if o.Pet == petId then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 -- A client request id: 1..REQUEST_ID_MAX characters of letters, digits, "-", "_", "{", "}".
 function Eggs.ValidRequestId(id: any): boolean
 	return type(id) == "string" and #id >= 1 and #id <= Eggs.REQUEST_ID_MAX and string.find(id, "^[%w%-_{}]+$") ~= nil
@@ -3032,6 +3046,57 @@ function Rules.PetBonuses(bonuses: { { Kind: string, Value: number } }, caps: { 
 		if cap then
 			out[kind] = math.min(v, cap)
 		end
+	end
+	return out
+end
+
+-- EQUIP BEST for pets: up to n uids, each step taking the pet that adds the most bonus still
+-- under its kind's cap (higher Value, then lower uid, breaks ties), so no slot is spent on a
+-- bonus that is already capped while a useful pet is left. If every remaining pet would add
+-- nothing, the free slots still get the strongest of them. Pets with unknown ids are skipped.
+function Rules.BestPets(pets: { [string]: { Id: string } }, defs: { [string]: { Bonus: { Kind: string, Value: number } } }, caps: { [string]: number }, n: number): { string }
+	local left: { string } = {}
+	for uid, p in pets do
+		local def = defs[p.Id]
+		local v = def and def.Bonus.Value
+		if type(v) == "number" and v == v and v > 0 then
+			table.insert(left, uid)
+		end
+	end
+	local function bonus(uid: string): { Kind: string, Value: number }
+		return defs[pets[uid].Id].Bonus
+	end
+	table.sort(left, function(a, b)
+		local va, vb = bonus(a).Value, bonus(b).Value
+		if va ~= vb then
+			return va > vb
+		end
+		return a < b
+	end)
+	local total: { [string]: number } = {}
+	local out: { string } = {}
+	while #out < n do
+		local bestI, bestGain = nil, 1e-9
+		for i, uid in left do
+			local b = bonus(uid)
+			local gain = math.min(b.Value, (caps[b.Kind] or math.huge) - (total[b.Kind] or 0))
+			if gain > bestGain then
+				bestI, bestGain = i, gain
+			end
+		end
+		if not bestI then
+			break
+		end
+		local uid = table.remove(left, bestI) :: string
+		local b = bonus(uid)
+		total[b.Kind] = (total[b.Kind] or 0) + b.Value
+		table.insert(out, uid)
+	end
+	for _, uid in left do
+		if #out >= n then
+			break
+		end
+		table.insert(out, uid)
 	end
 	return out
 end
@@ -7338,6 +7403,12 @@ function CrewService.MaxHP(player: Player, uid: string): number
 	return Rules.HunterMaxHP(HunterService.HunterPower(player, uid), R.HPPerPower, PlayerInfo.PetBonus(player, "HP"))
 end
 
+-- Max HP WITHOUT the pet HP bonus. Ghost hits are sized from this (never from MaxHP), so an HP
+-- pet really makes a hunter take more hits instead of making every hit bigger too.
+function CrewService.BaseMaxHP(player: Player, uid: string): number
+	return Rules.HunterMaxHP(HunterService.HunterPower(player, uid), R.HPPerPower, 0)
+end
+
 local function entry(player: Player, uid: string): Health
 	local h = health[player]
 	if not h then
@@ -9473,7 +9544,7 @@ export type Ghost = {
 	Damage: { [Player]: number },
 	DirtySpirit: boolean,
 	Tower: any?, -- Boss Tower run that owns this boss (only its members may fight it)
-	HitFrac: number?, -- tower bosses: hit = target max HP * this
+	HitFrac: number?, -- tower bosses: hit = target base max HP (no pet HP bonus) * this
 	NextAttack: number, -- os.clock of the next retaliation
 	Pending: { Player: Player, Uid: string, Lands: number, Seen: { Player } }?, -- telegraphed hit in flight
 	LastKey: string?, -- "userId:uid" hit last (targets rotate)
@@ -9935,7 +10006,9 @@ local function retaliationTick()
 				end
 			end
 			if still and table.find(CrewService.Targets(pend.Player), pend.Uid) then
-				local maxHP = CrewService.MaxHP(pend.Player, pend.Uid)
+				-- sized from the hunter's HP WITHOUT the pet HP bonus (the HP pool keeps it), so HP
+				-- pets always mean more hits to a knockout, in the tower and in the world
+				local maxHP = CrewService.BaseMaxHP(pend.Player, pend.Uid)
 				local hit
 				if g.HitFrac then
 					hit = maxHP * g.HitFrac
@@ -11167,6 +11240,7 @@ local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
 local Eggs = require(GH.Logic.Eggs)
+local Rules = require(GH.Logic.Rules)
 local DataService = require(script.Parent.DataService)
 local HunterService = require(script.Parent.HunterService)
 local Remotes = require(script.Parent.Remotes)
@@ -11257,7 +11331,7 @@ function PetService.Init()
 			return Remotes.Fail(string.format("Reach Boss Tower checkpoint %d to unlock the %s", egg.Unlock, egg.Name))
 		end
 		if count(d.Pets) >= Config.PetRules.MaxOwned then
-			return Remotes.Fail("Your pet room is full!")
+			return Remotes.Fail("Your pet room is full! Release pets in the PETS menu to make room.")
 		end
 		if d.Shards < egg.Price then
 			return Remotes.Fail(string.format("Needs %s Spirit Shards (earn them in the Boss Tower)", Format.Commas(egg.Price)))
@@ -11301,6 +11375,76 @@ function PetService.Init()
 		end
 		refresh(player)
 		return { ok = true }
+	end)
+
+	-- EQUIP BEST: the MaxEquipped pets that add the most bonus without going over the caps
+	-- (Rules.BestPets). Like EquipPet, not while inside the Boss Tower.
+	Remotes.Register("EquipBestPets", "Inventory", function(player)
+		if player:GetAttribute("InTower") then
+			return Remotes.Fail("Can't change pets inside the Boss Tower")
+		end
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		local best = Rules.BestPets(d.Pets :: any, Config.Pets :: any, Config.PetRules.Caps, Config.PetRules.MaxEquipped)
+		if #best == 0 then
+			return Remotes.Fail("No pets yet: hatch eggs at the PET HATCHERY")
+		end
+		d.EquippedPets = best
+		refresh(player)
+		return { ok = true }
+	end)
+
+	-- RELEASE: deletes owned, unequipped pets for good (no refund). Event pets (in no egg) can't
+	-- be won again, so they can never be released. All-or-nothing: one bad uid rejects the
+	-- whole request and nothing is removed.
+	Remotes.Register("ReleasePet", "Inventory", function(player, uids)
+		local d = DataService.Get(player)
+		if not d then
+			return Remotes.Fail("Loading...")
+		end
+		local frozenWhy = HunterService.FrozenReason(player)
+		if frozenWhy then
+			return Remotes.Fail(frozenWhy)
+		end
+		if type(uids) ~= "table" then
+			return Remotes.Fail("Nothing selected")
+		end
+		-- only a plain list of distinct uid strings (keys exactly 1..n)
+		local n = 0
+		for _ in uids do
+			n += 1
+		end
+		if n == 0 or n > Config.PetRules.MaxOwned then
+			return Remotes.Fail("Nothing selected")
+		end
+		local seen: { [string]: boolean } = {}
+		for i = 1, n do
+			local uid = uids[i]
+			if type(uid) ~= "string" or seen[uid] then
+				return Remotes.Fail("Pick different pets")
+			end
+			seen[uid] = true
+		end
+		for uid in seen do
+			local pet = d.Pets[uid]
+			if not pet then
+				return Remotes.Fail("Unknown pet")
+			end
+			if table.find(d.EquippedPets, uid) then
+				return Remotes.Fail("Unequip a pet before releasing it")
+			end
+			if not Eggs.Hatchable(Config.Eggs :: any, pet.Id) then
+				return Remotes.Fail("Event pets can't be released: they can't be won again")
+			end
+		end
+		for uid in seen do
+			d.Pets[uid] = nil
+		end
+		refresh(player)
+		DataService.Save(player)
+		return { ok = true, Released = n }
 	end)
 
 	-- Nickname a pet. Only the FILTERED text is ever stored or shown; empty text clears it.
@@ -29064,7 +29208,7 @@ local function blockReason(egg: Config.EggDef, d: any): string?
 		return string.format("Locked: reach Boss Tower checkpoint %d", egg.Unlock)
 	end
 	if countPets(d) >= Config.PetRules.MaxOwned then
-		return "Your pet room is full!"
+		return "Pet room full! Release pets in the PETS menu"
 	end
 	if (d.Shards or 0) < egg.Price then
 		return string.format("Needs %s more Spirit Shards (Boss Tower)", Format.Commas(egg.Price - (d.Shards or 0)))
@@ -32416,6 +32560,7 @@ type Entry = { Pets: { Pet }, Conns: { RBXScriptConnection } }
 -- beside/behind the shoulders (root space: +X right, +Z behind)
 local SLOTS = { Vector3.new(-2.6, 1.4, 1.6), Vector3.new(2.6, 1.4, 1.6), Vector3.new(0, 2.6, 2.8) }
 local FAR = 200 -- don't bother moving pets this far from the camera
+local HIDDEN = CFrame.new(0, -5000, 0) -- where pets of far-away owners wait
 
 local folder: Folder
 local entries: { [Player]: Entry } = {}
@@ -33303,6 +33448,18 @@ function PetFollowers.Start()
 			local char = plr.Character
 			local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if not root or #e.Pets == 0 or (root.Position - camPos).Magnitude > FAR then
+				-- owner far away / not spawned yet: park the pets out of sight (they used to stay
+				-- wherever they were built, stuck in the ground near the map centre) and snap back
+				-- to the owner when they come near again
+				for _, pet in e.Pets do
+					if pet.Cur ~= HIDDEN then
+						pet.Cur = HIDDEN
+						for _, pc in pet.Pieces do
+							table.insert(parts, pc.Part)
+							table.insert(cfs, HIDDEN * pc.Offset)
+						end
+					end
+				end
 				continue
 			end
 			local base = root.CFrame
@@ -33333,7 +33490,8 @@ return PetFollowers
             <Properties>
               <string name="Name">PetsPanel</string>
               <string name="Source"><![CDATA[--!strict
--- GHOST PETS: owned pets, equip up to 3 and rename. Pets come from eggs at the PET HATCHERY
+-- GHOST PETS: owned pets, equip up to 3 (or EQUIP BEST), rename, and a RELEASE mode (select
+-- pets, tap RELEASE twice; no refund; equipped and event pets can't be picked). Pets come from eggs at the PET HATCHERY
 -- near the Boss Tower (Controllers/Hatchery; v1.8 removed direct purchases). Each equipped
 -- pet gives a crew-wide bonus; the server validates every equip/rename. Nicknames shown here
 -- come back from the server already text-filtered.
@@ -33342,6 +33500,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GH = ReplicatedStorage:WaitForChild("GH")
 local Config = require(GH.Config)
 local Format = require(GH.Logic.Format)
+local Eggs = require(GH.Logic.Eggs)
 local Client = script.Parent.Parent
 local State = require(Client.State)
 local Kit = require(Client.UI.Kit)
@@ -33366,6 +33525,14 @@ local renameBox: TextBox
 local renameUid: string? = nil
 local NICK_MAX = 20
 local busy = false
+-- release mode
+local releaseButton: TextButton
+local releaseBar: Frame
+local releaseConfirm: TextButton
+local releaseMode = false
+local selected: { [string]: boolean } = {}
+local armedAt: number? = nil -- os.clock() of the first RELEASE tap (a second tap within ARM_SECONDS confirms)
+local ARM_SECONDS = 4
 
 local function bonusText(kind: string, value: number): string
 	local pct = math.floor(value * 100 + 0.5) .. "%"
@@ -33483,6 +33650,23 @@ local function refresh()
 	if shown == 0 then
 		Kit.Label(equippedNames, "None: equip pets below", { Font = Theme.Body, Style = "Small", Fit = true, ZIndex = 62 })
 	end
+	-- release selection: drop pets that are gone, equipped or can't be released
+	local nSelected = 0
+	for uid in selected do
+		local rec = d.Pets and d.Pets[uid]
+		if not rec or equipped[uid] or not Eggs.Hatchable(Config.Eggs :: any, rec.Id) then
+			selected[uid] = nil
+		else
+			nSelected += 1
+		end
+	end
+	if nSelected == 0 then
+		armedAt = nil
+	end
+	local armed = armedAt ~= nil and os.clock() - armedAt <= ARM_SECONDS
+	releaseBar.Visible = releaseMode
+	Kit.SetButtonText(releaseConfirm, if armed then "TAP AGAIN: RELEASE " .. nSelected else "RELEASE " .. nSelected .. "  (NO REFUND)")
+	releaseConfirm:SetAttribute("Color", if nSelected > 0 then "Red" else "Gray")
 	if renameUid and not (d.Pets and d.Pets[renameUid]) then
 		renameUid = nil
 	end
@@ -33509,6 +33693,29 @@ local function refresh()
 		if pet then
 			local on = equipped[uid] == true
 			local f = card(ownedRow, i, pet, rec.Nick)
+			if releaseMode then
+				if on then
+					cardButton(f, "EQUIPPED", "Gray", function()
+						Kit.Toast("Unequip a pet before releasing it", "Bad")
+					end)
+				elseif not Eggs.Hatchable(Config.Eggs :: any, rec.Id) then
+					cardButton(f, "EVENT PET", "Gray", function()
+						Kit.Toast("Event pets can't be released: they can't be won again", "Bad")
+					end)
+				else
+					local picked = selected[uid] == true
+					cardButton(f, if picked then "✓ SELECTED" else "SELECT", if picked then "Red" else "Orange", function()
+						if picked then
+							selected[uid] = nil
+						else
+							selected[uid] = true
+						end
+						armedAt = nil
+						refresh()
+					end)
+				end
+				continue
+			end
 			cardButton(f, if on then "UNEQUIP" else "EQUIP", if on then "Orange" else "Green", function()
 				request("EquipPet", uid, not on)
 			end)
@@ -33535,6 +33742,15 @@ local function refresh()
 	end
 end
 
+local function setRelease(on: boolean)
+	releaseMode = on
+	table.clear(selected)
+	armedAt = nil
+	Kit.SetButtonText(releaseButton, if on then "DONE" else "RELEASE")
+	releaseButton:SetAttribute("Color", if on then "Gray" else "Red")
+	refresh()
+end
+
 function PetsPanel.Init()
 	panel = Kit.Panel("Pets", "GHOST PETS", Vector2.new(780, 500), "Purple")
 	local scroll: ScrollingFrame = Kit.new("ScrollingFrame", {
@@ -33558,6 +33774,69 @@ function PetsPanel.Init()
 	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = equippedNames })
 	bonusLabel = Kit.Label(scroll, "", { Size = UDim2.new(1, -6, 0, 20), Color = Theme.Ecto, Style = "Small", Fit = true, ZIndex = 62 })
 	bonusLabel.LayoutOrder = 5
+	-- EQUIP BEST + RELEASE (mode toggle)
+	local actions: Frame = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 40), BackgroundTransparency = 1, LayoutOrder = 6, ZIndex = 62, Parent = scroll })
+	Kit.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 10), Parent = actions })
+	Kit.Button(actions, {
+		Text = "EQUIP BEST",
+		Color = "Green",
+		Size = UDim2.fromOffset(150, 38),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = function()
+			local res = request("EquipBestPets")
+			if res and res.ok then
+				Kit.Toast("Best pets equipped!", "Good")
+			end
+		end,
+	})
+	releaseButton = Kit.Button(actions, {
+		Text = "RELEASE",
+		Color = "Red",
+		Size = UDim2.fromOffset(130, 38),
+		TextStyle = "Small",
+		ZIndex = 63,
+		OnClick = function()
+			setRelease(not releaseMode)
+		end,
+	})
+	-- release bar (release mode only): what it does + RELEASE n (tap twice)
+	releaseBar = Kit.new("Frame", { Size = UDim2.new(1, -6, 0, 96), BackgroundTransparency = 1, LayoutOrder = 7, Visible = false, ZIndex = 62, Parent = scroll })
+	Kit.Label(releaseBar, "Tap pets to select them. Released pets are gone for good (no refund). Equipped and event pets can't be released.", { Size = UDim2.new(1, -20, 0, 44), Position = UDim2.fromOffset(10, 0), Color = Theme.Muted, Font = Theme.Body, Style = "Small", Wrap = true, Stroke = 0, ZIndex = 63 })
+	releaseConfirm = Kit.Button(releaseBar, {
+		Text = "RELEASE 0",
+		Color = "Gray",
+		Size = UDim2.new(1, -20, 0, 44),
+		Position = UDim2.fromOffset(10, 48),
+		ZIndex = 63,
+		OnClick = function()
+			local list = {}
+			for uid in selected do
+				table.insert(list, uid)
+			end
+			if #list == 0 then
+				Kit.Toast("Tap pets to select them first", "Bad")
+				return
+			end
+			if not armedAt or os.clock() - armedAt > ARM_SECONDS then
+				armedAt = os.clock()
+				refresh()
+				task.delay(ARM_SECONDS + 0.1, function()
+					if panel.IsOpen then
+						refresh()
+					end
+				end)
+				return
+			end
+			armedAt = nil
+			local res = request("ReleasePet", list)
+			if res and res.ok then
+				table.clear(selected)
+				Kit.Toast(string.format("Released %d pet%s (no refund)", #list, if #list == 1 then "" else "s"), "Good")
+			end
+			refresh()
+		end,
+	})
 	local function section(order: number, title: string): (TextLabel, Frame)
 		local l = Kit.Label(scroll, title, { Size = UDim2.new(1, 0, 0, 24), Style = "Heading", ZIndex = 62 })
 		l.LayoutOrder = order
@@ -33628,7 +33907,9 @@ function PetsPanel.Init()
 end
 
 function PetsPanel.Start()
-	panel.OnOpen:Connect(refresh)
+	panel.OnOpen:Connect(function()
+		setRelease(false)
+	end)
 	State.Changed:Connect(function()
 		if panel.IsOpen then
 			refresh()

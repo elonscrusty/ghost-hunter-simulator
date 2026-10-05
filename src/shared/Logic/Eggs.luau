@@ -38,6 +38,18 @@ function Eggs.Unlocked(egg: Egg, checkpoint: number): boolean
 	return (checkpoint or 0) >= (egg.Unlock or 0)
 end
 
+-- True when some egg can hatch this pet (pets in no egg, such as event pets, can't be won again).
+function Eggs.Hatchable(eggs: { [string]: Egg }, petId: string): boolean
+	for _, egg in eggs do
+		for _, o in egg.Odds do
+			if o.Pet == petId then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 -- A client request id: 1..REQUEST_ID_MAX characters of letters, digits, "-", "_", "{", "}".
 function Eggs.ValidRequestId(id: any): boolean
 	return type(id) == "string" and #id >= 1 and #id <= Eggs.REQUEST_ID_MAX and string.find(id, "^[%w%-_{}]+$") ~= nil

@@ -171,6 +171,25 @@ T.pet_bonuses_add_and_cap = function()
 	local b = Rules.PetBonuses({ { Kind = "Power", Value = 0.3 }, { Kind = "Power", Value = 0.4 }, { Kind = "Ecto", Value = 0.05 } }, { Power = 0.6 })
 	eq(b.Power, 0.6); eq(b.Ecto, 0.05)
 end
+T.best_pets_skip_capped_bonus = function()
+	local defs = {
+		King = { Bonus = { Kind = "Power", Value = 0.45 } }, Reaper = { Bonus = { Kind = "Power", Value = 0.35 } },
+		Ride = { Bonus = { Kind = "Power", Value = 0.6 } }, Skull = { Bonus = { Kind = "Ecto", Value = 0.4 } },
+		Slime = { Bonus = { Kind = "Ecto", Value = 0.05 } }, Teddy = { Bonus = { Kind = "HP", Value = 0.15 } },
+	}
+	local caps = { Power = 0.95, Ecto = 0.85, HP = 1.0 }
+	-- after Ride (0.6) only 0.35 Power is left under the cap, so Skull (0.4 Ecto) beats King
+	local best = Rules.BestPets({ a = { Id = "Ride" }, b = { Id = "King" }, c = { Id = "Skull" }, d = { Id = "Slime" }, e = { Id = "Bogus" } }, defs, caps, 3)
+	eq(#best, 3); eq(best[1], "a"); eq(best[2], "c"); eq(best[3], "b")
+	-- Power capped by Ride + King: the third slot goes to Teddy, not Reaper
+	best = Rules.BestPets({ a = { Id = "Ride" }, b = { Id = "King" }, c = { Id = "Reaper" }, d = { Id = "Teddy" } }, defs, caps, 3)
+	eq(best[3], "d")
+	-- only capped pets left: the slot is still filled; never more than n, never unknown ids
+	best = Rules.BestPets({ a = { Id = "Ride" }, b = { Id = "King" }, c = { Id = "Reaper" } }, defs, caps, 3)
+	eq(#best, 3); eq(best[3], "c")
+	eq(#Rules.BestPets({ a = { Id = "Ride" }, e = { Id = "Bogus" } }, defs, caps, 3), 1)
+	eq(#Rules.BestPets({}, defs, caps, 3), 0)
+end
 local towerCfg = { BaseHP = 180, HPGrowth = 1.15, FiveRoomBump = 1.25, MinKillSeconds = 4, HitFractionBase = 0.1, HitFractionGrowth = 1.05,
 	HitFractionCap = 0.95, MaxScaledRoom = 400, ShardsBase = 4, ShardsPerRoom = 1.5, EctoPerMinute = 200, SpiritPayShare = 1.2, RoomOverheadSeconds = 8, MilestoneEvery = { [10] = 3, [5] = 2 } }
 T.tower_scaling_grows_and_stays_finite = function()
