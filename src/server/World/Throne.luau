@@ -10,7 +10,7 @@
 --   Grand final backdrop BEHIND the end of the play area (Z >= 5557, past the boss circle and
 --   clear of the route check): the gigantic throne (crown tip ~Y 142, seen from the Inferno),
 --   twin grand staircases up to a palace terrace, the palace facade with corner towers and the
---   "THE END... FOR NOW" banner. Cloud banks outside the side walls and behind the palace.
+--   "WORLD 2 AWAITS: BEAT THE GHOST KING" banner. Cloud banks outside the side walls and behind the palace.
 
 local Kit = require(script.Parent.Kit)
 local Props = require(script.Parent.Props)
@@ -327,7 +327,7 @@ local function backdrop(f: Instance)
 		end
 	end
 	-- the big farewell banners on the facade
-	local endSign = Props.SignBoard(m, V(84, 84, fz - 0.8), 64, 9, 0, -1, "THE END... FOR NOW", PURPLE_D, gold, GOLD)
+	local endSign = Props.SignBoard(m, V(84, 84, fz - 0.8), 64, 9, 0, -1, "WORLD 2 AWAITS: BEAT THE GHOST KING", PURPLE_D, gold, GOLD)
 	Kit.Light(endSign, WARM, 50, 1.2)
 	Props.SignBoard(m, V(-84, 84, fz - 0.8), 64, 9, 0, -1, "THANKS FOR HUNTING!", PURPLE_D, gold, GOLD)
 	for _, x in { -84, 84 } do
