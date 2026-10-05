@@ -42,16 +42,16 @@ local NEON = { Material = Enum.Material.Neon }
 local METAL_MAT = { Material = Enum.Material.Metal }
 
 -- styles whose eyes glow (Neon in the glow colour) instead of the usual dark cartoon eyes
-local GLOW_EYES = { Student = true, Ancient = true, Void = true, Overlord = true, Shadow = true, Titan = true, GhostKing = true }
+local GLOW_EYES = { HauntedArmor = true, GraveColossus = true, VoidLeviathan = true, CrystalTitan = true, Student = true, Ancient = true, Void = true, Overlord = true, Shadow = true, Titan = true, GhostKing = true }
 -- styles with the open "▽" grin instead of the round "O" mouth
-local GRIN = {
+local GRIN = { CrystalTitan = true, Jester = true, PumpkinKnight = true, SwampHag = true, CandleLich = true, BoneCaptain = true, MummyPharaoh = true, PuppetMaster = true, VampireCount = true, PhantomEmperor = true, GraveColossus = true, VoidLeviathan = true, EclipseOverlord = true,
 	Mischief = true, Hallway = true, Headmaster = true, Carnival = true, Ringmaster = true,
 	Pirate = true, Captain = true, King = true, Overlord = true,
 	SwampLord = true, Blizzard = true, Pharaoh = true, JackBox = true, Puppet = true,
 	Leviathan = true, TimeKeeper = true, Titan = true, GhostKing = true,
 }
 -- spooky styles that don't blush
-local NO_BLUSH = { Giant = true, Void = true, Overlord = true, Shadow = true, Titan = true }
+local NO_BLUSH = { CrystalTitan = true, Banshee = true, FrostWraith = true, CandleLich = true, HauntedArmor = true, GraveColossus = true, VoidLeviathan = true, EclipseOverlord = true, Giant = true, Void = true, Overlord = true, Shadow = true, Titan = true }
 
 local BRASS = Color3.fromRGB(205, 160, 75)
 local ICE = Color3.fromRGB(195, 235, 255)
@@ -1374,6 +1374,593 @@ function GhostRig.Build(ghostId: string): Model
 			local y = if i % 2 == 0 then 0.9 else -0.4
 			local gc = gems[i % 4 + 1]
 			crystal(CFrame.Angles(0, a, 0) * at(0, y, -3.4) * CFrame.Angles(0.15, 0, 0.3), 0.45, 1.2, gc, glass, gc, NEON, false)
+		end
+	------------------------------------------------------------------ boss tower (regular)
+	elseif style == "Jester" then
+		-- three-pointed two-colour jester cap with gold bells, harlequin ruff, juggling balls
+		local capA = Color3.fromRGB(140, 70, 215)
+		local capB = Color3.fromRGB(255, 205, 60)
+		ball(2.75, at(0, 0.95, 0.2), capA)
+		ring(1.1, 0.3, capB)
+		local horns = {
+			{ a = Vector3.new(-0.75, 2.0, 0.2), b = Vector3.new(-1.65, 2.6, 0.3), c = Vector3.new(-2.05, 1.95, 0.35), col = capB },
+			{ a = Vector3.new(0, 2.25, 0.45), b = Vector3.new(0, 2.95, 0.95), c = Vector3.new(0, 2.45, 1.6), col = capA },
+			{ a = Vector3.new(0.75, 2.0, 0.2), b = Vector3.new(1.65, 2.6, 0.3), c = Vector3.new(2.05, 1.95, 0.35), col = capB },
+		}
+		for _, h in horns do
+			local a, b, c, col = h.a, h.b, h.c, h.col
+			rod(a, b, 0.6, col)
+			rod(b, c, 0.42, col)
+			ball(0.5, CFrame.new(c + (c - b).Unit * 0.22), GOLD, METAL_MAT) -- bell
+		end
+		ruff(-1.05, 8, 0.62, capA, capB)
+		ball(0.55, at(-2.35, 0.75, -0.85), Color3.fromRGB(80, 170, 255))
+		ball(0.5, at(-2.05, 1.55, -0.65), glow, NEON)
+	elseif style == "PumpkinKnight" then
+		-- jack-o'-lantern helmet with stem and leaf, steel collar and pauldrons, striped lance, leafy cape
+		local pumpkin = Color3.fromRGB(255, 140, 40)
+		local leaf = Color3.fromRGB(80, 170, 75)
+		local steel = Color3.fromRGB(200, 205, 222)
+		local hc = Vector3.new(0, 1.05, 0.15)
+		ball(3.0, CFrame.new(hc), pumpkin)
+		for _, s in { -1, 1 } do
+			ball(2.5, CFrame.new(hc + Vector3.new(0.62 * s, -0.05, 0.08)), U.Shade(pumpkin, 0.9))
+			ball(1.15, at(1.85 * s, -0.15, -0.1), steel, METAL_MAT) -- pauldron
+		end
+		cyl(0.65, 0.38, at(0.05, 2.75, 0.2) * CFrame.Angles(0, 0, -0.2) * U.AxisY, Color3.fromRGB(110, 150, 60))
+		wedge(Vector3.new(0.1, 0.45, 0.95), at(0.45, 2.62, 0.35) * CFrame.Angles(0.2, 0.5, 0.45), leaf)
+		ring(-0.72, 0.32, steel, METAL_MAT)
+		-- jousting lance in the right nub
+		local hand = Vector3.new(1.75, -0.35, -0.2)
+		local dir = Vector3.new(0.45, 1, -0.45).Unit
+		rod(hand - dir * 0.7, hand + dir * 0.2, 0.2, WOOD)
+		cyl(0.18, 0.95, U.Between(hand + dir * 0.2, hand + dir * 0.38), GOLD, METAL_MAT) -- vamplate
+		cone(along(hand + dir * 0.35, dir), 0.62, 2.7, 4, pumpkin, CREAM)
+		-- round shield on the left nub
+		local sc = at(-2.1, -0.5, -0.5) * CFrame.Angles(0, 0.55, 0)
+		cyl(0.14, 1.4, sc * U.AxisZ, WOOD)
+		cyl(0.16, 0.75, sc * at(0, 0, -0.04) * U.AxisZ, U.Shade(glow, 0.8))
+		block(Vector3.new(2.8, 2.4, 0.18), at(0, -1.0, 1.95) * CFrame.Angles(-0.2, 0, 0), leaf) -- cape
+	elseif style == "SwampHag" then
+		-- crooked witch hat, long warty nose, stringy hair, bubbling cauldron and a broom
+		local hatC = Color3.fromRGB(85, 55, 125)
+		local hcf = at(0.1, 1.5, 0.15) * CFrame.Angles(0.05, 0, -0.12)
+		cyl(0.14, 3.1, hcf * U.AxisY, hatC)
+		local tip = cone(hcf, 1.65, 1.55, 3, hatC)
+		cyl(0.24, 1.66, hcf * at(0, 0.16, 0) * U.AxisY, Color3.fromRGB(255, 140, 40)) -- band
+		local tp = tip.Position
+		rod(tp - Vector3.new(0, 0.1, 0), tp + Vector3.new(0.65, 0.2, 0.15), 0.32, hatC) -- bent tip
+		point(Vector3.new(0, 0.02, -1.6), Vector3.new(0, -0.25, -1), 0.45, 0.75, 0.4, U.Shade(color, 0.85))
+		ball(0.2, at(0.1, -0.08, -2.12), Color3.fromRGB(90, 140, 60)) -- wart
+		local hair = Color3.fromRGB(195, 200, 210)
+		for _, s in { -1, 1 } do
+			block(Vector3.new(0.25, 1.35, 0.5), at(1.38 * s, 0.75, 0.15) * CFrame.Angles(0, 0, 0.15 * s), hair)
+			block(Vector3.new(0.25, 1.15, 0.5), at(1.15 * s, 0.7, 0.85) * CFrame.Angles(0.2, 0, 0.2 * s), hair)
+		end
+		local mouthTooth = surf(Vector3.new(0.12, -0.42, -1.7), 0.08)
+		wedge(Vector3.new(0.08, 0.22, 0.22), U.Facing(mouthTooth, mouthTooth) * CFrame.Angles(0, 0, -math.pi / 4) * U.AxisZ, WHITE)
+		-- cauldron by the left nub
+		local pot = Vector3.new(-2.55, -0.95, -0.6)
+		ball(1.15, CFrame.new(pot), DARK)
+		cyl(0.16, 1.05, CFrame.new(pot + Vector3.new(0, 0.42, 0)) * U.AxisY, METAL, METAL_MAT)
+		cyl(0.06, 0.9, CFrame.new(pot + Vector3.new(0, 0.5, 0)) * U.AxisY, U.Shade(glow, 0.8), { Reflectance = 0.2 })
+		ball(0.3, CFrame.new(pot + Vector3.new(0.15, 0.75, -0.1)), accent)
+		ball(0.2, CFrame.new(pot + Vector3.new(-0.2, 1.05, 0.05)), accent)
+		-- broom in the right nub
+		local b0 = Vector3.new(2.05, 1.5, -0.05)
+		local b1 = Vector3.new(1.7, -1.9, -0.45)
+		rod(b0, b1, 0.16, WOOD)
+		local bd = (b1 - b0).Unit
+		cone(along(b1 + bd * 0.75, -bd), 0.75, 0.85, 2, Color3.fromRGB(230, 190, 90), Color3.fromRGB(210, 165, 70))
+	elseif style == "ClockSpecter" then
+		-- cog crown, clock face on the belly, monocle, side gear and a wind-up key in the back
+		local fc = onSurf(Vector3.new(0, -1.0, -1.15), 0.02)
+		cyl(0.14, 1.2, fc * U.AxisZ, BRASS, METAL_MAT)
+		cyl(0.16, 1.0, fc * at(0, 0, -0.02) * U.AxisZ, CREAM)
+		block(Vector3.new(0.08, 0.38, 0.06), fc * at(0, 0.16, -0.11), DARK)
+		block(Vector3.new(0.3, 0.08, 0.06), fc * at(0.13, 0, -0.11), DARK)
+		ball(0.16, fc * at(0, 0, -0.12), glow, NEON)
+		gear(at(0, 2.15, 0.25), 1.5, 0.25, 7, BRASS, METAL_MAT)
+		gear(at(-1.45, 1.2, 0.35) * CFrame.Angles(0, math.pi / 2, 0.3), 0.95, 0.2, 5, U.Shade(BRASS, 0.8), METAL_MAT)
+		local eye = Vector3.new(0.6, 0.35, -1.38)
+		cyl(0.08, 1.2, U.DiscFacing(surf(eye, 0.08), eye), GOLD, METAL_MAT)
+		rod(Vector3.new(0, 0.1, 1.5), Vector3.new(0, 0.1, 2.45), 0.2, BRASS, METAL_MAT)
+		for _, s in { -1, 1 } do
+			cyl(0.12, 0.65, at(0, 0.1 + 0.3 * s, 2.6), BRASS, METAL_MAT) -- key bow
+		end
+	elseif style == "Banshee" then
+		-- long flowing hair, diamond tiara, wailing mouth, sad brows and wispy trailing arms
+		local hair = Color3.fromRGB(95, 70, 170)
+		local silver = Color3.fromRGB(225, 230, 245)
+		ball(3.25, at(0, 0.6, 0.45), hair)
+		for i = -2, 2 do
+			local x = i * 0.55
+			block(Vector3.new(0.55, 2.5 - math.abs(i) * 0.2, 0.3), at(x, -0.55 - (i % 2) * 0.2, 2.02 - math.abs(i) * 0.18) * CFrame.Angles(-0.12, 0, i * 0.08), hair)
+		end
+		ring(1.15, 0.2, silver, METAL_MAT)
+		for _, a in { -0.5, 0.5 } do
+			block(Vector3.new(0.28, 0.28, 0.28), CFrame.Angles(0, a, 0) * at(0, 1.42, -1.12) * U.VertexUp, silver, METAL_MAT)
+		end
+		block(Vector3.new(0.4, 0.4, 0.4), at(0, 1.5, -1.12) * U.VertexUp, glow, NEON)
+		cyl(0.25, 0.85, U.DiscFacing(mouthPos, mouthPos), MOUTH) -- wide wail
+		for _, s in { -1, 1 } do
+			brow(s, 0.98, false, hair, 0.55)
+			ball(0.72, at(2.1 * s, -0.6, 0.15), color, bodyOpts)
+			ball(0.5, at(2.35 * s, -0.95, 0.5), color, bodyOpts)
+			ball(0.3, at(2.5 * s, -1.25, 0.8), color, bodyOpts)
+		end
+	elseif style == "BoneCaptain" then
+		-- skull-and-crossbones tricorn with a red feather, ribcage, hook hand and a cutlass
+		local hatC = Color3.fromRGB(45, 35, 60)
+		local bone = Color3.fromRGB(245, 240, 225)
+		local steel = Color3.fromRGB(200, 205, 222)
+		local hcf = at(0, 1.5, 0.15) * CFrame.Angles(-0.05, 0, 0.05)
+		cyl(0.16, 3.0, hcf * U.AxisY, hatC)
+		ball(2.3, hcf * at(0, 0.3, 0), hatC)
+		for k = 0, 2 do
+			local rot = hcf * CFrame.Angles(0, k * 2 * math.pi / 3, 0)
+			wedge(Vector3.new(1.75, 0.75, 0.4), rot * at(0, 0.36, -1.22) * CFrame.Angles(0, math.pi, 0), hatC)
+		end
+		local sk = hcf * at(0, 0.62, -1.38)
+		ball(0.45, sk, bone)
+		for _, s in { -1, 1 } do
+			block(Vector3.new(0.75, 0.1, 0.08), sk * at(0, -0.05, 0.12) * CFrame.Angles(0, 0, 0.6 * s), bone)
+		end
+		wedge(Vector3.new(0.12, 0.45, 1.5), hcf * at(0.95, 0.75, 0.55) * CFrame.Angles(0.55, 0.3, 0), RED)
+		-- ribcage on the chest
+		block(Vector3.new(0.14, 0.75, 0.08), onSurf(Vector3.new(0, -1.15, -1.25), 0.02), bone)
+		for k = 0, 2 do
+			block(Vector3.new(1.25 - k * 0.2, 0.12, 0.1), onSurf(Vector3.new(0, -0.9 - k * 0.27, -1.3), 0.02), bone)
+		end
+		-- hook hand on the left nub
+		cyl(0.3, 0.62, at(-2.0, -0.38, -0.25), hatC)
+		rod(Vector3.new(-2.15, -0.38, -0.25), Vector3.new(-2.6, -0.38, -0.3), 0.12, steel, METAL_MAT)
+		rod(Vector3.new(-2.6, -0.38, -0.3), Vector3.new(-2.82, -0.05, -0.38), 0.12, steel, METAL_MAT)
+		rod(Vector3.new(-2.82, -0.05, -0.38), Vector3.new(-2.6, 0.2, -0.45), 0.12, steel, METAL_MAT)
+		-- cutlass in the right nub
+		local hand = Vector3.new(1.75, -0.35, -0.2)
+		local dir = Vector3.new(0.3, 0.9, -0.4).Unit
+		rod(hand - dir * 0.45, hand + dir * 0.3, 0.16, hatC)
+		cyl(0.2, 0.55, U.Between(hand + dir * 0.3, hand + dir * 0.5), GOLD, METAL_MAT)
+		block(Vector3.new(0.08, 1.7, 0.32), along(hand + dir * 1.35, dir), steel, METAL_MAT)
+		point(hand + dir * 2.15, dir, 0.32, 0.45, 0.08, steel, METAL_MAT)
+	elseif style == "MummyPharaoh" then
+		-- striped nemes headdress with a cobra, broad collar, bandage wraps, false beard and a glowing ankh
+		local blue = Color3.fromRGB(60, 105, 225)
+		local wrap = U.Shade(color, 0.88)
+		local hc = Vector3.new(0, 0.95, 0.3)
+		ball(2.95, CFrame.new(hc), blue)
+		bandOn(hc, 1.47, 0.25, 0.16, GOLD, METAL_MAT)
+		bandOn(hc, 1.47, 0.7, 0.16, GOLD, METAL_MAT)
+		ring(1.0, 0.3, GOLD, METAL_MAT)
+		for _, s in { -1, 1 } do
+			local lf = onSurf(Vector3.new(0.9 * s, -0.1, -0.45), 0.1)
+			block(Vector3.new(0.62, 1.85, 0.25), lf * at(0, -0.2, 0), blue)
+			block(Vector3.new(0.64, 0.16, 0.27), lf * at(0, -0.45, 0), GOLD, METAL_MAT)
+		end
+		local up = surf(Vector3.new(0, 1.15, -1.2), 0.12)
+		ball(0.4, CFrame.new(up), GOLD, METAL_MAT)
+		block(Vector3.new(0.14, 0.14, 0.14), CFrame.new(up + Vector3.new(0, 0.05, -0.2)), glow, NEON)
+		ring(-0.62, 0.2, blue)
+		ring(-0.82, 0.2, GOLD, METAL_MAT)
+		ring(-1.25, 0.22, wrap, nil, 0.22)
+		bandOn(Vector3.new(0.15, -1.75, 0.95), 1.0, 0, 0.22, wrap, nil, -0.3)
+		block(Vector3.new(0.3, 0.6, 0.3), at(0, -1.0, -1.55) * CFrame.Angles(-0.3, 0, 0), GOLD, METAL_MAT)
+		-- ankh staff in the right nub
+		local ax = Vector3.new(1.95, 0, -0.45)
+		rod(ax + Vector3.new(0, -1.5, 0), ax + Vector3.new(0, 1.3, 0), 0.2, GOLD, METAL_MAT)
+		block(Vector3.new(0.95, 0.2, 0.2), CFrame.new(ax + Vector3.new(0, 1.25, 0)), GOLD, METAL_MAT)
+		cyl(0.18, 0.8, CFrame.new(ax + Vector3.new(0, 1.78, 0)) * U.AxisZ, GOLD, METAL_MAT)
+		cyl(0.22, 0.42, CFrame.new(ax + Vector3.new(0, 1.78, 0)) * U.AxisZ, glow, NEON)
+	elseif style == "FrostWraith" then
+		-- deep hood with an icicle crown, icicle beard, snowy shoulders and a frost staff
+		local hood = Color3.fromRGB(70, 95, 185)
+		local glass = { Reflectance = 0.25 }
+		ball(3.2, at(0, 0.65, 0.45), hood)
+		wedge(Vector3.new(0.6, 1.1, 1.0), at(0, 2.1, 0.95) * CFrame.Angles(-0.4, 0, 0), hood)
+		for i, a in { -0.95, -0.48, 0, 0.48, 0.95 } do
+			local h = if i == 3 then 1.25 elseif i % 2 == 0 then 0.95 else 0.7
+			crystal(CFrame.Angles(0, a, 0) * at(0, 1.75, -0.6) * CFrame.Angles(-0.3, 0, 0) * at(0, h / 2, 0), 0.32, h, ICE, glass, WHITE, nil, false)
+		end
+		for i = -1, 1 do
+			local base = surf(Vector3.new(i * 0.35, -0.85, -1.4), -0.05)
+			point(base, Vector3.new(i * 0.15, -1, -0.2), 0.26, 0.75 - math.abs(i) * 0.2, 0.26, ICE, glass)
+		end
+		for _, s in { -1, 1 } do
+			ball(1.05, at(1.62 * s, 0.1, 0.1), WHITE)
+		end
+		local hand = Vector3.new(1.75, -0.35, -0.2)
+		local dir = Vector3.new(0.12, 1, -0.2).Unit
+		rod(hand - dir * 1.3, hand + dir * 2.0, 0.16, Color3.fromRGB(150, 170, 210))
+		crystal(along(hand + dir * 2.45, dir), 0.42, 0.75, ICE, glass, glow, NEON, true)
+	elseif style == "PuppetMaster" then
+		-- floating control cross on glowing strings, two mini ghost puppets, beret and harlequin ruff
+		local cc = Vector3.new(0, 3.15, -0.35)
+		block(Vector3.new(2.9, 0.22, 0.22), CFrame.new(cc), WOOD)
+		block(Vector3.new(0.22, 0.22, 1.3), CFrame.new(cc), WOOD)
+		rod(Vector3.new(1.75, -0.35, -0.2), cc + Vector3.new(0.3, -0.1, 0), 0.07, U.Shade(glow, 0.8)) -- ecto tether
+		local puppets = {
+			{ s = -1, body = Color3.fromRGB(255, 245, 235), bow = RED },
+			{ s = 1, body = Color3.fromRGB(255, 220, 240), bow = Color3.fromRGB(80, 170, 255) },
+		}
+		for _, pp in puppets do
+			local s, body, bow = pp.s, pp.body, pp.bow
+			local pc = Vector3.new(2.6 * s, 0.1, -0.75)
+			rod(cc + Vector3.new(1.4 * s, 0, 0), pc + Vector3.new(0, 0.45, 0), 0.05, WHITE)
+			ball(0.95, CFrame.new(pc), body)
+			for _, e in { -1, 1 } do
+				ball(0.18, CFrame.new(pc + Vector3.new(0.17 * e, 0.08, -0.42)), EYE)
+			end
+			ball(0.3, CFrame.new(pc + Vector3.new(0.25, 0.42, -0.1)), bow)
+		end
+		ruff(-1.0, 8, 0.58, RED, CREAM)
+		local bcf = at(0.35, 1.68, 0.1) * CFrame.Angles(0, 0, -0.3)
+		cyl(0.28, 1.7, bcf * U.AxisY, Color3.fromRGB(60, 40, 90))
+		ball(0.28, bcf * at(0, 0.2, 0), Color3.fromRGB(60, 40, 90))
+	elseif style == "StormPhantom" then
+		-- thunder-cloud crown, two lightning bolts, wind bands and angry brows
+		local cloud = Color3.fromRGB(230, 235, 250)
+		local cloudD = Color3.fromRGB(175, 185, 215)
+		ball(1.4, at(0, 2.05, 0.2), cloud)
+		ball(1.05, at(0.78, 1.85, 0.1), cloudD)
+		ball(1.1, at(-0.78, 1.9, 0.25), cloud)
+		ball(1.0, at(0.35, 1.8, 0.9), cloudD)
+		ball(0.9, at(-0.3, 1.75, -0.45), cloud)
+		ball(0.85, at(0.55, 2.3, 0.55), cloud)
+		local function bolt(pts: { Vector3 })
+			for i = 1, #pts - 1 do
+				local a, b = pts[i], pts[i + 1]
+				block(Vector3.new(0.24, (b - a).Magnitude + 0.12, 0.12), along((a + b) / 2, (b - a).Unit), accent)
+			end
+		end
+		bolt({ Vector3.new(-1.25, 1.5, -0.2), Vector3.new(-1.85, 0.85, -0.45), Vector3.new(-1.5, 0.65, -0.45), Vector3.new(-2.15, -0.15, -0.7) })
+		bolt({ Vector3.new(1.85, -0.75, -0.45), Vector3.new(2.25, 0.45, -0.55), Vector3.new(1.9, 0.65, -0.55), Vector3.new(2.35, 1.95, -0.7) })
+		local wind = Color3.fromRGB(205, 240, 255)
+		ring(-0.9, 0.16, wind, nil, 0.3)
+		ring(-1.3, 0.16, wind, nil, -0.25)
+		for _, s in { -1, 1 } do
+			brow(s, 1.0, true, Color3.fromRGB(70, 75, 130), 0.6)
+		end
+		ball(0.55, at(0.4, -3.0, 2.3), cloud)
+		ball(0.4, at(0.6, -3.25, 2.65), cloudD)
+	elseif style == "HauntedArmor" then
+		-- horned great helm with a plume, nasal guard, spiked pauldrons, breastplate and a greatsword
+		local steel = Color3.fromRGB(195, 202, 222)
+		local horn = Color3.fromRGB(245, 235, 210)
+		ball(3.35, at(0, 1.0, 0.2), steel, METAL_MAT)
+		cyl(0.26, 3.45, at(0, 0.98, 0.2) * U.AxisY, U.Shade(steel, 0.8), METAL_MAT)
+		block(Vector3.new(0.2, 0.7, 0.18), U.Facing(surf(Vector3.new(0, 0.55, -1.6), 0.1), Vector3.new(0, 0.3, -1)), steel, METAL_MAT)
+		fin(Vector3.new(0, 2.5, 0.25), Vector3.new(0, 1, 0.15), 0.75, 1.3, RED)
+		for _, s in { -1, 1 } do
+			rod(Vector3.new(0.95 * s, 1.95, 0.3), Vector3.new(1.65 * s, 2.45, 0.25), 0.42, horn)
+			rod(Vector3.new(1.65 * s, 2.45, 0.25), Vector3.new(1.8 * s, 3.15, 0.0), 0.28, horn)
+			local pc = Vector3.new(1.85 * s, -0.05, -0.05)
+			ball(1.35, CFrame.new(pc), steel, METAL_MAT)
+			point(pc + Vector3.new(0.3 * s, 0.45, 0), Vector3.new(0.45 * s, 1, 0), 0.32, 0.6, 0.32, U.Shade(steel, 0.7), METAL_MAT)
+		end
+		ring(-1.0, 0.55, steel, METAL_MAT)
+		block(Vector3.new(0.32, 0.32, 0.32), CFrame.new(surf(Vector3.new(0, -1.0, -1.42), 0.04)) * U.VertexUp, glow, NEON)
+		-- greatsword in the right nub
+		local hand = Vector3.new(1.75, -0.35, -0.2)
+		local dir = Vector3.new(0.1, 1, -0.2).Unit
+		rod(hand - dir * 0.6, hand + dir * 0.3, 0.2, DARK)
+		ball(0.32, CFrame.new(hand - dir * 0.65), GOLD, METAL_MAT)
+		block(Vector3.new(0.18, 0.2, 1.3), along(hand + dir * 0.38, dir), GOLD, METAL_MAT)
+		block(Vector3.new(0.12, 2.8, 0.45), along(hand + dir * 1.9, dir), steel, METAL_MAT)
+		block(Vector3.new(0.14, 2.0, 0.1), along(hand + dir * 1.8, dir), U.Shade(glow, 0.75))
+		point(hand + dir * 3.28, dir, 0.45, 0.6, 0.12, steel, METAL_MAT)
+	elseif style == "CandleLich" then
+		-- crown of melting candles with ecto flames, wax drips, high collar, skull staff and a spellbook
+		local wax = Color3.fromRGB(255, 244, 220)
+		local robe = Color3.fromRGB(80, 45, 125)
+		for i, a in { 0, 1.2, -1.2, 2.4, -2.4 } do
+			local h = if i == 1 then 1.0 elseif i <= 3 then 0.8 else 0.6
+			local x, z = math.sin(a) * 0.85, -math.cos(a) * 0.85 + 0.1
+			cyl(h, 0.36, at(x, 1.45 + h / 2, z) * U.AxisY, wax)
+			local flameOpts: U.Opts? = if i == 1 then NEON else nil
+			block(Vector3.new(0.26, 0.26, 0.26), at(x, 1.47 + h + 0.18, z) * U.VertexUp, if i == 1 then glow else U.Shade(glow, 0.8), flameOpts)
+		end
+		for _, s in { -1, 1 } do
+			ball(0.3, CFrame.new(surf(Vector3.new(0.4 * s, 1.15, -1.1), -0.05)), wax)
+		end
+		for i = -1, 1 do
+			block(Vector3.new(0.7, 1.6, 0.14), CFrame.Angles(0, i * 0.5, 0) * at(0, -0.1, 1.75) * CFrame.Angles(0.35, 0, 0), robe)
+		end
+		fangs(WHITE)
+		local hand = Vector3.new(1.75, -0.35, -0.2)
+		local dir = Vector3.new(0.15, 1, -0.2).Unit
+		rod(hand - dir * 1.3, hand + dir * 2.0, 0.18, Color3.fromRGB(70, 50, 60))
+		local sp = hand + dir * 2.35
+		ball(0.65, CFrame.new(sp), WHITE)
+		for _, s in { -1, 1 } do
+			block(Vector3.new(0.14, 0.14, 0.1), CFrame.new(sp + Vector3.new(0.13 * s, 0.03, -0.29)), DARK)
+		end
+		block(Vector3.new(0.35, 0.35, 0.35), CFrame.new(sp + Vector3.new(0, 0.55, 0)) * U.VertexUp, glow, NEON)
+		local bcf = at(-2.5, 0.5, -0.35) * CFrame.Angles(0.15, 0.6, 0.2)
+		block(Vector3.new(0.95, 1.15, 0.28), bcf, robe)
+		block(Vector3.new(0.85, 1.05, 0.3), bcf * at(0.06, 0, 0), wax)
+	elseif style == "VampireCount" then
+		-- slicked hair with a widow's peak, bat-wing collar, cape, cravat, medallion, fangs and a pet bat
+		local hairC = Color3.fromRGB(45, 35, 75)
+		local cape = Color3.fromRGB(40, 30, 60)
+		local lining = Color3.fromRGB(200, 30, 60)
+		ball(2.95, at(0, 1.0, 0.35), hairC)
+		block(Vector3.new(0.5, 0.5, 0.25), onSurf(Vector3.new(0, 1.05, -1.3), -0.05) * CFrame.Angles(0, 0, math.pi / 4), hairC)
+		for _, s in { -1, 1 } do
+			local cf = at(1.05 * s, 0.75, 1.0) * CFrame.Angles(0, 0.55 * s, 0) * CFrame.Angles(0.2, 0, -0.35 * s)
+			block(Vector3.new(1.35, 2.1, 0.14), cf, cape)
+			block(Vector3.new(1.15, 1.9, 0.1), cf * at(0, 0, -0.08), lining)
+			brow(s, 0.98, true, hairC, 0.6)
+		end
+		block(Vector3.new(3.4, 3.0, 0.2), at(0, -1.0, 2.0) * CFrame.Angles(-0.2, 0, 0), cape)
+		ball(0.55, CFrame.new(surf(Vector3.new(0, -0.95, -1.3), 0.0)), WHITE) -- cravat
+		local mp = surf(Vector3.new(0, -1.35, -1.05), 0.05)
+		cyl(0.12, 0.55, U.DiscFacing(mp, mp), GOLD, METAL_MAT)
+		ball(0.28, CFrame.new(mp + mp.Unit * 0.06), glow, NEON)
+		fangs(WHITE)
+		-- pet bat by the left side
+		local bat = Vector3.new(-2.45, 1.25, -0.6)
+		local batC = Color3.fromRGB(85, 55, 120)
+		ball(0.6, CFrame.new(bat), batC)
+		for _, s in { -1, 1 } do
+			wedge(Vector3.new(0.06, 0.45, 0.75), CFrame.new(bat + Vector3.new(0.5 * s, 0.1, 0)) * CFrame.Angles(0, -math.pi / 2 * s, 0) * CFrame.Angles(0, 0, 0), batC)
+			ball(0.12, CFrame.new(bat + Vector3.new(0.12 * s, 0.07, -0.26)), glow, NEON)
+		end
+	elseif style == "CrystalTitan" then
+		-- tower take on the Overlord crown: same crystals, but glassy tips; only the circlet jewel glows
+		local gem = U.Vivid(glow)
+		local tip = U.Shade(glow, 0.85)
+		local glass = { Reflectance = 0.25 }
+		cyl(0.42, 2.55, at(0, 1.25, 0.05) * U.AxisY, GOLD, METAL_MAT)
+		crystal(at(0, 1.6, -0.3) * at(0, 0.8, 0), 0.52, 1.6, gem, glass, tip, glass, false)
+		for _, s in { -1, 1 } do
+			crystal(at(0.8 * s, 1.5, 0.1) * CFrame.Angles(0, 0, -0.55 * s) * at(0, 0.7, 0), 0.45, 1.4, gem, glass, tip, glass, false)
+			crystal(at(0.45 * s, 1.45, -0.62) * CFrame.Angles(-0.25, 0, -0.3 * s) * at(0, 0.35, 0), 0.3, 0.7, gem, glass, tip, glass, false)
+			brow(s, 0.98, true, DARK, 0.7)
+		end
+		block(Vector3.new(0.4, 0.4, 0.4), at(0, 1.25, -1.33) * U.VertexUp, glow, NEON) -- circlet jewel
+		ring(-0.75, 0.22, GOLD, METAL_MAT)
+		for i = -2, 2 do
+			block(Vector3.new(0.6, 1.3, 0.14), CFrame.Angles(0, i * 0.42, 0) * at(0, -0.15, 1.75) * CFrame.Angles(0.35, 0, 0), Color3.fromRGB(70, 50, 120))
+		end
+		for i = 0, 4 do
+			local a = math.pi / 5 + i * 2 * math.pi / 5
+			local y = if i % 2 == 0 then 0.7 else -0.5
+			crystal(CFrame.Angles(0, a, 0) * at(0, y, -3.1) * CFrame.Angles(0.15, 0, 0.3), 0.45, 1.3, gem, glass, tip, glass, true)
+		end
+	------------------------------------------------------------------ boss tower (BIG milestone bosses)
+	elseif style == "GraveColossus" then
+		-- tombstone crown, tombstone pauldrons with glowing cracks, iron-fence back, rock plates,
+		-- tombstone hammer, grave lantern and a floating skull
+		local moss = Color3.fromRGB(95, 195, 95)
+		local iron = Color3.fromRGB(55, 50, 70)
+		for i, t in { { -0.8, 0.35, 0.9 }, { 0, 0, 1.25 }, { 0.8, -0.35, 0.9 } } :: { { number } } do
+			local x, tilt, h = t[1], t[2], t[3]
+			local cf = at(x, 1.4, 0.15) * CFrame.Angles(0, 0, tilt) * at(0, h / 2, 0)
+			block(Vector3.new(0.85, h, 0.32), cf, STONE)
+			cyl(0.32, 0.85, cf * at(0, h / 2, 0) * U.AxisZ, STONE)
+			if i == 2 then
+				block(Vector3.new(0.1, 0.55, 0.06), cf * at(0, h / 2 - 0.05, -0.17), U.Shade(glow, 0.7))
+				block(Vector3.new(0.36, 0.1, 0.06), cf * at(0, h / 2 + 0.05, -0.17), U.Shade(glow, 0.7))
+			end
+		end
+		ball(0.6, at(-0.95, 1.45, -0.3), moss)
+		ball(0.5, at(0.55, 1.6, 0.6), moss)
+		for _, s in { -1, 1 } do
+			local pc = Vector3.new(1.95 * s, -0.1, 0)
+			ball(1.65, CFrame.new(pc), ROCK)
+			local sc = CFrame.new(pc + Vector3.new(0.15 * s, 0.85, 0.15)) * CFrame.Angles(0, 0.35 * s, -0.28 * s)
+			block(Vector3.new(0.9, 1.1, 0.3), sc, STONE)
+			cyl(0.3, 0.9, sc * at(0, 0.55, 0) * U.AxisZ, STONE)
+			brow(s, 1.0, true, DARK, 0.8)
+		end
+		-- iron fence rising behind the shoulders
+		ring(-0.75, 0.24, iron, METAL_MAT)
+		for i = -2, 2 do
+			local a = math.pi + i * 0.42
+			local p = Vector3.new(math.sin(a) * 1.85, 0.0, -math.cos(a) * 1.85)
+			block(Vector3.new(0.14, 1.9, 0.14), CFrame.new(p), iron, METAL_MAT)
+			block(Vector3.new(0.26, 0.26, 0.26), CFrame.new(p + Vector3.new(0, 1.05, 0)) * U.VertexUp, iron, METAL_MAT)
+		end
+		rockPlates(
+			{ Vector3.new(-1, -0.25, -0.55), Vector3.new(0.9, -0.8, -0.6), Vector3.new(-0.3, -1, -0.5) },
+			{ Vector3.new(0.55, -0.35, -1), Vector3.new(-0.95, 0.15, -0.55) },
+			ROCK
+		)
+		fangs(WHITE)
+		-- tombstone hammer in the right nub
+		local hand = Vector3.new(2.0, -0.45, -0.3)
+		local dir = Vector3.new(0.55, 1, 0.1).Unit
+		rod(hand - dir * 0.9, hand + dir * 2.1, 0.24, WOOD)
+		local hh = along(hand + dir * 2.35, dir)
+		block(Vector3.new(1.35, 0.8, 0.8), hh, STONE)
+		for _, s in { -1, 1 } do
+			cyl(0.16, 0.92, hh * at(0.48 * s, 0, 0), iron, METAL_MAT)
+		end
+		block(Vector3.new(0.4, 0.1, 0.06), hh * at(0, 0, -0.42), U.Shade(glow, 0.7))
+		-- grave lantern on the left nub
+		cyl(0.6, 0.12, at(-2.1, -0.85, -0.35) * U.AxisY, iron, METAL_MAT)
+		block(Vector3.new(0.75, 0.85, 0.75), at(-2.1, -1.55, -0.35), iron, METAL_MAT)
+		ball(0.45, at(-2.1, -1.55, -0.35), glow, NEON)
+		-- floating skull
+		local sk = Vector3.new(-1.3, 2.3, -1.4)
+		ball(0.85, CFrame.new(sk), BEARD)
+		for _, s in { -1, 1 } do
+			block(Vector3.new(0.18, 0.2, 0.1), CFrame.new(sk + Vector3.new(0.16 * s, 0.03, -0.37)), DARK)
+		end
+	elseif style == "VoidLeviathan" then
+		-- serpent: long curling tail with flukes, dorsal + ear fins, horns, tentacles,
+		-- glowing spots and orbiting void shards
+		local finC = accent
+		local horn = Color3.fromRGB(35, 35, 80)
+		local tail = {
+			{ p = Vector3.new(0.55, -3.05, 2.4), d = 0.72 },
+			{ p = Vector3.new(1.0, -3.28, 2.85), d = 0.64 },
+			{ p = Vector3.new(1.6, -3.32, 3.1), d = 0.56 },
+			{ p = Vector3.new(2.2, -3.12, 3.15), d = 0.48 },
+			{ p = Vector3.new(2.7, -2.75, 2.95), d = 0.4 },
+		}
+		for _, t in tail do
+			ball(t.d, CFrame.new(t.p), color, bodyOpts)
+		end
+		local tip = Vector3.new(2.95, -2.5, 2.8)
+		for _, s in { -1, 1 } do
+			block(Vector3.new(0.75, 0.1, 0.4), CFrame.lookAt(tip, tip + Vector3.new(0.6, 0.5, -0.3)) * CFrame.Angles(0, 0, 0.6 * s) * at(0.38 * s, 0, -0.1), finC)
+		end
+		fin(Vector3.new(0, 1.45, 0.9), Vector3.new(0, 0.85, 0.5), 0.9, 1.1, finC)
+		fin(Vector3.new(0, 0.75, 1.55), Vector3.new(0, 0.45, 0.9), 0.85, 1.0, finC)
+		fin(Vector3.new(0, -0.15, 1.75), Vector3.new(0, 0.1, 1), 0.75, 0.9, finC)
+		fin(Vector3.new(0, -1.3, 1.95), Vector3.new(0, -0.2, 1), 0.6, 0.8, finC)
+		for _, s in { -1, 1 } do
+			-- swept-back horns
+			rod(Vector3.new(0.6 * s, 1.45, 0.1), Vector3.new(0.95 * s, 2.1, 0.75), 0.42, horn)
+			rod(Vector3.new(0.95 * s, 2.1, 0.75), Vector3.new(1.0 * s, 2.35, 1.6), 0.3, horn)
+			block(Vector3.new(0.26, 0.26, 0.26), CFrame.new(Vector3.new(1.0 * s, 2.4, 1.78)) * U.VertexUp, finC)
+			-- three gill-fins fanning out of each side of the head
+			for k, f in { 0.65, 0.05, -0.55 } do
+				local u = Vector3.new(s * math.cos(f), math.sin(f), 0)
+				local len = 1.7 - k * 0.2
+				local up = Vector3.new(-u.Y * s, u.X * s, 0)
+				local base = Vector3.new(1.4 * s, 0.75 - k * 0.12, 0.25)
+				wedge(Vector3.new(0.12, 0.8, len), CFrame.fromMatrix(base + u * (len / 2), up:Cross(-u), up), finC)
+			end
+			-- dragon whiskers from the cheeks
+			local w0 = Vector3.new(1.05 * s, -0.45, -1.4)
+			local w1 = Vector3.new(1.55 * s, -0.8, -1.65)
+			local w2 = Vector3.new(1.85 * s, -1.35, -1.6)
+			rod(w0, w1, 0.18, finC)
+			rod(w1, w2, 0.13, finC)
+			ball(0.24, CFrame.new(w2), glow, NEON)
+			brow(s, 1.0, true, DARK, 0.7)
+		end
+		for _, d in { Vector3.new(1, 0.1, -0.35), Vector3.new(-1, 0.1, -0.35), Vector3.new(0.85, -0.6, 0.4), Vector3.new(-0.85, -0.6, 0.4) } do
+			ball(0.24, CFrame.new(surf(d, -0.04)), U.Shade(glow, 0.8))
+		end
+		fangs(WHITE)
+		for i = 0, 2 do
+			local a = i * 2 * math.pi / 3 + 0.6
+			crystal(CFrame.Angles(0, a, 0) * at(0, 0.6 + 0.5 * math.sin(i * 2.1), -3.3) * CFrame.Angles(0.35, 0, 0.5), 0.34, 0.8, U.Shade(color, 0.55), nil, U.Shade(glow, 0.75), { Reflectance = 0.25 }, true)
+		end
+	elseif style == "PhantomEmperor" then
+		-- floats in front of its phantom throne; three-tier pagoda crown, gold pauldrons and
+		-- breastplate, ecto-flame scepter, imperial orb and two tiny ghost attendants
+		local throne = Color3.fromRGB(95, 45, 155)
+		local velvet = Color3.fromRGB(150, 75, 205)
+		local glass = { Reflectance = 0.25 }
+		block(Vector3.new(4.3, 4.6, 0.45), at(0, 0.1, 2.65), throne)
+		block(Vector3.new(3.3, 3.8, 0.2), at(0, 0.2, 2.35), velvet)
+		for _, s in { -1, 1 } do
+			cyl(4.8, 0.48, at(2.2 * s, 0.1, 2.55) * U.AxisY, GOLD, METAL_MAT)
+			ball(0.65, at(2.2 * s, 2.6, 2.55), GOLD, METAL_MAT)
+			block(Vector3.new(0.36, 0.36, 0.36), at(2.2 * s, 3.05, 2.55) * U.VertexUp, U.Shade(glow, 0.75), glass)
+		end
+		cyl(4.4, 0.4, at(0, 2.45, 2.55), GOLD, METAL_MAT)
+		cyl(0.2, 1.4, at(0, 2.95, 2.45) * U.AxisZ, GOLD, METAL_MAT)
+		block(Vector3.new(0.5, 0.5, 0.5), at(0, 2.95, 2.3) * U.VertexUp, glow, NEON)
+		-- three-tier crown
+		local ccf = at(0, 1.4, 0.05)
+		cyl(0.75, 2.65, ccf * U.AxisY, GOLD, METAL_MAT)
+		cyl(0.6, 2.0, ccf * at(0, 0.65, 0) * U.AxisY, velvet)
+		cyl(0.5, 1.35, ccf * at(0, 1.15, 0) * U.AxisY, GOLD, METAL_MAT)
+		for i = 0, 5 do
+			local rot = ccf * CFrame.Angles(0, i * math.pi / 3, 0)
+			wedge(Vector3.new(0.42, 0.65, 0.36), rot * at(0, 0.62, -1.1), GOLD, METAL_MAT)
+		end
+		local gems = { RED, Color3.fromRGB(60, 120, 255), Color3.fromRGB(60, 200, 110) }
+		for i, a in { -0.7, 0, 0.7 } do
+			ball(0.34, ccf * CFrame.Angles(0, a, 0) * at(0, 0, -1.33), gems[i], glass)
+		end
+		for i = 0, 3 do
+			wedge(Vector3.new(0.32, 0.5, 0.28), ccf * CFrame.Angles(0, i * math.pi / 2 + math.pi / 4, 0) * at(0, 1.18, -0.82), GOLD, METAL_MAT)
+		end
+		ball(0.55, ccf * at(0, 1.6, 0), GOLD, METAL_MAT)
+		block(Vector3.new(0.16, 0.6, 0.16), ccf * at(0, 2.05, 0), GOLD, METAL_MAT)
+		block(Vector3.new(0.42, 0.16, 0.16), ccf * at(0, 2.1, 0), GOLD, METAL_MAT)
+		-- pauldrons, breastplate, moustache
+		for _, s in { -1, 1 } do
+			ball(1.4, at(1.85 * s, 0.0, -0.05), GOLD, METAL_MAT)
+			point(Vector3.new(2.1 * s, 0.5, -0.05), Vector3.new(0.5 * s, 1, 0), 0.32, 0.55, 0.32, GOLD, METAL_MAT)
+			local pos = surf(Vector3.new(0.36 * s, -0.2, -1.65), 0.05)
+			wedge(Vector3.new(0.18, 0.32, 0.65), U.Facing(pos, pos) * CFrame.Angles(0, 0, 0.15 * s) * CFrame.Angles(0, math.pi / 2 * s, 0), BEARD)
+		end
+		ring(-0.9, 0.38, GOLD, METAL_MAT)
+		block(Vector3.new(0.4, 0.4, 0.4), CFrame.new(surf(Vector3.new(0, -0.95, -1.45), 0.08)) * U.VertexUp, glow, NEON)
+		-- ecto-flame scepter in the right nub
+		local hand = Vector3.new(1.85, -0.35, -0.25)
+		local dir = Vector3.new(0.3, 1, -0.05).Unit
+		rod(hand - dir * 0.8, hand + dir * 2.2, 0.2, GOLD, METAL_MAT)
+		cyl(0.4, 0.6, U.Between(hand + dir * 2.2, hand + dir * 2.6), GOLD, METAL_MAT)
+		wedge(Vector3.new(0.35, 0.8, 0.5), along(hand + dir * 3.0, dir), glow, NEON)
+		wedge(Vector3.new(0.3, 0.55, 0.4), along(hand + dir * 2.9, dir) * CFrame.Angles(0, math.pi, 0) * at(0, 0, 0.15), U.Shade(glow, 0.75))
+		-- imperial orb on the left nub
+		local orb = Vector3.new(-2.3, -0.3, -0.6)
+		ball(0.95, CFrame.new(orb), GOLD, METAL_MAT)
+		cyl(0.18, 1.0, CFrame.new(orb) * U.AxisY, velvet)
+		block(Vector3.new(0.14, 0.5, 0.14), CFrame.new(orb + Vector3.new(0, 0.65, 0)), GOLD, METAL_MAT)
+		block(Vector3.new(0.36, 0.14, 0.14), CFrame.new(orb + Vector3.new(0, 0.7, 0)), GOLD, METAL_MAT)
+		-- two tiny ghost attendants
+		for _, s in { -1, 1 } do
+			local gp = Vector3.new(2.9 * s, 1.6, -0.9)
+			ball(0.8, CFrame.new(gp), WHITE)
+			for _, e in { -1, 1 } do
+				ball(0.16, CFrame.new(gp + Vector3.new(0.15 * e, 0.07, -0.35)), EYE)
+			end
+		end
+	elseif style == "EclipseOverlord" then
+		-- black sun with a glowing corona and gold sawtooth rays behind, crescent-moon crown,
+		-- crescent-bladed pauldrons, sun emblem, ecto cracks, orbiting moons and an eclipse staff
+		local ecto = Color3.fromRGB(95, 200, 140)
+		local moonC = Color3.fromRGB(235, 235, 255)
+		local voidC = Color3.fromRGB(30, 20, 55)
+		local glass = { Reflectance = 0.25 }
+		local sun = Vector3.new(0, 0.4, 2.25)
+		cyl(0.1, 4.8, CFrame.new(sun) * U.AxisZ, U.Shade(glow, 0.8), METAL_MAT)
+		cyl(0.14, 4.6, CFrame.new(sun - Vector3.new(0, 0, 0.07)) * U.AxisZ, voidC)
+		for i = 0, 11 do
+			local a = i * math.pi / 6
+			local d = Vector3.new(math.sin(a), math.cos(a), 0)
+			local len = if i % 2 == 0 then 1.05 else 0.7
+			local pos = sun + d * (2.35 + len / 2) + Vector3.new(0, 0, 0.02)
+			wedge(Vector3.new(0.14, len, 0.55), CFrame.fromMatrix(pos, Vector3.zAxis, d), GOLD, METAL_MAT)
+		end
+		-- crescent-moon crown
+		ring(1.25, 0.35, GOLD, METAL_MAT)
+		local mc = Vector3.new(0, 2.65, 0.15)
+		for _, t in { -1.5, -0.75, 0, 0.75, 1.5 } do
+			local p = mc + Vector3.new(math.sin(t), -math.cos(t), 0) * 0.78
+			local th = 0.46 - math.abs(t) * 0.17
+			block(Vector3.new(0.62, th, 0.3), CFrame.fromMatrix(p, Vector3.new(math.cos(t), math.sin(t), 0), Vector3.new(-math.sin(t), math.cos(t), 0)), moonC, glass)
+		end
+		block(Vector3.new(0.38, 0.38, 0.38), CFrame.new(surf(Vector3.new(0, 1.25, -1.17), 0.14)) * U.VertexUp, glow, NEON)
+		for _, s in { -1, 1 } do
+			local pc = Vector3.new(1.85 * s, -0.05, -0.05)
+			ball(1.35, CFrame.new(pc), GOLD, METAL_MAT)
+			point(pc + Vector3.new(0.35 * s, 0.4, 0), Vector3.new(0.6 * s, 1, 0.1), 0.42, 0.85, 0.12, moonC, glass)
+			point(pc + Vector3.new(0.5 * s, 0.05, 0), Vector3.new(1, 0.15, 0.1) * s, 0.36, 0.6, 0.12, moonC, glass)
+			brow(s, 0.98, true, voidC, 0.7)
+		end
+		-- sun emblem, ecto cracks
+		ring(-0.95, 0.3, GOLD, METAL_MAT)
+		local ep = surf(Vector3.new(0, -1.2, -1.2), 0.05)
+		cyl(0.12, 0.7, U.DiscFacing(ep, ep), GOLD, METAL_MAT)
+		ball(0.36, CFrame.new(ep + ep.Unit * 0.05), voidC)
+		for _, c in { { d = Vector3.new(1.0, 0.55, -0.55), t = 0.4 }, { d = Vector3.new(-0.9, -0.4, -0.75), t = -0.5 } } do
+			block(Vector3.new(0.11, 0.7, 0.1), onSurf(c.d, -0.02) * CFrame.Angles(0, 0, c.t), ecto, NEON)
+		end
+		-- orbiting moons: full, eclipsed (dark ball on a glowing ring), small
+		ball(0.9, at(-2.9, 1.5, -0.7), moonC, glass)
+		ball(0.8, at(2.9, 1.9, -0.5), voidC)
+		cyl(0.06, 0.95, at(2.9, 1.9, -0.42) * U.AxisZ, U.Shade(glow, 0.8), METAL_MAT)
+		ball(0.5, at(-2.4, -1.7, -1.0), moonC, glass)
+		-- eclipse staff in the right nub
+		local hand = Vector3.new(1.85, -0.4, -0.3)
+		local dir = Vector3.new(0.4, 1, 0.12).Unit
+		rod(hand - dir * 1.3, hand + dir * 2.4, 0.18, DARK)
+		local top = hand + dir * 2.85
+		cyl(0.08, 0.95, CFrame.new(top + Vector3.new(0, 0, 0.06)) * U.AxisZ, U.Shade(glow, 0.8), METAL_MAT)
+		cyl(0.14, 0.82, CFrame.new(top) * U.AxisZ, voidC)
+		for _, s in { -1, 1 } do
+			wedge(Vector3.new(0.1, 0.55, 0.3), CFrame.new(top + Vector3.new(0.48 * s, 0.1, 0)) * CFrame.Angles(0, -math.pi / 2 * s, 0), GOLD, METAL_MAT)
 		end
 	else -- Plain: a little wisp curl on top
 		ball(0.6, at(0.1, 1.85, 0.1), color, bodyOpts)

@@ -466,26 +466,109 @@ Config.Ghosts = {
 		Spirit = 164000000000000, Reward = 21800000000000, Drops = 18, Respawn = 30, Scale = 6.20, Hover = 14, Speed = 2.5, Wander = 6,
 		Kind = "Boss", Color = Color3.fromRGB(220, 210, 255), Glow = Color3.fromRGB(255, 230, 140), Style = "GhostKing",
 	},
-	-- BOSS TOWER (Spirit and hit are scaled per room by Config.Tower at spawn time)
+	-- BOSS TOWER (Spirit and hit are scaled per room by Config.Tower at spawn time).
+	-- 16 regular bosses (Config.Tower.Bosses) + 4 BIG milestone bosses (Config.Tower.BigBosses).
 	TowerWarden = {
 		Id = "TowerWarden", Name = "TOWER WARDEN", Zone = "Neighborhood",
 		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4, Hover = 9, Speed = 3, Wander = 4,
-		Kind = "Tower", Color = Color3.fromRGB(120, 110, 200), Glow = Color3.fromRGB(110, 255, 160), Style = "Warden",
+		Kind = "Tower", Color = Color3.fromRGB(120, 110, 200), Glow = Color3.fromRGB(120, 219, 154), Style = "Warden",
 	},
 	TowerJester = {
 		Id = "TowerJester", Name = "TOWER JESTER", Zone = "Neighborhood",
-		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.3, Hover = 9, Speed = 3.5, Wander = 3.5,
-		Kind = "Tower", Color = Color3.fromRGB(230, 70, 80), Glow = Color3.fromRGB(255, 210, 80), Style = "Ringmaster",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.2, Hover = 9, Speed = 3.5, Wander = 3.5,
+		Kind = "Tower", Color = Color3.fromRGB(240, 90, 110), Glow = Color3.fromRGB(120, 219, 154), Style = "Jester",
+	},
+	TowerPumpkinKnight = {
+		Id = "TowerPumpkinKnight", Name = "PUMPKIN KNIGHT", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.2, Hover = 9, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(205, 185, 255), Glow = Color3.fromRGB(120, 219, 154), Style = "PumpkinKnight",
+	},
+	TowerSwampHag = {
+		Id = "TowerSwampHag", Name = "SWAMP HAG", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.2, Hover = 9, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(150, 210, 120), Glow = Color3.fromRGB(175, 219, 106), Style = "SwampHag",
 	},
 	TowerBaron = {
 		Id = "TowerBaron", Name = "TOWER BARON", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.4, Hover = 10, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(120, 140, 200), Glow = Color3.fromRGB(120, 219, 154), Style = "King",
+	},
+	TowerClockSpecter = {
+		Id = "TowerClockSpecter", Name = "CLOCKWORK SPECTER", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.4, Hover = 10, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(165, 235, 215), Glow = Color3.fromRGB(120, 219, 154), Style = "ClockSpecter",
+	},
+	TowerBanshee = {
+		Id = "TowerBanshee", Name = "BANSHEE QUEEN", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.4, Hover = 10, Speed = 3.5, Wander = 3.5,
+		Kind = "Tower", Color = Color3.fromRGB(230, 220, 255), Glow = Color3.fromRGB(133, 219, 188), Style = "Banshee",
+	},
+	TowerBoneCaptain = {
+		Id = "TowerBoneCaptain", Name = "SKELETON CAPTAIN", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.4, Hover = 10, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(185, 235, 230), Glow = Color3.fromRGB(120, 219, 154), Style = "BoneCaptain",
+	},
+	TowerMummyPharaoh = {
+		Id = "TowerMummyPharaoh", Name = "MUMMY PHARAOH", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.6, Hover = 10, Speed = 2.5, Wander = 4.5,
+		Kind = "Tower", Color = Color3.fromRGB(245, 228, 195), Glow = Color3.fromRGB(120, 219, 154), Style = "MummyPharaoh",
+	},
+	TowerFrostWraith = {
+		Id = "TowerFrostWraith", Name = "FROST WRAITH", Zone = "Neighborhood",
 		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.6, Hover = 10, Speed = 3, Wander = 4,
-		Kind = "Tower", Color = Color3.fromRGB(120, 140, 200), Glow = Color3.fromRGB(110, 255, 160), Style = "King",
+		Kind = "Tower", Color = Color3.fromRGB(175, 215, 255), Glow = Color3.fromRGB(140, 219, 206), Style = "FrostWraith",
+	},
+	TowerPuppetMaster = {
+		Id = "TowerPuppetMaster", Name = "PUPPET MASTER", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.6, Hover = 10, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(195, 145, 230), Glow = Color3.fromRGB(120, 219, 154), Style = "PuppetMaster",
+	},
+	TowerStormPhantom = {
+		Id = "TowerStormPhantom", Name = "STORM PHANTOM", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.6, Hover = 10, Speed = 3.5, Wander = 3.5,
+		Kind = "Tower", Color = Color3.fromRGB(160, 175, 255), Glow = Color3.fromRGB(219, 206, 113), Style = "StormPhantom",
+	},
+	TowerHauntedArmor = {
+		Id = "TowerHauntedArmor", Name = "HAUNTED ARMOR", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.8, Hover = 10, Speed = 2.5, Wander = 4.5,
+		Kind = "Tower", Color = Color3.fromRGB(150, 170, 225), Glow = Color3.fromRGB(120, 219, 154), Style = "HauntedArmor",
+	},
+	TowerCandleLich = {
+		Id = "TowerCandleLich", Name = "CANDLE LICH", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.8, Hover = 10, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(210, 200, 240), Glow = Color3.fromRGB(120, 219, 154), Style = "CandleLich",
+	},
+	TowerVampireCount = {
+		Id = "TowerVampireCount", Name = "VAMPIRE COUNT", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 4.8, Hover = 10, Speed = 3, Wander = 4,
+		Kind = "Tower", Color = Color3.fromRGB(235, 225, 255), Glow = Color3.fromRGB(219, 99, 133), Style = "VampireCount",
 	},
 	TowerTitan = {
 		Id = "TowerTitan", Name = "TOWER TITAN", Zone = "Neighborhood",
 		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 5, Hover = 10, Speed = 2.5, Wander = 5,
-		Kind = "Tower", Color = Color3.fromRGB(170, 140, 255), Glow = Color3.fromRGB(90, 255, 230), Style = "Overlord",
+		Kind = "Tower", Color = Color3.fromRGB(170, 140, 255), Glow = Color3.fromRGB(106, 219, 202), Style = "CrystalTitan",
+	},
+	-- BIG milestone bosses (rooms 5, 10, 15, 20, then repeating). Bigger than every regular boss;
+	-- Scale/Hover keep their tops under the room walls' battlements (~28 studs, no ceiling).
+	TowerGraveColossus = {
+		Id = "TowerGraveColossus", Name = "GRAVE COLOSSUS", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 5.4, Hover = 11, Speed = 2, Wander = 5,
+		Kind = "Tower", Color = Color3.fromRGB(170, 172, 205), Glow = Color3.fromRGB(120, 219, 154), Style = "GraveColossus",
+	},
+	TowerVoidLeviathan = {
+		Id = "TowerVoidLeviathan", Name = "VOID LEVIATHAN", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 5.4, Hover = 13, Speed = 2.5, Wander = 5,
+		Kind = "Tower", Color = Color3.fromRGB(85, 100, 200), Glow = Color3.fromRGB(106, 219, 188), Style = "VoidLeviathan",
+	},
+	TowerPhantomEmperor = {
+		Id = "TowerPhantomEmperor", Name = "THE PHANTOM EMPEROR", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 5.2, Hover = 8.5, Speed = 2, Wander = 5,
+		Kind = "Tower", Color = Color3.fromRGB(232, 222, 255), Glow = Color3.fromRGB(120, 219, 154), Style = "PhantomEmperor",
+	},
+	TowerEclipseOverlord = {
+		Id = "TowerEclipseOverlord", Name = "ECLIPSE OVERLORD", Zone = "Neighborhood",
+		Spirit = 1000, Reward = 0, Drops = 0, Respawn = 0, Scale = 5.2, Hover = 8.5, Speed = 2, Wander = 5,
+		Kind = "Tower", Color = Color3.fromRGB(90, 70, 160), Glow = Color3.fromRGB(219, 185, 106), Style = "EclipseOverlord",
 	},
 	-- EVENT (scaled at spawn time by Config.Event)
 	GiantPoltergeist = {
@@ -1835,7 +1918,15 @@ Config.Tower = {
 	SpiritPayShare = 1.9,
 	RoomOverheadSeconds = 8, -- walking in, vote, boss intro
 	MilestoneEvery = { [10] = 3, [5] = 2 } :: { [number]: number }, -- room % key == 0 -> multiplier (largest wins)
-	Bosses = { "TowerWarden", "TowerJester", "TowerBaron", "TowerTitan" }, -- cycles by room
+	-- regular bosses cycle over the non-milestone rooms (1-4, 6-9, 11-14, 16-19, 21-24, ...)
+	Bosses = {
+		"TowerWarden", "TowerJester", "TowerPumpkinKnight", "TowerSwampHag",
+		"TowerBaron", "TowerClockSpecter", "TowerBanshee", "TowerBoneCaptain",
+		"TowerMummyPharaoh", "TowerFrostWraith", "TowerPuppetMaster", "TowerStormPhantom",
+		"TowerHauntedArmor", "TowerCandleLich", "TowerVampireCount", "TowerTitan",
+	},
+	BigBossEvery = 5, -- room % 5 == 0 -> BIG boss
+	BigBosses = { "TowerGraveColossus", "TowerVoidLeviathan", "TowerPhantomEmperor", "TowerEclipseOverlord" },
 	Slots = 12, -- simultaneous runs per server (each gets its own room space)
 }
 

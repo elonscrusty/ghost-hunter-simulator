@@ -283,7 +283,8 @@ local function startRoom(run: Run, n: number)
 	end
 	power = math.max(1, power)
 	local bossHP, hitFrac = Rules.TowerScale(n, TC, power)
-	local def = Config.Ghosts[TC.Bosses[(n - 1) % #TC.Bosses + 1]]
+	-- every BigBossEvery-th room is a BIG boss; the regular bosses cycle over the other rooms
+	local def = Config.Ghosts[Rules.TowerBoss(n, TC.Bosses, TC.BigBosses, TC.BigBossEvery)]
 	local g = GhostService.Spawn(def, TowerRoom.BossCenter(run.Origin), TowerRoom.BossRadius, {
 		Spirit = bossHP,
 		Tower = run,

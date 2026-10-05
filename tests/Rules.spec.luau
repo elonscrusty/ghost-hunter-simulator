@@ -202,6 +202,26 @@ T.tower_rewards_and_checkpoints = function()
 	eq(Rules.TowerCheckpoint(5, 5), 5)
 	eq(Rules.TowerCheckpoint(14, 5), 10)
 end
+T.tower_boss_order = function()
+	local reg, big = { "r1", "r2", "r3" }, { "b1", "b2" }
+	local got = {}
+	for room = 1, 12 do table.insert(got, Rules.TowerBoss(room, reg, big, 5)) end
+	eq(table.concat(got, ","), "r1,r2,r3,r1,b1,r2,r3,r1,r2,b2,r3,r1")
+	eq(Rules.TowerBoss(15, reg, big, 5), "b1")
+	-- the real config: rooms 1-20 show all 16 regular + 4 big bosses exactly once
+	local Config = require("./_Config")
+	local TC = Config.Tower
+	local seen, n = {}, 0
+	for room = 1, 20 do
+		local id = Rules.TowerBoss(room, TC.Bosses, TC.BigBosses, TC.BigBossEvery)
+		assert(Config.Ghosts[id] and Config.Ghosts[id].Kind == "Tower", "unknown tower boss " .. tostring(id))
+		assert(not seen[id], "repeat " .. id)
+		seen[id] = true
+		n += 1
+	end
+	eq(n, 20)
+	eq(Rules.TowerBoss(10, TC.Bosses, TC.BigBosses, TC.BigBossEvery), TC.BigBosses[2])
+end
 T.merge_rules = function()
 	local owned = {
 		a = { Id = "X" }, b = { Id = "X" }, c = { Id = "X" }, d = { Id = "X" }, e = { Id = "X" },

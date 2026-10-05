@@ -371,6 +371,16 @@ function Rules.TowerScale(room: number, cfg: TowerCfg, partyPower: number): (num
 	return math.max(1, math.floor(hp)), hit
 end
 
+-- Boss for a tower room: every `bigEvery`-th room picks from `big` (in order), the regular
+-- bosses cycle over the other rooms (rooms 1-4, 6-9, ... with bigEvery = 5).
+function Rules.TowerBoss(room: number, regular: { string }, big: { string }, bigEvery: number): string
+	if #big > 0 and room % bigEvery == 0 then
+		return big[(room // bigEvery - 1) % #big + 1]
+	end
+	local k = room - room // bigEvery
+	return regular[(k - 1) % #regular + 1]
+end
+
 -- Highest checkpoint reached after clearing `room` (0 = none): rooms 5, 10, ... with every=5.
 function Rules.TowerCheckpoint(room: number, every: number): number
 	return math.max(0, math.floor(room / every) * every)
