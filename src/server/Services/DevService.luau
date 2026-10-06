@@ -114,12 +114,14 @@ local CMDS: { [string]: Cmd } = {}
 --------------------------------------------------------------------------------
 -- MONEY
 --------------------------------------------------------------------------------
-CMDS.Ecto = function(player, _d, arg)
+CMDS.Ecto = function(player, d, arg)
 	local n = DevTools.Grant("Ecto", arg)
 	if not n then
 		return "Bad amount"
 	end
+	local total = d.TotalEcto
 	DataService.AddEcto(player, n)
+	d.TotalEcto = total -- dev Ecto never counts toward the all-time Ectoplasm leaderboard
 	return nil, "Gave " .. Format.Short(n) .. " Ectoplasm"
 end
 
@@ -581,6 +583,7 @@ CMDS.ResetProgress = function(player)
 		fresh.Equipped = { uid }
 	end
 	HunterService.Refresh(player)
+	PetService.Refresh(player)
 	player:LoadCharacter() -- back to spawn (the old area may be locked now)
 	return nil, "Your progress was reset"
 end
