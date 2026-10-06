@@ -94,6 +94,8 @@ HunterRig.Known = {
 		-- World 2
 		"ChefHat", "LanternRing", "Specs", "BookHat", "Roof", "ShroomCap", "ShroomCrown", "PrismCrown", "ConductorCap",
 		"Headphones", "TVHead", "StormCloud", "SpaceHelmet", "EarHood", "StarCrown",
+		-- EXCLUSIVES (world2c)
+		"ExDragonCrown", "ExArcaneHat", "ExJackHelm", "ExShroomQueen", "ExCaptainHat", "ExMirrorHelm", "ExVIPHat", "ExPhantomCap", "ExRexSkull", "ExTrophyCrown", "ExDJHeadset", "ExRoyalToque", "ExBossHelm", "ExWingedHelm", "ExAstroHelm", "ExCosmicCrown",
 		"Nightcap", "BookHead", "WeatherVane", "HardHat", "SkyTricorn", "BirdMask", "TempestCrown",
 		-- World 2 areas 19-29
 		"StrawHat", "SharkHood", "ElfHat", "DinoHood", "Thimble", "ChompHead",
@@ -105,6 +107,8 @@ HunterRig.Known = {
 		-- World 2
 		"LanternPole", "FireworkRack", "BookWings", "Rings", "MirrorShards", "Shell", "Smokestack", "Boombox", "Glider",
 		"StormWings", "Jetpack", "CometTail", "StretchyDog", "VoidRing",
+		-- EXCLUSIVES (world2c)
+		"ExLanternDragon", "ExLivingGrimoire", "ExPumpkinShield", "ExFairyWings", "ExSharkBoard", "ExMirrorShield", "ExVIPBags", "ExGhostTrain", "ExFossilDragon", "ExChampCape", "ExDJDeck", "ExRoyalCake", "ExHoloScreens", "ExThunderbird", "ExRocketPack", "ExStarCloak",
 		"BookStack", "BookCart", "PopUpCastle", "Tentacles", "Pages", "RuneBooks", "CloudSheep", "HotAirBalloon",
 		"RainbowScarf", "Battery", "ShipWheel", "Cyclone", "FeatherWings",
 		-- World 2 areas 19-29
@@ -120,6 +124,8 @@ HunterRig.Known = {
 		-- World 2
 		"FryingPan", "SteamBasket", "Spellbook", "Quill", "Umbrella", "Magnet", "Teapot", "HandMirror", "Kaleidoscope",
 		"Guitar", "Hammer", "Thunderbolt", "RayGun", "StarBlade",
+		-- EXCLUSIVES (world2c)
+		"ExDragonLantern", "ExRuneStaff", "ExHarvestBlade", "ExSporeScepter", "ExTideBlaster", "ExPrismSword", "ExDiamondCard", "ExGoldWatch", "ExAmberScepter", "ExChampionCup", "ExNeonMic", "ExIcingScepter", "ExHoloController", "ExStormSpear", "ExPlanetOrb", "ExGalaxyScepter",
 		"Candle", "Stamp", "Magnifier", "BookStaff", "Anemometer", "Crook", "Pinwheel",
 		-- World 2 areas 19-29
 		"Pitchfork", "Whip", "BoxingGlove", "Trophy", "SewingPin", "RollingPin", "Whisk", "Joystick",
@@ -1033,6 +1039,237 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			block(head, Vector3.new(sz, sz, 0.06), scf * CFrame.Angles(0, 0, math.pi / 4), c, NEON) -- diamond star
 		end
 		block(head, Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, y + 0.1, 0.12) * U.VertexUp, U.Vivid(look.Beam), { Reflectance = 0.4 })
+	-- EXCLUSIVES (world2c): premium hats of the 16 World 2 Exclusive-crate hunters (one each)
+	elseif hat == "ExDragonCrown" then
+		-- gold dragon headdress: circlet, two branching dragon horns, a ruby over the brow, red tassels
+		local c = hatColor
+		local red = Color3.fromRGB(215, 40, 50)
+		cyl(head, 0.2, 2.02, CFrame.new(0, 0.45, 0.05) * U.AxisY, c, { Material = Enum.Material.Metal, Reflectance = 0.2 })
+		for _, s in { -1, 1 } do
+			local h0 = Vector3.new(0.5 * s, 0.75, 0.05)
+			local h1 = Vector3.new(0.82 * s, 1.45, 0.3)
+			rod(head, h0, h1, 0.16, c, METAL_MAT)
+			rod(head, h1, Vector3.new(1.1 * s, 1.75, 0.15), 0.11, c, METAL_MAT) -- outer branch
+			rod(head, h1, Vector3.new(0.72 * s, 1.95, 0.55), 0.12, c, METAL_MAT) -- tip curls back
+			ball(head, 0.3, CFrame.new(1.0 * s, 0.05, -0.05), red) -- tassel
+		end
+		block(head, Vector3.new(0.28, 0.28, 0.28), CFrame.new(0, 0.62, -0.88) * U.VertexUp, red, { Reflectance = 0.3 }) -- ruby
+	elseif hat == "ExArcaneHat" then
+		-- tall archmage hat: wide brim, four-step cone flopping back at the tip, gold band, gem and stars
+		local c = hatColor
+		local alt = U.Mix(c, Color3.fromRGB(120, 80, 220), 0.35)
+		local tilt = CFrame.Angles(-0.1, 0, 0)
+		cyl(head, 0.1, 2.75, CFrame.new(0, 0.74, 0.12) * tilt * U.AxisY, c)
+		local tipCf = cone(head, CFrame.new(0, 0.76, 0.14) * tilt, 1.75, 1.55, 4, c, alt)
+		cone(head, tipCf * CFrame.new(0, -0.08, 0) * CFrame.Angles(0.95, 0, 0), 0.5, 0.65, 2, alt, c)
+		cyl(head, 0.2, 1.8, CFrame.new(0, 0.92, 0.13) * tilt * U.AxisY, GOLD, METAL_MAT) -- band
+		block(head, Vector3.new(0.26, 0.26, 0.26), CFrame.new(0, 0.94, -0.8) * U.VertexUp, Color3.fromRGB(80, 230, 200), { Reflectance = 0.3 })
+		for _, q in { { 0.22, 1.42, -0.52, 0.3 }, { -0.25, 1.78, -0.32, 0.22 } } do
+			block(head, Vector3.new(q[4], q[4], 0.06), CFrame.new(q[1], q[2], q[3]) * CFrame.Angles(-0.45, 0, math.pi / 4), GOLD, METAL_MAT) -- stars
+		end
+	elseif hat == "ExJackHelm" then
+		-- jack-o'-lantern knight helm: ribbed pumpkin dome, carved visor flipped up, stem with curly vine and leaves
+		local c = hatColor
+		local dark = Color3.fromRGB(70, 30, 15)
+		local green = Color3.fromRGB(80, 150, 60)
+		ball(head, 2.2, CFrame.new(0, 0.5, 0.25), c)
+		for _, s in { -1, 1 } do
+			ball(head, 1.55, CFrame.new(0.58 * s, 0.5, 0.32), U.Shade(c, 0.88)) -- ribs
+		end
+		cyl(head, 0.5, 0.34, CFrame.new(0.05, 1.68, 0.3) * CFrame.Angles(0, 0, 0.25) * U.AxisY, Color3.fromRGB(110, 120, 50)) -- stem
+		rod(head, Vector3.new(0.1, 1.75, 0.3), Vector3.new(-0.55, 1.95, 0.55), 0.08, green) -- vine
+		spike(head, CFrame.new(0.3, 1.55, 0.55) * CFrame.Angles(0.2, 0.5, -0.9), 0.5, 0.7, 0.06, green) -- leaves
+		spike(head, CFrame.new(-0.55, 1.95, 0.55) * CFrame.Angles(0.1, -0.4, 0.7), 0.4, 0.55, 0.06, U.Shade(green, 1.2))
+		local vcf = CFrame.new(0, 1.25, -0.72) * CFrame.Angles(-0.85, 0, 0)
+		block(head, Vector3.new(1.3, 0.55, 0.14), vcf, U.Mix(c, Color3.fromRGB(255, 200, 80), 0.25)) -- visor
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.2, 0.2, 0.05), vcf * CFrame.new(0.3 * s, 0.06, -0.07) * CFrame.Angles(0, 0, math.pi / 4), dark) -- carved eyes
+		end
+		block(head, Vector3.new(0.62, 0.09, 0.05), vcf * CFrame.new(0, -0.15, -0.07), dark) -- carved grin
+	elseif hat == "ExShroomQueen" then
+		-- mushroom-queen cap: big spotted dome with a pale gill brim, gold tiara under it, a baby mushroom on top
+		local c = hatColor
+		local cc = Vector3.new(0, 1.25, 0.15)
+		cyl(head, 0.12, 3.0, CFrame.new(0, 0.98, 0.15) * U.AxisY, Color3.fromRGB(255, 225, 235)) -- gills
+		ball(head, 2.45, CFrame.new(cc), c)
+		for _, q in { { 0.5, 0.55, -0.65, 0.42 }, { -0.62, 0.5, -0.45, 0.36 }, { 0.12, 0.95, 0.2, 0.38 }, { 0.85, 0.45, 0.2, 0.3 } } do
+			local n = Vector3.new(q[1], q[2], q[3]).Unit
+			ball(head, q[4], CFrame.new(cc + n * 1.15), WHITE) -- spots
+		end
+		for i = -1, 1 do
+			local h = if i == 0 then 0.3 else 0.22
+			block(head, Vector3.new(h, h, h), CFrame.new(i * 0.32, 0.78 + (if i == 0 then 0.05 else 0), -0.82 + math.abs(i) * 0.08) * U.VertexUp, GOLD, METAL_MAT) -- tiara
+		end
+		cyl(head, 0.3, 0.16, CFrame.new(0.35, 2.55, 0.1) * U.AxisY, CREAM) -- baby mushroom
+		ball(head, 0.45, CFrame.new(0.35, 2.72, 0.1), Color3.fromRGB(110, 230, 210))
+	elseif hat == "ExCaptainHat" then
+		-- white captain's cap: navy band, gold braid and anchor badge, black peak and a little shark fin on top
+		local c = hatColor
+		local navy = Color3.fromRGB(30, 45, 110)
+		local tilt = CFrame.Angles(-0.1, 0, 0)
+		cyl(head, 0.5, 1.98, CFrame.new(0, 0.74, 0.12) * tilt * U.AxisY, navy)
+		cyl(head, 0.34, 2.3, CFrame.new(0, 1.08, 0.18) * tilt * U.AxisY, c)
+		block(head, Vector3.new(1.3, 0.09, 0.55), CFrame.new(0, 0.6, -0.98) * CFrame.Angles(0.28, 0, 0), Color3.fromRGB(25, 25, 35), { Reflectance = 0.2 }) -- peak
+		block(head, Vector3.new(1.25, 0.09, 0.08), CFrame.new(0, 0.7, -0.92), GOLD, METAL_MAT) -- braid
+		local ac = CFrame.new(0, 1.0, -1.06) * CFrame.Angles(-0.1, 0, 0)
+		block(head, Vector3.new(0.08, 0.34, 0.06), ac, GOLD, METAL_MAT) -- anchor
+		block(head, Vector3.new(0.26, 0.07, 0.06), ac * CFrame.new(0, 0.1, 0), GOLD, METAL_MAT)
+		block(head, Vector3.new(0.3, 0.07, 0.06), ac * CFrame.new(0, -0.16, 0), GOLD, METAL_MAT)
+		wedge(head, Vector3.new(0.1, 0.55, 0.55), CFrame.new(0, 1.5, 0.35), Color3.fromRGB(95, 140, 185)) -- fin
+	elseif hat == "ExMirrorHelm" then
+		-- crystal knight helm: polished dome, cheek guards, a crest of three crystal spires, a gem on the brow
+		local c = hatColor
+		local crystal = Color3.fromRGB(190, 240, 255)
+		local glassy = { Material = Enum.Material.Glass, Transparency = 0.2, Reflectance = 0.3 }
+		ball(head, 2.1, CFrame.new(0, 0.45, 0.25), c, { Material = Enum.Material.Metal, Reflectance = 0.35 })
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.2, 0.85, 0.75), CFrame.new(0.92 * s, -0.12, -0.15) * CFrame.Angles(0, 0, 0.12 * s), c, { Material = Enum.Material.Metal, Reflectance = 0.35 })
+		end
+		for i = -1, 1 do
+			local h = if i == 0 then 1.15 else 0.8
+			local scf = CFrame.new(i * 0.42, 1.25, 0.3) * CFrame.Angles(0, 0, -0.35 * i) * CFrame.new(0, h / 2, 0)
+			block(head, Vector3.new(0.3, h, 0.3), scf * CFrame.Angles(0, math.pi / 4, 0), crystal, glassy)
+			block(head, Vector3.new(0.3, 0.3, 0.3), scf * CFrame.new(0, h / 2, 0) * U.VertexUp, crystal, glassy) -- tip
+		end
+		block(head, Vector3.new(0.26, 0.26, 0.26), CFrame.new(0, 0.72, -0.86) * U.VertexUp, Color3.fromRGB(120, 220, 255), { Reflectance = 0.4 })
+	elseif hat == "ExVIPHat" then
+		-- glam wide-brim sun hat with a feather and a huge diamond brooch, plus rose-tinted star shades
+		local c = hatColor
+		local tilt = CFrame.Angles(-0.12, 0, -0.12)
+		cyl(head, 0.08, 3.1, CFrame.new(0.08, 0.86, 0.1) * tilt * U.AxisY, c)
+		cyl(head, 0.55, 1.8, CFrame.new(0.12, 1.12, 0.12) * tilt * U.AxisY, c)
+		cyl(head, 0.2, 1.84, CFrame.new(0.1, 0.98, 0.12) * tilt * U.AxisY, Color3.fromRGB(40, 30, 40)) -- band
+		block(head, Vector3.new(0.42, 0.42, 0.42), CFrame.new(-0.05, 1.0, -0.88) * U.VertexUp, Color3.fromRGB(225, 250, 255), { Material = Enum.Material.Glass, Transparency = 0.1, Reflectance = 0.5 }) -- diamond
+		spike(head, CFrame.new(-0.55, 1.15, 0.4) * CFrame.Angles(0.3, 0.3, 0.55), 0.35, 1.2, 0.06, WHITE) -- feather
+		local lens = Color3.fromRGB(150, 40, 90)
+		for _, s in { -1, 1 } do
+			local n = Vector3.new(0.34 * s, 0.03, -0.8).Unit
+			block(head, Vector3.new(0.5, 0.36, 0.06), U.Facing(n * 1.08, n) * CFrame.Angles(0, 0, 0.1 * s), lens, { Reflectance = 0.35 })
+		end
+		block(head, Vector3.new(0.18, 0.06, 0.05), CFrame.new(0, 0.1, -1.03), GOLD, METAL_MAT) -- bridge
+	elseif hat == "ExPhantomCap" then
+		-- tall ghost-line conductor cap: gold band and badge, black peak, a tiny ghost riding on top
+		local c = hatColor
+		local tilt = CFrame.Angles(-0.08, 0, 0)
+		cyl(head, 0.75, 1.96, CFrame.new(0, 0.88, 0.1) * tilt * U.AxisY, c)
+		cyl(head, 0.12, 2.06, CFrame.new(0, 1.26, 0.13) * tilt * U.AxisY, U.Shade(c, 0.8))
+		cyl(head, 0.13, 1.99, CFrame.new(0, 0.62, 0.08) * tilt * U.AxisY, GOLD, METAL_MAT) -- band
+		block(head, Vector3.new(1.25, 0.09, 0.52), CFrame.new(0, 0.55, -0.98) * CFrame.Angles(0.3, 0, 0), Color3.fromRGB(20, 20, 30), { Reflectance = 0.2 }) -- peak
+		cyl(head, 0.06, 0.38, U.DiscFacing(Vector3.new(0, 0.95, -0.98), Vector3.new(0, 0.05, -1)), GOLD, METAL_MAT) -- badge
+		local g = Vector3.new(0.3, 1.62, 0.15)
+		ball(head, 0.7, CFrame.new(g), Color3.fromRGB(235, 255, 250), { Transparency = 0.15 }) -- ghost
+		wedge(head, Vector3.new(0.3, 0.35, 0.45), CFrame.new(g + Vector3.new(0.25, -0.15, 0.3)) * CFrame.Angles(0, -0.6, 0.6), Color3.fromRGB(235, 255, 250), { Transparency = 0.15 })
+		for _, s in { -1, 1 } do
+			ball(head, 0.12, CFrame.new(g + Vector3.new(0.12 * s, 0.05, -0.3)), EYE)
+		end
+	elseif hat == "ExRexSkull" then
+		-- fossil T. rex skull helm: bone dome, snout jutting over the brow with a row of fangs, amber crown
+		local c = hatColor
+		local amber = Color3.fromRGB(255, 160, 40)
+		ball(head, 2.15, CFrame.new(0, 0.5, 0.3), c)
+		local sn = CFrame.new(0, 1.05, -0.62) * CFrame.Angles(0.18, 0, 0)
+		block(head, Vector3.new(1.3, 0.5, 1.05), sn, c)
+		ball(head, 0.6, CFrame.new(0, 1.12, -1.15), c) -- snout tip
+		for i = 0, 3 do
+			wedge(head, Vector3.new(0.09, 0.26, 0.16), sn * CFrame.new(-0.42 + i * 0.28, -0.32, -0.45) * CFrame.Angles(math.pi, 0, 0), WHITE) -- fangs
+		end
+		for _, s in { -1, 1 } do
+			ball(head, 0.36, CFrame.new(0.52 * s, 1.22, -0.35), Color3.fromRGB(70, 55, 45)) -- eye sockets
+		end
+		for i = -1, 1 do
+			local h = if i == 0 then 0.36 else 0.26
+			block(head, Vector3.new(h, h, h), CFrame.new(i * 0.4, 1.62 - math.abs(i) * 0.12, 0.35) * U.VertexUp, amber, { Transparency = 0.15, Reflectance = 0.3 })
+		end
+	elseif hat == "ExTrophyCrown" then
+		-- champion's crown: polished gold band whose five points are tiny trophy cups, a star gem in front
+		local c = hatColor
+		local mat = { Material = Enum.Material.Metal, Reflectance = 0.25 }
+		cyl(head, 0.38, 2.04, CFrame.new(0, 0.82, 0.12) * U.AxisY, c, mat)
+		for i = 0, 4 do
+			local pcf = CFrame.new(0, 1.0, 0.12) * CFrame.Angles(0, math.rad(-64 + i * 32), 0) * CFrame.new(0, 0, -0.86)
+			cyl(head, 0.32, 0.1, pcf * CFrame.new(0, 0.16, 0) * U.AxisY, c, mat) -- stem
+			cyl(head, 0.24, 0.34, pcf * CFrame.new(0, 0.42, 0) * U.AxisY, c, mat) -- cup
+		end
+		block(head, Vector3.new(0.3, 0.3, 0.07), CFrame.new(0, 0.82, -1.03) * CFrame.Angles(0, 0, math.pi / 4), RED, { Reflectance = 0.3 }) -- gem
+	elseif hat == "ExDJHeadset" then
+		-- big DJ headphones with coloured rims, a mic boom and wraparound tinted shades
+		local c = hatColor
+		local rim = Color3.fromRGB(255, 80, 200)
+		for _, s in { -1, 1 } do
+			cyl(head, 0.38, 0.9, CFrame.new(1.0 * s, 0.1, 0.05), c)
+			cyl(head, 0.1, 1.0, CFrame.new(1.16 * s, 0.1, 0.05), rim)
+			rod(head, Vector3.new(1.0 * s, 0.5, 0.05), Vector3.new(0.6 * s, 1.25, 0.05), 0.16, c)
+		end
+		rod(head, Vector3.new(-0.62, 1.22, 0.05), Vector3.new(0.62, 1.22, 0.05), 0.16, c) -- headband
+		rod(head, Vector3.new(1.0, -0.15, -0.25), Vector3.new(0.4, -0.5, -0.92), 0.06, c) -- mic boom
+		ball(head, 0.18, CFrame.new(0.38, -0.5, -0.95), Color3.fromRGB(40, 40, 50))
+		block(head, Vector3.new(1.55, 0.32, 0.1), CFrame.new(0, 0.05, -0.93), Color3.fromRGB(90, 240, 255), { Transparency = 0.35, Reflectance = 0.4 }) -- shades
+	elseif hat == "ExRoyalToque" then
+		-- royal pastry chef's toque: puffy top, gold crown round the band, a cherry on top
+		local c = hatColor
+		cyl(head, 0.45, 2.0, CFrame.new(0, 0.78, 0.12) * U.AxisY, c)
+		for _, q in { { -0.38, 1.35, -0.05 }, { 0.38, 1.35, -0.05 }, { -0.3, 1.38, 0.4 }, { 0.3, 1.38, 0.4 } } do
+			ball(head, 1.1, CFrame.new(q[1], q[2], q[3]), c)
+		end
+		ball(head, 1.2, CFrame.new(0, 1.75, 0.15), c)
+		cyl(head, 0.2, 2.06, CFrame.new(0, 0.66, 0.12) * U.AxisY, GOLD, { Material = Enum.Material.Metal, Reflectance = 0.25 })
+		for i = -1, 1 do
+			block(head, Vector3.new(0.24, 0.24, 0.24), CFrame.new(i * 0.42, 0.88, -0.9 + math.abs(i) * 0.12) * U.VertexUp, GOLD, METAL_MAT) -- crown points
+		end
+		ball(head, 0.38, CFrame.new(0, 2.45, 0.15), RED) -- cherry
+		rod(head, Vector3.new(0, 2.6, 0.15), Vector3.new(0.18, 2.88, 0.2), 0.05, Color3.fromRGB(70, 120, 50))
+	elseif hat == "ExBossHelm" then
+		-- final-boss helmet: dark dome, see-through holo visor, side fins and a crown of pixel blocks
+		local c = hatColor
+		local holo = Color3.fromRGB(80, 255, 230)
+		local pink = Color3.fromRGB(255, 90, 230)
+		ball(head, 2.12, CFrame.new(0, 0.45, 0.22), c)
+		block(head, Vector3.new(1.65, 0.4, 0.2), CFrame.new(0, 0.02, -0.9), holo, { Transparency = 0.5 })
+		for _, s in { -1, 1 } do
+			wedge(head, Vector3.new(0.12, 0.7, 0.8), CFrame.new(1.02 * s, 0.6, 0.35) * CFrame.Angles(-0.4, 0, 0), pink) -- fins
+		end
+		for i = -2, 2 do
+			local h = if i == 0 then 0.42 elseif math.abs(i) == 1 then 0.2 else 0.3
+			block(head, Vector3.new(0.26, 0.26 + h, 0.26), CFrame.new(i * 0.3, 1.45 + h / 2 - math.abs(i) * 0.1, 0.1 + math.abs(i) * 0.06), if i % 2 == 0 then pink else holo)
+		end
+	elseif hat == "ExWingedHelm" then
+		-- silver sky-rider helm with feathered wings on both sides and a gold lightning crest
+		local c = hatColor
+		ball(head, 2.06, CFrame.new(0, 0.55, 0.2), c, { Material = Enum.Material.Metal, Reflectance = 0.3 })
+		for _, s in { -1, 1 } do
+			local base = CFrame.new(1.0 * s, 0.7, 0.25) * CFrame.Angles(0, math.pi / 2, 0)
+			spike(head, base * CFrame.Angles(0, 0, 0.75 * s) * CFrame.Angles(0, 0, 0), 0.45, 1.25, 0.08, WHITE)
+			spike(head, base * CFrame.new(0, -0.15, 0.06 * s) * CFrame.Angles(0, 0, 1.15 * s), 0.4, 0.95, 0.08, Color3.fromRGB(200, 225, 255))
+		end
+		local y = GOLD
+		bar(head, Vector3.new(0.1, 1.95, -0.1), Vector3.new(-0.12, 1.5, -0.45), 0.2, 0.1, y, METAL_MAT)
+		bar(head, Vector3.new(-0.12, 1.5, -0.45), Vector3.new(0.12, 1.42, -0.5), 0.2, 0.1, y, METAL_MAT)
+		bar(head, Vector3.new(0.12, 1.42, -0.5), Vector3.new(-0.05, 0.98, -0.82), 0.2, 0.1, y, METAL_MAT)
+	elseif hat == "ExAstroHelm" then
+		-- glass astronaut bubble with a chunky collar ring, ear pods and an antenna with a little light
+		local c = hatColor
+		ball(head, 2.6, CFrame.new(0, 0.28, 0.05), Color3.fromRGB(235, 245, 255), { Transparency = 0.65, Reflectance = 0.2, Shadow = false })
+		cyl(head, 0.32, 2.05, CFrame.new(0, -1.0, 0.05) * U.AxisY, c)
+		cyl(head, 0.12, 2.12, CFrame.new(0, -0.86, 0.05) * U.AxisY, Color3.fromRGB(255, 150, 70)) -- stripe
+		for _, s in { -1, 1 } do
+			cyl(head, 0.22, 0.62, CFrame.new(1.22 * s, 0.25, 0.05), c)
+		end
+		rod(head, Vector3.new(-1.25, 0.4, 0.05), Vector3.new(-1.4, 1.35, 0.15), 0.06, METAL, METAL_MAT)
+		ball(head, 0.2, CFrame.new(-1.41, 1.42, 0.15), Color3.fromRGB(255, 90, 90), NEON) -- antenna light
+	elseif hat == "ExCosmicCrown" then
+		-- cosmic emperor's crown: deep violet band with gold rims, three tall points tipped with stars, a galaxy gem
+		local c = hatColor
+		cyl(head, 0.45, 2.0, CFrame.new(0, 0.86, 0.12) * U.AxisY, c)
+		for _, y in { 0.63, 1.09 } do
+			cyl(head, 0.09, 2.08, CFrame.new(0, y, 0.12) * U.AxisY, GOLD, METAL_MAT)
+		end
+		for i = -1, 1 do
+			local h = if i == 0 then 1.15 else 0.8
+			local pcf = CFrame.new(0, 1.05, 0.12) * CFrame.Angles(0, -i * 0.75, 0) * CFrame.new(0, 0, -0.9) * CFrame.Angles(-0.12, 0, 0)
+			spike(head, pcf, 0.5, h, 0.1, c)
+			block(head, Vector3.new(0.22, 0.22, 0.22), pcf * CFrame.new(0, h + 0.08, 0) * U.VertexUp, GOLD, { Reflectance = 0.4 })
+		end
+		block(head, Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, 0.86, -1.02) * U.VertexUp, Color3.fromRGB(200, 120, 255), { Reflectance = 0.4 })
 	elseif hat == "Nightcap" then
 		-- striped sleeping cap with a fluffy brim that flops over to one side, pompom on the end
 		local c = look.HatColor or Color3.fromRGB(90, 120, 220)
@@ -1861,6 +2098,311 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		for i = 0, 3 do
 			block(torso, Vector3.new(0.3, 0.3, 0.3), rc * CFrame.Angles(0, 0, math.pi / 4 + i * math.pi / 2) * CFrame.new(0, 1.6, -0.12) * U.VertexUp, GOLD, { Reflectance = 0.3 })
 		end
+	-- EXCLUSIVES (world2c): premium backs of the 16 World 2 Exclusive-crate hunters (one each)
+	elseif back == "ExLanternDragon" then
+		-- riding a golden lantern dragon: its body snakes along under the feet (red lantern beads between gold
+		-- coils) and rears up at the front left, head with horns, whiskers and a pearl in its mouth
+		local c = backColor
+		local red = Color3.fromRGB(215, 40, 50)
+		local pts = {
+			Vector3.new(0.7, -1.2, 1.9),
+			Vector3.new(-0.3, -1.32, 1.1),
+			Vector3.new(0.15, -1.38, 0.1),
+			Vector3.new(-0.3, -1.25, -0.8),
+			Vector3.new(-0.95, -0.65, -1.2),
+			Vector3.new(-1.2, 0.05, -1.3),
+		}
+		for i = 1, #pts - 1 do
+			local d = 0.3 + i * 0.05
+			rod(torso, pts[i], pts[i + 1], d, c, { Reflectance = 0.15 })
+			ball(torso, d + 0.16, CFrame.new(pts[i + 1]), red) -- lantern bead
+		end
+		spike(torso, CFrame.new(pts[1]) * CFrame.Angles(-1.2, 0.5, 0), 0.5, 0.6, 0.06, red) -- tail tuft
+		local hp = Vector3.new(-1.25, 0.45, -1.4)
+		ball(torso, 0.85, CFrame.new(hp), c, { Reflectance = 0.15 })
+		block(torso, Vector3.new(0.55, 0.38, 0.6), CFrame.new(hp + Vector3.new(0, -0.08, -0.52)), c, { Reflectance = 0.15 }) -- snout
+		block(torso, Vector3.new(0.46, 0.12, 0.5), CFrame.new(hp + Vector3.new(0, -0.38, -0.47)) * CFrame.Angles(-0.25, 0, 0), red) -- jaw
+		ball(torso, 0.3, CFrame.new(hp + Vector3.new(0, -0.25, -0.88)), Color3.fromRGB(255, 245, 225), { Reflectance = 0.3 }) -- pearl
+		for _, s in { -1, 1 } do
+			ball(torso, 0.22, CFrame.new(hp + Vector3.new(0.25 * s, 0.15, -0.3)), EYE)
+			rod(torso, hp + Vector3.new(0.18 * s, 0.3, 0.05), hp + Vector3.new(0.34 * s, 0.85, 0.42), 0.11, CREAM) -- horns
+			rod(torso, hp + Vector3.new(0.22 * s, -0.1, -0.7), hp + Vector3.new(0.75 * s, -0.45, -0.58), 0.05, red) -- whiskers
+		end
+		spike(torso, CFrame.new(hp + Vector3.new(0, 0.2, 0.4)) * CFrame.Angles(-0.9, 0, 0), 0.65, 0.65, 0.08, red) -- mane
+	elseif back == "ExLivingGrimoire" then
+		-- a living spellbook floating open beside the left shoulder: googly eyes on its pages, a fanged grin,
+		-- a bookmark tongue and two loose pages fluttering round
+		local c = backColor
+		local bc = CFrame.new(-1.6, 1.35, -0.1) * CFrame.Angles(0, -0.55, 0) * CFrame.Angles(0.15, 0, 0.1)
+		for _, s in { -1, 1 } do
+			local half = bc * CFrame.Angles(0, -0.35 * s, 0) * CFrame.new(0.5 * s, 0, 0)
+			block(torso, Vector3.new(1.0, 1.35, 0.08), half, c)
+			block(torso, Vector3.new(0.9, 1.22, 0.12), half * CFrame.new(-0.02 * s, 0, -0.08), CREAM) -- pages
+			ball(torso, 0.4, half * CFrame.new(0, 0.22, -0.14), WHITE) -- eye
+			ball(torso, 0.2, half * CFrame.new(-0.04 * s, 0.2, -0.3), EYE)
+		end
+		block(torso, Vector3.new(0.8, 0.14, 0.06), bc * CFrame.new(0, -0.3, -0.2), Color3.fromRGB(60, 25, 45)) -- grin
+		for _, s in { -1, 1 } do
+			wedge(torso, Vector3.new(0.05, 0.16, 0.1), bc * CFrame.new(0.2 * s, -0.42, -0.22) * CFrame.Angles(math.pi, 0, 0), WHITE) -- fangs
+		end
+		block(torso, Vector3.new(0.14, 0.75, 0.03), bc * CFrame.new(0.05, -0.9, -0.1) * CFrame.Angles(0, 0, 0.12), RED) -- bookmark
+		for _, q in { { 0.75, 1.0, 1.05, 0.4 }, { -0.1, 2.55, 0.85, -0.6 } } do
+			block(torso, Vector3.new(0.45, 0.6, 0.03), CFrame.new(q[1], q[2], q[3]) * CFrame.Angles(0.3, q[4], q[4]), CREAM) -- loose pages
+		end
+	elseif back == "ExPumpkinShield" then
+		-- harvest knight kit: autumn cape, pumpkin pauldrons and a round jack-o'-lantern shield on the left side
+		local c = backColor
+		local dark = Color3.fromRGB(70, 30, 15)
+		local green = Color3.fromRGB(90, 130, 50)
+		block(torso, Vector3.new(1.4, 1.65, 0.1), CFrame.new(0, -0.35, 0.52) * CFrame.Angles(-0.15, 0, 0), Color3.fromRGB(150, 40, 35))
+		for _, s in { -1, 1 } do
+			ball(torso, 0.72, CFrame.new(0.8 * s, 0.5, 0), c) -- pauldrons
+			cyl(torso, 0.18, 0.12, CFrame.new(0.8 * s, 0.88, 0) * U.AxisY, green)
+		end
+		local n = Vector3.new(-0.55, 0, -0.85).Unit
+		local sp = Vector3.new(-1.15, -0.15, -0.25)
+		cyl(torso, 0.24, 1.35, U.DiscFacing(sp, n), c)
+		cyl(torso, 0.16, 1.5, U.DiscFacing(sp - n * 0.04, n), U.Shade(c, 0.7)) -- rim
+		local fc = U.Facing(sp + n * 0.13, n)
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.24, 0.24, 0.04), fc * CFrame.new(0.24 * s, 0.15, 0) * CFrame.Angles(0, 0, math.pi / 4), dark) -- carved eyes
+		end
+		block(torso, Vector3.new(0.7, 0.12, 0.04), fc * CFrame.new(0, -0.25, 0), dark) -- carved grin
+		cyl(torso, 0.2, 0.14, U.Facing(sp + Vector3.new(0, 0.7, 0), n) * U.AxisY, green) -- stem
+	elseif back == "ExFairyWings" then
+		-- four see-through butterfly wings in two colours with pale spots, and a short royal cape
+		local c = backColor
+		local inner = Color3.fromRGB(120, 240, 220)
+		block(torso, Vector3.new(1.35, 1.2, 0.08), CFrame.new(0, -0.15, 0.5) * CFrame.Angles(-0.12, 0, 0), Color3.fromRGB(120, 60, 170))
+		for _, s in { -1, 1 } do
+			local up = CFrame.new(0.95 * s, 0.85, 0.75) * CFrame.Angles(0, 0.35 * s, 0.45 * s)
+			cyl(torso, 0.05, 1.7, up * U.AxisZ, c, { Transparency = 0.3 })
+			cyl(torso, 0.06, 1.0, up * CFrame.new(0.1 * s, 0.1, -0.02) * U.AxisZ, inner, { Transparency = 0.3 })
+			ball(torso, 0.24, up * CFrame.new(0.45 * s, 0.4, -0.04), WHITE)
+			local lo = CFrame.new(0.75 * s, -0.25, 0.72) * CFrame.Angles(0, 0.3 * s, -0.4 * s)
+			cyl(torso, 0.05, 1.15, lo * U.AxisZ, c, { Transparency = 0.3 })
+			cyl(torso, 0.06, 0.6, lo * CFrame.new(0.06 * s, -0.05, -0.02) * U.AxisZ, inner, { Transparency = 0.3 })
+		end
+	elseif back == "ExSharkBoard" then
+		-- surfing on a friendly shark: board-shaped shark under the feet pointing forward, dorsal and tail fins,
+		-- eyes and a toothy grin at the front, water splashing at the back
+		local c = backColor
+		local y0 = -1.38
+		block(torso, Vector3.new(1.0, 0.3, 2.8), CFrame.new(0, y0, 0.1), c)
+		cyl(torso, 0.3, 1.0, CFrame.new(0, y0, -1.3) * U.AxisY, c) -- round nose
+		block(torso, Vector3.new(0.9, 0.12, 2.9), CFrame.new(0, y0 - 0.12, -0.15), WHITE) -- belly
+		wedge(torso, Vector3.new(0.12, 0.75, 0.7), CFrame.new(0, y0 + 0.5, 0.95), c) -- dorsal fin
+		wedge(torso, Vector3.new(0.12, 0.85, 0.5), CFrame.new(0, y0 + 0.45, 1.75), U.Shade(c, 0.9)) -- tail fin
+		for _, s in { -1, 1 } do
+			ball(torso, 0.3, CFrame.new(0.42 * s, y0 + 0.12, -1.3), EYE)
+			wedge(torso, Vector3.new(0.6, 0.08, 0.45), CFrame.new(0.72 * s, y0 - 0.02, -0.55) * CFrame.Angles(0, math.pi, 0), c) -- side fins
+			ball(torso, 0.55, CFrame.new(0.6 * s, y0 + 0.1, 1.35), Color3.fromRGB(170, 230, 255), { Transparency = 0.35 }) -- splash
+		end
+		block(torso, Vector3.new(0.7, 0.13, 0.06), CFrame.new(0, y0 - 0.02, -1.81), Color3.fromRGB(60, 25, 35)) -- mouth
+		block(torso, Vector3.new(0.6, 0.06, 0.07), CFrame.new(0, y0 - 0.01, -1.82), WHITE) -- teeth
+		ball(torso, 0.7, CFrame.new(0, y0 + 0.25, 2.05), Color3.fromRGB(200, 240, 255), { Transparency = 0.35 })
+	elseif back == "ExMirrorShield" then
+		-- crystal knight kit: pale cape, crystal pauldrons, a round mirror shield on the left side, mirror shards
+		local c = backColor
+		local crystal = Color3.fromRGB(190, 240, 255)
+		local glassy = { Material = Enum.Material.Glass, Transparency = 0.2, Reflectance = 0.3 }
+		block(torso, Vector3.new(1.4, 1.7, 0.1), CFrame.new(0, -0.35, 0.52) * CFrame.Angles(-0.15, 0, 0), c)
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.42, 0.42, 0.42), CFrame.new(0.78 * s, 0.6, 0.05) * U.VertexUp, crystal, glassy) -- pauldrons
+			block(torso, Vector3.new(0.26, 0.26, 0.26), CFrame.new(0.95 * s, 0.75, 0.3) * U.VertexUp, crystal, glassy)
+		end
+		local n = Vector3.new(-0.55, 0, -0.85).Unit
+		local sp = Vector3.new(-1.15, -0.1, -0.25)
+		cyl(torso, 0.14, 1.4, U.DiscFacing(sp, n), Color3.fromRGB(225, 240, 255), { Material = Enum.Material.Metal, Reflectance = 0.55 })
+		cyl(torso, 0.1, 1.56, U.DiscFacing(sp - n * 0.03, n), GOLD, METAL_MAT) -- rim
+		block(torso, Vector3.new(0.34, 0.34, 0.34), U.Facing(sp + n * 0.1, n) * U.VertexUp, Color3.fromRGB(120, 220, 255), { Reflectance = 0.4 })
+		for _, q in { { 1.2, 1.25, 0.6, 0.3 }, { 0.6, 2.1, 0.75, -0.4 }, { -0.9, 1.9, 0.8, 0.6 } } do
+			block(torso, Vector3.new(0.32, 0.55, 0.04), CFrame.new(q[1], q[2], q[3]) * CFrame.Angles(0.2, q[4], q[4]), crystal, { Reflectance = 0.5 }) -- shards
+		end
+	elseif back == "ExVIPBags" then
+		-- VIP shopping spree: a fluffy pink boa round the shoulders, three posh bags at the left hand
+		-- and a tiny pampered pup peeking out of one
+		local c = backColor
+		for i = 0, 5 do
+			local a = math.rad(-150 + i * 60)
+			ball(torso, 0.46, CFrame.new(math.cos(a) * 0.68, 0.56 + (if i == 0 or i == 5 then -0.18 else 0), math.sin(a) * 0.48), c) -- boa
+		end
+		local bags: { { P: Vector3, C: Color3 } } = {
+			{ P = Vector3.new(-1.15, -0.75, -0.2), C = Color3.fromRGB(255, 205, 70) },
+			{ P = Vector3.new(-1.35, -0.6, 0.3), C = Color3.fromRGB(35, 30, 40) },
+			{ P = Vector3.new(-0.95, -0.85, 0.45), C = c },
+		}
+		for k, b in bags do
+			local p, col = b.P, b.C
+			block(torso, Vector3.new(0.55, 0.6, 0.28), CFrame.new(p) * CFrame.Angles(0, 0.4, 0.06 * k), col, if k == 1 then METAL_MAT else nil)
+			bar(torso, p + Vector3.new(-0.18, 0.3, 0), p + Vector3.new(0, 0.6, 0), 0.05, 0.05, U.Shade(col, 0.6))
+			bar(torso, p + Vector3.new(0, 0.6, 0), p + Vector3.new(0.18, 0.3, 0), 0.05, 0.05, U.Shade(col, 0.6))
+		end
+		local pup = Vector3.new(-0.95, -0.38, 0.45)
+		ball(torso, 0.42, CFrame.new(pup), WHITE)
+		ball(torso, 0.26, CFrame.new(pup + Vector3.new(0, 0.22, 0.02)), WHITE) -- fluffy top
+		ball(torso, 0.1, CFrame.new(pup + Vector3.new(0.04, 0, -0.2)), EYE)
+	elseif back == "ExGhostTrain" then
+		-- a little see-through ghost locomotive puffing along behind the right shoulder: boiler, cab, chimney,
+		-- cow-catcher, four wheels, a lamp and three rising smoke puffs
+		local c = backColor
+		local ghost = { Transparency = 0.3 }
+		local tc = CFrame.new(1.15, 1.45, 0.9) * CFrame.Angles(0, 0.5, 0.08)
+		cyl(torso, 1.1, 0.58, tc * CFrame.new(0, 0, -0.2) * U.AxisZ, c, ghost) -- boiler
+		block(torso, Vector3.new(0.7, 0.78, 0.55), tc * CFrame.new(0, 0.12, 0.55), c, ghost) -- cab
+		block(torso, Vector3.new(0.82, 0.08, 0.68), tc * CFrame.new(0, 0.55, 0.55), U.Shade(c, 0.6), ghost) -- roof
+		cyl(torso, 0.42, 0.2, tc * CFrame.new(0, 0.42, -0.45) * U.AxisY, U.Shade(c, 0.6), ghost) -- chimney
+		cyl(torso, 0.1, 0.34, tc * CFrame.new(0, 0.66, -0.45) * U.AxisY, U.Shade(c, 0.6), ghost)
+		wedge(torso, Vector3.new(0.6, 0.3, 0.28), tc * CFrame.new(0, -0.25, -0.88) * CFrame.Angles(0, math.pi, 0), U.Shade(c, 0.6), ghost) -- cow-catcher
+		for _, x in { -0.31, 0.31 } do
+			for _, z in { -0.4, 0.35 } do
+				cyl(torso, 0.1, 0.36, tc * CFrame.new(x, -0.3, z), U.Shade(c, 0.5), ghost) -- wheels
+			end
+		end
+		ball(torso, 0.2, tc * CFrame.new(0, 0.05, -0.78), Color3.fromRGB(220, 255, 200), NEON) -- lamp
+		for i, d in { 0.3, 0.4, 0.5 } do
+			ball(torso, d, tc * CFrame.new(0.05 * i, 0.75 + i * 0.28, -0.45 + i * 0.25), WHITE, { Transparency = 0.45 }) -- smoke
+		end
+	elseif back == "ExFossilDragon" then
+		-- fossil dragon costume: bone wings with amber see-through membranes and a bony tail down to the floor
+		local c = backColor
+		local amber = Color3.fromRGB(255, 170, 60)
+		for _, s in { -1, 1 } do
+			local sh = Vector3.new(0.4 * s, 0.4, 0.5)
+			local el = Vector3.new(1.3 * s, 1.35, 0.8)
+			rod(torso, sh, el, 0.16, c)
+			ball(torso, 0.28, CFrame.new(el), c)
+			for _, f in { Vector3.new(2.05 * s, 0.95, 0.9), Vector3.new(1.85 * s, 0.25, 0.88), Vector3.new(1.25 * s, -0.15, 0.75) } do
+				rod(torso, el, f, 0.1, c) -- finger bones
+			end
+			block(torso, Vector3.new(1.15, 1.15, 0.04), CFrame.new(1.45 * s, 0.55, 0.85) * CFrame.Angles(0, 0, 0.25 * s), amber, { Transparency = 0.45 }) -- membrane
+		end
+		for i = 0, 4 do
+			ball(torso, 0.42 - i * 0.05, CFrame.new(0, -0.55 - i * 0.2, 0.65 + i * 0.28), c) -- tail bones
+		end
+		wedge(torso, Vector3.new(0.1, 0.35, 0.45), CFrame.new(0, -1.3, 2.05), c) -- tail tip
+	elseif back == "ExChampCape" then
+		-- champion's regalia: red cape with gold trim and an ermine collar, a big gold title belt, floating confetti
+		local c = backColor
+		local cape = CFrame.new(0, -0.35, 0.52) * CFrame.Angles(-0.15, 0, 0)
+		block(torso, Vector3.new(1.45, 1.7, 0.1), cape, c)
+		block(torso, Vector3.new(1.47, 0.12, 0.12), cape * CFrame.new(0, -0.82, 0), GOLD, METAL_MAT) -- trim
+		block(torso, Vector3.new(1.5, 0.3, 0.62), CFrame.new(0, 0.55, 0.22), WHITE) -- ermine collar
+		for _, x in { -0.4, 0.4 } do
+			block(torso, Vector3.new(0.08, 0.14, 0.04), CFrame.new(x, 0.55, -0.1), EYE)
+		end
+		block(torso, Vector3.new(1.36, 0.28, 0.9), CFrame.new(0, -0.38, 0), Color3.fromRGB(30, 30, 35)) -- belt strap
+		cyl(torso, 0.1, 0.7, CFrame.new(0, -0.36, -0.47) * U.AxisZ, GOLD, { Material = Enum.Material.Metal, Reflectance = 0.25 }) -- title plate
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.24, 0.3, 0.06), CFrame.new(0.48 * s, -0.38, -0.46), GOLD, METAL_MAT)
+		end
+		ball(torso, 0.22, CFrame.new(0, -0.36, -0.53), RED) -- gem
+		for i, q in { { 1.3, 1.6, -0.2 }, { -1.25, 1.9, 0.1 }, { 1.0, 2.5, 0.3 }, { -0.8, 2.6, -0.3 } } do
+			block(torso, Vector3.new(0.16, 0.16, 0.03), CFrame.new(q[1], q[2], q[3]) * CFrame.Angles(i, i * 2, i), RAINBOW[i * 2 - 1]) -- confetti
+		end
+	elseif back == "ExDJDeck" then
+		-- hover DJ deck in front (two spinning records, a crossfader) and a fan of equaliser bars behind
+		local c = backColor
+		local dk = CFrame.new(0, -0.4, -1.0) * CFrame.Angles(0.2, 0, 0)
+		block(torso, Vector3.new(1.9, 0.24, 0.85), dk, c)
+		for _, s in { -1, 1 } do
+			cyl(torso, 0.06, 0.62, dk * CFrame.new(0.5 * s, 0.14, 0) * U.AxisY, Color3.fromRGB(20, 20, 25)) -- record
+			cyl(torso, 0.07, 0.22, dk * CFrame.new(0.5 * s, 0.15, 0) * U.AxisY, if s < 0 then Color3.fromRGB(255, 80, 200) else Color3.fromRGB(80, 240, 255)) -- label
+		end
+		block(torso, Vector3.new(0.3, 0.08, 0.1), dk * CFrame.new(0, 0.15, 0.2), WHITE) -- crossfader
+		block(torso, Vector3.new(0.1, 0.1, 0.5), dk * CFrame.new(0, 0.13, -0.1), Color3.fromRGB(255, 220, 80)) -- slider
+		for i = -3, 3 do
+			local h = 0.6 + 0.9 * math.abs(math.sin(i * 1.3 + 0.6))
+			local a = i * 0.28
+			block(torso, Vector3.new(0.26, h, 0.12), CFrame.new(0, 0.4, 0.65) * CFrame.Angles(0, 0, -a) * CFrame.new(0, 0.55 + h / 2, 0), RAINBOW[i + 4]) -- equaliser bars
+		end
+	elseif back == "ExRoyalCake" then
+		-- three-tier royal cake carried on a gold platter at the left hand: icing rims, strawberries, a gold crown
+		local c = backColor
+		local pc = Vector3.new(-1.45, -0.6, -0.15)
+		cyl(torso, 0.08, 1.4, CFrame.new(pc) * U.AxisY, GOLD, { Material = Enum.Material.Metal, Reflectance = 0.25 }) -- platter
+		local y = pc.Y + 0.04
+		for i, d in { 1.15, 0.85, 0.55 } do
+			local h = 0.38
+			local col = if i % 2 == 1 then c else WHITE
+			cyl(torso, h, d, CFrame.new(pc.X, y + h / 2, pc.Z) * U.AxisY, col)
+			cyl(torso, 0.08, d + 0.08, CFrame.new(pc.X, y + h - 0.02, pc.Z) * U.AxisY, if i % 2 == 1 then WHITE else c) -- icing rim
+			ball(torso, 0.2, CFrame.new(pc.X + d * 0.3, y + h + 0.06, pc.Z - d * 0.3), RED) -- strawberry
+			y += h
+		end
+		for i = -1, 1 do
+			block(torso, Vector3.new(0.14, 0.14, 0.14), CFrame.new(pc.X + i * 0.14, y + 0.1, pc.Z - 0.12 + math.abs(i) * 0.05) * U.VertexUp, GOLD, METAL_MAT) -- crown
+		end
+	elseif back == "ExHoloScreens" then
+		-- final-boss HUD: a huge boss health bar floating overhead and two see-through hologram screens
+		local c = backColor
+		local pink = Color3.fromRGB(255, 90, 230)
+		local hb = CFrame.new(0, 3.55, 0.2)
+		block(torso, Vector3.new(2.3, 0.3, 0.1), hb, Color3.fromRGB(25, 20, 40))
+		block(torso, Vector3.new(1.6, 0.18, 0.12), hb * CFrame.new(-0.3, 0, 0), RED) -- health left
+		block(torso, Vector3.new(0.3, 0.3, 0.14), hb * CFrame.new(-1.3, 0, 0) * CFrame.Angles(0, 0, math.pi / 4), GOLD) -- boss icon
+		for _, s in { -1, 1 } do
+			local sc = CFrame.new(1.45 * s, 1.0, 0.45) * CFrame.Angles(0, -0.45 * s, 0)
+			block(torso, Vector3.new(1.0, 0.7, 0.04), sc, c, { Transparency = 0.5 })
+			block(torso, Vector3.new(0.5, 0.08, 0.05), sc * CFrame.new(-0.1, 0.15, 0), pink, { Transparency = 0.2 })
+			block(torso, Vector3.new(0.3, 0.08, 0.05), sc * CFrame.new(-0.2, -0.05, 0), WHITE, { Transparency = 0.2 })
+		end
+		for i, q in { { 1.1, 2.3, 0.1 }, { -1.2, 2.5, 0.2 }, { 0.9, -0.3, 0.6 } } do
+			block(torso, Vector3.new(0.22, 0.22, 0.22), CFrame.new(q[1], q[2], q[3]) * CFrame.Angles(i, i, 0), if i == 2 then pink else c, { Transparency = 0.25 }) -- pixels
+		end
+	elseif back == "ExThunderbird" then
+		-- riding a thunderbird: big blue bird behind with wings spread wide, gold-tipped feathers, its head
+		-- over the left shoulder with a gold beak and a lightning crest, tail feathers below
+		local c = backColor
+		local light = U.Mix(c, WHITE, 0.35)
+		local gold = Color3.fromRGB(255, 215, 60)
+		ball(torso, 1.1, CFrame.new(0, 0.35, 0.95), c)
+		for _, s in { -1, 1 } do
+			local base = CFrame.new(0.55 * s, 0.6, 0.95) * CFrame.Angles(0, 0.45 * s, 0)
+			spike(torso, base * CFrame.Angles(0, 0, -0.95 * s), 1.2, 2.5, 0.12, c)
+			spike(torso, base * CFrame.new(0, -0.25, -0.05) * CFrame.Angles(0, 0, -1.45 * s), 0.85, 1.9, 0.1, light)
+			spike(torso, base * CFrame.Angles(0, 0, -0.95 * s) * CFrame.new(0, 2.3, -0.02), 0.55, 0.65, 0.08, gold) -- gold tip
+		end
+		spike(torso, CFrame.new(0, -0.15, 1.15) * CFrame.Angles(0.5, 0, math.pi), 0.8, 1.2, 0.1, c) -- tail
+		local hp = Vector3.new(-1.3, 1.95, -0.3)
+		rod(torso, Vector3.new(-0.35, 0.65, 0.75), hp, 0.5, c) -- neck
+		ball(torso, 0.78, CFrame.new(hp), c)
+		wedge(torso, Vector3.new(0.3, 0.3, 0.55), CFrame.new(hp + Vector3.new(0, -0.05, -0.55)) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(math.pi, 0, 0), gold) -- beak
+		for _, s in { -1, 1 } do
+			ball(torso, 0.17, CFrame.new(hp + Vector3.new(0.24 * s, 0.12, -0.28)), EYE)
+		end
+		spike(torso, CFrame.new(hp + Vector3.new(0, 0.3, 0.1)) * CFrame.Angles(-0.5, 0, 0.2), 0.35, 0.75, 0.08, gold) -- crest
+	elseif back == "ExRocketPack" then
+		-- twin-rocket jetpack: white rockets with red nose cones and fins, jet flames, a little moon in orbit
+		local c = backColor
+		block(torso, Vector3.new(0.95, 0.75, 0.22), CFrame.new(0, 0.05, 0.52), METAL, METAL_MAT)
+		for _, s in { -1, 1 } do
+			local x = 0.4 * s
+			cyl(torso, 1.15, 0.52, CFrame.new(x, 0.1, 0.82) * U.AxisY, c)
+			cyl(torso, 0.14, 0.54, CFrame.new(x, 0.25, 0.82) * U.AxisY, Color3.fromRGB(255, 150, 70)) -- stripe
+			cone(torso, CFrame.new(x, 0.67, 0.82), 0.52, 0.5, 2, RED)
+			wedge(torso, Vector3.new(0.08, 0.45, 0.35), CFrame.new(x + 0.3 * s, -0.35, 0.82) * CFrame.Angles(0, -math.pi / 2 * s, 0), RED) -- fin
+			ball(torso, 0.34, CFrame.new(x, -0.62, 0.82), Color3.fromRGB(255, 170, 70), NEON) -- flame
+		end
+		local mc = Vector3.new(-1.35, 1.5, 0.3)
+		ball(torso, 0.6, CFrame.new(mc), Color3.fromRGB(200, 200, 210)) -- moon
+		ball(torso, 0.18, CFrame.new(mc + Vector3.new(0.12, 0.12, -0.24)), Color3.fromRGB(150, 150, 165)) -- craters
+		ball(torso, 0.13, CFrame.new(mc + Vector3.new(-0.15, -0.1, -0.24)), Color3.fromRGB(150, 150, 165))
+	elseif back == "ExStarCloak" then
+		-- star-cloaked emperor: a huge night-sky cloak flaring wide, high pointed collar, gold stars and clasps
+		local c = backColor
+		local lining = Color3.fromRGB(110, 50, 170)
+		block(torso, Vector3.new(1.9, 2.4, 0.1), CFrame.new(0, -0.6, 0.62) * CFrame.Angles(-0.12, 0, 0), c)
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.1, 2.25, 0.95), CFrame.new(0.92 * s, -0.6, 0.18) * CFrame.Angles(0, 0, 0.16 * s), c)
+			block(torso, Vector3.new(0.75, 0.95, 0.08), CFrame.new(0.42 * s, 0.9, 0.42) * CFrame.Angles(-0.2, 0, -0.35 * s), lining) -- collar
+			ball(torso, 0.24, CFrame.new(0.48 * s, 0.4, -0.44), GOLD, METAL_MAT) -- clasp
+			for k, q in { { 0.3, -0.25 }, { -0.4, 0.05 }, { -1.1, -0.35 }, { -1.5, 0.3 } } do
+				local sz = if k % 2 == 0 then 0.14 else 0.2
+				block(torso, Vector3.new(sz, sz, sz), CFrame.new(s * (1.0 - 0.16 * (q[1] + 0.6)), q[1], q[2] + 0.15) * U.VertexUp, if k % 2 == 0 then WHITE else GOLD, { Reflectance = 0.3 }) -- stars
+			end
+		end
+		rod(torso, Vector3.new(-0.48, 0.4, -0.46), Vector3.new(0.48, 0.4, -0.46), 0.05, GOLD, METAL_MAT) -- clasp chain
 	elseif back == "BookStack" then
 		-- leaning tower of books strapped to the back, a little bookworm reading on the top one
 		local cols = { backColor, Color3.fromRGB(70, 120, 210), Color3.fromRGB(235, 170, 60), Color3.fromRGB(160, 80, 170), Color3.fromRGB(60, 165, 120), RED }
@@ -3061,6 +3603,191 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		end
 		muzzle = tpart(U.Block(Vector3.new(0.22, 0.22, 0.22), sc * U.VertexUp, beam, model, NEON))
 		tipWorld = T(0, 0, -2.05)
+	-- EXCLUSIVES (world2c): premium tools of the 16 World 2 Exclusive-crate hunters (one each)
+	elseif tool == "ExDragonLantern" then
+		-- red lacquer pole with a gold arm, a red paper lantern hanging from it (glowing core) and a tassel
+		local up = T(0, 0.05, -0.1) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, 0, -0.3)
+		tpart(U.Cyl(2.2, 0.14, up * CFrame.new(0, 0.6, 0) * U.AxisY, Color3.fromRGB(170, 30, 40), model))
+		tpart(U.Ball(0.26, up * CFrame.new(0, 1.74, 0), GOLD, model, METAL_MAT)) -- finial
+		local hook = up * CFrame.new(0, 1.6, 0)
+		tpart(U.Cyl(0.65, 0.08, hook * CFrame.new(0, 0, -0.3) * U.AxisZ, GOLD, model, METAL_MAT)) -- arm
+		local lc = hook * CFrame.new(0, -0.48, -0.6)
+		tpart(U.Ball(0.66, lc, tc, model, { Transparency = 0.25 }))
+		for _, y in { -0.31, 0.31 } do
+			tpart(U.Cyl(0.1, 0.38, lc * CFrame.new(0, y, 0) * U.AxisY, GOLD, model, METAL_MAT)) -- caps
+		end
+		tpart(U.Cyl(0.32, 0.08, lc * CFrame.new(0, -0.52, 0) * U.AxisY, tc, model)) -- tassel
+		muzzle = tpart(U.Ball(0.32, lc, Color3.fromRGB(255, 215, 130), model, NEON))
+		tipWorld = lc
+	elseif tool == "ExRuneStaff" then
+		-- archmage staff: dark pole, gold crescent cradle, a glowing orb inside a ring of floating gold runes
+		local up = T(0, 0.05, -0.1) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, 0, -0.35)
+		tpart(U.Cyl(2.7, 0.16, up * CFrame.new(0, 0.55, 0) * U.AxisY, tc, model))
+		for _, s in { -1, 1 } do
+			tpart(U.Cyl(0.55, 0.1, up * CFrame.new(0.14 * s, 2.05, 0) * CFrame.Angles(0, 0, -0.55 * s) * U.AxisY, GOLD, model, METAL_MAT)) -- crescent
+		end
+		local oc = up * CFrame.new(0, 2.45, 0)
+		muzzle = tpart(U.Ball(0.46, oc, beam, model, NEON))
+		for i = 0, 4 do
+			local a = i * 2 * math.pi / 5
+			tpart(U.Block(Vector3.new(0.14, 0.14, 0.05), oc * CFrame.Angles(0, a, 0) * CFrame.new(0, 0.05 * (i % 2), -0.5) * CFrame.Angles(0, 0, math.pi / 4), GOLD, model, METAL_MAT)) -- runes
+		end
+		tipWorld = oc
+	elseif tool == "ExHarvestBlade" then
+		-- knight's sword: vine-wrapped hilt, pumpkin pommel, gold leaf guard, steel blade with an orange fuller
+		local green = Color3.fromRGB(70, 120, 50)
+		tpart(U.Cyl(0.5, 0.17, T(0, 0, 0.12) * U.AxisZ, green, model))
+		tpart(U.Ball(0.3, T(0, 0, 0.42), Color3.fromRGB(240, 130, 40), model)) -- pommel
+		tpart(U.Block(Vector3.new(0.95, 0.14, 0.2), T(0, 0, -0.16), GOLD, model, METAL_MAT)) -- guard
+		tpart(U.Block(Vector3.new(0.1, 0.34, 1.6), T(0, 0, -1.0), tc, model, { Material = Enum.Material.Metal, Reflectance = 0.25 })) -- blade
+		tpart(U.Block(Vector3.new(0.12, 0.1, 1.3), T(0, 0, -0.95), Color3.fromRGB(240, 130, 40), model)) -- fuller
+		muzzle = tpart(U.Block(Vector3.new(0.2, 0.2, 0.2), T(0, 0, -1.85) * U.VertexUp, beam, model, NEON))
+		tipWorld = T(0, 0, -1.95)
+	elseif tool == "ExSporeScepter" then
+		-- gold scepter crowned with a spotted mushroom and a floating glowing spore
+		local up = T(0, 0.05, -0.15) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, 0, -0.3)
+		tpart(U.Cyl(1.9, 0.12, up * CFrame.new(0, 0.45, 0) * U.AxisY, GOLD, model, METAL_MAT))
+		tpart(U.Cyl(0.35, 0.22, up * CFrame.new(0, 1.5, 0) * U.AxisY, CREAM, model)) -- stem
+		tpart(U.Cyl(0.06, 0.8, up * CFrame.new(0, 1.68, 0) * U.AxisY, Color3.fromRGB(255, 225, 235), model)) -- gills
+		tpart(U.Ball(0.74, up * CFrame.new(0, 1.8, 0), Color3.fromRGB(240, 90, 140), model)) -- cap
+		for _, q in { { 0.2, 2.08, -0.2 }, { -0.25, 2.0, -0.15 } } do
+			tpart(U.Ball(0.16, up * CFrame.new(q[1], q[2], q[3]), WHITE, model))
+		end
+		muzzle = tpart(U.Ball(0.24, up * CFrame.new(0, 2.45, 0), beam, model, NEON))
+		tipWorld = up * CFrame.new(0, 2.45, 0)
+	elseif tool == "ExTideBlaster" then
+		-- big water blaster: chunky body, see-through water tank on top, pump grip, long barrel, nozzle
+		tpart(U.Block(Vector3.new(0.42, 0.5, 1.15), T(0, 0.15, -0.35), tc, model))
+		tpart(U.Block(Vector3.new(0.44, 0.12, 0.9), T(0, 0.15, -0.38), Color3.fromRGB(40, 180, 220), model)) -- stripe
+		tpart(U.Ball(0.66, T(0, 0.62, -0.2), Color3.fromRGB(140, 220, 255), model, { Transparency = 0.35 })) -- tank
+		tpart(U.Cyl(0.45, 0.22, T(0, -0.05, -0.85) * U.AxisZ, Color3.fromRGB(40, 60, 110), model)) -- pump
+		tpart(U.Cyl(0.6, 0.2, T(0, 0.2, -1.2) * U.AxisZ, WHITE, model)) -- barrel
+		muzzle = tpart(U.Cyl(0.12, 0.28, T(0, 0.2, -1.55) * U.AxisZ, beam, model, NEON))
+		tipWorld = T(0, 0.2, -1.65)
+	elseif tool == "ExPrismSword" then
+		-- crystal sword: silver hilt, gem pommel, crystal-tipped guard, long see-through crystal blade
+		local crystal = Color3.fromRGB(190, 240, 255)
+		tpart(U.Cyl(0.45, 0.17, T(0, 0, 0.12) * U.AxisZ, Color3.fromRGB(60, 70, 100), model))
+		tpart(U.Block(Vector3.new(0.24, 0.24, 0.24), T(0, 0, 0.42) * U.VertexUp, Color3.fromRGB(120, 220, 255), model, { Reflectance = 0.4 }))
+		tpart(U.Block(Vector3.new(0.8, 0.14, 0.18), T(0, 0, -0.16), Color3.fromRGB(215, 225, 240), model, { Material = Enum.Material.Metal, Reflectance = 0.35 }))
+		for _, s in { -1, 1 } do
+			tpart(U.Block(Vector3.new(0.2, 0.2, 0.2), T(0.45 * s, 0, -0.16) * U.VertexUp, crystal, model, { Material = Enum.Material.Glass, Transparency = 0.2, Reflectance = 0.3 }))
+		end
+		tpart(U.Block(Vector3.new(0.1, 0.36, 1.8), T(0, 0, -1.1), tc, model, { Material = Enum.Material.Glass, Transparency = 0.2, Reflectance = 0.35 })) -- blade
+		muzzle = tpart(U.Block(Vector3.new(0.24, 0.24, 0.24), T(0, 0, -2.05) * U.VertexUp, beam, model, NEON))
+		tipWorld = T(0, 0, -2.15)
+	elseif tool == "ExDiamondCard" then
+		-- a giant gold VIP card held up: dark stripe, chip, diamond inlay and a twinkle on the corner
+		local cc = T(0, 0.45, -0.45) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, -0.5, 0.15)
+		tpart(U.Block(Vector3.new(1.05, 0.68, 0.05), cc, tc, model, { Material = Enum.Material.Metal, Reflectance = 0.3 }))
+		tpart(U.Block(Vector3.new(1.05, 0.13, 0.06), cc * CFrame.new(0, 0.17, 0), Color3.fromRGB(40, 30, 40), model)) -- stripe
+		tpart(U.Block(Vector3.new(0.2, 0.16, 0.07), cc * CFrame.new(-0.3, -0.07, 0), Color3.fromRGB(215, 220, 230), model, METAL_MAT)) -- chip
+		tpart(U.Block(Vector3.new(0.24, 0.24, 0.24), cc * CFrame.new(0.3, -0.12, -0.04) * U.VertexUp, Color3.fromRGB(225, 250, 255), model, { Material = Enum.Material.Glass, Transparency = 0.1, Reflectance = 0.5 }))
+		muzzle = tpart(U.Block(Vector3.new(0.15, 0.15, 0.15), cc * CFrame.new(0.55, 0.36, 0) * U.VertexUp, beam, model, NEON))
+		tipWorld = cc * CFrame.new(0.55, 0.36, 0)
+	elseif tool == "ExGoldWatch" then
+		-- conductor's big gold pocket watch held up on its chain: cream face, black hands, winding crown
+		local wc = T(0, 0.45, -0.45) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, -0.4, 0)
+		tpart(U.Cyl(0.16, 0.85, wc * U.AxisZ, tc, model, { Material = Enum.Material.Metal, Reflectance = 0.25 }))
+		tpart(U.Cyl(0.18, 0.68, wc * U.AxisZ, CREAM, model)) -- face
+		tpart(U.Block(Vector3.new(0.05, 0.28, 0.04), wc * CFrame.new(0, 0.12, -0.1), EYE, model))
+		tpart(U.Block(Vector3.new(0.2, 0.05, 0.04), wc * CFrame.new(0.09, 0, -0.1), EYE, model))
+		tpart(U.Cyl(0.16, 0.16, wc * CFrame.new(0, 0.5, 0) * U.AxisY, tc, model, METAL_MAT)) -- crown
+		tpart(U.Cyl(0.6, 0.05, U.Between((wc * CFrame.new(0, 0.58, 0)).Position, T(0, -0.05, 0.05).Position), tc, model, METAL_MAT)) -- chain
+		muzzle = tpart(U.Ball(0.12, wc * CFrame.new(0, 0, -0.11), beam, model, NEON))
+		tipWorld = wc * CFrame.new(0, 0, -0.2)
+	elseif tool == "ExAmberScepter" then
+		-- fossil bone staff with knobbly ends, an amber gem (a tiny bug inside) and a glowing spark on top
+		local up = T(0, 0.05, -0.1) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, 0, -0.3)
+		tpart(U.Cyl(2.0, 0.17, up * CFrame.new(0, 0.55, 0) * U.AxisY, tc, model))
+		for _, y in { -0.45, 1.55 } do
+			for _, s in { -1, 1 } do
+				tpart(U.Ball(0.28, up * CFrame.new(0.1 * s, y, 0), tc, model)) -- knobs
+			end
+		end
+		local gc = up * CFrame.new(0, 1.95, 0)
+		tpart(U.Block(Vector3.new(0.55, 0.55, 0.55), gc * U.VertexUp, Color3.fromRGB(255, 160, 40), model, { Transparency = 0.25, Reflectance = 0.3 }))
+		tpart(U.Ball(0.14, gc, Color3.fromRGB(60, 40, 30), model)) -- bug
+		muzzle = tpart(U.Ball(0.2, up * CFrame.new(0, 2.5, 0), beam, model, NEON))
+		tipWorld = up * CFrame.new(0, 2.5, 0)
+	elseif tool == "ExChampionCup" then
+		-- giant champion's cup raised high: wooden plinth, gold stem, wide cup, side handles, star on top
+		local cf = T(0, 0.2, -0.45) * CFrame.Angles(math.pi / 6, 0, 0)
+		local mat = { Material = Enum.Material.Metal, Reflectance = 0.25 }
+		tpart(U.Block(Vector3.new(0.6, 0.25, 0.6), cf, Color3.fromRGB(90, 50, 30), model))
+		tpart(U.Cyl(0.45, 0.16, cf * CFrame.new(0, 0.35, 0) * U.AxisY, tc, model, mat)) -- stem
+		tpart(U.Cyl(0.3, 0.55, cf * CFrame.new(0, 0.7, 0) * U.AxisY, tc, model, mat)) -- cup
+		tpart(U.Cyl(0.4, 0.95, cf * CFrame.new(0, 1.02, 0) * U.AxisY, tc, model, mat))
+		for _, s in { -1, 1 } do
+			tpart(U.Cyl(0.4, 0.07, U.Between((cf * CFrame.new(0.45 * s, 1.15, 0)).Position, (cf * CFrame.new(0.72 * s, 0.95, 0)).Position), tc, model, mat))
+			tpart(U.Cyl(0.35, 0.07, U.Between((cf * CFrame.new(0.72 * s, 0.95, 0)).Position, (cf * CFrame.new(0.3 * s, 0.72, 0)).Position), tc, model, mat))
+		end
+		muzzle = tpart(U.Block(Vector3.new(0.34, 0.34, 0.07), cf * CFrame.new(0, 1.5, 0) * CFrame.Angles(0, 0, math.pi / 4), beam, model, NEON))
+		tipWorld = cf * CFrame.new(0, 1.55, 0)
+	elseif tool == "ExNeonMic" then
+		-- stage microphone held up: dark handle, coloured band, glowing grille
+		local mc = T(0, 0.1, -0.3) * CFrame.Angles(math.pi / 6 + 0.35, 0, 0)
+		tpart(U.Cyl(0.75, 0.17, mc * CFrame.new(0, 0.25, 0) * U.AxisY, Color3.fromRGB(35, 35, 45), model))
+		tpart(U.Cyl(0.1, 0.24, mc * CFrame.new(0, 0.6, 0) * U.AxisY, tc, model))
+		muzzle = tpart(U.Ball(0.42, mc * CFrame.new(0, 0.82, 0), beam, model, NEON))
+		tipWorld = mc * CFrame.new(0, 0.9, 0)
+	elseif tool == "ExIcingScepter" then
+		-- royal icing scepter: gold rod, a swirl of pink and white icing and a glowing cherry
+		local up = T(0, 0.05, -0.15) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, 0, -0.3)
+		tpart(U.Cyl(1.8, 0.13, up * CFrame.new(0, 0.45, 0) * U.AxisY, tc, model, METAL_MAT))
+		tpart(U.Cyl(0.14, 0.5, up * CFrame.new(0, 1.38, 0) * U.AxisY, tc, model, METAL_MAT)) -- cup
+		for i, d in { 0.62, 0.48, 0.32 } do
+			tpart(U.Ball(d, up * CFrame.new(0, 1.5 + i * 0.2, 0), if i % 2 == 1 then Color3.fromRGB(255, 170, 200) else WHITE, model)) -- icing
+		end
+		muzzle = tpart(U.Ball(0.26, up * CFrame.new(0, 2.25, 0), beam, model, NEON)) -- cherry
+		tipWorld = up * CFrame.new(0, 2.3, 0)
+	elseif tool == "ExHoloController" then
+		-- hologram gamepad: see-through body and grips, a d-pad and three buttons, glowing centre light
+		local cc = T(0, 0.35, -0.5) * CFrame.Angles(math.pi / 6 - 0.9, 0, 0) * CFrame.Angles(0, 0, 0.2)
+		local glow = { Transparency = 0.35 }
+		tpart(U.Block(Vector3.new(1.0, 0.16, 0.5), cc, tc, model, glow))
+		for _, s in { -1, 1 } do
+			tpart(U.Ball(0.38, cc * CFrame.new(0.45 * s, -0.02, 0.15), tc, model, glow)) -- grips
+		end
+		local pink = Color3.fromRGB(255, 90, 230)
+		tpart(U.Block(Vector3.new(0.26, 0.06, 0.08), cc * CFrame.new(-0.28, 0.1, -0.02), pink, model))
+		tpart(U.Block(Vector3.new(0.08, 0.06, 0.26), cc * CFrame.new(-0.28, 0.1, -0.02), pink, model)) -- d-pad
+		for i, q in { { 0.22, 0.04 }, { 0.32, -0.08 }, { 0.42, 0.04 } } do
+			tpart(U.Ball(0.1, cc * CFrame.new(q[1], 0.1, q[2]), RAINBOW[i * 2], model)) -- buttons
+		end
+		muzzle = tpart(U.Ball(0.14, cc * CFrame.new(0, 0.1, -0.12), beam, model, NEON))
+		tipWorld = cc * CFrame.new(0, 0.1, -0.3)
+	elseif tool == "ExStormSpear" then
+		-- storm spear: silver shaft, blue grip, a zig-zag gold lightning-bolt head with a glowing point
+		local up = T(0, 0.05, -0.1) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, 0, -0.3)
+		tpart(U.Cyl(2.6, 0.12, up * CFrame.new(0, 0.6, 0) * U.AxisY, tc, model, METAL_MAT))
+		tpart(U.Cyl(0.5, 0.17, up * CFrame.new(0, 0.05, 0) * U.AxisY, Color3.fromRGB(40, 80, 200), model)) -- grip
+		local p = { Vector3.new(0, 1.85, 0), Vector3.new(0.22, 2.25, 0), Vector3.new(-0.12, 2.35, 0), Vector3.new(0.1, 2.85, 0) }
+		for i = 1, 3 do
+			local a = (up * CFrame.new(p[i])).Position
+			local b = (up * CFrame.new(p[i + 1])).Position
+			tpart(U.Block(Vector3.new(0.16, 0.08, (b - a).Magnitude + 0.08), CFrame.lookAt((a + b) / 2, b), GOLD, model, METAL_MAT)) -- bolt
+		end
+		muzzle = tpart(U.Block(Vector3.new(0.2, 0.2, 0.2), up * CFrame.new(p[4]) * U.VertexUp, beam, model, NEON))
+		tipWorld = up * CFrame.new(p[4])
+	elseif tool == "ExPlanetOrb" then
+		-- a little ringed planet held up on the palm, with a glowing moonlet
+		local pc = T(0, 0.55, -0.45)
+		tpart(U.Ball(0.85, pc, tc, model))
+		tpart(U.Cyl(0.16, 0.87, pc * CFrame.Angles(0.35, 0, 0.3) * U.AxisY, U.Shade(tc, 0.8), model)) -- band
+		tpart(U.Cyl(0.03, 1.6, pc * CFrame.Angles(0.35, 0, 0.3) * U.AxisY, Color3.fromRGB(255, 225, 170), model, { Transparency = 0.25 })) -- ring
+		muzzle = tpart(U.Ball(0.18, pc * CFrame.new(0.55, 0.5, -0.2), beam, model, NEON))
+		tipWorld = pc * CFrame.new(0.55, 0.5, -0.2)
+	elseif tool == "ExGalaxyScepter" then
+		-- emperor's scepter: gold rod and collar, a tilted spiral galaxy of two see-through discs, a star core
+		local up = T(0, 0.05, -0.1) * CFrame.Angles(math.pi / 6, 0, 0) * CFrame.Angles(0, 0, -0.3)
+		tpart(U.Cyl(2.2, 0.14, up * CFrame.new(0, 0.55, 0) * U.AxisY, tc, model, METAL_MAT))
+		tpart(U.Cyl(0.14, 0.34, up * CFrame.new(0, 1.62, 0) * U.AxisY, tc, model, METAL_MAT)) -- collar
+		local gc = up * CFrame.new(0, 2.1, 0) * CFrame.Angles(0.5, 0, 0.3)
+		tpart(U.Cyl(0.04, 1.15, gc * U.AxisY, Color3.fromRGB(150, 90, 230), model, { Transparency = 0.35 }))
+		tpart(U.Cyl(0.05, 0.7, gc * CFrame.Angles(0, 0.6, 0) * U.AxisY, Color3.fromRGB(255, 150, 220), model, { Transparency = 0.25 }))
+		muzzle = tpart(U.Block(Vector3.new(0.28, 0.28, 0.28), up * CFrame.new(0, 2.1, 0) * U.VertexUp, beam, model, NEON))
+		tipWorld = up * CFrame.new(0, 2.1, 0)
 	elseif tool == "Candle" then
 		-- chamberstick: brass saucer, fat cream candle with a wax drip and a little flame
 		local cc = T(0, 0.05, -0.45) * CFrame.Angles(math.pi / 6, 0, 0)
@@ -3613,6 +4340,37 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		})
 		pe.Acceleration = Vector3.new(0, 0.4, 0)
 		pe.Parent = torso
+	end
+
+	-- EXCLUSIVES (world2c): shared "Exclusive" flair of the World 2 Exclusive-crate hunters: a small
+	-- cyan crystal floating above the right temple on a gold setting, a little magenta twin gem (no Neon), plus a slow
+	-- cyan/magenta sparkle. The "ExclusiveGem" attribute lets a client spin it if it wants to.
+	local exclusiveW2 = set({ "LanternMarket", "PhantomLibrary", "PumpkinFarm", "Glowshroom", "WaterPark", "MirrorMaze", "ShoppingMall", "GhostSubway",
+		"DinoMuseum", "Stadium", "NeonCity", "GiantsKitchen", "CyberArcade", "StormIslands", "MoonBase", "VoidThrone" })
+	if def.Rarity == "Exclusive" and exclusiveW2[def.Zone] then
+		local gc = CFrame.new(1.45, 1.45, -0.1)
+		local cyan = if rarity then rarity.Color else Color3.fromRGB(80, 255, 230)
+		local pink = if rarity then rarity.Color2 else Color3.fromRGB(255, 90, 230)
+		local gem = block(head, Vector3.new(0.34, 0.34, 0.34), gc * U.VertexUp, cyan, { Material = Enum.Material.Glass, Transparency = 0.1, Reflectance = 0.35 })
+		gem.Name = "ExclusiveGem"
+		cyl(head, 0.07, 0.36, gc * CFrame.new(0, -0.22, 0) * U.AxisY, GOLD, METAL_MAT) -- gold setting
+		block(head, Vector3.new(0.16, 0.16, 0.16), gc * CFrame.new(0, 0.34, 0) * U.VertexUp, pink, { Reflectance = 0.35 }) -- little twin gem
+		model:SetAttribute("ExclusiveGem", true)
+		local pe = Instance.new("ParticleEmitter")
+		pe.Name = "ExclusiveSparkle"
+		pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		pe.Color = ColorSequence.new(cyan, pink)
+		pe.LightEmission = 0.4
+		pe.Rate = 4
+		pe.Lifetime = NumberRange.new(0.8, 1.3)
+		pe.Speed = NumberRange.new(0.2, 0.5)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0),
+			NumberSequenceKeypoint.new(0.4, 0.22),
+			NumberSequenceKeypoint.new(1, 0),
+		})
+		pe.Parent = gem
 	end
 
 	------------------------------------------------------------------ finish
