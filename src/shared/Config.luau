@@ -2009,57 +2009,58 @@ Config.Hunters = {
 			Hat = "ShroomCrown", HatColor = C(120, 255, 230), Back = "Wings", BackColor = C(200, 255, 245), Tool = "MoonStaff", ToolColor = C(255, 180, 230), Beam = C(150, 255, 230), Aura = true },
 	},
 	-- ZONE 21: SPLASH CRATE
+	-- NOD: Baywatch (lifeguards running along the beach in slow motion); our own red swimsuit, sun hat and rescue float, no logo
 	LifeguardLuca = {
-		Id = "LifeguardLuca", Name = "Lifeguard Luca", Rarity = "Common", Zone = "WaterPark", Power = 575000000000000,
-		Blurb = "Blows the whistle on every ghost running by the pool. NO RUNNING!",
-		Look = { Skin = C(230, 180, 140), Hair = C(250, 220, 120), HairStyle = "Short", Shirt = C(220, 50, 50), Pants = C(220, 50, 50), Shoes = C(250, 250, 250),
-			Hat = "Visor", HatColor = C(250, 250, 250), Back = "LifeRing", BackColor = C(255, 90, 80), Tool = "Megaphone", ToolColor = C(250, 250, 250), Beam = C(120, 230, 255) },
+		Id = "LifeguardLuca", Name = "Boowatch Bailey", Rarity = "Common", Zone = "WaterPark", Power = 575000000000000,
+		Blurb = "Runs along the pool edge in slow motion. Every ghost gets rescued... straight into her trap.",
+		Look = { Skin = C(240, 195, 160), Hair = C(250, 215, 110), HairStyle = "Long", Shirt = C(225, 45, 55), Pants = C(225, 45, 55), Shoes = C(250, 250, 250),
+			Hat = "GuardHat", HatColor = C(245, 230, 190), Tool = "RescueCan", ToolColor = C(255, 140, 40), Beam = C(120, 230, 255) },
 	},
 	SunscreenSam = {
-		Id = "SunscreenSam", Name = "Sunscreen Sam", Rarity = "Uncommon", Zone = "WaterPark", Power = 956000000000000,
-		Blurb = "Wears SPF 1000. Ghosts can't see him through the glare.",
-		Look = { Skin = C(245, 225, 215), Hair = C(120, 70, 40), HairStyle = "Puff", Shirt = C(255, 220, 60), Pants = C(60, 170, 220), Shoes = C(255, 130, 60),
-			Hat = "Goggles", HatColor = C(60, 200, 230), Back = "Parasol", BackColor = C(255, 130, 60), Tool = "Blaster", ToolColor = C(255, 120, 200), Beam = C(120, 230, 255) },
+		Id = "SunscreenSam", Name = "Floatie Finn", Rarity = "Uncommon", Zone = "WaterPark", Power = 956000000000000,
+		Blurb = "Can't swim a stroke, so he never takes off his duck float. Ghosts think it's cute. Big mistake.",
+		Look = { Skin = C(245, 215, 190), Hair = C(215, 120, 55), HairStyle = "Spiky", Shirt = C(60, 190, 230), Pants = C(255, 140, 60), Shoes = C(255, 220, 60),
+			Hat = "Snorkel", HatColor = C(255, 215, 60), Back = "DuckFloat", BackColor = C(255, 220, 60), Tool = "SquirtGun", ToolColor = C(120, 215, 90), Beam = C(120, 230, 255) },
 	},
-	-- NOD: Ariel from The Little Mermaid (long red hair, a fork for combing it); our own lilac top and teal tail
+	-- NOD: The Little Mermaid (the fairy tale and the film: a mermaid who sings); our own coral hair, gold shell top and violet tail, no film costume
 	MermaidenMarina = {
-		Id = "MermaidenMarina", Name = "Mermaiden Marina", Rarity = "Rare", Zone = "WaterPark", Power = 1.59e15,
-		Blurb = "Swapped her fins for flip-flops just to hunt ghosts at the pool.",
-		Look = { Skin = C(245, 210, 185), Hair = C(230, 70, 60), HairStyle = "Floaty", Shirt = C(160, 110, 220), Pants = C(60, 200, 170), Shoes = C(60, 200, 170),
-			Back = "Tailfin", BackColor = C(60, 200, 170), Tool = "Fork", ToolColor = C(255, 210, 90), Beam = C(120, 240, 220) },
+		Id = "MermaidenMarina", Name = "Coralie Finsong", Rarity = "Rare", Zone = "WaterPark", Power = 1.59e15,
+		Blurb = "Give up her voice for legs? Never! She sings so sweetly the ghosts swim right up to her.",
+		Look = { Skin = C(240, 205, 180), Hair = C(245, 110, 95), HairStyle = "Floaty", Shirt = C(150, 230, 215), Pants = C(130, 90, 210), Shoes = C(130, 90, 210),
+			Hat = "ShellTiara", HatColor = C(255, 190, 80), Back = "MerTail", BackColor = C(130, 90, 210), Tool = "Conch", ToolColor = C(255, 200, 180), Beam = C(255, 150, 190) },
 	},
-	-- NOD: Dory from Finding Nemo ('just keep swimming'); a forgetful blue fish-girl in a fish hood with yellow fins and a bubble wand
+	-- NOD: SpongeBob SquarePants (a square sea sponge fry cook who goes jellyfishing); our own green scrub top, teal shirt and orange shorts, no tie
 	ForgetfulFlo = {
-		Id = "ForgetfulFlo", Name = "Forgetful Flo", Rarity = "Rare", Zone = "WaterPark", Power = 1.59e15,
-		Blurb = "Just keep hunting, just keep hunting... wait, what were we doing?",
-		Look = { Skin = C(90, 150, 235), Hair = C(255, 215, 60), HairStyle = "Floaty", Shirt = C(90, 150, 235), Pants = C(255, 215, 60), Shoes = C(40, 40, 70),
-			Hat = "FishHood", HatColor = C(70, 120, 230), Tool = "BubbleWand", ToolColor = C(255, 215, 60), Beam = C(160, 230, 255) },
+		Id = "ForgetfulFlo", Name = "Scrubby Spongeworth", Rarity = "Rare", Zone = "WaterPark", Power = 1.59e15,
+		Blurb = "I'm ready! I'm ready! Flips ghosts like burgers and goes jellyfishing on his day off.",
+		Look = { Skin = C(250, 225, 80), Hair = C(250, 225, 80), HairStyle = "None", Shirt = C(70, 190, 200), Pants = C(255, 150, 60), Shoes = C(40, 40, 50),
+			Hat = "SpongeHead", HatColor = C(90, 185, 90), Back = "Jellyfish", BackColor = C(255, 140, 200), Tool = "Spatula", ToolColor = C(205, 210, 220), Beam = C(160, 230, 255) },
 	},
-	-- NOD: Flash Gordon (the space hero); our own teal-and-gold swim-hero suit
+	-- NOD: the surfer-dude sea turtle from Finding Nemo ("totally, dude"); our own shades, board shorts and longboard
 	SplashGordon = {
-		Id = "SplashGordon", Name = "Splash Gordon", Rarity = "Legendary", Zone = "WaterPark", Power = 3.91e15,
-		Blurb = "Saviour of the swimming pool! Always dives in hero-first.",
-		Look = { Skin = C(240, 200, 170), Hair = C(250, 215, 100), HairStyle = "Short", Shirt = C(40, 170, 200), Pants = C(30, 110, 160), Shoes = C(255, 210, 80),
-			Hat = "Goggles", HatColor = C(255, 210, 80), Back = "HeroCape", BackColor = C(255, 210, 80), Tool = "RayGun", ToolColor = C(255, 210, 80), Beam = C(120, 240, 255), Aura = true },
+		Id = "SplashGordon", Name = "Shellby, the Surf Turtle", Rarity = "Legendary", Zone = "WaterPark", Power = 3.91e15,
+		Blurb = "Has been riding the wave pool for 150 years. Totally catches ghosts, dude!",
+		Look = { Skin = C(130, 195, 110), Hair = C(130, 195, 110), HairStyle = "None", Shirt = C(130, 195, 110), Pants = C(255, 140, 60), Shoes = C(130, 195, 110),
+			Hat = "Shades", HatColor = C(25, 25, 30), Back = "SeaTurtle", BackColor = C(115, 145, 70), Tool = "Longboard", ToolColor = C(80, 210, 230), Beam = C(120, 240, 255), Aura = true },
 	},
+	-- NOD: Moana (an island voyager who sails past the reef); our own teal top, sail, paddle and lei, no film outfit
 	SlideQueenShayla = {
-		Id = "SlideQueenShayla", Name = "Slide Queen Shayla", Rarity = "Mythic", Zone = "WaterPark", Power = 9.75e15,
-		Blurb = "Rides the tallest slide fifty times a day. Screams with joy every single time.",
-		Look = { Skin = C(170, 115, 85), Hair = C(255, 120, 200), HairStyle = "Puff", Shirt = C(255, 120, 200), Pants = C(60, 200, 230), Shoes = C(255, 230, 90),
-			Hat = "Visor", HatColor = C(255, 230, 90), Back = "Surfboard", BackColor = C(60, 200, 230), Tool = "Orb", ToolColor = C(120, 230, 255), Beam = C(120, 230, 255), Aura = true },
+		Id = "SlideQueenShayla", Name = "Leilani Wayfinder", Rarity = "Mythic", Zone = "WaterPark", Power = 9.75e15,
+		Blurb = "Reads the stars and the waves. Wherever the ghosts drift, she already knows the way.",
+		Look = { Skin = C(175, 120, 85), Hair = C(40, 25, 20), HairStyle = "Long", Shirt = C(60, 160, 160), Pants = C(240, 200, 120), Shoes = C(175, 120, 85),
+			Hat = "Hibiscus", HatColor = C(255, 90, 120), Back = "CanoeSail", BackColor = C(235, 205, 145), Tool = "Paddle", ToolColor = C(190, 135, 80), Beam = C(110, 235, 200), Aura = true },
 	},
-	-- NOD: the shark from Jaws (the two-note theme); a cuddly shark onesie, no film poster
 	GnawsGentleShark = {
-		Id = "GnawsGentleShark", Name = "Gnaws, the Gentle Shark", Rarity = "Secret", Zone = "WaterPark", Power = 2.44e16,
-		Blurb = "Duh-dum... duh-dum... it's only Gnaws. He just wants a hug.",
-		Look = { Skin = C(245, 215, 190), Hair = C(120, 140, 160), HairStyle = "None", Shirt = C(120, 140, 170), Pants = C(230, 235, 240), Shoes = C(90, 105, 130),
-			Hat = "SharkHood", HatColor = C(120, 140, 170), Tool = "Vacuum", ToolColor = C(90, 200, 240), Beam = C(120, 230, 255), Aura = true },
+		Id = "GnawsGentleShark", Name = "Abyssal Annie", Rarity = "Secret", Zone = "WaterPark", Power = 2.44e16,
+		Blurb = "Hunts in the deep end where the lights don't reach. Her little lure brings every ghost swimming close.",
+		Look = { Skin = C(235, 205, 185), Hair = C(30, 40, 70), HairStyle = "None", Shirt = C(40, 60, 105), Pants = C(30, 45, 80), Shoes = C(250, 200, 60),
+			Hat = "AnglerHood", HatColor = C(50, 75, 120), Tool = "GhostNet", ToolColor = C(240, 200, 90), Beam = C(170, 255, 200), Aura = true },
 	},
 	TsunamiTiaWaveRider = {
-		Id = "TsunamiTiaWaveRider", Name = "Tsunami Tia, Wave Rider", Rarity = "Ultra", Zone = "WaterPark", Power = 6.09e16,
-		Blurb = "Rides a wave as tall as a water slide. When it crashes, every ghost is swept into her trap.",
-		Look = { Skin = C(200, 145, 105), Hair = C(40, 80, 120), HairStyle = "Long", Shirt = C(60, 210, 230), Pants = C(30, 110, 170), Shoes = C(255, 230, 120),
-			Hat = "Tiara", HatColor = C(255, 230, 120), Back = "Wave", BackColor = C(40, 140, 220), Tool = "Trident", ToolColor = C(120, 240, 255), Beam = C(90, 230, 255), Aura = true },
+		Id = "TsunamiTiaWaveRider", Name = "Nerissa Tidecaller, Serpent Rider", Rarity = "Ultra", Zone = "WaterPark", Power = 6.09e16,
+		Blurb = "The sea serpent of the wave pool only listens to her. One song from her coral staff and it sweeps every ghost into the trap.",
+		Look = { Skin = C(205, 150, 115), Hair = C(60, 215, 205), HairStyle = "Long", Shirt = C(40, 120, 170), Pants = C(30, 80, 140), Shoes = C(255, 215, 110),
+			Hat = "CoralCrown", HatColor = C(255, 120, 140), Back = "SeaSerpent", BackColor = C(40, 175, 165), Tool = "CoralStaff", ToolColor = C(255, 120, 140), Beam = C(150, 250, 255), Aura = true },
 	},
 	-- ZONE 22: MIRROR CRATE
 	-- NOD: the magic mirror from Snow White ('mirror, mirror on the wall', fairy tale): he carries it and keeps it polished
@@ -2287,12 +2288,12 @@ Config.Hunters = {
 		Look = { Skin = C(240, 200, 175), Hair = C(120, 85, 50), HairStyle = "Moustache", Shirt = C(60, 90, 170), Pants = C(50, 55, 70), Shoes = C(30, 30, 35),
 			Hat = "Visor", HatColor = C(60, 90, 170), Tool = "BiscuitBox", ToolColor = C(255, 170, 200), Beam = C(160, 200, 255) },
 	},
-	-- NOD: Rocky Balboa (grey sweats, running up the steps); just one big padded glove
+	-- NOD: Rocky Balboa (the boxer: gloves, robe, sweatband, grey sweats, running up the steps); our own green robe, no logo
 	RockyBalBooa = {
 		Id = "RockyBalBooa", Name = "Rocky Bal-BOO-a", Rarity = "Rare", Zone = "Stadium", Power = 4.96e18,
 		Blurb = "Runs up the stadium steps every morning and punches the air at the top. Ghosts can't keep up.",
-		Look = { Skin = C(235, 195, 165), Hair = C(40, 30, 25), HairStyle = "Short", Shirt = C(120, 130, 145), Pants = C(120, 130, 145), Shoes = C(40, 40, 45),
-			Hat = "Beanie", HatColor = C(40, 40, 45), Tool = "BoxingGlove", ToolColor = C(220, 50, 50), Beam = C(255, 120, 100) },
+		Look = { Skin = C(235, 195, 165), Hair = C(40, 30, 25), HairStyle = "Short", Shirt = C(30, 140, 95), Pants = C(135, 140, 150), Shoes = C(40, 40, 45),
+			Hat = "Sweatband", HatColor = C(220, 50, 50), Back = "BoxerRobe", BackColor = C(150, 155, 165), Tool = "BoxerGlove", ToolColor = C(220, 45, 50), Beam = C(255, 120, 100) },
 	},
 	-- NOD: Air Bud ('no rule says a dog can't play basketball'); a golden pup with floppy ears and a basketball
 	AirPup = {
@@ -2312,7 +2313,7 @@ Config.Hunters = {
 		Id = "TheTwelfthFan", Name = "The Twelfth Fan", Rarity = "Secret", Zone = "Stadium", Power = 7.64e19,
 		Blurb = "Never misses a game. Nobody has ever seen him arrive or leave.",
 		Look = { Skin = C(220, 225, 235), Hair = C(60, 70, 90), HairStyle = "None", Shirt = C(60, 90, 170), Pants = C(40, 50, 80), Shoes = C(255, 220, 80),
-			Hat = "Hood", HatColor = C(60, 90, 170), Back = "Cape", BackColor = C(255, 220, 80), Tool = "FoamFinger", ToolColor = C(255, 220, 80), Beam = C(160, 200, 255), Aura = true },
+			Hat = "FanHat", HatColor = C(60, 90, 170), Back = "FanDrum", BackColor = C(255, 210, 70), Tool = "FoamFinger", ToolColor = C(255, 210, 70), Beam = C(160, 200, 255), Aura = true },
 	},
 	VictoriaVortexMVP = {
 		Id = "VictoriaVortexMVP", Name = "Victoria Vortex, MVP", Rarity = "Ultra", Zone = "Stadium", Power = 1.9e20,

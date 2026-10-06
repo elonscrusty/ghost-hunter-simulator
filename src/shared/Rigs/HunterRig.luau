@@ -129,6 +129,17 @@ HunterRig.Known = {
 	}),
 	Signature = set({ "Supernova" }),
 }
+-- WATERPARK/STADIUM (world2c)
+local waterparkStadiumParts: { [string]: { string } } = {
+	Hat = { "GuardHat", "Snorkel", "ShellTiara", "SpongeHead", "Hibiscus", "AnglerHood", "CoralCrown", "Sweatband", "FanHat" },
+	Back = { "DuckFloat", "MerTail", "Jellyfish", "SeaTurtle", "CanoeSail", "SeaSerpent", "BoxerRobe", "FanDrum" },
+	Tool = { "RescueCan", "SquirtGun", "Conch", "Spatula", "Longboard", "Paddle", "GhostNet", "CoralStaff", "BoxerGlove" },
+}
+for field, names in waterparkStadiumParts do
+	for _, n in names do
+		HunterRig.Known[field][n] = true
+	end
+end
 
 -- Names in a Look that HunterRig cannot build ("Hat=Foo"); empty when every part is known.
 function HunterRig.UnknownParts(look: Config.HunterLook): { string }
@@ -1381,6 +1392,152 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		end
 		local rib = U.Shade(c, 0.85)
 		ball(head, 0.26, CFrame.new(0, -1.02, -0.6), rib) -- bow
+	-- WATERPARK/STADIUM (world2c)
+	elseif hat == "GuardHat" then
+		-- lifeguard: wide floppy sun hat with a red band, a sun-creamed white nose, whistle on a white cord
+		local c = hatColor
+		local hcf = CFrame.new(0, 0.82 + lift, 0.12) * CFrame.Angles(-0.12, 0, 0.06)
+		cyl(head, 0.08, 2.9, hcf * U.AxisY, c) -- brim
+		cyl(head, 0.5, 1.75, hcf * CFrame.new(0, 0.25, 0) * U.AxisY, c) -- crown
+		ball(head, 1.6, hcf * CFrame.new(0, 0.25, 0), c) -- rounded top
+		cyl(head, 0.18, 1.79, hcf * CFrame.new(0, 0.12, 0) * U.AxisY, RED) -- band
+		ball(head, 0.3, CFrame.new(0, -0.14, -0.93), WHITE) -- sun cream on the nose
+		for _, s in { -1, 1 } do
+			bar(torso, Vector3.new(0.3 * s, 0.53, -0.36), Vector3.new(0.04 * s, 0.05, -0.46), 0.05, 0.03, WHITE)
+		end
+		cyl(torso, 0.24, 0.17, CFrame.new(0, -0.02, -0.5) * U.AxisZ, Color3.fromRGB(255, 215, 60)) -- whistle
+		ball(torso, 0.17, CFrame.new(0.07, -0.05, -0.45), Color3.fromRGB(255, 215, 60))
+	elseif hat == "Snorkel" then
+		-- diving mask over the eyes (see-through lens in a chunky frame), strap round the head, snorkel up the side
+		local c = hatColor
+		cyl(head, 0.16, 2.02, CFrame.new(0, 0.1, 0.35) * U.AxisY, U.Shade(c, 0.6)) -- strap (front rim hidden in the face)
+		block(head, Vector3.new(1.24, 0.6, 0.06), CFrame.new(0, 0.04, -1.08), Color3.fromRGB(175, 230, 255), { Transparency = 0.55, Reflectance = 0.2, Shadow = false }) -- lens
+		for _, y in { 0.38, -0.3 } do
+			block(head, Vector3.new(1.42, 0.13, 0.34), CFrame.new(0, y, -0.94), c) -- frame top / bottom
+		end
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.14, 0.8, 0.42), CFrame.new(0.69 * s, 0.04, -0.86), c) -- frame sides
+		end
+		local tube = Color3.fromRGB(255, 120, 60)
+		local pts = { Vector3.new(0.22, -0.44, -0.92), Vector3.new(0.85, -0.46, -0.52), Vector3.new(1.06, 0.1, -0.22), Vector3.new(1.02, 1.5, -0.05) }
+		for i = 1, #pts - 1 do
+			rod(head, pts[i], pts[i + 1], 0.15, tube)
+		end
+		ball(head, 0.28, CFrame.new(pts[4]), c) -- snorkel top
+	elseif hat == "ShellTiara" then
+		-- a row of pearls across the hair and a starfish clip over the left ear
+		local c = hatColor
+		for i = -2, 2 do
+			local a = i * 0.36
+			ball(head, 0.2, CFrame.new(math.sin(a) * 0.96, 0.62, 0.2 - math.cos(a) * 0.96), Color3.fromRGB(250, 245, 255), { Reflectance = 0.25 })
+		end
+		local pos = Vector3.new(0.86, 0.55, -0.22)
+		local n = Vector3.new(0.85, 0.3, -0.45).Unit
+		for k = 0, 4 do
+			block(head, Vector3.new(0.14, 0.38, 0.08), U.Facing(pos, n) * CFrame.Angles(0, 0, k * 2 * math.pi / 5) * CFrame.new(0, 0.17, 0), c) -- starfish arms
+		end
+		ball(head, 0.2, U.Facing(pos, n), U.Shade(c, 0.85))
+	elseif hat == "SpongeHead" then
+		-- square sea-sponge head: a big holey block round the head (the round face pokes out of the front),
+		-- a green scrubby top, a long nose and two buck teeth
+		local sp = look.Skin
+		local pore = U.Shade(sp, 0.72)
+		local bc = CFrame.new(0, 0.12, 0.12)
+		block(head, Vector3.new(2.1, 2.2, 1.74), bc, sp)
+		block(head, Vector3.new(2.14, 0.34, 1.78), bc * CFrame.new(0, 1.25, 0), hatColor) -- scrubby top
+		cyl(head, 0.36, 0.24, CFrame.new(0, -0.1, -1.06) * U.AxisZ, sp) -- nose
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.14, 0.17, 0.05), CFrame.new(0.08 * s, -0.55, -0.8), WHITE) -- buck teeth
+		end
+		for _, q in { { -0.75, 0.72, 0.24 }, { 0.72, 0.8, 0.18 }, { 0.78, -0.6, 0.26 }, { -0.72, -0.72, 0.2 }, { 0.05, 0.92, 0.16 } } do
+			cyl(head, 0.04, q[3], CFrame.new(q[1], q[2], -0.76) * U.AxisZ, pore) -- pores (front)
+		end
+		for _, q in { { -0.35, 0.55, 0.26 }, { 0.45, -0.35, 0.3 }, { 0.15, 0.85, 0.18 } } do
+			for _, s in { -1, 1 } do
+				cyl(head, 0.04, q[3], CFrame.new(1.06 * s, q[2], q[1]), pore) -- pores (sides)
+			end
+		end
+	elseif hat == "Hibiscus" then
+		-- big hibiscus flower tucked over the left ear, loose curls at the ends of the long hair
+		local c = hatColor
+		local fcf = U.Facing(Vector3.new(0.86, 0.42, -0.25), Vector3.new(0.8, 0.25, -0.55))
+		for i = 0, 4 do
+			cyl(head, 0.06, 0.46, fcf * CFrame.Angles(0, 0, i * 2 * math.pi / 5) * CFrame.new(0, 0.21, 0) * U.AxisZ, if i % 2 == 0 then c else U.Shade(c, 0.9)) -- petals
+		end
+		ball(head, 0.18, fcf, U.Shade(c, 0.55))
+		rod(head, fcf.Position, (fcf * CFrame.new(0.05, 0.08, -0.32)).Position, 0.06, Color3.fromRGB(255, 220, 80)) -- stamen
+		local curl = U.Shade(hairColor, 1.5)
+		for i = 0, 2 do
+			ball(head, 0.46, CFrame.new(-0.45 + i * 0.45, -1.3, 0.74), if i % 2 == 0 then hairColor else curl) -- curls at the back
+			for _, sd in { -1, 1 } do
+				ball(head, 0.44 - i * 0.04, CFrame.new(0.9 * sd, -0.2 - i * 0.38, 0.35 - i * 0.05), if i % 2 == 0 then curl else hairColor) -- curls at the sides
+			end
+		end
+	elseif hat == "AnglerHood" then
+		-- deep-sea anglerfish hood: the face peeks out of the gaping mouth (needle fangs above, an underbite
+		-- jaw with its own teeth below), little fish eyes and side fins, and a glowing lure on a stalk
+		local c = hatColor
+		local hc = Vector3.new(0, 0.3, 0.35)
+		ball(head, 2.4, CFrame.new(hc), c)
+		local jaw = CFrame.new(0, -0.98, -0.42) * CFrame.Angles(-0.25, 0, 0)
+		block(head, Vector3.new(1.95, 0.32, 1.25), jaw, U.Shade(c, 0.85))
+		for i = -2, 2 do
+			local x = i * 0.27
+			local z = hc.Z - math.sqrt(math.max(0, 1.44 - x * x - 0.2025))
+			wedge(head, Vector3.new(0.06, 0.34 - math.abs(i) * 0.05, 0.16), CFrame.new(x, 0.68, z - 0.03) * CFrame.Angles(0, 0, math.pi) * CFrame.Angles(0, math.pi / 2, 0), WHITE) -- fangs
+		end
+		for _, x in { -0.6, -0.22, 0.22, 0.6 } do
+			wedge(head, Vector3.new(0.06, 0.24, 0.16), jaw * CFrame.new(x, 0.27, -0.52) * CFrame.Angles(0, math.pi / 2, 0), WHITE) -- lower teeth
+		end
+		local stalk = { Vector3.new(0, 1.42, 0.05), Vector3.new(0, 2.05, -0.45), Vector3.new(0, 1.98, -1.05), Vector3.new(0, 1.8, -1.12) }
+		for i = 1, #stalk - 1 do
+			rod(head, stalk[i], stalk[i + 1], 0.08, U.Shade(c, 0.8))
+		end
+		ball(head, 0.36, CFrame.new(0, 1.62, -1.14), look.Beam, NEON) -- lure
+		for _, s in { -1, 1 } do
+			ball(head, 0.36, CFrame.new(0.52 * s, 1.1, -0.42), WHITE)
+			ball(head, 0.18, CFrame.new(0.55 * s, 1.12, -0.58), EYE)
+			spike(head, CFrame.new(1.15 * s, 0.1, 0.45) * CFrame.Angles(0, 0, -1.2 * s) * CFrame.Angles(0, 0.3 * s, 0), 0.65, 0.65, 0.08, U.Mix(c, look.Beam, 0.35)) -- side fins
+		end
+	elseif hat == "CoralCrown" then
+		-- crown of branching pink coral on a gold band, a pearl at the front
+		local c = hatColor
+		local light = U.Mix(c, WHITE, 0.35)
+		local base = CFrame.new(0, 0.62 + lift, 0.12) * CFrame.Angles(-0.12, 0, 0)
+		cyl(head, 0.2, 2.1, base * U.AxisY, GOLD, METAL_MAT)
+		for _, q in { { 0, 1.0 }, { -0.75, 0.72 }, { 0.75, 0.72 } } do
+			local dir = Vector3.new(math.sin(q[1]), 0, -math.cos(q[1]))
+			local side = Vector3.new(-dir.Z, 0, dir.X)
+			local p0 = (base * CFrame.new(dir * 0.98 + Vector3.new(0, 0.08, 0))).Position
+			local p1 = p0 + dir * 0.18 + Vector3.new(0, q[2], 0)
+			rod(head, p0, p1, 0.17, c)
+			local mid = p0:Lerp(p1, 0.45)
+			local p2 = mid + dir * 0.12 + side * 0.32 + Vector3.new(0, q[2] * 0.42, 0)
+			rod(head, mid, p2, 0.12, light)
+			ball(head, 0.22, CFrame.new(p1), light)
+		end
+		ball(head, 0.26, base * CFrame.new(0, 0.05, -1.06), Color3.fromRGB(250, 245, 255), { Reflectance = 0.3 }) -- pearl
+	elseif hat == "Sweatband" then
+		-- boxer's sweatband round the forehead
+		cyl(head, 0.26, 2.08, CFrame.new(0, 0.6, 0.15) * CFrame.Angles(-0.1, 0, 0) * U.AxisY, hatColor)
+	elseif hat == "FanHat" then
+		-- super-fan's giant foam team hat (tall striped top hat with a big "1" badge) and team face paint
+		local c = hatColor
+		local alt = look.BackColor or GOLD
+		local hcf = CFrame.new(0, 0.78 + lift, 0.08) * CFrame.Angles(-0.08, 0, 0.1)
+		cyl(head, 0.14, 2.6, hcf * U.AxisY, alt) -- brim
+		for i = 0, 3 do
+			cyl(head, 0.42, 1.7, hcf * CFrame.new(0, 0.28 + i * 0.4, 0) * U.AxisY, if i % 2 == 0 then c else alt)
+		end
+		ball(head, 0.6, hcf * CFrame.new(0, 1.62, 0), alt) -- pompom
+		cyl(head, 0.08, 0.78, hcf * CFrame.new(0, 0.85, -0.85) * U.AxisZ, WHITE) -- badge
+		block(head, Vector3.new(0.13, 0.46, 0.06), hcf * CFrame.new(0, 0.85, -0.9), c) -- "1"
+		for _, s in { -1, 1 } do
+			local n = Vector3.new(0.5 * s, -0.32, -0.8).Unit
+			for k, col in { c, alt } do
+				block(head, Vector3.new(0.13, 0.44, 0.06), U.Facing(n * 0.94, n) * CFrame.new((k - 1.5) * 0.15, 0, 0), col) -- face paint
+			end
+		end
 	end
 
 	------------------------------------------------------------------ body accent / aura
@@ -2414,6 +2571,170 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		cyl(torso, 0.22, 0.22, bc * CFrame.new(0, 1.15, 0) * U.AxisY, Color3.fromRGB(235, 245, 255), { Transparency = 0.2 })
 		ball(torso, 0.14, bc * CFrame.new(0, 1.15, 0), Color3.fromRGB(255, 250, 220), NEON) -- lamp
 		strap(Color3.fromRGB(60, 50, 45))
+	-- WATERPARK/STADIUM (world2c)
+	elseif back == "DuckFloat" then
+		-- striped inflatable duck swim ring round the waist (duck head at the front) and puffy arm floaties
+		local c = backColor
+		local y = -0.62
+		for i = 0, 11 do
+			local a = i * math.pi * 2 / 12
+			ball(torso, 0.56, CFrame.new(math.sin(a) * 0.98, y, -math.cos(a) * 0.84), if i % 2 == 0 then c else WHITE)
+		end
+		ball(torso, 0.48, CFrame.new(0, y + 0.32, -1.0), c) -- neck
+		ball(torso, 0.66, CFrame.new(0, y + 0.74, -1.04), c) -- head
+		block(torso, Vector3.new(0.34, 0.14, 0.34), CFrame.new(0, y + 0.66, -1.42), Color3.fromRGB(255, 140, 40)) -- beak
+		for _, s in { -1, 1 } do
+			ball(torso, 0.14, CFrame.new(0.18 * s, y + 0.86, -1.3), EYE)
+			cyl(arms[s], 0.32, 0.68, CFrame.new(0, 0.12, 0) * U.AxisY, Color3.fromRGB(255, 140, 40)) -- floaties
+		end
+	elseif back == "MerTail" then
+		-- mermaid: a scaly tail sweeping out from behind round her right side and curling up into a big fluke
+		local c = backColor
+		local light = U.Mix(c, WHITE, 0.35)
+		local pts = { Vector3.new(0, -0.6, 0.4), Vector3.new(0.55, -1.05, 0.7), Vector3.new(1.15, -1.13, 0.6), Vector3.new(1.55, -0.85, 0.35), Vector3.new(1.7, -0.38, 0.2) }
+		for i, p in pts do
+			ball(torso, 0.8 - i * 0.07, CFrame.new(p), if i % 2 == 0 then light else c)
+			if i < 3 then
+				ball(torso, 0.76 - i * 0.07, CFrame.new(p:Lerp(pts[i + 1], 0.5)), if i % 2 == 0 then c else light)
+			end
+		end
+		local fp = Vector3.new(1.68, 0.02, 0.15)
+		local fc = CFrame.lookAt(fp, fp + Vector3.new(0.57, 0, -0.82)) * CFrame.Angles(0, 0, -0.15)
+		for _, s in { -1, 1 } do
+			spike(torso, fc * CFrame.Angles(0, 0, -0.75 * s), 0.62, 1.0, 0.08, if s < 0 then c else light) -- fluke
+		end
+	elseif back == "Jellyfish" then
+		-- a pink jellyfish floating over his shoulder on a string, like a balloon (jellyfishing!)
+		local c = backColor
+		local light = U.Mix(c, WHITE, 0.45)
+		local jc = Vector3.new(-1.45, 2.8, 0.35)
+		ball(torso, 1.15, CFrame.new(jc), c, { Transparency = 0.25 })
+		ball(torso, 0.6, CFrame.new(jc + Vector3.new(0, 0.05, 0)), light)
+		cyl(torso, 0.1, 1.2, CFrame.new(jc - Vector3.new(0, 0.18, 0)) * U.AxisY, U.Shade(c, 0.85)) -- rim
+		for i, x in { -0.32, -0.11, 0.11, 0.32 } do
+			local z = if i % 2 == 0 then 0.12 else -0.12
+			local p0 = jc + Vector3.new(x, -0.2, z)
+			local p1 = p0 + Vector3.new(0.1, -0.5, 0)
+			rod(torso, p0, p1, 0.07, light)
+			rod(torso, p1, p1 + Vector3.new(-0.12, -0.45, 0), 0.06, light) -- tentacles
+		end
+		rod(torso, Vector3.new(-0.55, 0.5, 0.2), jc - Vector3.new(0, 0.55, 0), 0.03, Color3.fromRGB(60, 60, 70)) -- string
+	elseif back == "SeaTurtle" then
+		-- sea turtle: a big low shell dome of stacked discs (darker plates, cream rim showing round the sides),
+		-- a cream belly plate on the front and a stubby tail
+		local c = backColor
+		local plate = U.Shade(c, 0.7)
+		local cream = Color3.fromRGB(235, 215, 145)
+		local sc = CFrame.new(0, -0.05, 0.45)
+		cyl(torso, 0.16, 2.3, sc * U.AxisZ, cream) -- rim
+		cyl(torso, 0.3, 2.1, sc * CFrame.new(0, 0, 0.2) * U.AxisZ, c)
+		cyl(torso, 0.26, 1.55, sc * CFrame.new(0, 0, 0.45) * U.AxisZ, c)
+		cyl(torso, 0.2, 0.95, sc * CFrame.new(0, 0, 0.65) * U.AxisZ, c)
+		cyl(torso, 0.04, 0.55, sc * CFrame.new(0, 0, 0.76) * U.AxisZ, plate)
+		for i = 0, 5 do
+			local a = i * math.pi / 3
+			cyl(torso, 0.04, 0.38, sc * CFrame.new(math.sin(a) * 0.6, math.cos(a) * 0.6, 0.59) * U.AxisZ, plate)
+		end
+		block(torso, Vector3.new(0.95, 0.98, 0.06), CFrame.new(0, -0.02, -0.43), cream) -- belly plate
+		for _, y in { 0.18, -0.2 } do
+			block(torso, Vector3.new(0.95, 0.05, 0.07), CFrame.new(0, y, -0.44), U.Shade(cream, 0.75))
+		end
+		block(torso, Vector3.new(0.05, 0.98, 0.07), CFrame.new(0, -0.02, -0.44), U.Shade(cream, 0.75))
+		wedge(torso, Vector3.new(0.2, 0.3, 0.3), CFrame.new(0, -0.72, 0.55) * CFrame.Angles(math.pi, 0, 0), look.Skin) -- tail
+	elseif back == "CanoeSail" then
+		-- voyager: a crab-claw canoe sail on a mast rising behind, a flower lei and a glowing spiral-shell pendant
+		local c = backColor
+		local wood = Color3.fromRGB(140, 95, 60)
+		local ap = Vector3.new(-1.05, -0.75, 0.55)
+		local apex = CFrame.lookAt(ap, ap + Vector3.new(0.45, 0, -0.9)) * CFrame.Angles(0, 0, 0.12) -- sail faces the front three-quarter view
+		local band = Color3.fromRGB(190, 75, 50)
+		rod(torso, (apex * CFrame.new(0, -0.3, 0.05)).Position, (apex * CFrame.new(0, 3.3, 0.05)).Position, 0.12, wood) -- mast
+		for _, s in { -1, 1 } do
+			local half = apex * CFrame.Angles(0, 0, 0.26 * s)
+			spike(torso, half * CFrame.new(0, 3.4, 0) * CFrame.Angles(0, 0, math.pi), 1.6, 3.4, 0.06, c) -- sail
+			block(torso, Vector3.new(1.1, 0.18, 0.07), half * CFrame.new(0, 2.8, 0), band) -- woven stripe
+			rod(torso, apex.Position, (half * CFrame.new(-0.85 * s, 3.55, 0)).Position, 0.07, wood) -- spar
+		end
+		local lei = { Color3.fromRGB(255, 110, 150), Color3.fromRGB(255, 220, 90), WHITE }
+		for i = 0, 8 do
+			local a = -2.2 + i * 4.4 / 8
+			ball(torso, 0.26, CFrame.new(math.sin(a) * 0.5, 0.48 - 0.16 * math.cos(a), -math.cos(a) * 0.38), lei[i % 3 + 1])
+		end
+		cyl(torso, 0.06, 0.3, CFrame.new(0, 0.12, -0.45) * U.AxisZ, Color3.fromRGB(240, 230, 210)) -- pendant
+		ball(torso, 0.16, CFrame.new(0, 0.12, -0.48), look.Beam, NEON)
+	elseif back == "SeaSerpent" then
+		-- a friendly sea serpent coiling up behind her, its head over her right shoulder, gold horns and crest
+		local c = backColor
+		local dark = U.Shade(c, 0.78)
+		local P = {
+			Vector3.new(-1.0, -1.15, 0.75), Vector3.new(-1.5, -0.6, 1.05), Vector3.new(-1.55, 0.2, 1.3), Vector3.new(-1.0, 0.95, 1.5),
+			Vector3.new(0, 1.4, 1.6), Vector3.new(1.0, 1.85, 1.4), Vector3.new(1.55, 2.6, 0.95), Vector3.new(1.45, 3.3, 0.35),
+		}
+		local k = 0
+		for i = 1, #P - 1 do
+			for j = 0, 1 do
+				if i == 1 and j == 1 then
+					continue
+				end
+				k += 1
+				local p = P[i]:Lerp(P[i + 1], j * 0.5)
+				ball(torso, 0.7 + 0.32 * math.sin(k / 12 * math.pi), CFrame.new(p), if k % 2 == 0 then dark else c)
+			end
+		end
+		for _, i in { 4, 6 } do
+			local p = P[i]:Lerp(P[i + 1], 0.5)
+			spike(torso, CFrame.new(p + Vector3.new(0, 0.38, 0.1)) * CFrame.Angles(0, -0.5, 0), 0.4, 0.42, 0.08, GOLD) -- crest
+		end
+		local hcf = CFrame.lookAt(P[8], P[8] + Vector3.new(-0.25, -0.1, -1)) * CFrame.new(0, 0.1, -0.2)
+		ball(torso, 0.95, hcf, c) -- head
+		block(torso, Vector3.new(0.6, 0.42, 0.75), hcf * CFrame.new(0, -0.12, -0.55), c) -- snout
+		for _, s in { -1, 1 } do
+			ball(torso, 0.3, hcf * CFrame.new(0.3 * s, 0.2, -0.28), WHITE)
+			ball(torso, 0.15, hcf * CFrame.new(0.33 * s, 0.22, -0.41), EYE)
+			spike(torso, hcf * CFrame.new(0.25 * s, 0.38, 0.12) * CFrame.Angles(-0.9, 0, -0.35 * s), 0.18, 0.55, 0.12, GOLD) -- horns
+		end
+	elseif back == "BoxerRobe" then
+		-- boxer's satin robe worn open over a grey sweatshirt: gold-trimmed lapels, belt, towel round the neck,
+		-- hood down at the back, and the second boxing glove on the left hand
+		local robe = look.Shirt
+		local trim = Color3.fromRGB(255, 210, 90)
+		local glove = look.ToolColor
+		block(torso, Vector3.new(0.5, 1.0, 0.06), CFrame.new(0, -0.02, -0.42), backColor) -- sweatshirt showing at the front
+		for _, s in { -1, 1 } do
+			bar(torso, Vector3.new(0.17 * s, 0.53, -0.45), Vector3.new(0.28 * s, -0.52, -0.45), 0.13, 0.07, trim) -- lapels
+			bar(torso, Vector3.new(0.38 * s, 0.56, 0.12), Vector3.new(0.3 * s, -0.05, -0.49), 0.28, 0.09, WHITE) -- towel ends
+		end
+		cyl(torso, 0.22, 1.0, CFrame.new(0, 0.56, 0.08) * U.AxisY, WHITE) -- towel round the neck
+		block(torso, Vector3.new(1.36, 0.16, 0.9), CFrame.new(0, -0.3, 0), U.Shade(robe, 0.75)) -- belt
+		ball(torso, 0.72, CFrame.new(0, 0.42, 0.5), robe) -- hood down
+		block(torso, Vector3.new(1.4, 0.62, 0.1), CFrame.new(0, -0.78, 0.46) * CFrame.Angles(-0.12, 0, 0), robe) -- robe skirt (back)
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.12, 0.62, 0.92), CFrame.new(0.7 * s, -0.78, 0) * CFrame.Angles(0, 0, 0.1 * s), robe) -- (sides)
+			block(torso, Vector3.new(0.34, 0.62, 0.1), CFrame.new(0.52 * s, -0.78, -0.46) * CFrame.Angles(0.12, 0, 0.1 * s), robe) -- (front)
+			block(torso, Vector3.new(0.06, 0.62, 0.11), CFrame.new(0.36 * s, -0.78, -0.47) * CFrame.Angles(0.12, 0, 0.1 * s), trim)
+		end
+		local la = arms[-1]
+		ball(la, 0.9, CFrame.new(0, -0.52, -0.05), glove) -- left glove
+		ball(la, 0.36, CFrame.new(0.36, -0.42, -0.15), U.Shade(glove, 0.9)) -- thumb
+		cyl(la, 0.36, 0.6, CFrame.new(0, -0.1, 0) * U.AxisY, WHITE) -- cuff
+	elseif back == "FanDrum" then
+		-- super-fan kit: striped team scarf with hanging ends, a big team drum strapped on the front, a drumstick
+		local c = backColor
+		local alt = look.HatColor or look.Shirt
+		cyl(torso, 0.24, 1.12, CFrame.new(0, 0.56, 0) * U.AxisY, c) -- scarf round the neck
+		for k = 0, 2 do
+			block(torso, Vector3.new(0.3, 0.26, 0.08), CFrame.new(-0.3, 0.32 - k * 0.26, -0.47) * CFrame.Angles(0, 0, 0.08), if k % 2 == 0 then c else alt) -- scarf end
+		end
+		block(torso, Vector3.new(0.34, 0.08, 0.1), CFrame.new(-0.32, -0.15, -0.48) * CFrame.Angles(0, 0, 0.08), WHITE) -- fringe
+		local dc = CFrame.new(0, -0.62, -0.95)
+		cyl(torso, 0.7, 1.05, dc, alt) -- drum shell
+		cyl(torso, 0.74, 0.96, dc, WHITE) -- drum heads
+		for _, s in { -1, 1 } do
+			cyl(torso, 0.08, 1.12, dc * CFrame.new(0.36 * s, 0, 0), c) -- rims
+			bar(torso, Vector3.new(0.4 * s, 0.52, -0.43), Vector3.new(0.25 * s, -0.12, -0.78), 0.1, 0.05, Color3.fromRGB(45, 45, 55)) -- straps
+		end
+		rod(arms[-1], Vector3.new(0, -0.42, 0.1), Vector3.new(0.12, -0.55, -0.85), 0.07, Color3.fromRGB(230, 205, 160)) -- drumstick
+		ball(arms[-1], 0.2, CFrame.new(0.12, -0.56, -0.9), WHITE)
 	end
 
 	------------------------------------------------------------------ tool (right hand)
@@ -3136,6 +3457,113 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		tpart(U.Cyl(0.08, 0.22, T(0, 0.05, -0.98) * U.AxisZ, tc, model, METAL_MAT)) -- collar
 		muzzle = tpart(U.Ball(0.18, T(0, 0.05, -1.08), beam, model, NEON))
 		tipWorld = T(0, 0.05, -1.15)
+	-- WATERPARK/STADIUM (world2c)
+	elseif tool == "RescueCan" then
+		-- lifeguard rescue float: a long torpedo buoy with rounded ends, side grips and a short strap to the hand
+		local cf = T(0, 0.12, -0.6)
+		tpart(U.Cyl(1.3, 0.5, cf * U.AxisZ, tc, model))
+		for _, z in { -0.65, 0.65 } do
+			tpart(U.Ball(0.5, cf * CFrame.new(0, 0, z), tc, model))
+		end
+		for _, s in { -1, 1 } do
+			tpart(U.Block(Vector3.new(0.08, 0.12, 0.7), cf * CFrame.new(0.24 * s, 0.08, 0), U.Shade(tc, 0.75), model)) -- grips
+		end
+		tpart(U.Cyl(0.5, 0.05, U.Between((cf * CFrame.new(0, -0.1, 0.85)).Position, T(0, -0.05, 0.1).Position), WHITE, model)) -- strap
+		muzzle = tpart(U.Ball(0.14, cf * CFrame.new(0, 0, -0.93), beam, model, NEON))
+		tipWorld = cf * CFrame.new(0, 0, -0.98)
+	elseif tool == "SquirtGun" then
+		-- chunky water blaster: bright body, see-through water tank on top, pump and a long nozzle
+		local acc = Color3.fromRGB(255, 140, 40)
+		tpart(U.Block(Vector3.new(0.4, 0.42, 1.0), T(0, 0.15, -0.4), tc, model))
+		tpart(U.Block(Vector3.new(0.26, 0.5, 0.3), T(0, -0.12, -0.02) * CFrame.Angles(0.3, 0, 0), U.Shade(tc, 0.7), model)) -- handle
+		tpart(U.Cyl(0.75, 0.44, T(0, 0.55, -0.45) * U.AxisZ, Color3.fromRGB(150, 220, 255), model, { Transparency = 0.35, Shadow = false })) -- tank
+		tpart(U.Cyl(0.12, 0.24, T(0, 0.55, -0.02) * U.AxisZ, acc, model)) -- tank cap
+		tpart(U.Cyl(0.42, 0.3, T(0, -0.02, -0.82) * U.AxisZ, acc, model)) -- pump
+		tpart(U.Cyl(0.45, 0.17, T(0, 0.2, -1.1) * U.AxisZ, acc, model)) -- nozzle
+		muzzle = tpart(U.Cyl(0.06, 0.2, T(0, 0.2, -1.34) * U.AxisZ, beam, model, NEON))
+		tipWorld = T(0, 0.2, -1.4)
+	elseif tool == "Conch" then
+		-- big spiral conch shell held out like a horn: banded spire, knobs and a glowing pink mouth
+		local cf = T(0, 0.18, -0.35)
+		for i, q in { { 0.12, 0.24, 0.2 }, { -0.08, 0.42, 0.22 }, { -0.34, 0.56, 0.3 }, { -0.64, 0.64, 0.32 } } do
+			tpart(U.Cyl(q[3], q[2], cf * CFrame.new(0, 0, q[1]) * U.AxisZ, if i % 2 == 0 then tc else U.Shade(tc, 0.82), model))
+		end
+		for _, a in { 0.4, 2.4, 4.4 } do
+			tpart(U.Ball(0.16, cf * CFrame.new(math.cos(a) * 0.27, math.sin(a) * 0.27, -0.12), U.Mix(tc, WHITE, 0.4), model)) -- knobs
+		end
+		tpart(U.Cyl(0.08, 0.76, cf * CFrame.new(0, 0, -0.84) * U.AxisZ, U.Mix(tc, WHITE, 0.4), model)) -- flared lip
+		muzzle = tpart(U.Cyl(0.04, 0.46, cf * CFrame.new(0, 0, -0.89) * U.AxisZ, beam, model, NEON))
+		tipWorld = cf * CFrame.new(0, 0, -0.95)
+	elseif tool == "Spatula" then
+		-- fry-cook spatula raised high: handle, metal neck and a wide slotted blade, a soap bubble glowing at the tip
+		local sf = grip * CFrame.Angles(0.85, 0, 0)
+		tpart(U.Cyl(0.8, 0.17, sf * CFrame.new(0, 0, -0.12) * U.AxisZ, Color3.fromRGB(150, 60, 50), model)) -- handle
+		tpart(U.Block(Vector3.new(0.1, 0.06, 0.55), sf * CFrame.new(0, 0, -0.78), tc, model, METAL_MAT)) -- neck
+		local bf = sf * CFrame.new(0, 0, -1.4) * CFrame.Angles(math.pi / 2, 0, 0)
+		tpart(U.Block(Vector3.new(0.82, 0.05, 0.8), bf, tc, model, METAL_MAT)) -- blade
+		for _, x in { -0.18, 0, 0.18 } do
+			tpart(U.Block(Vector3.new(0.07, 0.055, 0.46), bf * CFrame.new(x, 0, 0.02), Color3.fromRGB(60, 60, 70), model)) -- slots
+		end
+		muzzle = tpart(U.Ball(0.2, sf * CFrame.new(0.2, 0.15, -1.9), beam, model, NEON))
+		tipWorld = sf * CFrame.new(0.2, 0.15, -2.0)
+	elseif tool == "Longboard" then
+		-- surfboard held upright at his side: long board with rounded ends, a bright stripe, fin, a glint at the nose
+		local bf = grip * CFrame.Angles(0.3, 0, 0) * CFrame.new(0.4, 0.55, -0.05)
+		local stripe = Color3.fromRGB(255, 120, 90)
+		tpart(U.Block(Vector3.new(0.82, 2.2, 0.12), bf, tc, model))
+		for _, y in { -1.1, 1.1 } do
+			tpart(U.Cyl(0.12, 0.82, bf * CFrame.new(0, y, 0) * U.AxisZ, tc, model)) -- rounded nose / tail
+		end
+		tpart(U.Block(Vector3.new(0.18, 2.9, 0.13), bf, stripe, model)) -- stripe
+		tpart(U.Wedge(Vector3.new(0.06, 0.3, 0.3), bf * CFrame.new(0, -1.05, 0.2) * CFrame.Angles(0, math.pi, 0), U.Shade(tc, 0.6), model)) -- fin
+		muzzle = tpart(U.Ball(0.16, bf * CFrame.new(0, 1.5, -0.05), beam, model, NEON))
+		tipWorld = bf * CFrame.new(0, 1.6, 0)
+	elseif tool == "Paddle" then
+		-- carved canoe paddle held upright: shaft, knob grip, leaf blade with a carved stripe, glow at the tip
+		local pf = grip * CFrame.Angles(0.15, 0, -0.35)
+		tpart(U.Cyl(2.1, 0.13, pf * CFrame.new(0, 0.45, 0) * U.AxisY, tc, model))
+		tpart(U.Ball(0.22, pf * CFrame.new(0, -0.6, 0), U.Shade(tc, 0.75), model)) -- knob
+		tpart(U.Block(Vector3.new(0.52, 1.0, 0.08), pf * CFrame.new(0, 1.85, 0), tc, model)) -- blade
+		for _, s in { -1, 1 } do
+			tpart(U.Wedge(Vector3.new(0.08, 0.4, 0.26), pf * CFrame.new(0.13 * s, 2.55, 0) * CFrame.Angles(0, s * math.pi / 2, 0), tc, model)) -- leaf tip
+		end
+		tpart(U.Block(Vector3.new(0.54, 0.1, 0.09), pf * CFrame.new(0, 1.55, 0), Color3.fromRGB(180, 70, 50), model)) -- carving
+		tpart(U.Block(Vector3.new(0.1, 0.7, 0.09), pf * CFrame.new(0, 1.95, 0), U.Shade(tc, 0.7), model))
+		muzzle = tpart(U.Ball(0.16, pf * CFrame.new(0, 2.8, 0), beam, model, NEON))
+		tipWorld = pf * CFrame.new(0, 2.85, 0)
+	elseif tool == "GhostNet" then
+		-- long-handled fishing net: pole, gold hoop, see-through net bag with a little caught ghost glowing in it
+		local pf = grip * CFrame.Angles(0, -1.25, 0) * CFrame.Angles(1.1, 0, 0)
+		tpart(U.Cyl(2.3, 0.12, pf * CFrame.new(0, 0, -0.85) * U.AxisZ, Color3.fromRGB(150, 110, 70), model)) -- pole
+		local rc = pf * CFrame.new(0, 0, -2.5) * CFrame.Angles(math.pi / 2, 0, 0)
+		for _, p in U.Hoop(0.5, 0.09, 0.09, 8, rc, tc, model, METAL_MAT) do
+			tpart(p)
+		end
+		tpart(U.Ball(0.95, pf * CFrame.new(0, -0.3, -2.5), Color3.fromRGB(200, 230, 240), model, { Transparency = 0.55, Shadow = false })) -- net bag
+		muzzle = tpart(U.Ball(0.34, pf * CFrame.new(0, -0.35, -2.5), beam, model, NEON)) -- the caught ghost
+		tipWorld = pf * CFrame.new(0, 0, -3.0)
+	elseif tool == "CoralStaff" then
+		-- staff of pink coral: branches cradling a big glowing pearl
+		local up = CFrame.Angles(0.05, 0, -0.5)
+		local light = U.Mix(tc, WHITE, 0.35)
+		tpart(U.Cyl(3.0, 0.18, grip * up * CFrame.new(0, 0.55, 0) * U.AxisY, U.Shade(tc, 0.8), model))
+		for _, q in { Vector3.new(-0.32, 0.55, 0), Vector3.new(0.32, 0.55, 0), Vector3.new(0, 0.6, 0.3) } do
+			local p0 = (grip * up * CFrame.new(0, 1.85, 0)).Position
+			local p1 = (grip * up * CFrame.new(q + Vector3.new(0, 1.85, 0))).Position
+			tpart(U.Cyl((p1 - p0).Magnitude, 0.12, U.Between(p0, p1), light, model))
+		end
+		muzzle = tpart(U.Ball(0.4, grip * up * CFrame.new(0, 2.35, 0), beam, model, NEON)) -- pearl
+		tipWorld = grip * up * CFrame.new(0, 2.35, 0)
+	elseif tool == "BoxerGlove" then
+		-- big padded boxing glove, fist forward: knuckle bulge, thumb, white cuff with a stripe, a spark on the knuckles
+		local gf = T(0, 0.05, -0.25)
+		tpart(U.Ball(0.92, gf, tc, model))
+		tpart(U.Ball(0.66, gf * CFrame.new(0, 0.03, -0.3), tc, model)) -- knuckles
+		tpart(U.Ball(0.38, gf * CFrame.new(-0.36, 0.1, -0.12), U.Shade(tc, 0.9), model)) -- thumb
+		tpart(U.Cyl(0.42, 0.62, gf * CFrame.new(0, -0.02, 0.48) * U.AxisZ, WHITE, model)) -- cuff
+		tpart(U.Cyl(0.08, 0.64, gf * CFrame.new(0, -0.02, 0.36) * U.AxisZ, tc, model))
+		muzzle = tpart(U.Ball(0.14, gf * CFrame.new(0, 0.06, -0.62), beam, model, NEON))
+		tipWorld = gf * CFrame.new(0, 0.06, -0.7)
 	else -- Flashlight (default)
 		tpart(U.Cyl(1.2, 0.36, T(0, 0, -0.3) * U.AxisZ, U.Shade(tc, 0.7), model))
 		tpart(U.Cyl(0.38, 0.62, T(0, 0, -1.05) * U.AxisZ, tc, model))
