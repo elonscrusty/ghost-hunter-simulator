@@ -522,6 +522,12 @@ function Tutorial.Init()
 	end)
 end
 
+-- DEV panel REPLAY TUTORIAL: back to step 1 (the server already reset the saved step)
+function Tutorial.Restart()
+	step = 1
+	collectedOnce = false
+end
+
 function Tutorial.Start()
 	Orbs.Collected:Connect(function()
 		collectedOnce = true

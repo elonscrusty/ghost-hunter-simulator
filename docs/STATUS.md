@@ -1,5 +1,11 @@
 # Status
 
+## DEV panel rework (built, not yet tested in Studio)
+- 🛠 panel now has tabs (MONEY, AREAS, HUNTERS, PETS, BOSSES & EVENTS, PLAYER, DANGER ZONE), a search box,
+  amount pickers (+1,000 ... +1Dc, MAX), per-area GO / UNLOCK for both worlds, hunter cards with portraits
+  (+1 / +5, whole area set), pet cards, tower room/checkpoint, daily day picker. DANGER ZONE (reset, Ecto to 0,
+  remove test hunters, lock areas) works only in Studio and needs two taps. Checklist: STUDIO_TESTS.md "DEV panel".
+
 ## v1.16 (built, not yet published)
 - New lobby (Boss Tower + Pet Hatchery by spawn), 4 eggs incl. Cursed Egg, 23 pets, booth-only
   trading, TOP POWER board, WHAT'S NEW popup (Config.UpdateNotes), menu tour after the tutorial

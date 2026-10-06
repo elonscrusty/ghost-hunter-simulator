@@ -13,7 +13,7 @@ end
 T.short_big_suffixes = function()
 	eq(Format.Short(5.04e15), "5.04Qa"); eq(Format.Short(6.53e18), "6.53Qi"); eq(Format.Short(1.41e21), "1.41Sx")
 	eq(Format.Short(5.08e22), "50.8Sx"); eq(Format.Short(1.32e22), "13.2Sx"); eq(Format.Short(2.5e24), "2.5Sp")
-	eq(Format.Short(1e27), "1Oc"); eq(Format.Short(2.37e27), "2.37Oc"); eq(Format.Short(3.95e26), "395Sp"); eq(Format.Short(3e30), "3No"); eq(Format.Short(4.4e33), "4.4Dc"); eq(Format.Short(1e36), "1000Dc")
+	eq(Format.Short(1e27), "1Oc"); eq(Format.Short(2.37e27), "2.37Oc"); eq(Format.Short(3.95e26), "395Sp"); eq(Format.Short(3e30), "3No"); eq(Format.Short(4.4e33), "4.4Dc"); eq(Format.Short(1e36), "1000Dc"); eq(Format.Short(1e33), "1Dc"); eq(Format.Short(1e30), "1No"); eq(Format.Short(999999), "999K")
 	eq(Format.Short(-1.41e21), "-1.41Sx"); eq(Format.Short(0 / 0), "0")
 end
 T.commas_big = function()

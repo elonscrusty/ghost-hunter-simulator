@@ -29,7 +29,8 @@ function Format.Short(n: number): string
 	end
 	local i = 1
 	local v = math.abs(n)
-	while v >= 1000 and i < #SUFFIX do
+	-- tolerance: 1e33 divided down eleven times lands a hair under 1000 ("1000No" instead of "1Dc")
+	while v >= 1000 * (1 - 1e-14) and i < #SUFFIX do
 		v /= 1000
 		i += 1
 	end

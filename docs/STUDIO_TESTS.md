@@ -14,6 +14,18 @@ Only verifiable live: nickname text filtering (Studio filtering can behave diffe
 
 # Studio playtest checklist
 
+## DEV panel (new layout)
+- [ ] 🛠 opens DEV TOOLS with tabs MONEY, AREAS, HUNTERS, PETS, BOSSES & EVENTS, PLAYER, DANGER ZONE. Close it on PLAYER and reopen: it comes back on PLAYER.
+- [ ] MONEY: tap +1M, +1Dc and MAX: a green toast says "Gave ... Ectoplasm" and the counter goes up. Spirit Shards the same.
+- [ ] Search: type "king" -> only the Ghost King rows show; type "rookie" -> hunter cards with that name; CLEAR brings the tab back.
+- [ ] AREAS: WORLD 1 / WORLD 2 buttons switch the 16 rows. UNLOCK UP TO HERE on area 20 unlocks 1-20 (World 2 portal works); GO teleports you there.
+- [ ] HUNTERS: < > and WORLD 1 / WORLD 2 change the area; cards show portraits; +1 / +5 give that hunter; GIVE WHOLE AREA SET gives the area's set. CREW -> MEGA works.
+- [ ] PETS: GIVE on a pet card adds it; UNLOCK ALL EGGS opens every egg at the Hatchery.
+- [ ] BOSSES & EVENTS: type 10, START TEST RUN starts a solo tower run at room 10; SET CHECKPOINT changes the "Your checkpoint" line; Ghost King BEATEN / NOT BEATEN updates its line; 2X ON/OFF shows "Right now: ON/OFF".
+- [ ] PLAYER: daily day 7 -> the DAILY panel can be claimed on day 7; SHOW MENU TOUR NOW and SHOW WHAT'S NEW NOW open them; REPLAY TUTORIAL shows "TAP A GHOST!" again.
+- [ ] DANGER ZONE: first tap turns the button red "TAP AGAIN TO CONFIRM", it goes back after 4 s; a second tap in time runs it. REMOVE TEST HUNTERS removes only dev-given hunters.
+- [ ] Phone: every button is easy to tap, text never shrinks or gets cut badly, the tab row scrolls sideways if it doesn't fit.
+
 ## v1.6 playtest (do this first)
 Open `build/GhostHunterSimulator.rbxlx`, turn on **Studio API access** (PUBLISHING.md step 2; without it saving does nothing and some checks below can't pass), press **Play**. Studio saves are real saves for your account: use a throwaway test later if you worry. Anything that fails: note what you saw (a phone photo is fine). Use the 🛠 DEV button (top right) for shortcuts (Ectoplasm, unlock areas, all hunters, START EVENT).
 
@@ -100,9 +112,9 @@ Two players (2-player test): both tap the SAME ghost. Expected: each gets a payo
 
 Open `build/GhostHunterSimulator.rbxlx`, turn on API access (PUBLISHING.md step 2), press
 **Play**. Tick each box; anything that fails, note what you saw (a phone photo is fine).
-The 🛠 DEV button (top right, next to ⚙) has all test tools. Chat commands also work (Studio or owner only): `/ecto 5000`, `/event`, `/reset-daily`, `/autoattack`
-(gives you the Auto Attack pass for this test only), `/zones` (unlocks all 8 areas),
-`/hunters` (gives you one of each of the 32 hunters).
+The 🛠 DEV button (top right, next to ⚙) has all test tools. Chat commands also work (Studio or owner only): `/ecto 5000`, `/reset-daily`, `/autoattack`
+(gives you the old Auto Attack pass for this test only), `/zones` (unlocks every area in both worlds),
+`/hunters` (gives you one of each hunter), `/maxupgrades`, `/tutorial`.
 
 ## A. First 5 minutes, FREE player (no Auto Attack)
 - [ ] Spawn on the glowing HQ plaza. HUD: Ectoplasm 0 at the top, ⚡ 5 POWER under it, six menu buttons in ONE column on the left (HUNTERS, WORLDS, INDEX, UPGRADES, SHOP, DAILY). Your Rookie Hunter stands behind you and **attacks nothing**.
