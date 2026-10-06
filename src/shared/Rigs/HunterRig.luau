@@ -85,7 +85,8 @@ end
 
 HunterRig.Known = {
 	HairStyle = set({ "Spiky", "Bob", "Puff", "Short", "Long", "None", "RoundEars", "PointyEars", "Buns", "Braids", "Floaty", "Beard", "Owl", "Octo",
-		"Piggy", "Tabby", "Moustache", "Pup", "Quills", "LongBraid", "Spirit" }),
+		"Piggy", "Tabby", "Moustache", "Pup", "Quills", "LongBraid", "Spirit",
+		"Hedgehog", "Raccoon", "ElfHero", "VoxelHair" }), -- CYBERARCADE (world2c): last line
 	Hat = set({
 		"Cap", "Beanie", "Fedora", "Hood", "Helmet", "Mortarboard", "Visor", "Goggles", "Halo", "TopHat", "Jester",
 		"NurseCap", "HeadMirror", "SailorCap", "Bandana", "Tricorn", "KnightHelm", "Wizard", "Crown", "Crystal", "Pith",
@@ -98,6 +99,8 @@ HunterRig.Known = {
 		-- World 2 areas 19-29
 		"StrawHat", "SharkHood", "ElfHat", "DinoHood", "Thimble", "ChompHead",
 		"ScarecrowHat", "FishHood", "Mannequin", "DuckHelmet", "DinoSkull", "GingerIcing", "TulipHat", "Bulb", "Shades", "Bonnet",
+		-- CYBERARCADE (world2c)
+		"CubeHead", "ChompBall", "PlumberCap", "HeroCap", "Puffball", "BlockCrown",
 	}),
 	Back = set({
 		"Backpack", "Tank", "Cape", "Wings", "Antenna", "Balloons", "MedKit", "LifeRing", "Shield", "Orbs", "HeroCape",
@@ -113,6 +116,8 @@ HunterRig.Known = {
 		"ShoppingCart", "Scooter", "Stand", "ShoppingBags", "Bone", "DinoEgg", "DinoTail", "Stripes", "SugarCube",
 		"ThreadSpool", "ButtonShield", "Sailboat", "FridgeDoor", "Cake", "Overalls", "PelletTrail", "PixelWings",
 		"Caterpillar", "BigBelly", "MagicMirror", "TankEngine", "TrenchCoat", "SpaceWings", "TimeBox",
+		-- CYBERARCADE (world2c)
+		"DirtBlock", "PixelGhostPal", "PipeOveralls", "SpeedLines", "RaccoonTail", "HeroShield", "WarpStar", "BlockStorm",
 	}),
 	Tool = set({
 		"Flashlight", "Vacuum", "Scanner", "Blaster", "Cannon", "Lantern", "Staff", "Projector", "Megaphone", "Wand", "Orb",
@@ -126,6 +131,8 @@ HunterRig.Known = {
 		"Diploma", "WateringCan", "BubbleWand", "Fork", "Pretzel", "CandyCane", "Lasagna", "Brush", "TourFlag",
 		"AmberStaff", "Popcorn", "RedCard", "BiscuitBox", "Basketball", "HockeyStick", "FoamFinger", "Coin",
 		"Gamepad", "GoldRing", "PixelSword", "Screwdriver",
+		-- CYBERARCADE (world2c)
+		"PixelPickaxe", "PowerPellet", "PipeWrench", "TokenSack", "HeroSword", "StarRod", "BossScepter",
 	}),
 	Signature = set({ "Supernova" }),
 }
@@ -519,6 +526,65 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			local d = Vector3.new(q[4], q[5], q[6]).Unit
 			cone(head, CFrame.lookAt(p, p + d) * CFrame.Angles(-math.pi / 2, 0, 0), 0.75, 1.25, 3, hairColor)
 		end
+	-- CYBERARCADE (world2c) ---------------------------------------- hair
+	elseif style == "Hedgehog" then
+		-- speedy hedgehog: hair-coloured head with big quills swept back, little ears, a pale muzzle and
+		-- tummy, white gloves and a white strap on each sneaker
+		cap()
+		hairTop = 1.3
+		local pale = look.Skin
+		for _, q in { { 0, 0.72, 0.45, 0, 0.5, 1, 1.55 }, { -0.55, 0.28, 0.6, -0.5, 0.12, 1, 1.4 }, { 0.55, 0.28, 0.6, 0.5, 0.12, 1, 1.4 }, { 0, -0.22, 0.7, 0, -0.4, 1, 1.3 } } do
+			local p = Vector3.new(q[1], q[2], q[3])
+			local d = Vector3.new(q[4], q[5], q[6]).Unit
+			cone(head, CFrame.lookAt(p, p + d) * CFrame.Angles(-math.pi / 2, 0, 0), 0.95, q[7], 3, hairColor)
+		end
+		for _, s in { -1, 1 } do
+			local ecf = CFrame.new(0.5 * s, 0.8, 0.0) * CFrame.Angles(0, 0, -0.35 * s)
+			spike(head, ecf, 0.5, 0.55, 0.2, hairColor)
+			spike(head, ecf * CFrame.new(0, 0.05, -0.11), 0.26, 0.32, 0.06, pale)
+			hands[s].Color = WHITE
+			block(legs[s], Vector3.new(0.64, 0.12, 0.3), CFrame.new(0, -0.3, -0.2), WHITE) -- sneaker strap
+		end
+		ball(head, 0.86, CFrame.new(0, -0.44, -0.6), pale) -- muzzle
+		ball(head, 0.22, CFrame.new(0, -0.17, -1.0), EYE) -- nose
+		block(head, Vector3.new(0.34, 0.07, 0.08), CFrame.new(0.06, -0.62, -0.95) * CFrame.Angles(0.5, 0, -0.25), MOUTH) -- grin
+		cyl(torso, 0.05, 0.74, CFrame.new(0, -0.18, -0.43) * U.AxisZ, pale) -- tummy
+	elseif style == "Raccoon" then
+		-- masked raccoon: furry ears with dark insides, a black eye mask, a white muzzle and cheek fluff
+		cap()
+		hairTop = 1.3
+		local dark = Color3.fromRGB(35, 32, 40)
+		local pale = Color3.fromRGB(245, 245, 240)
+		for _, s in { -1, 1 } do
+			local ecf = CFrame.new(0.58 * s, 0.8, 0.12) * CFrame.Angles(0, 0, -0.3 * s)
+			spike(head, ecf, 0.62, 0.62, 0.22, hairColor)
+			spike(head, ecf * CFrame.new(0, 0.04, -0.1), 0.34, 0.36, 0.06, dark)
+			local n = Vector3.new(0.36 * s, 0.0, -0.8).Unit
+			cyl(head, 0.08, 0.82, U.DiscFacing(n * 0.9, n), dark) -- mask
+			spike(head, CFrame.new(0.8 * s, -0.42, -0.25) * CFrame.Angles(0, 0, -1.9 * s), 0.42, 0.45, 0.12, pale) -- cheek fluff
+		end
+		block(head, Vector3.new(0.5, 0.3, 0.1), CFrame.new(0, 0.02, -0.95), dark) -- mask bridge
+		ball(head, 0.78, CFrame.new(0, -0.44, -0.64), pale) -- muzzle
+		ball(head, 0.24, CFrame.new(0, -0.22, -1.0), dark) -- nose
+	elseif style == "ElfHero" then
+		-- sword hero: fair hair with locks down the sides and long pointed ears sticking out sideways
+		cap()
+		for _, s in { -1, 1 } do
+			spike(head, CFrame.new(0.86 * s, 0.02, 0.12) * CFrame.Angles(0, 0, -1.2 * s), 0.42, 0.78, 0.14, look.Skin) -- pointed ear
+			block(head, Vector3.new(0.26, 0.8, 0.3), CFrame.new(0.74 * s, -0.08, -0.55) * CFrame.Angles(0, 0.45 * s, 0.1 * s), hairColor) -- side lock
+		end
+		spike(head, CFrame.new(-0.2, 0.62, -0.84) * CFrame.Angles(-0.35, 0, 2.7), 0.55, 0.5, 0.16, hairColor) -- fringe tuft
+	elseif style == "VoxelHair" then
+		-- 8-bit hair built from big blocks: flat top, stepped fringe, long side locks and a back panel
+		hairTop = 1.12
+		local dk = U.Shade(hairColor, 0.82)
+		block(head, Vector3.new(1.9, 0.5, 1.9), CFrame.new(0, 0.82, 0.14), hairColor)
+		block(head, Vector3.new(2.0, 2.5, 0.55), CFrame.new(0, -0.5, 0.78), hairColor)
+		for _, s in { -1, 1 } do
+			block(head, Vector3.new(0.34, 1.7, 0.9), CFrame.new(0.88 * s, -0.4, 0.3), dk)
+		end
+		block(head, Vector3.new(1.3, 0.4, 0.36), CFrame.new(0.2, 0.58, -0.78) * CFrame.Angles(0, 0, -0.12), hairColor) -- fringe
+	-- end CYBERARCADE (world2c) hair
 	elseif style == "LongBraid" then
 		-- magic-long golden braid: down the back, across the floor, with little flowers tucked in
 		cap()
@@ -1243,6 +1309,94 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		local a0 = cc + Vector3.new(-0.2, r - 0.1, 0)
 		rod(head, a0, a0 + Vector3.new(-0.15, 0.6, 0), 0.07, U.Shade(c, 0.6))
 		ball(head, 0.26, CFrame.new(a0 + Vector3.new(-0.16, 0.7, 0)), U.Vivid(look.Beam))
+	-- CYBERARCADE (world2c) ---------------------------------------- hats
+	elseif hat == "CubeHead" then
+		-- blocky miner: the round head hides inside a big skin-coloured cube with a flat 8x8 pixel face,
+		-- a voxel hair cap over the top two rows and a hair panel down the back
+		local s, u, cy = 2.2, 2.2 / 8, 0.1
+		local function px(c: number, r: number, w: number, h: number, color: Color3)
+			-- face pixels covering columns c..c+w-1 and rows r..r+h-1 (row 0 = top, column 0 = viewer's right)
+			block(head, Vector3.new(w * u, h * u, 0.06), CFrame.new(-s / 2 + (c + w / 2) * u, cy + s / 2 - (r + h / 2) * u, -s / 2 - 0.02), color)
+		end
+		block(head, Vector3.new(s, s, s), CFrame.new(0, cy, 0), look.Skin)
+		block(head, Vector3.new(s + 0.06, 2 * u + 0.02, s + 0.06), CFrame.new(0, cy + 3 * u, 0), hairColor) -- hair cap
+		block(head, Vector3.new(s + 0.06, 4 * u, 0.1), CFrame.new(0, cy, s / 2), hairColor) -- back of the hair
+		px(0, 2, 1, 1, hairColor) -- sideburns
+		px(7, 2, 1, 1, hairColor)
+		px(1, 3, 1, 2, WHITE) -- eyes
+		px(2, 3, 1, 2, EYE)
+		px(5, 3, 1, 2, EYE)
+		px(6, 3, 1, 2, WHITE)
+		px(2, 5, 1, 1, MOUTH) -- pixel smile
+		px(5, 5, 1, 1, MOUTH)
+		px(3, 6, 2, 1, MOUTH)
+	elseif hat == "ChompBall" then
+		-- round chomper: the whole head is one big ball with a wide dark mouth wedged open to the front
+		-- and two big eyes on top (the face inside is hidden)
+		local c = hatColor
+		local r = 1.25
+		local cc = Vector3.new(0, 0.12, 0)
+		ball(head, r * 2, CFrame.new(cc), c)
+		local h, d, w = 0.7, 1.24, 1.9
+		local cav = Color3.fromRGB(70, 20, 35)
+		wedge(head, Vector3.new(w, h, d), CFrame.new(cc + Vector3.new(0, h / 2, -d / 2)) * CFrame.Angles(0, math.pi, 0), cav) -- upper jaw
+		wedge(head, Vector3.new(w, h, d), CFrame.new(cc + Vector3.new(0, -h / 2, -d / 2)) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(0, 0, math.pi), cav) -- lower jaw
+		for _, s in { -1, 1 } do
+			local n = Vector3.new(0.36 * s, 0.72, -0.6).Unit
+			ball(head, 0.62, CFrame.new(cc + n * (r - 0.12)), WHITE)
+			ball(head, 0.32, CFrame.new(cc + n * (r + 0.08) + Vector3.new(0, -0.04, -0.02)), EYE)
+		end
+	elseif hat == "PlumberCap" then
+		-- plumber's round cap with a short peak and a white badge holding a little gold wrench (no letters)
+		local c = hatColor
+		ball(head, 2.04, CFrame.new(0, 0.46, 0.12), c)
+		cyl(head, 0.1, 1.4, CFrame.new(0, 0.5, -0.95) * CFrame.Angles(-0.12, 0, 0) * U.AxisY, U.Shade(c, 0.85)) -- peak
+		local n = Vector3.new(0, 0.5, -0.87).Unit
+		local bp = Vector3.new(0, 0.46, 0.12) + n * 1.02
+		cyl(head, 0.06, 0.66, U.DiscFacing(bp, n), WHITE) -- badge
+		local dcf = U.Facing(bp + n * 0.03, n)
+		ball(head, 0.26, dcf * CFrame.new(0, -0.06, 0), Color3.fromRGB(60, 150, 235)) -- water-drop emblem
+		spike(head, dcf * CFrame.new(0, 0.0, 0), 0.2, 0.2, 0.1, Color3.fromRGB(60, 150, 235))
+	elseif hat == "HeroCap" then
+		-- long floppy hero cap: snug dome over the hair, a long cone swept back with a drooping tip, a band
+		local c = hatColor
+		ball(head, 2.08, CFrame.new(0, 0.44, 0.16), c)
+		cyl(head, 0.16, 2.1, CFrame.new(0, 0.42, 0.16) * CFrame.Angles(-0.15, 0, 0) * U.AxisY, U.Shade(c, 0.75)) -- band
+		local mid = cone(head, CFrame.new(0, 0.95, 0.5) * CFrame.Angles(1.0, 0, 0), 1.5, 1.35, 3, c)
+		local tip = cone(head, mid * CFrame.new(0, -0.05, 0) * CFrame.Angles(0.7, 0, 0), 0.5, 0.75, 2, c)
+		ball(head, 0.2, tip, c)
+	elseif hat == "Puffball" then
+		-- round pink puffball: one big ball swallows head and body (the round face hides inside), with its
+		-- own tall oval eyes, rosy cheeks, a tiny mouth, stubby arms and big round feet
+		local c = hatColor
+		local r = 1.55
+		local cc = Vector3.new(0, -0.62, 0)
+		local function onBall(x: number, y: number, out: number): Vector3
+			local p = Vector3.new(x, y, -math.sqrt(math.max(r * r - x * x - y * y, 0)))
+			return cc + p.Unit * (r + out)
+		end
+		ball(head, r * 2, CFrame.new(cc), c)
+		for _, s in { -1, 1 } do
+			ball(head, 0.32, CFrame.new(onBall(0.3 * s, 0.44, -0.07)), EYE) -- tall oval eye: dark top...
+			ball(head, 0.3, CFrame.new(onBall(0.3 * s, 0.25, -0.07)), Color3.fromRGB(40, 70, 170)) -- ...blue bottom
+			ball(head, 0.13, CFrame.new(onBall(0.3 * s + 0.03, 0.5, 0.04)), WHITE)
+			local bp = onBall(0.68 * s, 0.05, 0)
+			cyl(head, 0.04, 0.36, U.DiscFacing(bp, bp - cc), Color3.fromRGB(255, 100, 140)) -- cheek
+			ball(arms[s], 0.8, CFrame.new(0.5 * s, -0.08, 0), c) -- stubby arm
+			ball(legs[s], 0.84, CFrame.new(0, -0.17, -0.12), look.Shoes) -- round foot
+		end
+		ball(head, 0.17, CFrame.new(onBall(0, 0.06, -0.04)), MOUTH)
+	elseif hat == "BlockCrown" then
+		-- final-boss crown: a gold voxel crown with three square points and a glowing gem
+		local c = hatColor
+		local y = hairTop
+		block(head, Vector3.new(1.5, 0.32, 1.5), CFrame.new(0, y, 0.12), c, { Reflectance = 0.2 })
+		for i, x in { -0.55, 0, 0.55 } do
+			local ph = if i == 2 then 0.62 else 0.42
+			block(head, Vector3.new(0.32, ph, 0.32), CFrame.new(x, y + 0.16 + ph / 2, -0.47), c, { Reflectance = 0.2 })
+		end
+		block(head, Vector3.new(0.24, 0.24, 0.1), CFrame.new(0, y, -0.65), U.Vivid(look.Beam), NEON) -- gem
+	-- end CYBERARCADE (world2c) hats
 	elseif hat == "ScarecrowHat" then
 		-- floppy pointed field hat with a patch, straw tufts poking out under the brim and a crow on the brim
 		local c = hatColor
@@ -2308,6 +2462,141 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 			end
 			block(torso, Vector3.new(u, u, 0.16), CFrame.new((0.45 + 4 * u) * s, 1.42, 0.62), WHITE)
 		end
+	-- CYBERARCADE (world2c) ---------------------------------------- backs
+	elseif back == "DirtBlock" then
+		-- a voxel dirt block worn as a backpack: grassy top layer with green drips down the sides
+		local c = backColor
+		local green = Color3.fromRGB(95, 180, 70)
+		local bcf = CFrame.new(0, 0.05, 0.9)
+		block(torso, Vector3.new(1.1, 1.1, 1.1), bcf, c)
+		block(torso, Vector3.new(1.14, 0.28, 1.14), bcf * CFrame.new(0, 0.42, 0), green)
+		for _, q in { { -0.28, 0.4 }, { 0.42, 0.3 } } do
+			block(torso, Vector3.new(0.28, 0.25, 1.16), bcf * CFrame.new(q[1], 0.2, 0), green) -- drip
+		end
+		for _, q in { { 0.28, -0.1 }, { -0.28, -0.38 } } do
+			block(torso, Vector3.new(0.27, 0.27, 1.13), bcf * CFrame.new(q[1], q[2], 0), U.Shade(c, 0.75)) -- darker dirt pixels
+		end
+		strap(Color3.fromRGB(70, 55, 45))
+	elseif back == "PixelGhostPal" then
+		-- a scared blue pixel ghost floating behind the shoulder, chasing a short trail of power pellets
+		local c = backColor
+		local gc = CFrame.new(1.55, 1.7, 0.9) * CFrame.Angles(0, -0.5, 0.12)
+		block(torso, Vector3.new(0.95, 0.7, 0.55), gc, c)
+		block(torso, Vector3.new(0.62, 0.22, 0.55), gc * CFrame.new(0, 0.45, 0), c) -- round-ish top
+		for k = -1, 1 do
+			block(torso, Vector3.new(0.22, 0.2, 0.55), gc * CFrame.new(k * 0.36, -0.44, 0), c) -- wavy hem
+		end
+		local pale = Color3.fromRGB(255, 225, 200)
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.16, 0.16, 0.06), gc * CFrame.new(0.2 * s, 0.12, -0.28), pale) -- eyes
+		end
+		block(torso, Vector3.new(0.5, 0.07, 0.06), gc * CFrame.new(0, -0.14, -0.28), pale) -- wobbly mouth
+		for i = 0, 2 do
+			block(torso, Vector3.new(0.2, 0.2, 0.2), CFrame.new(0.75 + i * 0.25, 0.9 + i * 0.22, 0.75), CREAM) -- pellets
+		end
+	elseif back == "PipeOveralls" then
+		-- plumber dungarees (bib, straps, gold buttons), white gloves and a green warp pipe on the back
+		-- poking up over the left shoulder
+		local c = backColor
+		block(torso, Vector3.new(0.9, 0.6, 0.04), CFrame.new(0, -0.2, -0.44), c)
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.18, 0.5, 0.04), CFrame.new(0.32 * s, 0.3, -0.44), c)
+			block(torso, Vector3.new(0.18, 0.06, 0.9), CFrame.new(0.32 * s, 0.55, 0), c)
+			ball(torso, 0.2, CFrame.new(0.32 * s, 0.08, -0.47), GOLD, METAL_MAT)
+			hands[s].Color = WHITE
+		end
+		local pg = Color3.fromRGB(55, 175, 70)
+		local pc = CFrame.new(0.68, 0.5, 1.05)
+		cyl(torso, 2.2, 0.85, pc * U.AxisY, pg)
+		cyl(torso, 0.42, 1.12, pc * CFrame.new(0, 1.25, 0) * U.AxisY, pg) -- rim
+		cyl(torso, 0.05, 0.86, pc * CFrame.new(0, 1.45, 0) * U.AxisY, Color3.fromRGB(20, 50, 25)) -- dark inside
+		block(torso, Vector3.new(0.5, 0.14, 0.3), CFrame.new(0.45, 0.2, 0.6), U.Shade(c, 0.8)) -- holder strap
+	elseif back == "SpeedLines" then
+		-- speed streaks trailing off the back: by the time you see him, he's gone
+		local c = backColor
+		for i, q in { { 0.55, 1.1, 0.75 }, { 0.1, 1.5, 0.55 }, { -0.35, 1.0, 0.8 } } do
+			block(torso, Vector3.new(0.12, 0.12, q[2]), CFrame.new(q[3], q[1], 0.65 + q[2] / 2), U.Mix(c, WHITE, 0.15 * i), { Transparency = 0.25 })
+		end
+	elseif back == "RaccoonTail" then
+		-- bushy ringed raccoon tail curling up behind in chunky voxel rings, plus a striped bandit shirt
+		local c = backColor
+		local dark = Color3.fromRGB(35, 32, 40)
+		local pts = { Vector3.new(0.15, -0.45, 0.6), Vector3.new(0.4, -0.3, 1.05), Vector3.new(0.7, 0.05, 1.35), Vector3.new(0.92, 0.5, 1.45), Vector3.new(1.05, 0.98, 1.38), Vector3.new(1.12, 1.45, 1.2), Vector3.new(1.1, 1.85, 0.98) }
+		for i, p in pts do
+			local sz = 0.74 - i * 0.03
+			block(torso, Vector3.new(sz, sz, sz), CFrame.new(p) * CFrame.Angles(0.25 * i, 0.3, 0.15 * i), if i % 2 == 0 or i == #pts then dark else c)
+		end
+		for _, y in { 0.24, -0.16 } do
+			block(torso, Vector3.new(1.33, 0.15, 0.88), CFrame.new(0, y, 0), WHITE) -- shirt stripes
+		end
+		for _, s in { -1, 1 } do
+			block(arms[s], Vector3.new(0.44, 0.13, 0.44), CFrame.new(0, 0.05, 0), WHITE)
+		end
+	elseif back == "HeroShield" then
+		-- round hero shield on the back (silver rim, coloured face, gold bird emblem), a brown belt with a
+		-- gold buckle and a tiny glowing fairy friend hovering by the left shoulder
+		local c = backColor
+		local scf = CFrame.new(0.3, 0.05, 0.62) * CFrame.Angles(0, 0.55, 0.18)
+		cyl(torso, 0.12, 1.55, scf * U.AxisZ, Color3.fromRGB(200, 205, 215), METAL_MAT) -- rim
+		cyl(torso, 0.14, 1.32, scf * CFrame.new(0, 0, 0.03) * U.AxisZ, c) -- face
+		local ecf = scf * CFrame.new(0, 0, 0.11) * CFrame.Angles(0, math.pi, 0)
+		spike(torso, ecf * CFrame.new(0, -0.32, 0), 0.3, 0.62, 0.04, GOLD) -- emblem body
+		for _, s in { -1, 1 } do
+			spike(torso, ecf * CFrame.new(0.1 * s, 0.05, 0) * CFrame.Angles(0, 0, -1.0 * s), 0.24, 0.48, 0.04, GOLD) -- wings
+		end
+		local brown = Color3.fromRGB(110, 70, 40)
+		block(torso, Vector3.new(1.34, 0.18, 0.89), CFrame.new(0, -0.36, 0), brown) -- belt
+		block(torso, Vector3.new(0.26, 0.22, 0.06), CFrame.new(0, -0.36, -0.46), GOLD, METAL_MAT) -- buckle
+		bar(torso, Vector3.new(0.5, 0.55, -0.43), Vector3.new(-0.55, -0.32, -0.43), 0.14, 0.04, brown) -- shield strap
+		local f = Vector3.new(-1.3, 1.6, -0.25)
+		ball(torso, 0.3, CFrame.new(f), Color3.fromRGB(235, 250, 255), NEON) -- fairy
+		for _, s in { -1, 1 } do
+			block(torso, Vector3.new(0.36, 0.22, 0.03), CFrame.new(f + Vector3.new(0.17 * s, 0.13, 0.08)) * CFrame.Angles(0, 0, 0.5 * s), Color3.fromRGB(190, 225, 255), { Transparency = 0.35 })
+			block(torso, Vector3.new(0.24, 0.15, 0.03), CFrame.new(f + Vector3.new(0.14 * s, -0.08, 0.08)) * CFrame.Angles(0, 0, -0.4 * s), Color3.fromRGB(190, 225, 255), { Transparency = 0.35 })
+		end
+	elseif back == "WarpStar" then
+		-- big yellow star riding behind the back with a short rainbow trail streaming off it
+		local c = backColor
+		local scf = CFrame.new(0.45, 1.25, 1.75) * CFrame.Angles(0, 0, -0.3)
+		cyl(torso, 0.34, 1.05, scf * U.AxisZ, c)
+		for i = 0, 4 do
+			spike(torso, scf * CFrame.Angles(0, 0, i * 2 * math.pi / 5) * CFrame.new(0, 0.42, 0), 0.66, 0.78, 0.3, c)
+		end
+		for i = 1, 2 do
+			bar(torso, Vector3.new(-0.15, 0.95 + (i - 1.5) * 0.35, 1.85), Vector3.new(-1.65, 0.35 + (i - 1.5) * 0.35, 2.1), 0.22, 0.07, RAINBOW[i * 3 - 2]) -- trail
+		end
+	elseif back == "BlockStorm" then
+		-- final boss: a whirlwind of falling-block pieces spiralling up round her from her feet to above
+		-- her crown, plus a short stepped 8-bit cape and tall pointed collar wings
+		local c = backColor
+		for i, q in { { 1.4, 0.45, -0.1 }, { 2.1, -0.1, -0.65 }, { 2.8, -0.65, -1.25 } } do
+			block(torso, Vector3.new(q[1], q[2] - q[3], 0.14), CFrame.new(0, (q[2] + q[3]) / 2, 0.48 + i * 0.07), if i == 2 then U.Shade(c, 0.82) else c)
+		end
+		for _, s in { -1, 1 } do
+			spike(torso, CFrame.new(0.72 * s, 0.5, 0.3) * CFrame.Angles(-0.2, 0, -0.55 * s), 0.7, 1.65, 0.1, c) -- collar
+		end
+		local u = 0.36
+		local shapes: { { { number } } } = { -- each piece as one or two blocks: { width, height, x, y } in cells
+			{ { 4, 1, 0, 0 } }, -- I
+			{ { 3, 1, 0, 0 }, { 1, 1, 0, 1 } }, -- T
+			{ { 2, 2, 0, 0 } }, -- O
+			{ { 3, 1, 0, 0 }, { 1, 1, 1, 1 } }, -- L
+			{ { 2, 1, -0.5, 0 }, { 2, 1, 0.5, 1 } }, -- S
+			{ { 3, 1, 0, 0 }, { 1, 1, -1, 1 } }, -- J
+			{ { 4, 1, 0, 0 } }, -- I
+		}
+		-- the pieces orbit her on a tilted ring: low in front (round her knees, so the face stays clear)
+		-- and high behind (over her shoulders)
+		for i, cells in shapes do
+			local a = 0.35 + (i - 1) * 2 * math.pi / #shapes
+			local x, z = 2.1 * math.sin(a), -2.1 * math.cos(a)
+			local pcf = CFrame.new(x, 0.35 + 0.42 * z, z) * CFrame.Angles(0, -a, 0) * CFrame.Angles(0.35, 0, 0.5 * math.sin(i * 1.7))
+			local col = RAINBOW[(i - 1) % #RAINBOW + 1]
+			for _, b in cells do
+				block(torso, Vector3.new(b[1] * u - 0.02, b[2] * u - 0.02, u - 0.02), pcf * CFrame.new(b[3] * u, b[4] * u, 0), col)
+			end
+		end
+	-- end CYBERARCADE (world2c) backs
 	elseif back == "Caterpillar" then
 		-- a very hungry caterpillar draped over the shoulders: green segments, red face, purple feet and
 		-- antennae, with a half-eaten apple
@@ -3126,6 +3415,87 @@ local function buildInternal(hunterId: string): (Rig, DecoMap)
 		end
 		muzzle = tpart(U.Block(Vector3.new(u, u, u), T(0, 0.05, -0.32 - 6 * u), beam, model, NEON))
 		tipWorld = T(0, 0.05, -0.32 - 6.6 * u)
+	-- CYBERARCADE (world2c) ---------------------------------------- tools
+	elseif tool == "PixelPickaxe" then
+		-- chunky voxel pickaxe held up: brown pixel handle and a bright two-pointed head
+		local u = 0.25
+		local cf = T(0, 0.0, -0.05) * CFrame.Angles(0.75, 0, -0.55)
+		tpart(U.Block(Vector3.new(u, 6 * u, u), cf * CFrame.new(0, 2.5 * u, 0), Color3.fromRGB(130, 85, 50), model)) -- handle
+		tpart(U.Block(Vector3.new(u + 0.02, u, u + 0.02), cf * CFrame.new(0, 1.5 * u, 0), Color3.fromRGB(95, 60, 35), model)) -- grip pixel
+		tpart(U.Block(Vector3.new(u, u, 3 * u), cf * CFrame.new(0, 5.5 * u, 0), tc, model)) -- head
+		for _, s in { -1, 1 } do
+			tpart(U.Block(Vector3.new(u, u, u), cf * CFrame.new(0, 4.6 * u, 1.9 * u * s), U.Shade(tc, 0.85), model))
+		end
+		tpart(U.Block(Vector3.new(u * 0.8, u * 0.8, u * 0.8), cf * CFrame.new(0, 3.8 * u, 2.6 * u), U.Shade(tc, 0.85), model))
+		muzzle = tpart(U.Block(Vector3.new(u * 0.8, u * 0.8, u * 0.8), cf * CFrame.new(0, 3.8 * u, -2.6 * u), beam, model, NEON))
+		tipWorld = cf * CFrame.new(0, 3.6 * u, -3.0 * u)
+	elseif tool == "PowerPellet" then
+		-- a big power pellet held up like a prize: creamy shell with a glowing heart
+		local cf = T(0, 0.45, -0.35)
+		tpart(U.Ball(0.78, cf, tc, model, { Transparency = 0.3 }))
+		muzzle = tpart(U.Ball(0.42, cf, beam, model, NEON))
+		tipWorld = cf * CFrame.new(0, 0, -0.4)
+	elseif tool == "PipeWrench" then
+		-- big red-handled pipe wrench held up: silver jaws with a hooked top and a gold adjusting nut
+		local silver = Color3.fromRGB(200, 205, 215)
+		local cf = T(0, 0.0, -0.05) * CFrame.Angles(0.65, 0, -0.45)
+		tpart(U.Block(Vector3.new(0.22, 1.1, 0.2), cf * CFrame.new(0, 0.35, 0), tc, model)) -- handle
+		tpart(U.Block(Vector3.new(0.24, 0.55, 0.26), cf * CFrame.new(0, 1.15, 0), silver, model, METAL_MAT)) -- shank
+		tpart(U.Block(Vector3.new(0.24, 0.2, 0.72), cf * CFrame.new(0, 1.48, -0.22), silver, model, METAL_MAT)) -- hook jaw
+		tpart(U.Block(Vector3.new(0.24, 0.16, 0.5), cf * CFrame.new(0, 1.04, -0.3), silver, model, METAL_MAT)) -- lower jaw
+		tpart(U.Cyl(0.26, 0.3, cf * CFrame.new(0, 1.22, 0.02) * U.AxisY, GOLD, model, METAL_MAT)) -- nut
+		muzzle = tpart(U.Block(Vector3.new(0.1, 0.1, 0.1), cf * CFrame.new(0, 1.26, -0.5), beam, model, NEON))
+		tipWorld = cf * CFrame.new(0, 1.26, -0.6)
+	elseif tool == "TokenSack" then
+		-- a lumpy loot sack of arcade tokens, tied at the neck, with gold tokens peeking out of the top
+		local cf = T(0, 0.3, -0.4)
+		tpart(U.Ball(0.98, cf * CFrame.new(0, -0.1, 0), tc, model))
+		tpart(U.Ball(0.62, cf * CFrame.new(0.2, -0.38, -0.18), U.Shade(tc, 0.9), model)) -- lump
+		tpart(U.Cyl(0.18, 0.42, cf * CFrame.new(0, 0.42, 0) * U.AxisY, U.Shade(tc, 0.65), model)) -- tie
+		tpart(U.Cyl(0.08, 0.38, cf * CFrame.new(-0.08, 0.62, 0.05) * CFrame.Angles(0, 0.4, 1.2), GOLD, model, METAL_MAT)) -- tokens
+		muzzle = tpart(U.Cyl(0.08, 0.34, cf * CFrame.new(0.12, 0.66, -0.06) * CFrame.Angles(0, -0.3, 1.9), beam, model, NEON))
+		tipWorld = cf * CFrame.new(0.12, 0.8, -0.06)
+	elseif tool == "HeroSword" then
+		-- hero's sword raised: silver blade with a stepped point, wide blue guard with forward tips, blue grip
+		local cf = T(0, 0.05, 0) * CFrame.Angles(1.65, -0.35, 0)
+		local hilt = Color3.fromRGB(70, 80, 190)
+		tpart(U.Block(Vector3.new(0.15, 0.15, 0.42), cf * CFrame.new(0, 0, 0.08), hilt, model)) -- grip
+		tpart(U.Block(Vector3.new(0.2, 0.2, 0.14), cf * CFrame.new(0, 0, 0.34), GOLD, model, METAL_MAT)) -- pommel
+		tpart(U.Block(Vector3.new(0.72, 0.13, 0.16), cf * CFrame.new(0, 0, -0.18), hilt, model)) -- guard
+		for _, s in { -1, 1 } do
+			tpart(U.Block(Vector3.new(0.14, 0.13, 0.26), cf * CFrame.new(0.36 * s, 0, -0.3), hilt, model)) -- guard tips
+		end
+		tpart(U.Block(Vector3.new(0.26, 0.06, 1.45), cf * CFrame.new(0, 0, -0.98), tc, model, { Reflectance = 0.25 })) -- blade
+		tpart(U.Block(Vector3.new(0.14, 0.06, 0.14), cf * CFrame.new(0, 0, -1.77), tc, model, { Reflectance = 0.25 })) -- stepped point
+		muzzle = tpart(U.Block(Vector3.new(0.07, 0.07, 0.1), cf * CFrame.new(0, 0, -1.89), beam, model, NEON))
+		tipWorld = cf * CFrame.new(0, 0, -1.95)
+	elseif tool == "StarRod" then
+		-- magic star rod: striped rod held up and forward with a yellow star on the end
+		local cf = T(0, 0.05, 0) * CFrame.Angles(0.55, 0, 0)
+		local star = Color3.fromRGB(255, 220, 60)
+		tpart(U.Cyl(1.45, 0.13, cf * CFrame.new(0, 0, -0.6) * U.AxisZ, tc, model))
+		tpart(U.Cyl(0.16, 0.19, cf * CFrame.new(0, 0, -0.9) * U.AxisZ, WHITE, model))
+		local sc = cf * CFrame.new(0, 0, -1.5)
+		tpart(U.Cyl(0.14, 0.42, sc * U.AxisZ, star, model))
+		local lsc = rArm.CFrame:ToObjectSpace(sc)
+		for i = 0, 4 do
+			spike(rArm, lsc * CFrame.Angles(0, 0, i * 2 * math.pi / 5) * CFrame.new(0, 0.17, 0), 0.26, 0.3, 0.12, star)
+		end
+		muzzle = tpart(U.Ball(0.16, sc * CFrame.new(0, 0, -0.06), beam, model, NEON))
+		tipWorld = sc * CFrame.new(0, 0, -0.15)
+	elseif tool == "BossScepter" then
+		-- final-boss scepter: dark rod, gold collar and a big pixel heart with a glowing middle pixel
+		local cf = T(0, -0.1, -0.05) * CFrame.Angles(0.6, 0, -0.4)
+		tpart(U.Cyl(1.5, 0.14, cf * CFrame.new(0, 0.55, 0) * U.AxisY, Color3.fromRGB(60, 40, 90), model))
+		tpart(U.Block(Vector3.new(0.32, 0.16, 0.32), cf * CFrame.new(0, 1.3, 0), GOLD, model, METAL_MAT))
+		local u = 0.26
+		local hc = cf * CFrame.new(0, 1.38 + 1.5 * u, 0)
+		for _, q in { { -1, 1 }, { 1, 1 }, { -1, 0 }, { 1, 0 }, { 0, -1 } } do
+			tpart(U.Block(Vector3.new(u, u, u * 0.8), hc * CFrame.new(q[1] * u, q[2] * u, 0), tc, model))
+		end
+		muzzle = tpart(U.Block(Vector3.new(u, u, u * 0.8), hc, beam, model, NEON))
+		tipWorld = hc * CFrame.new(0, 0, -0.2)
+	-- end CYBERARCADE (world2c) tools
 	elseif tool == "Screwdriver" then
 		-- sonic-style gadget: silver handle with dark grip bands, slim neck and a glowing tip
 		tpart(U.Cyl(0.65, 0.2, T(0, 0.05, -0.2) * U.AxisZ, tc, model, METAL_MAT))
