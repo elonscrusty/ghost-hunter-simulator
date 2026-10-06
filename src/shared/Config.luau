@@ -2425,57 +2425,59 @@ Config.Hunters = {
 			Hat = "Crown", HatColor = C(255, 215, 90), Back = "Cake", BackColor = C(255, 170, 210), Tool = "Whisk", ToolColor = C(220, 225, 235), Beam = C(255, 170, 220), Aura = true },
 	},
 	-- ZONE 29: ARCADE CRATE
+	-- NOD: the blocky sandbox mining game (cube head, pixel face, pickaxe, grass-topped dirt block); our own colours, no name or logo
 	CoinOpCal = {
-		Id = "CoinOpCal", Name = "Coin-Op Cal", Rarity = "Common", Zone = "CyberArcade", Power = 2.25e20,
-		Blurb = "Pockets full of tokens, heart full of high scores.",
-		Look = { Skin = C(240, 205, 175), Hair = C(60, 40, 30), HairStyle = "Spiky", Shirt = C(60, 200, 180), Pants = C(50, 40, 90), Shoes = C(255, 80, 200),
-			Hat = "Headphones", HatColor = C(80, 80, 100), Tool = "Coin", ToolColor = C(255, 200, 60), Beam = C(80, 255, 220) },
+		Id = "CoinOpCal", Name = "Pickaxe Pete", Rarity = "Common", Zone = "CyberArcade", Power = 2.25e20,
+		Blurb = "Mines all day, builds all night. And yes, his head really is a perfect cube.",
+		Look = { Skin = C(215, 165, 120), Hair = C(75, 50, 35), HairStyle = "None", Shirt = C(50, 175, 170), Pants = C(70, 70, 165), Shoes = C(90, 90, 105),
+			Hat = "CubeHead", HatColor = C(75, 50, 35), Back = "DirtBlock", BackColor = C(140, 95, 60), Tool = "PixelPickaxe", ToolColor = C(110, 230, 225), Beam = C(120, 255, 235) },
 	},
+	-- NOD: the yellow maze chomper (waka-waka, power pellets, ghosts turn blue and run); his whole head is the chomping ball
 	ButtonMasherBea = {
-		Id = "ButtonMasherBea", Name = "Button-Masher Bea", Rarity = "Uncommon", Zone = "CyberArcade", Power = 3.74e20,
-		Blurb = "Presses every button at once. Somehow it always works.",
-		Look = { Skin = C(170, 115, 85), Hair = C(255, 80, 200), HairStyle = "Buns", Shirt = C(255, 220, 80), Pants = C(60, 60, 120), Shoes = C(80, 255, 220),
-			Hat = "Visor", HatColor = C(80, 255, 220), Tool = "Gamepad", ToolColor = C(255, 80, 200), Beam = C(255, 120, 220) },
+		Id = "ButtonMasherBea", Name = "Waka Wally", Rarity = "Uncommon", Zone = "CyberArcade", Power = 3.74e20,
+		Blurb = "Waka-waka-waka! One power pellet and every ghost in the maze turns blue and runs.",
+		Look = { Skin = C(255, 215, 40), Hair = C(255, 215, 40), HairStyle = "None", Shirt = C(255, 215, 40), Pants = C(50, 60, 150), Shoes = C(230, 50, 60),
+			Hat = "ChompBall", HatColor = C(255, 215, 40), Back = "PixelGhostPal", BackColor = C(70, 110, 255), Tool = "PowerPellet", ToolColor = C(255, 235, 190), Beam = C(255, 240, 170) },
 	},
-	-- NOD: Mario (jumping moustached plumber); our own teal cap, orange shirt and purple overalls, no letter badge
+	-- NOD: the jumping moustached plumber (red cap, blue dungarees, white gloves, green warp pipe); a gold wrench badge instead of a letter
 	MustachioThePlumber = {
-		Id = "MustachioThePlumber", Name = "Mustachio the Plumber", Rarity = "Rare", Zone = "CyberArcade", Power = 6.2e20,
-		Blurb = "Jumps on ghosts' heads, fixes the pipes and shouts 'Wahoo!' all the way down.",
-		Look = { Skin = C(245, 205, 175), Hair = C(70, 45, 30), HairStyle = "Moustache", Shirt = C(255, 140, 50), Pants = C(120, 70, 190), Shoes = C(120, 80, 50),
-			Hat = "Cap", HatColor = C(40, 180, 170), Back = "Overalls", BackColor = C(120, 70, 190), Tool = "Wrench", ToolColor = C(190, 195, 210), Beam = C(255, 200, 90) },
+		Id = "MustachioThePlumber", Name = "Plumbo, Super Plumber", Rarity = "Rare", Zone = "CyberArcade", Power = 6.2e20,
+		Blurb = "It's-a him! Bops ghosts on the head, hops down the nearest pipe and fixes your sink on the way out.",
+		Look = { Skin = C(250, 205, 170), Hair = C(60, 35, 25), HairStyle = "Moustache", Shirt = C(225, 45, 55), Pants = C(45, 85, 205), Shoes = C(115, 70, 40),
+			Hat = "PlumberCap", HatColor = C(225, 45, 55), Back = "PipeOveralls", BackColor = C(45, 85, 205), Tool = "PipeWrench", ToolColor = C(225, 45, 55), Beam = C(255, 220, 90) },
 	},
-	-- NOD: Sonic the Hedgehog ('gotta go fast', swept-back quills, gold rings); a lime-green hedgehog with orange shoes
+	-- NOD: the speedy blue hedgehog ('gotta go fast', swept-back quills, red sneakers, gold rings); our own take
 	SpeedySpikes = {
-		Id = "SpeedySpikes", Name = "Speedy Spikes", Rarity = "Rare", Zone = "CyberArcade", Power = 6.2e20,
-		Blurb = "Gotta go fast? He's already gone FASTER.",
-		Look = { Skin = C(245, 210, 175), Hair = C(120, 220, 80), HairStyle = "Quills", Shirt = C(120, 220, 80), Pants = C(120, 220, 80), Shoes = C(255, 140, 50),
-			Back = "Rings", BackColor = C(255, 210, 70), Tool = "GoldRing", ToolColor = C(255, 210, 70), Beam = C(255, 230, 120) },
+		Id = "SpeedySpikes", Name = "Zippy the Blue Blur", Rarity = "Rare", Zone = "CyberArcade", Power = 6.2e20,
+		Blurb = "Gotta go fast! By the time a ghost blinks, he has already lapped it twice.",
+		Look = { Skin = C(245, 205, 160), Hair = C(40, 95, 230), HairStyle = "Hedgehog", Shirt = C(40, 95, 230), Pants = C(40, 95, 230), Shoes = C(225, 40, 50),
+			Back = "SpeedLines", BackColor = C(90, 150, 255), Tool = "GoldRing", ToolColor = C(255, 205, 50), Beam = C(255, 230, 110) },
 	},
-	-- NOD: Pac-Man (waka-waka, power pellets, ghosts turn blue); a chomping round-head hat
 	WakaWakaWanda = {
-		Id = "WakaWakaWanda", Name = "Waka-Waka Wanda", Rarity = "Legendary", Zone = "CyberArcade", Power = 1.53e21,
-		Blurb = "Munches power pellets for breakfast. Ghosts turn blue the moment she walks in.",
-		Look = { Skin = C(245, 215, 185), Hair = C(255, 220, 60), HairStyle = "None", Shirt = C(255, 220, 60), Pants = C(60, 70, 160), Shoes = C(255, 220, 60),
-			Hat = "ChompHead", HatColor = C(255, 220, 60), Back = "PelletTrail", BackColor = C(80, 120, 255), Tool = "Orb", ToolColor = C(255, 240, 200), Beam = C(120, 160, 255), Aura = true },
+		Id = "WakaWakaWanda", Name = "Rocco, High-Score Bandit", Rarity = "Legendary", Zone = "CyberArcade", Power = 1.53e21,
+		Blurb = "Sneaks into the arcade after closing time. Never steals a coin - only high scores. And ghosts.",
+		Look = { Skin = C(185, 180, 185), Hair = C(130, 125, 135), HairStyle = "Raccoon", Shirt = C(40, 38, 50), Pants = C(55, 55, 75), Shoes = C(40, 38, 50),
+			Back = "RaccoonTail", BackColor = C(150, 145, 155), Tool = "TokenSack", ToolColor = C(175, 125, 75), Beam = C(255, 215, 80), Aura = true },
 	},
-	-- NOD: Tetris (falling blocks, clearing four lines); our own block colours
+	-- NOD: the green-tunic sword hero ('It's dangerous to go alone!', fairy that shouts 'Hey! Listen!'); our own shield emblem
 	BlockDropBoris = {
-		Id = "BlockDropBoris", Name = "Block-Drop Boris", Rarity = "Mythic", Zone = "CyberArcade", Power = 3.81e21,
-		Blurb = "Stacks ghosts in perfect lines. Four lines at once? Easy.",
-		Look = { Skin = C(235, 200, 170), Hair = C(150, 90, 50), HairStyle = "Short", Shirt = C(220, 60, 70), Pants = C(60, 90, 200), Shoes = C(255, 210, 60),
-			Hat = "Beanie", HatColor = C(60, 180, 90), Back = "Blocks", BackColor = C(120, 220, 255), Tool = "Joystick", ToolColor = C(255, 210, 60), Beam = C(150, 230, 255), Aura = true },
+		Id = "BlockDropBoris", Name = "Elwyn, Hero in Green", Rarity = "Mythic", Zone = "CyberArcade", Power = 3.81e21,
+		Blurb = "It's dangerous to go alone, so he brought a fairy. 'Hey! Listen!' she shouts. He never says a word.",
+		Look = { Skin = C(250, 215, 185), Hair = C(250, 215, 110), HairStyle = "ElfHero", Shirt = C(60, 165, 70), Pants = C(240, 235, 215), Shoes = C(120, 75, 40),
+			Hat = "HeroCap", HatColor = C(60, 165, 70), Back = "HeroShield", BackColor = C(50, 80, 190), Tool = "HeroSword", ToolColor = C(215, 225, 240), Beam = C(170, 230, 255), Aura = true },
 	},
+	-- NOD: the round pink puffball who inhales enemies ('Poyo!', star rod, riding a warp star); our own take
 	PlayerTwo = {
-		Id = "PlayerTwo", Name = "Player Two", Rarity = "Secret", Zone = "CyberArcade", Power = 9.55e21,
-		Blurb = "Has been waiting to join the game since 1982. Finally pressed START.",
-		Look = { Skin = C(210, 220, 240), Hair = C(60, 60, 90), HairStyle = "None", Shirt = C(40, 40, 70), Pants = C(30, 30, 55), Shoes = C(80, 255, 220),
-			Hat = "TVHead", HatColor = C(50, 50, 70), Back = "Antenna", BackColor = C(80, 80, 100), Tool = "Blaster", ToolColor = C(80, 255, 220), Beam = C(80, 255, 220), Aura = true },
+		Id = "PlayerTwo", Name = "Poyo the Pink Puff", Rarity = "Secret", Zone = "CyberArcade", Power = 9.55e21,
+		Blurb = "Takes one big breath and the whole room of ghosts is gone. Poyo!",
+		Look = { Skin = C(255, 160, 195), Hair = C(255, 160, 195), HairStyle = "None", Shirt = C(255, 160, 195), Pants = C(255, 160, 195), Shoes = C(225, 40, 70),
+			Hat = "Puffball", HatColor = C(255, 160, 195), Back = "WarpStar", BackColor = C(255, 215, 60), Tool = "StarRod", ToolColor = C(255, 120, 170), Beam = C(255, 235, 120), Aura = true },
 	},
 	PixellaArcadeEmpress = {
-		Id = "PixellaArcadeEmpress", Name = "Pixella, Arcade Empress", Rarity = "Ultra", Zone = "CyberArcade", Power = 2.38e22,
-		Blurb = "Presses START and every ghost in the arcade turns 8-bit and lines up for her trap.",
-		Look = { Skin = C(245, 215, 195), Hair = C(80, 255, 220), HairStyle = "Long", Shirt = C(120, 60, 200), Pants = C(255, 80, 200), Shoes = C(80, 255, 220),
-			Hat = "PrismCrown", HatColor = C(255, 80, 200), Back = "PixelWings", BackColor = C(80, 255, 220), Tool = "PixelSword", ToolColor = C(220, 240, 255), Beam = C(80, 255, 220), Aura = true },
+		Id = "PixellaArcadeEmpress", Name = "Bitrix, Queen of the Final Level", Rarity = "Ultra", Zone = "CyberArcade", Power = 2.38e22,
+		Blurb = "The last boss of the last level. Nobody has ever beaten her high score, and every ghost knows it.",
+		Look = { Skin = C(245, 215, 195), Hair = C(70, 225, 215), HairStyle = "VoxelHair", Shirt = C(140, 65, 225), Pants = C(255, 70, 170), Shoes = C(255, 70, 170),
+			Hat = "BlockCrown", HatColor = C(255, 205, 60), Back = "BlockStorm", BackColor = C(120, 40, 200), Tool = "BossScepter", ToolColor = C(255, 60, 100), Beam = C(80, 255, 220), Aura = true },
 	},
 	-- ZONE 30: STORM CRATE
 	KiteFlyerKit = {
