@@ -1,5 +1,6 @@
 --!strict
--- World 2 ghost looks (areas 17-32 and the Void Emperor world boss).
+-- World 2 ghost looks (areas 17-32 and the Void Emperor world boss). The seven areas added in
+-- the 16-area World 2 (19, 21, 23, 25, 26, 28, 29) live in World2b.luau.
 --
 -- GhostRig.Build draws the standard body (diameter 3.5 at the origin, face towards -Z, nub arms
 -- at x = +-1.7, tail curling down and back to (0.2, -2.7, 1.9)) and the face, then calls
@@ -973,31 +974,8 @@ S.VoidEmperor = function(k)
 	k.block(v(1.0, 0.45, 0.8), at(-0.9, -4.6, 2.2) * CFrame.Angles(-0.3, 0.4, 0.2), VOID)
 end
 
------------------------------------------------------------------- areas 19, 21, 23, 25, 26, 28, 29 (new in the 16-area World 2)
--- PLACEHOLDER (world2b): plain ghost body (no accessories) until the real looks are built.
--- Looks to build are described next to each ghost in Config.Ghosts.
-S.CornCob = function(_k) end -- PLACEHOLDER (world2b)
-S.HayBale = function(_k) end -- PLACEHOLDER (world2b)
-S.Scarecrow = function(_k) end -- PLACEHOLDER (world2b)
-S.SwimRing = function(_k) end -- PLACEHOLDER (world2b)
-S.Floatie = function(_k) end -- PLACEHOLDER (world2b)
-S.WaveCrown = function(_k) end -- PLACEHOLDER (world2b)
-S.ShoppingBags = function(_k) end -- PLACEHOLDER (world2b)
-S.Mannequin = function(_k) end -- PLACEHOLDER (world2b)
-S.FoodCourt = function(_k) end -- PLACEHOLDER (world2b)
-S.Pterodactyl = function(_k) end -- PLACEHOLDER (world2b)
-S.RaptorSkull = function(_k) end -- PLACEHOLDER (world2b)
-S.BoneTyrant = function(_k) end -- PLACEHOLDER (world2b)
-S.Cheerleader = function(_k) end -- PLACEHOLDER (world2b)
-S.FoamFinger = function(_k) end -- PLACEHOLDER (world2b)
-S.Scoreboard = function(_k) end -- PLACEHOLDER (world2b)
-S.Crumb = function(_k) end -- PLACEHOLDER (world2b)
-S.Teacup = function(_k) end -- PLACEHOLDER (world2b)
-S.CheeseWheel = function(_k) end -- PLACEHOLDER (world2b)
-S.Pixel = function(_k) end -- PLACEHOLDER (world2b)
-S.Glitch = function(_k) end -- PLACEHOLDER (world2b)
-S.GameOver = function(_k) end -- PLACEHOLDER (world2b)
-
 World2.Styles = S
+-- shared shape helpers (used by World2b.luau, the looks of the areas added in the 16-area World 2)
+World2.Help = { arc = arc, zigzag = zigzag, blade = blade, star4 = star4, patch = patch, sparkle = sparkle }
 
 return World2

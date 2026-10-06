@@ -18,6 +18,7 @@
 local Config = require(script.Parent.Parent.Config)
 local U = require(script.Parent.RigUtil)
 local World2 = require(script.Parent.GhostStyles.World2)
+local World2b = require(script.Parent.GhostStyles.World2b)
 
 local GhostRig = {}
 
@@ -45,6 +46,7 @@ local METAL_MAT = { Material = Enum.Material.Metal }
 -- styles whose eyes glow (Neon in the glow colour) instead of the usual dark cartoon eyes
 local GLOW_EYES = { HauntedArmor = true, GraveColossus = true, VoidLeviathan = true, CrystalTitan = true, Student = true, Ancient = true, Void = true, Overlord = true, Shadow = true, Titan = true, GhostKing = true,
 	Rift = true, Herald = true, VoidEmperor = true, Locomotive = true,
+	Scarecrow = true, BoneTyrant = true,
 }
 -- styles with the open "▽" grin instead of the round "O" mouth
 local GRIN = { CrystalTitan = true, Jester = true, PumpkinKnight = true, SwampHag = true, CandleLich = true, BoneCaptain = true, MummyPharaoh = true, PuppetMaster = true, VampireCount = true, PhantomEmperor = true, GraveColossus = true, VoidLeviathan = true, EclipseOverlord = true,
@@ -54,15 +56,18 @@ local GRIN = { CrystalTitan = true, Jester = true, PumpkinKnight = true, SwampHa
 	Leviathan = true, TimeKeeper = true, Titan = true, GhostKing = true,
 	DragonDance = true, Grimoire = true, Topsy = true, Mycelium = true, MirrorQueen = true, Locomotive = true,
 	Saucer = true, Herald = true, Copycat = true, Graffiti = true, Rift = true,
+	WaveCrown = true, FoodCourt = true, BoneTyrant = true, CheeseWheel = true, Glitch = true,
 }
 -- spooky styles that don't blush
 local NO_BLUSH = { CrystalTitan = true, Banshee = true, FrostWraith = true, CandleLich = true, HauntedArmor = true, GraveColossus = true, VoidLeviathan = true, EclipseOverlord = true, Giant = true, Void = true, Overlord = true, Shadow = true, Titan = true,
 	Mote = true, Rift = true, Herald = true, VoidEmperor = true, Billboard = true, Locomotive = true, Glint = true, Commuter = true, StormRoc = true,
+	Scarecrow = true, BoneTyrant = true, FoamFinger = true, Glitch = true,
 }
--- World 2: the Billboard's screen is its face; the Storm Roc's beak replaces the mouth; the Void
--- Emperor draws his own wide grin
-local NO_FACE = { Billboard = true }
-local NO_MOUTH = { StormRoc = true, VoidEmperor = true }
+-- World 2: the Billboard's, Scoreboard's and Game Over cabinet's screens are their faces and the
+-- Pixel Phantom draws square 8-bit eyes; the Storm Roc's and Fossil Flitter's beaks replace the
+-- mouth; the Void Emperor, the Scarecrow (stitches) and the Swim Ring (snorkel) draw their own
+local NO_FACE = { Billboard = true, Scoreboard = true, GameOver = true, Pixel = true }
+local NO_MOUTH = { StormRoc = true, VoidEmperor = true, Scarecrow = true, SwimRing = true, Pterodactyl = true }
 
 local BRASS = Color3.fromRGB(205, 160, 75)
 local ICE = Color3.fromRGB(195, 235, 255)
@@ -82,7 +87,7 @@ function GhostRig.Build(ghostId: string): Model
 	local glow = def.Glow
 	local accent = U.Vivid(glow) -- solid accessories in the glow colour
 
-	local w2Style = World2.Styles[style]
+	local w2Style = World2.Styles[style] or World2b.Styles[style]
 	-- upside-down styles: every part is turned 180 degrees about Z (round the body centre) before welding
 	local flip: CFrame? = if World2.Flipped[style] then CFrame.Angles(0, 0, math.pi) else nil
 
