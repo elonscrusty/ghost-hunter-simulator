@@ -2459,10 +2459,10 @@ Config.Hunters = {
 		Look = { Skin = C(185, 180, 185), Hair = C(130, 125, 135), HairStyle = "Raccoon", Shirt = C(40, 38, 50), Pants = C(55, 55, 75), Shoes = C(40, 38, 50),
 			Back = "RaccoonTail", BackColor = C(150, 145, 155), Tool = "TokenSack", ToolColor = C(175, 125, 75), Beam = C(255, 215, 80), Aura = true },
 	},
-	-- NOD: the green-tunic sword hero ('It's dangerous to go alone!', fairy that shouts 'Hey! Listen!'); our own shield emblem
+	-- NOD: the green-tunic sword hero (fairy sidekick); our own shield emblem, no quotes from the games
 	BlockDropBoris = {
 		Id = "BlockDropBoris", Name = "Elwyn, Hero in Green", Rarity = "Mythic", Zone = "CyberArcade", Power = 3.81e21,
-		Blurb = "It's dangerous to go alone, so he brought a fairy. 'Hey! Listen!' she shouts. He never says a word.",
+		Blurb = "Never goes on an adventure without his tiny fairy friend. She does all the talking.",
 		Look = { Skin = C(250, 215, 185), Hair = C(250, 215, 110), HairStyle = "ElfHero", Shirt = C(60, 165, 70), Pants = C(240, 235, 215), Shoes = C(120, 75, 40),
 			Hat = "HeroCap", HatColor = C(60, 165, 70), Back = "HeroShield", BackColor = C(50, 80, 190), Tool = "HeroSword", ToolColor = C(215, 225, 240), Beam = C(170, 230, 255), Aura = true },
 	},
